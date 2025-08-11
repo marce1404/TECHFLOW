@@ -61,24 +61,46 @@ export default function AppSidebar() {
   ];
 
   const isActive = (href: string) => {
-    if (href === '/') return pathname === href;
-    return pathname.startsWith(href);
+    // Special case for the root path
+    if (href === '/') {
+        return pathname === '/';
+    }
+    // Check if the current path starts with the given href, but is not just the root
+    if (pathname.startsWith('/orders') && href === '/orders') {
+        return true;
+    }
+
+    return pathname.startsWith(href) && href !== '/';
   };
   
   if (state === 'collapsed') {
     return (
         <>
-            <SidebarHeader/>
+            <SidebarHeader>
+                <div className="flex items-center justify-center p-2">
+                     <SidebarMenuButton
+                        asChild
+                        isActive={pathname === '/'}
+                        tooltip="Dashboard"
+                        variant={pathname === '/' ? 'default' : 'ghost'}
+                        className="h-10 w-10"
+                    >
+                        <Link href="/">
+                            <LayoutGrid />
+                        </Link>
+                    </SidebarMenuButton>
+                </div>
+            </SidebarHeader>
             <SidebarContent>
                 <SidebarMenu>
-                    {menuItems.map((item) => (
+                    {menuItems.slice(1).map((item) => (
                         <SidebarMenuItem key={item.href}>
                         <SidebarMenuButton
                             asChild
                             isActive={isActive(item.href)}
                             tooltip={item.label}
                             variant={isActive(item.href) ? 'default' : 'ghost'}
-                            className={isActive(item.href) ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground' : ''}
+                            className="h-10 w-10"
                         >
                             <Link href={item.href}>
                                 <item.icon />
@@ -91,7 +113,7 @@ export default function AppSidebar() {
             <SidebarFooter>
                 <SidebarMenu>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild tooltip="Configuración" variant="ghost">
+                    <SidebarMenuButton asChild tooltip="Configuración" variant="ghost" className="h-10 w-10">
                     <Link href="#">
                         <Settings />
                     </Link>
@@ -137,6 +159,7 @@ export default function AppSidebar() {
                   asChild
                   isActive={isActive(item.href)}
                   tooltip={item.label}
+                  variant={isActive(item.href) ? 'default' : 'ghost'}
                 >
                   <Link href={item.href}>
                     <item.icon />
