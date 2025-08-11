@@ -27,10 +27,11 @@ export default function ActiveOrdersPage() {
     }, [activeWorkOrders]);
 
     const categories = [
-        { value: "todos", label: "Todos", prefix: 'todos' },
+        { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
         ...otCategories
             .filter(cat => cat.status === 'Activa')
             .map(cat => ({
+                id: cat.id,
                 value: cat.prefix,
                 label: `${cat.name} (${cat.prefix})`,
                 prefix: cat.prefix,
@@ -59,14 +60,14 @@ export default function ActiveOrdersPage() {
             <Tabs defaultValue="todos" onValueChange={filterOrders}>
               <TabsList>
                 {categories.map(cat => (
-                    <TabsTrigger key={cat.value} value={cat.prefix}>{cat.label}</TabsTrigger>
+                    <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
                 ))}
               </TabsList>
               <TabsContent value="todos">
                   <OrdersTable orders={filteredOrders} />
               </TabsContent>
               {categories.filter(c => c.value !== 'todos').map(cat => (
-                <TabsContent key={cat.value} value={cat.prefix}>
+                <TabsContent key={cat.id} value={cat.prefix}>
                     <OrdersTable orders={filteredOrders} />
                 </TabsContent>
               ))}

@@ -26,9 +26,10 @@ export default function HistoryPage() {
     }, [historicalWorkOrders]);
 
     const categories = [
-        { value: "todos", label: "Todos", prefix: 'todos' },
+        { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
         ...otCategories
             .map(cat => ({
+                id: cat.id,
                 value: cat.prefix,
                 label: `${cat.name} (${cat.prefix})`,
                 prefix: cat.prefix,
@@ -43,14 +44,14 @@ export default function HistoryPage() {
             <Tabs defaultValue="todos" onValueChange={filterOrders}>
               <TabsList>
                 {categories.map(cat => (
-                    <TabsTrigger key={cat.value} value={cat.prefix}>{cat.label}</TabsTrigger>
+                    <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
                 ))}
               </TabsList>
                <TabsContent value="todos">
                   <HistoricalOrdersTable orders={filteredOrders} />
               </TabsContent>
               {categories.filter(c => c.value !== 'todos').map(cat => (
-                <TabsContent key={cat.value} value={cat.prefix}>
+                <TabsContent key={cat.id} value={cat.prefix}>
                     <HistoricalOrdersTable orders={filteredOrders} />
                 </TabsContent>
               ))}
