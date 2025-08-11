@@ -19,25 +19,13 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { useWorkOrders } from '@/context/work-orders-context';
 import type { OTCategory } from '@/lib/types';
 import { CategoryFormDialog } from '@/components/settings/category-form-dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 
 export default function OTCategoriesPage() {
-    const { otCategories, addCategory, updateCategory, deleteCategory } = useWorkOrders();
+    const { otCategories, addCategory, updateCategory } = useWorkOrders();
     const [dialogOpen, setDialogOpen] = React.useState(false);
     const [selectedCategory, setSelectedCategory] = React.useState<OTCategory | null>(null);
 
@@ -99,46 +87,20 @@ export default function OTCategoriesPage() {
                                             <Badge variant={category.status === 'Activa' ? 'default' : 'outline'}>{category.status}</Badge>
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <AlertDialog>
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" className="h-8 w-8 p-0">
-                                                            <span className="sr-only">Abrir menú</span>
-                                                            <MoreHorizontal className="h-4 w-4" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem onClick={() => handleEdit(category)}>Editar</DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => handleToggleStatus(category)}>
-                                                            {category.status === 'Activa' ? 'Desactivar' : 'Activar'}
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuSeparator />
-                                                        <AlertDialogTrigger asChild>
-                                                            <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                                                Eliminar
-                                                            </DropdownMenuItem>
-                                                        </AlertDialogTrigger>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                                <AlertDialogContent>
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                            Esta acción no se puede deshacer. Esto eliminará permanentemente la categoría
-                                                            <span className="font-bold"> {category.name}</span>.
-                                                        </AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                        <AlertDialogAction
-                                                            onClick={() => deleteCategory(category.id)}
-                                                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                                        >
-                                                            Eliminar
-                                                        </AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                                        <span className="sr-only">Abrir menú</span>
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onClick={() => handleEdit(category)}>Editar</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleToggleStatus(category)}>
+                                                        {category.status === 'Activa' ? 'Desactivar' : 'Activar'}
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </TableCell>
                                     </TableRow>
                                 ))}

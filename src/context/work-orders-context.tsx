@@ -15,7 +15,6 @@ interface WorkOrdersContextType {
   setHistoricalWorkOrders: React.Dispatch<React.SetStateAction<WorkOrder[]>>;
   addCategory: (category: Omit<OTCategory, 'id'>) => void;
   updateCategory: (id: string, category: OTCategory) => void;
-  deleteCategory: (id: string) => void;
 }
 
 const WorkOrdersContext = createContext<WorkOrdersContextType | undefined>(undefined);
@@ -62,11 +61,6 @@ export const WorkOrdersProvider = ({ children, active, historical }: { children:
     setOtCategories(prev => prev.map(cat => (cat.id === id ? updatedCategory : cat)));
   };
 
-  const deleteCategory = (id: string) => {
-    setOtCategories(prev => prev.filter(cat => cat.id !== id));
-  };
-
-
   return (
     <WorkOrdersContext.Provider value={{ 
         activeWorkOrders, 
@@ -78,7 +72,6 @@ export const WorkOrdersProvider = ({ children, active, historical }: { children:
         setHistoricalWorkOrders,
         addCategory,
         updateCategory,
-        deleteCategory
     }}>
       {children}
     </WorkOrdersContext.Provider>
