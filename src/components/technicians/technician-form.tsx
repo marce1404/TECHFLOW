@@ -87,6 +87,7 @@ const defaultEppItems = [
 
 const defaultCertificationItems = [
     "Trabajo en altura geográfica",
+    "Trabajo en Altura física",
     "Espacios confinados",
     "Operador Elevador",
 ];
