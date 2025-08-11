@@ -11,9 +11,11 @@ import type { WorkOrder } from "@/lib/types";
 export default function HistoryPage() {
     const { historicalWorkOrders, otCategories } = useWorkOrders();
     const [filteredOrders, setFilteredOrders] = React.useState<WorkOrder[]>(historicalWorkOrders);
+    const [activeTab, setActiveTab] = React.useState('todos');
 
 
     const filterOrders = (categoryPrefix: string | null) => {
+        setActiveTab(categoryPrefix || 'todos');
         if (!categoryPrefix || categoryPrefix === 'todos') {
             setFilteredOrders(historicalWorkOrders);
             return;
@@ -23,6 +25,7 @@ export default function HistoryPage() {
     
     React.useEffect(() => {
         setFilteredOrders(historicalWorkOrders);
+        setActiveTab('todos');
     }, [historicalWorkOrders]);
 
     const categories = [
@@ -41,20 +44,15 @@ export default function HistoryPage() {
             <h1 className="text-3xl font-headline font-bold tracking-tight">
                 Historial de Órdenes de Trabajo
             </h1>
-            <Tabs defaultValue="todos" onValueChange={filterOrders}>
+            <Tabs value={activeTab} onValueChange={filterOrders}>
               <TabsList>
                 {categories.map(cat => (
                     <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
                 ))}
               </TabsList>
-               <TabsContent value="todos">
+              <TabsContent value={activeTab}>
                   <HistoricalOrdersTable orders={filteredOrders} />
               </TabsContent>
-              {categories.filter(c => c.value !== 'todos').map(cat => (
-                <TabsContent key={cat.id} value={cat.prefix}>
-                    <HistoricalOrdersTable orders={filteredOrders} />
-                </TabsContent>
-              ))}
             </Tabs>
         </div>
     );

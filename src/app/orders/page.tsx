@@ -13,8 +13,10 @@ import type { WorkOrder } from "@/lib/types";
 export default function ActiveOrdersPage() {
     const { activeWorkOrders, otCategories } = useWorkOrders();
     const [filteredOrders, setFilteredOrders] = React.useState<WorkOrder[]>(activeWorkOrders);
+    const [activeTab, setActiveTab] = React.useState('todos');
 
     const filterOrders = (categoryPrefix: string | null) => {
+        setActiveTab(categoryPrefix || 'todos');
         if (!categoryPrefix || categoryPrefix === 'todos') {
             setFilteredOrders(activeWorkOrders);
             return;
@@ -24,6 +26,7 @@ export default function ActiveOrdersPage() {
     
     React.useEffect(() => {
         setFilteredOrders(activeWorkOrders);
+        setActiveTab('todos');
     }, [activeWorkOrders]);
 
     const categories = [
@@ -57,20 +60,15 @@ export default function ActiveOrdersPage() {
                     </Button>
                 </div>
             </div>
-            <Tabs defaultValue="todos" onValueChange={filterOrders}>
+            <Tabs value={activeTab} onValueChange={filterOrders}>
               <TabsList>
                 {categories.map(cat => (
                     <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
                 ))}
               </TabsList>
-              <TabsContent value="todos">
+              <TabsContent value={activeTab}>
                   <OrdersTable orders={filteredOrders} />
               </TabsContent>
-              {categories.filter(c => c.value !== 'todos').map(cat => (
-                <TabsContent key={cat.id} value={cat.prefix}>
-                    <OrdersTable orders={filteredOrders} />
-                </TabsContent>
-              ))}
             </Tabs>
         </div>
     );
