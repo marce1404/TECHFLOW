@@ -11,7 +11,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Sun, Moon } from 'lucide-react';
-import { useTheme } from 'next-themes'; // Assuming next-themes is or will be installed
+import { useTheme } from 'next-themes'; 
+import AppTitle from './app-title';
 
 export default function AppHeader() {
   // A proper theme implementation would require installing 'next-themes'
@@ -22,7 +23,7 @@ export default function AppHeader() {
     <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6 lg:px-8">
       <div className="flex items-center gap-2">
         <SidebarTrigger className="md:hidden" />
-        <h1 className="text-xl font-headline font-semibold">APTECH</h1>
+        <AppTitle />
       </div>
       <div className="flex items-center gap-4">
         {/* Placeholder for theme toggle */}
