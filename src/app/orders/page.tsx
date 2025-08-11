@@ -8,22 +8,28 @@ import Link from "next/link";
 import { activeWorkOrders } from "@/lib/placeholder-data";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
+import type { WorkOrder } from "@/lib/types";
 
 export default function ActiveOrdersPage() {
     const searchParams = useSearchParams();
-    const updatedId = searchParams.get('updatedId');
-    const newDescription = searchParams.get('newDescription');
-
+    const updatedOrderString = searchParams.get('updatedOrder');
+    
     const ordersWithUpdates = useMemo(() => {
-        if (updatedId && newDescription) {
-            return activeWorkOrders.map(order => 
-                order.id === updatedId 
-                    ? { ...order, description: newDescription } 
-                    : order
-            );
+        if (updatedOrderString) {
+            try {
+                const updatedOrder: WorkOrder = JSON.parse(decodeURIComponent(updatedOrderString));
+                return activeWorkOrders.map(order => 
+                    order.id === updatedOrder.id 
+                        ? updatedOrder
+                        : order
+                );
+            } catch (error) {
+                console.error("Failed to parse updated order:", error);
+                return activeWorkOrders;
+            }
         }
         return activeWorkOrders;
-    }, [updatedId, newDescription]);
+    }, [updatedOrderString]);
 
 
     const filterOrders = (category: string) => {

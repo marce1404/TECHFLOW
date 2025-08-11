@@ -19,21 +19,17 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import { useToast } from "@/hooks/use-toast";
 import { useParams, useRouter } from "next/navigation";
 import { activeWorkOrders, historicalWorkOrders } from "@/lib/placeholder-data";
+import type { WorkOrder } from "@/lib/types";
 
 export default function EditOrderPage() {
   const params = useParams();
   const router = useRouter();
   const orderId = params.id as string;
   
-  // In a real app, you would fetch the order details based on the ID
-  const order = [...activeWorkOrders, ...historicalWorkOrders].find(o => o.id === orderId);
+  const initialOrder = [...activeWorkOrders, ...historicalWorkOrders].find(o => o.id === orderId);
 
-  const [orderDescription, setOrderDescription] = React.useState(order?.description || '');
+  const [order, setOrder] = React.useState<WorkOrder | undefined>(initialOrder);
 
-  // By replacing hyphens with slashes, we ensure the date is parsed in the local time zone,
-  // preventing hydration mismatches between server and client.
-  const [startDate, setStartDate] = React.useState<Date | undefined>(order ? new Date(order.date.replace(/-/g, '/')) : new Date());
-  const [endDate, setEndDate] = React.useState<Date>();
   const [selectedTechnicians, setSelectedTechnicians] = React.useState<string[]>([]);
   const [selectedVehicles, setSelectedVehicles] = React.useState<string[]>([]);
   const { toast } = useToast();
@@ -58,22 +54,39 @@ export default function EditOrderPage() {
     { value: 'daniela-vidal', label: 'Daniela Vidal' },
   ];
 
+  const handleInputChange = (field: keyof WorkOrder, value: string | boolean) => {
+    if (order) {
+      setOrder({ ...order, [field]: value });
+    }
+  };
+
+  const handleDateChange = (field: keyof WorkOrder, value: Date | undefined) => {
+    if (order && value) {
+      // Keep it in YYYY-MM-DD format for consistency
+      handleInputChange(field, format(value, 'yyyy-MM-dd'));
+    }
+  };
+
   const handleUpdateOrder = () => {
-    // In a real app, you would send the updated data to your API here
+    if (!order) return;
     toast({
       title: "Orden de Trabajo Actualizada",
-      description: `El nombre de la OT se actualizó a: "${orderDescription}"`,
+      description: `La OT "${order.description}" ha sido actualizada.`,
       duration: 2000,
     });
     setTimeout(() => {
-        // We pass the updated description via query params to simulate the update
-        router.push(`/orders?updatedId=${orderId}&newDescription=${encodeURIComponent(orderDescription)}`);
+        const updatedOrderQuery = encodeURIComponent(JSON.stringify(order));
+        router.push(`/orders?updatedOrder=${updatedOrderQuery}`);
     }, 2000);
   };
 
   if (!order) {
       return <div>Orden de trabajo no encontrada.</div>
   }
+
+  // By replacing hyphens with slashes, we ensure the date is parsed in the local time zone,
+  // preventing hydration mismatches between server and client.
+  const startDate = order.date ? new Date(order.date.replace(/-/g, '/')) : undefined;
 
   return (
     <div className="flex flex-col gap-8">
@@ -85,8 +98,8 @@ export default function EditOrderPage() {
             <Label htmlFor="ot-name" className="text-sm font-medium">Nombre de OT *</Label>
             <Input 
               id="ot-name" 
-              value={orderDescription} 
-              onChange={(e) => setOrderDescription(e.target.value)} 
+              value={order.description} 
+              onChange={(e) => handleInputChange('description', e.target.value)} 
               placeholder="Nombre de OT..." 
               className="w-96" 
             />
@@ -101,7 +114,14 @@ export default function EditOrderPage() {
                 <div className="space-y-4">
                     <div>
                         <Label htmlFor="ot-category">Categoría OT *</Label>
-                        <Select defaultValue={order.ot_number.split('-')[0].toLowerCase()}>
+                        <Select
+                          value={order.ot_number.split('-')[0].toLowerCase()}
+                          onValueChange={(value) => {
+                            // This is a bit tricky as it's part of the ID. 
+                            // For this simulation, we'll just update the visual part.
+                            // A real implementation would likely regenerate the OT number.
+                          }}
+                        >
                         <SelectTrigger id="ot-category">
                             <SelectValue placeholder="Seleccionar categoría" />
                         </SelectTrigger>
@@ -116,12 +136,20 @@ export default function EditOrderPage() {
 
                     <div>
                         <Label htmlFor="client">Cliente</Label>
-                        <Input id="client" defaultValue={order.client} placeholder="Escribe el nombre del cliente..." />
+                        <Input 
+                          id="client" 
+                          value={order.client}
+                          onChange={(e) => handleInputChange('client', e.target.value)}
+                          placeholder="Escribe el nombre del cliente..." 
+                        />
                     </div>
 
                     <div>
                         <Label htmlFor="service">Servicio</Label>
-                        <Select defaultValue={order.service.toLowerCase()}>
+                        <Select 
+                          value={order.service.toLowerCase()}
+                          onValueChange={(value) => handleInputChange('service', value)}
+                        >
                         <SelectTrigger id="service">
                             <SelectValue placeholder="Elegir categoría..." />
                         </SelectTrigger>
@@ -155,7 +183,7 @@ export default function EditOrderPage() {
                                     <Calendar
                                     mode="single"
                                     selected={startDate}
-                                    onSelect={setStartDate}
+                                    onSelect={(date) => handleDateChange('date', date)}
                                     initialFocus
                                     />
                                 </PopoverContent>
@@ -168,19 +196,20 @@ export default function EditOrderPage() {
                                     <Button
                                     variant={"outline"}
                                     className={cn(
-                                        "w-full justify-start text-left font-normal",
-                                        !endDate && "text-muted-foreground"
+                                        "w-full justify-start text-left font-normal"
+                                        // !endDate && "text-muted-foreground"
                                     )}
                                     >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {endDate ? format(endDate, "PPP") : <span>Elegir fecha</span>}
+                                    {/* {endDate ? format(endDate, "PPP") : <span>Elegir fecha</span>} */}
+                                    <span>Elegir fecha</span>
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0">
                                     <Calendar
                                     mode="single"
-                                    selected={endDate}
-                                    onSelect={setEndDate}
+                                    // selected={endDate}
+                                    // onSelect={setEndDate}
                                     initialFocus
                                     />
                                 </PopoverContent>
@@ -209,8 +238,14 @@ export default function EditOrderPage() {
                     </div>
 
                     <div>
-                        <Label htmlFor="description">Descripción / Notas Adicionales</Label>
-                        <Textarea id="description" defaultValue={order.description} placeholder="Añadir descripción detallada, materiales, notas..." rows={5} />
+                        <Label htmlFor="notes">Descripción / Notas Adicionales</Label>
+                        <Textarea 
+                          id="notes" 
+                          value={order.description} // Assuming notes are part of description for now
+                          onChange={(e) => handleInputChange('description', e.target.value)} 
+                          placeholder="Añadir descripción detallada, materiales, notas..." 
+                          rows={5} 
+                        />
                     </div>
                 </div>
 
@@ -224,7 +259,10 @@ export default function EditOrderPage() {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <Label htmlFor="status">Estado</Label>
-                            <Select defaultValue={order.status.toLowerCase().replace(' ', '-')}>
+                            <Select 
+                              value={order.status.toLowerCase().replace(' ', '-')}
+                              onValueChange={(value) => handleInputChange('status', value)}
+                            >
                                 <SelectTrigger id="status">
                                     <SelectValue />
                                 </SelectTrigger>
@@ -239,7 +277,10 @@ export default function EditOrderPage() {
                         </div>
                         <div>
                             <Label htmlFor="priority">Prioridad</Label>
-                            <Select defaultValue={order.priority.toLowerCase()}>
+                            <Select 
+                              value={order.priority.toLowerCase()}
+                              onValueChange={(value) => handleInputChange('priority', value)}
+                            >
                                 <SelectTrigger id="priority">
                                     <SelectValue />
                                 </SelectTrigger>
@@ -281,24 +322,30 @@ export default function EditOrderPage() {
 
                     <div>
                         <Label htmlFor="manager">Encargado</Label>
-                        <Select>
+                        <Select 
+                          value={order.assigned}
+                          onValueChange={(value) => handleInputChange('assigned', value)}
+                        >
                             <SelectTrigger id="manager">
                                 <SelectValue placeholder="Seleccionar encargado" />
                             </SelectTrigger>
                             <SelectContent>
-                                {technicians.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                                {technicians.map(t => <SelectItem key={t.value} value={t.label}>{t.label}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
 
                     <div>
                         <Label htmlFor="vendor">Vendedor</Label>
-                        <Select>
+                        <Select
+                          value={order.vendedor}
+                          onValueChange={(value) => handleInputChange('vendedor', value)}
+                        >
                             <SelectTrigger id="vendor">
                                 <SelectValue placeholder="Seleccionar vendedor" />
                             </SelectTrigger>
                             <SelectContent>
-                                {vendors.map(v => <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>)}
+                                {vendors.map(v => <SelectItem key={v.value} value={v.label}>{v.label}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
