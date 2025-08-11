@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -57,19 +58,21 @@ export default function AppSidebar() {
       href: '/vehicles',
       label: 'Vehículos',
       icon: Truck,
+    },
+     {
+      href: '/ai-tools/resource-assignment',
+      label: 'Asistente IA',
+      icon: Users,
     }
   ];
 
   const isActive = (href: string) => {
-    // Special case for the root path
     if (href === '/') {
         return pathname === '/';
     }
-    // Check if the current path starts with the given href, but is not just the root
     if (pathname.startsWith('/orders') && href === '/orders') {
         return true;
     }
-
     return pathname.startsWith(href) && href !== '/';
   };
   
@@ -78,7 +81,7 @@ export default function AppSidebar() {
         <>
             <SidebarHeader>
                 <div className="flex items-center justify-center p-2">
-                     <SidebarMenuButton
+                    <SidebarMenuButton
                         asChild
                         isActive={pathname === '/'}
                         tooltip="Dashboard"
