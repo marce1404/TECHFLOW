@@ -54,3 +54,9 @@ export type OTCategory = {
   prefix: string;
   status: 'Activa' | 'Inactiva';
 };
+
+export type Service = {
+  id: string;
+  name: string;
+  status: 'Activa' | 'Inactiva';
+};

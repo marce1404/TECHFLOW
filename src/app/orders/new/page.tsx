@@ -25,7 +25,7 @@ export default function NewOrderPage() {
   const [netPrice, setNetPrice] = React.useState(0);
   const [totalPrice, setTotalPrice] = React.useState(0);
   const { toast } = useToast();
-  const { otCategories } = useWorkOrders();
+  const { otCategories, services } = useWorkOrders();
 
   const technicians = [
     { value: 'cristian-munoz', label: 'Cristian Muñoz' },
@@ -113,14 +113,12 @@ export default function NewOrderPage() {
                         <Label htmlFor="service">Servicio</Label>
                         <Select>
                         <SelectTrigger id="service">
-                            <SelectValue placeholder="Elegir categoría..." />
+                            <SelectValue placeholder="Elegir servicio..." />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="cctv">CCTV</SelectItem>
-                            <SelectItem value="extincion">Extinción</SelectItem>
-                            <SelectItem value="cerco">Cerco</SelectItem>
-                            <SelectItem value="deteccion">Detección</SelectItem>
-                            <SelectItem value="alarma">Alarma</SelectItem>
+                            {services.filter(s => s.status === 'Activa').map(service => (
+                                <SelectItem key={service.id} value={service.name.toLowerCase()}>{service.name}</SelectItem>
+                            ))}
                         </SelectContent>
                         </Select>
                     </div>

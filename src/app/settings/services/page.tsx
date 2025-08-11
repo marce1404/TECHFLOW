@@ -1,0 +1,118 @@
+
+'use client';
+
+import * as React from 'react';
+import { Button } from "@/components/ui/button";
+import { PlusCircle, MoreHorizontal } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useWorkOrders } from '@/context/work-orders-context';
+import type { Service } from '@/lib/types';
+import { ServiceFormDialog } from '@/components/settings/service-form-dialog';
+
+export default function ServicesPage() {
+    const { services, addService, updateService } = useWorkOrders();
+    const [dialogOpen, setDialogOpen] = React.useState(false);
+    const [selectedService, setSelectedService] = React.useState<Service | null>(null);
+
+    const handleSave = (service: Omit<Service, 'id'> | Service) => {
+        if ('id' in service) {
+            updateService(service.id, service);
+        } else {
+            addService(service);
+        }
+    };
+
+    const handleEdit = (service: Service) => {
+        setSelectedService(service);
+        setDialogOpen(true);
+    };
+    
+    const handleAddNew = () => {
+        setSelectedService(null);
+        setDialogOpen(true);
+    };
+
+    const handleToggleStatus = (service: Service) => {
+        const newStatus = service.status === 'Activa' ? 'Inactiva' : 'Activa';
+        updateService(service.id, { ...service, status: newStatus });
+    };
+
+    return (
+        <div className="flex flex-col gap-8">
+            <div className="flex items-center justify-between">
+                <h1 className="text-3xl font-headline font-bold tracking-tight">
+                    Servicios
+                </h1>
+                <Button onClick={handleAddNew}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Nuevo Servicio
+                </Button>
+            </div>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Servicios Existentes</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="rounded-md border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Nombre</TableHead>
+                                    <TableHead>Estado</TableHead>
+                                    <TableHead className="text-right">Acciones</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {services.map((service) => (
+                                    <TableRow key={service.id}>
+                                        <TableCell className="font-medium">{service.name}</TableCell>
+                                        <TableCell>
+                                            <Badge variant={service.status === 'Activa' ? 'default' : 'outline'}>{service.status}</Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                                        <span className="sr-only">Abrir menú</span>
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onClick={() => handleEdit(service)}>Editar</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleToggleStatus(service)}>
+                                                        {service.status === 'Activa' ? 'Desactivar' : 'Activar'}
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
+            <ServiceFormDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                onSave={handleSave}
+                service={selectedService}
+            />
+        </div>
+    );
+}

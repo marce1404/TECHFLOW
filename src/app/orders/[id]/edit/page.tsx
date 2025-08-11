@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -24,7 +22,7 @@ import { useWorkOrders } from "@/context/work-orders-context";
 export default function EditOrderPage() {
   const params = useParams();
   const router = useRouter();
-  const { getOrder, updateOrder, otCategories } = useWorkOrders();
+  const { getOrder, updateOrder, otCategories, services } = useWorkOrders();
   const orderId = params.id as string;
   
   const initialOrder = getOrder(orderId);
@@ -177,14 +175,12 @@ export default function EditOrderPage() {
                           onValueChange={(value) => handleInputChange('service', value)}
                         >
                         <SelectTrigger id="service">
-                            <SelectValue placeholder="Elegir categoría..." />
+                            <SelectValue placeholder="Elegir servicio..." />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="cctv">CCTV</SelectItem>
-                            <SelectItem value="extincion">Extinción</SelectItem>
-                            <SelectItem value="cerco">Cerco</SelectItem>
-                            <SelectItem value="deteccion">Detección</SelectItem>
-                            <SelectItem value="alarma">Alarma</SelectItem>
+                            {services.map(service => (
+                                <SelectItem key={service.id} value={service.name.toLowerCase()}>{service.name}</SelectItem>
+                            ))}
                         </SelectContent>
                         </Select>
                     </div>

@@ -10,6 +10,11 @@ export default function SettingsPage() {
             description: 'Gestiona las categorías de las órdenes de trabajo.',
             href: '/settings/ot-categories',
         },
+        {
+            title: 'Servicios',
+            description: 'Gestiona los servicios ofrecidos.',
+            href: '/settings/services',
+        },
     ];
 
     return (
