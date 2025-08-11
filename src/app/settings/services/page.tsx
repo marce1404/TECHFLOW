@@ -20,12 +20,23 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { useWorkOrders } from '@/context/work-orders-context';
 import type { Service } from '@/lib/types';
 import { ServiceFormDialog } from '@/components/settings/service-form-dialog';
 
 export default function ServicesPage() {
-    const { services, addService, updateService } = useWorkOrders();
+    const { services, addService, updateService, deleteService } = useWorkOrders();
     const [dialogOpen, setDialogOpen] = React.useState(false);
     const [selectedService, setSelectedService] = React.useState<Service | null>(null);
 
@@ -85,20 +96,45 @@ export default function ServicesPage() {
                                             <Badge variant={service.status === 'Activa' ? 'default' : 'outline'}>{service.status}</Badge>
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" className="h-8 w-8 p-0">
-                                                        <span className="sr-only">Abrir menú</span>
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onClick={() => handleEdit(service)}>Editar</DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => handleToggleStatus(service)}>
-                                                        {service.status === 'Activa' ? 'Desactivar' : 'Activar'}
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                            <AlertDialog>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" className="h-8 w-8 p-0">
+                                                            <span className="sr-only">Abrir menú</span>
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem onClick={() => handleEdit(service)}>Editar</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleToggleStatus(service)}>
+                                                            {service.status === 'Activa' ? 'Desactivar' : 'Activar'}
+                                                        </DropdownMenuItem>
+                                                        <AlertDialogTrigger asChild>
+                                                            <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                                                Eliminar
+                                                            </DropdownMenuItem>
+                                                        </AlertDialogTrigger>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                    <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        Esta acción no se puede deshacer. Esto eliminará permanentemente el servicio
+                                                        <span className="font-bold"> {service.name}</span>.
+                                                    </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction
+                                                        className="bg-destructive hover:bg-destructive/90"
+                                                        onClick={() => deleteService(service.id)}
+                                                    >
+                                                        Eliminar
+                                                    </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
                                         </TableCell>
                                     </TableRow>
                                 ))}
