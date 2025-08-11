@@ -28,6 +28,8 @@ export default function EditOrderPage() {
   // In a real app, you would fetch the order details based on the ID
   const order = [...activeWorkOrders, ...historicalWorkOrders].find(o => o.id === orderId);
 
+  const [orderDescription, setOrderDescription] = React.useState(order?.description || '');
+
   // By replacing hyphens with slashes, we ensure the date is parsed in the local time zone,
   // preventing hydration mismatches between server and client.
   const [startDate, setStartDate] = React.useState<Date | undefined>(order ? new Date(order.date.replace(/-/g, '/')) : new Date());
@@ -57,9 +59,10 @@ export default function EditOrderPage() {
   ];
 
   const handleUpdateOrder = () => {
+    // In a real app, you would send the updated data to your API here
     toast({
       title: "Orden de Trabajo Actualizada",
-      description: "Los cambios en la orden de trabajo han sido guardados.",
+      description: `El nombre de la OT se actualizó a: "${orderDescription}"`,
       duration: 2000,
     });
     setTimeout(() => {
@@ -79,7 +82,13 @@ export default function EditOrderPage() {
         </h1>
         <div className="flex items-center gap-2">
             <Label htmlFor="ot-name" className="text-sm font-medium">Nombre de OT *</Label>
-            <Input id="ot-name" defaultValue={order.description} placeholder="Nombre de OT..." className="w-96" />
+            <Input 
+              id="ot-name" 
+              value={orderDescription} 
+              onChange={(e) => setOrderDescription(e.target.value)} 
+              placeholder="Nombre de OT..." 
+              className="w-96" 
+            />
         </div>
       </div>
 
