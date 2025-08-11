@@ -35,6 +35,22 @@ export type WorkClothingItem = {
   expirationDate: string;
 };
 
+export type EPPItem = {
+  id: string;
+  item: string;
+  deliveryDate: string;
+  expirationDate: string;
+};
+
+export type CertificationItem = {
+  id: string;
+  name: string;
+  issuingOrganization: string;
+  issueDate: string;
+  expirationDate: string;
+};
+
+
 export type Technician = {
   id: string;
   name: string;
@@ -43,6 +59,8 @@ export type Technician = {
   status: 'Activo' | 'Licencia' | 'Vacaciones';
   license: string;
   workClothing: WorkClothingItem[];
+  epp: EPPItem[];
+  certifications: CertificationItem[];
 };
 
 export type Vehicle = {

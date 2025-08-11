@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Technician, WorkClothingItem } from '@/lib/types';
+import type { Technician, WorkClothingItem, EPPItem, CertificationItem } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Calendar } from '../ui/calendar';
@@ -42,6 +42,21 @@ const workClothingSchema = z.object({
   expirationDate: z.string().min(1, "Fecha de caducidad es requerida."),
 });
 
+const eppSchema = z.object({
+  id: z.string(),
+  item: z.string().min(1, "Item es requerido."),
+  deliveryDate: z.string().min(1, "Fecha de entrega es requerida."),
+  expirationDate: z.string().min(1, "Fecha de caducidad es requerida."),
+});
+
+const certificationSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1, "Nombre es requerido."),
+  issuingOrganization: z.string().min(1, "Organización es requerida."),
+  issueDate: z.string().min(1, "Fecha de emisión es requerida."),
+  expirationDate: z.string().min(1, "Fecha de caducidad es requerida."),
+});
+
 const technicianFormSchema = z.object({
   name: z.string().min(3, { message: 'El nombre debe tener al menos 3 caracteres.' }),
   specialty: z.string().min(2, { message: 'La especialidad debe tener al menos 2 caracteres.' }),
@@ -49,6 +64,8 @@ const technicianFormSchema = z.object({
   status: z.enum(['Activo', 'Licencia', 'Vacaciones']),
   license: z.string().min(1, { message: 'La licencia es requerida.' }),
   workClothing: z.array(workClothingSchema),
+  epp: z.array(eppSchema),
+  certifications: z.array(certificationSchema),
 });
 
 type TechnicianFormValues = z.infer<typeof technicianFormSchema>;
@@ -70,12 +87,19 @@ export function TechnicianFormDialog({ open, onOpenChange, onSave, technician }:
       status: 'Activo',
       license: '',
       workClothing: [],
+      epp: [],
+      certifications: [],
     },
   });
   
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "workClothing"
+  const { fields: workClothingFields, append: appendWorkClothing, remove: removeWorkClothing } = useFieldArray({
+    control: form.control, name: "workClothing"
+  });
+  const { fields: eppFields, append: appendEpp, remove: removeEpp } = useFieldArray({
+    control: form.control, name: "epp"
+  });
+  const { fields: certificationFields, append: appendCertification, remove: removeCertification } = useFieldArray({
+    control: form.control, name: "certifications"
   });
 
   React.useEffect(() => {
@@ -87,6 +111,8 @@ export function TechnicianFormDialog({ open, onOpenChange, onSave, technician }:
         status: technician.status,
         license: technician.license,
         workClothing: technician.workClothing,
+        epp: technician.epp,
+        certifications: technician.certifications,
       });
     } else {
       form.reset({
@@ -96,6 +122,8 @@ export function TechnicianFormDialog({ open, onOpenChange, onSave, technician }:
         status: 'Activo',
         license: '',
         workClothing: [],
+        epp: [],
+        certifications: [],
       });
     }
   }, [technician, open, form]);
@@ -109,9 +137,31 @@ export function TechnicianFormDialog({ open, onOpenChange, onSave, technician }:
     onOpenChange(false);
   };
 
+  const renderDateField = (field: any) => (
+    <Popover>
+        <PopoverTrigger asChild>
+            <Button
+            variant={"outline"}
+            className={cn("w-[150px] justify-start text-left font-normal", !field.value && "text-muted-foreground")}
+            >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {field.value ? format(new Date(field.value.replace(/-/g, '/')), "PPP") : <span>Elegir fecha</span>}
+            </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0">
+            <Calendar
+                mode="single"
+                selected={field.value ? new Date(field.value.replace(/-/g, '/')) : undefined}
+                onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+                initialFocus
+            />
+        </PopoverContent>
+    </Popover>
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+      <DialogContent className="max-w-5xl h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{technician ? 'Editar Técnico' : 'Nuevo Técnico'}</DialogTitle>
           <DialogDescription>
@@ -207,8 +257,8 @@ export function TechnicianFormDialog({ open, onOpenChange, onSave, technician }:
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <CardTitle>Vestimenta de Trabajo</CardTitle>
-                        <Button type="button" size="sm" variant="outline" onClick={() => append({ id: crypto.randomUUID(), item: '', size: '', quantity: 1, deliveryDate: '', expirationDate: '' })}>
-                            <PlusCircle className="mr-2"/>
+                        <Button type="button" size="sm" variant="outline" onClick={() => appendWorkClothing({ id: crypto.randomUUID(), item: '', size: '', quantity: 1, deliveryDate: '', expirationDate: '' })}>
+                            <PlusCircle className="mr-2 h-4 w-4"/>
                             Añadir Fila
                         </Button>
                     </div>
@@ -226,85 +276,93 @@ export function TechnicianFormDialog({ open, onOpenChange, onSave, technician }:
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {fields.map((field, index) => (
+                            {workClothingFields.map((field, index) => (
                                 <TableRow key={field.id}>
+                                    <TableCell><FormField control={form.control} name={`workClothing.${index}.item`} render={({ field }) => <Input {...field} placeholder="Pantalón Corporativo"/>} /></TableCell>
+                                    <TableCell><FormField control={form.control} name={`workClothing.${index}.size`} render={({ field }) => <Input {...field} placeholder="M"/>} /></TableCell>
+                                    <TableCell><FormField control={form.control} name={`workClothing.${index}.quantity`} render={({ field }) => <Input type="number" {...field} />} /></TableCell>
+                                    <TableCell><FormField control={form.control} name={`workClothing.${index}.deliveryDate`} render={({ field }) => renderDateField(field)} /></TableCell>
+                                    <TableCell><FormField control={form.control} name={`workClothing.${index}.expirationDate`} render={({ field }) => renderDateField(field)} /></TableCell>
                                     <TableCell>
-                                        <FormField
-                                            control={form.control}
-                                            name={`workClothing.${index}.item`}
-                                            render={({ field }) => <Input {...field} placeholder="Pantalón Corporativo"/>}
-                                        />
+                                        <Button variant="ghost" size="icon" onClick={() => removeWorkClothing(index)}>
+                                            <Trash2 className="h-4 w-4 text-destructive"/>
+                                        </Button>
                                     </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <CardTitle>Equipo de Protección Personal (EPP)</CardTitle>
+                        <Button type="button" size="sm" variant="outline" onClick={() => appendEpp({ id: crypto.randomUUID(), item: '', deliveryDate: '', expirationDate: '' })}>
+                            <PlusCircle className="mr-2 h-4 w-4"/>
+                            Añadir Fila
+                        </Button>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Item</TableHead>
+                                <TableHead>Fecha de Entrega</TableHead>
+                                <TableHead>Fecha de Caducidad</TableHead>
+                                <TableHead></TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {eppFields.map((field, index) => (
+                                <TableRow key={field.id}>
+                                    <TableCell><FormField control={form.control} name={`epp.${index}.item`} render={({ field }) => <Input {...field} placeholder="Casco de seguridad"/>} /></TableCell>
+                                    <TableCell><FormField control={form.control} name={`epp.${index}.deliveryDate`} render={({ field }) => renderDateField(field)} /></TableCell>
+                                    <TableCell><FormField control={form.control} name={`epp.${index}.expirationDate`} render={({ field }) => renderDateField(field)} /></TableCell>
                                     <TableCell>
-                                         <FormField
-                                            control={form.control}
-                                            name={`workClothing.${index}.size`}
-                                            render={({ field }) => <Input {...field} placeholder="M"/>}
-                                        />
+                                        <Button variant="ghost" size="icon" onClick={() => removeEpp(index)}>
+                                            <Trash2 className="h-4 w-4 text-destructive"/>
+                                        </Button>
                                     </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <CardTitle>Certificados</CardTitle>
+                        <Button type="button" size="sm" variant="outline" onClick={() => appendCertification({ id: crypto.randomUUID(), name: '', issuingOrganization: '', issueDate: '', expirationDate: '' })}>
+                            <PlusCircle className="mr-2 h-4 w-4"/>
+                            Añadir Fila
+                        </Button>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Nombre del Certificado</TableHead>
+                                <TableHead>Organización Emisora</TableHead>
+                                <TableHead>Fecha de Emisión</TableHead>
+                                <TableHead>Fecha de Caducidad</TableHead>
+                                <TableHead></TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {certificationFields.map((field, index) => (
+                                <TableRow key={field.id}>
+                                    <TableCell><FormField control={form.control} name={`certifications.${index}.name`} render={({ field }) => <Input {...field} placeholder="Certificación SEC"/>} /></TableCell>
+                                    <TableCell><FormField control={form.control} name={`certifications.${index}.issuingOrganization`} render={({ field }) => <Input {...field} placeholder="SEC"/>} /></TableCell>
+                                    <TableCell><FormField control={form.control} name={`certifications.${index}.issueDate`} render={({ field }) => renderDateField(field)} /></TableCell>
+                                    <TableCell><FormField control={form.control} name={`certifications.${index}.expirationDate`} render={({ field }) => renderDateField(field)} /></TableCell>
                                     <TableCell>
-                                         <FormField
-                                            control={form.control}
-                                            name={`workClothing.${index}.quantity`}
-                                            render={({ field }) => <Input type="number" {...field} />}
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <FormField
-                                            control={form.control}
-                                            name={`workClothing.${index}.deliveryDate`}
-                                            render={({ field }) => (
-                                                <Popover>
-                                                    <PopoverTrigger asChild>
-                                                        <Button
-                                                        variant={"outline"}
-                                                        className={cn("w-[150px] justify-start text-left font-normal", !field.value && "text-muted-foreground")}
-                                                        >
-                                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                                        {field.value ? format(new Date(field.value.replace(/-/g, '/')), "PPP") : <span>Elegir fecha</span>}
-                                                        </Button>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-auto p-0">
-                                                        <Calendar
-                                                            mode="single"
-                                                            selected={field.value ? new Date(field.value.replace(/-/g, '/')) : undefined}
-                                                            onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
-                                                            initialFocus
-                                                        />
-                                                    </PopoverContent>
-                                                </Popover>
-                                            )}
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <FormField
-                                            control={form.control}
-                                            name={`workClothing.${index}.expirationDate`}
-                                            render={({ field }) => (
-                                                 <Popover>
-                                                    <PopoverTrigger asChild>
-                                                        <Button
-                                                        variant={"outline"}
-                                                        className={cn("w-[150px] justify-start text-left font-normal", !field.value && "text-muted-foreground")}
-                                                        >
-                                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                                        {field.value ? format(new Date(field.value.replace(/-/g, '/')), "PPP") : <span>Elegir fecha</span>}
-                                                        </Button>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-auto p-0">
-                                                        <Calendar
-                                                            mode="single"
-                                                            selected={field.value ? new Date(field.value.replace(/-/g, '/')) : undefined}
-                                                            onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
-                                                            initialFocus
-                                                        />
-                                                    </PopoverContent>
-                                                </Popover>
-                                            )}
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <Button variant="ghost" size="icon" onClick={() => remove(index)}>
+                                        <Button variant="ghost" size="icon" onClick={() => removeCertification(index)}>
                                             <Trash2 className="h-4 w-4 text-destructive"/>
                                         </Button>
                                     </TableCell>
