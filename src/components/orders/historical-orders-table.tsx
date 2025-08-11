@@ -15,6 +15,13 @@ import { Button } from '@/components/ui/button';
 import type { WorkOrder } from '@/lib/types';
 import { ArrowUpDown, CheckCircle } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useWorkOrders } from '@/context/work-orders-context';
 
 interface HistoricalOrdersTableProps {
     orders: WorkOrder[];
@@ -23,6 +30,22 @@ interface HistoricalOrdersTableProps {
 export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableProps) {
   const [search, setSearch] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: keyof WorkOrder | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
+  const { updateOrder } = useWorkOrders();
+
+  const getStatusVariant = (
+    status: WorkOrder['status']
+  ): 'default' | 'secondary' | 'destructive' | 'outline' => {
+     switch (status) {
+      case 'Cerrada':
+        return 'default';
+      case 'En Progreso':
+        return 'secondary';
+      case 'Atrasada':
+        return 'destructive';
+      default:
+        return 'outline';
+    }
+  };
 
   const requestSort = (key: keyof WorkOrder) => {
     let direction: 'ascending' | 'descending' = 'ascending';
@@ -64,6 +87,13 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
       { key: 'vendedor', label: 'Vendedor' },
       { key: 'status', label: 'Estado' },
   ];
+
+  const statuses: WorkOrder['status'][] = ['Por Iniciar', 'En Progreso', 'Pendiente', 'Atrasada', 'Cerrada'];
+
+  const handleStatusChange = (order: WorkOrder, newStatus: WorkOrder['status']) => {
+    const updatedOrder = { ...order, status: newStatus };
+    updateOrder(order.id, updatedOrder);
+  };
 
 
   return (
@@ -107,9 +137,22 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                             <TableCell>{order.assigned}</TableCell>
                             <TableCell>{order.vendedor}</TableCell>
                             <TableCell>
-                                <Badge variant='default' >
-                                    {order.status}
-                                </Badge>
+                                <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="p-0 h-auto">
+                                    <Badge variant={getStatusVariant(order.status)} className="cursor-pointer">
+                                        {order.status}
+                                    </Badge>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    {statuses.map(status => (
+                                    <DropdownMenuItem key={status} onSelect={() => handleStatusChange(order, status)}>
+                                        {status}
+                                    </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                                </DropdownMenu>
                             </TableCell>
                             <TableCell>
                               {order.facturado ? <CheckCircle className="h-5 w-5 text-green-500" /> : '-'}
