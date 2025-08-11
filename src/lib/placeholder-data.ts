@@ -112,9 +112,9 @@ export const technicians: Technician[] = [
 ]
 
 export const vehicles: Vehicle[] = [
-    { id: '1', model: 'Toyota Hilux', plate: 'PPU-1234', status: 'Asignado' },
-    { id: '2', model: 'Ford Ranger', plate: 'PPU-5678', status: 'Disponible' },
-    { id: '3', model: 'Nissan Navara', plate: 'PPU-9012', status: 'Mantenimiento' },
+    { id: '1', model: 'Chevrolet N400 Max', year: 2021, plate: 'PPU-9101', status: 'En Mantenimiento', assignedTo: '' },
+    { id: '2', model: 'Citroën Berlingo', year: 2023, plate: 'PPU-5678', status: 'Disponible', assignedTo: '' },
+    { id: '3', model: 'Peugeot Partner', year: 2022, plate: 'PPU-1234', status: 'Asignado', assignedTo: 'Javier Morales' },
 ]
 
 export const ganttCharts: GanttChart[] = [

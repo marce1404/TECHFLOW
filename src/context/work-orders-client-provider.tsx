@@ -1,5 +1,5 @@
 'use client';
-import { activeWorkOrders, historicalWorkOrders, technicians } from "@/lib/placeholder-data";
+import { activeWorkOrders, historicalWorkOrders, technicians, vehicles } from "@/lib/placeholder-data";
 import { WorkOrdersProvider } from "./work-orders-context";
 
 export function WorkOrdersClientProvider({ children }: { children: React.ReactNode }) {
@@ -8,6 +8,7 @@ export function WorkOrdersClientProvider({ children }: { children: React.ReactNo
             active={activeWorkOrders} 
             historical={historicalWorkOrders}
             technicians={technicians}
+            vehicles={vehicles}
         >
             {children}
         </WorkOrdersProvider>

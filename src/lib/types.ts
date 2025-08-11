@@ -66,8 +66,10 @@ export type Technician = {
 export type Vehicle = {
   id: string;
   model: string;
+  year: number;
   plate: string;
-  status: 'Disponible' | 'Asignado' | 'Mantenimiento';
+  status: 'Disponible' | 'Asignado' | 'En Mantenimiento';
+  assignedTo?: string;
 };
 
 export type GanttChart = {
