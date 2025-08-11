@@ -1,17 +1,37 @@
+
+'use client';
 import { Button } from "@/components/ui/button";
 import { PlusCircle, FileUp } from "lucide-react";
 import OrdersTable from "@/components/orders/orders-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { activeWorkOrders } from "@/lib/placeholder-data";
+import { useSearchParams } from "next/navigation";
+import { useMemo } from "react";
 
 export default function ActiveOrdersPage() {
+    const searchParams = useSearchParams();
+    const updatedId = searchParams.get('updatedId');
+    const newDescription = searchParams.get('newDescription');
+
+    const ordersWithUpdates = useMemo(() => {
+        if (updatedId && newDescription) {
+            return activeWorkOrders.map(order => 
+                order.id === updatedId 
+                    ? { ...order, description: newDescription } 
+                    : order
+            );
+        }
+        return activeWorkOrders;
+    }, [updatedId, newDescription]);
+
+
     const filterOrders = (category: string) => {
-        if (!category.includes('(')) return activeWorkOrders;
+        if (!category.includes('(')) return ordersWithUpdates;
         const parts = category.split('(');
-        if (parts.length < 2) return activeWorkOrders;
+        if (parts.length < 2) return ordersWithUpdates;
         const prefix = parts[1].split(')')[0];
-        return activeWorkOrders.filter(order => order.ot_number.startsWith(prefix));
+        return ordersWithUpdates.filter(order => order.ot_number.startsWith(prefix));
     }
 
     const categories = [

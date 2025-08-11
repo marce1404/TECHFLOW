@@ -66,7 +66,8 @@ export default function EditOrderPage() {
       duration: 2000,
     });
     setTimeout(() => {
-        router.push('/orders');
+        // We pass the updated description via query params to simulate the update
+        router.push(`/orders?updatedId=${orderId}&newDescription=${encodeURIComponent(orderDescription)}`);
     }, 2000);
   };
 
