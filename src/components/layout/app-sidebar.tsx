@@ -70,10 +70,12 @@ export default function AppSidebar() {
     if (href === '/') {
         return pathname === '/';
     }
-    if (pathname.startsWith('/orders') && href === '/orders') {
-        return true;
+    // Handle the case for /orders exactly, but not its sub-routes
+    if (href === '/orders') {
+        return pathname === '/orders';
     }
-    return pathname.startsWith(href) && href !== '/';
+    // For other routes, check if the pathname starts with the href
+    return pathname.startsWith(href);
   };
   
   if (state === 'collapsed') {
