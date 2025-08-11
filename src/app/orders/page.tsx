@@ -18,11 +18,11 @@ export default function ActiveOrdersPage() {
         if (updatedOrderString) {
             try {
                 const updatedOrder: WorkOrder = JSON.parse(decodeURIComponent(updatedOrderString));
-                return activeWorkOrders.map(order => 
-                    order.id === updatedOrder.id 
-                        ? updatedOrder
-                        : order
+                // Create a new array with the updated order
+                const newOrders = activeWorkOrders.map(order => 
+                    order.id === updatedOrder.id ? updatedOrder : order
                 );
+                return newOrders;
             } catch (error) {
                 console.error("Failed to parse updated order:", error);
                 return activeWorkOrders;
