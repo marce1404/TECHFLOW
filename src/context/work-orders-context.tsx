@@ -2,7 +2,6 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { activeWorkOrders as initialActiveWorkOrders, historicalWorkOrders as initialHistoricalWorkOrders } from '@/lib/placeholder-data';
 import type { WorkOrder } from '@/lib/types';
 
 interface WorkOrdersContextType {
@@ -10,13 +9,15 @@ interface WorkOrdersContextType {
   historicalWorkOrders: WorkOrder[];
   updateOrder: (id: string, updatedOrder: WorkOrder) => void;
   getOrder: (id: string) => WorkOrder | undefined;
+  setActiveWorkOrders: React.Dispatch<React.SetStateAction<WorkOrder[]>>;
+  setHistoricalWorkOrders: React.Dispatch<React.SetStateAction<WorkOrder[]>>;
 }
 
 const WorkOrdersContext = createContext<WorkOrdersContextType | undefined>(undefined);
 
-export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
-  const [activeWorkOrders, setActiveWorkOrders] = useState<WorkOrder[]>(initialActiveWorkOrders);
-  const [historicalWorkOrders, setHistoricalWorkOrders] = useState<WorkOrder[]>(initialHistoricalWorkOrders);
+export const WorkOrdersProvider = ({ children, active, historical }: { children: ReactNode, active: WorkOrder[], historical: WorkOrder[] }) => {
+  const [activeWorkOrders, setActiveWorkOrders] = useState<WorkOrder[]>(active);
+  const [historicalWorkOrders, setHistoricalWorkOrders] = useState<WorkOrder[]>(historical);
 
   const updateOrder = (id: string, updatedOrder: WorkOrder) => {
     const updateList = (orders: WorkOrder[]) => orders.map(order => (order.id === id ? updatedOrder : order));
@@ -30,7 +31,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <WorkOrdersContext.Provider value={{ activeWorkOrders, historicalWorkOrders, updateOrder, getOrder }}>
+    <WorkOrdersContext.Provider value={{ activeWorkOrders, historicalWorkOrders, updateOrder, getOrder, setActiveWorkOrders, setHistoricalWorkOrders }}>
       {children}
     </WorkOrdersContext.Provider>
   );

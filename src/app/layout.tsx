@@ -6,7 +6,7 @@ import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar'
 import AppSidebar from '@/components/layout/app-sidebar';
 import AppHeader from '@/components/layout/app-header';
 import { Toaster } from '@/components/ui/toaster';
-import { WorkOrdersProvider } from '@/context/work-orders-context';
+import { WorkOrdersClientProvider } from '@/context/work-orders-client-provider';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -43,17 +43,17 @@ export default function RootLayout({
           sourceCodePro.variable
         )}
       >
-        <WorkOrdersProvider>
-          <SidebarProvider defaultOpen={false}>
-            <Sidebar collapsible='icon'>
-              <AppSidebar />
-            </Sidebar>
-            <SidebarInset>
-              <AppHeader />
-              <main className="p-4 sm:p-6 lg:p-8">{children}</main>
-            </SidebarInset>
-          </SidebarProvider>
-        </WorkOrdersProvider>
+        <WorkOrdersClientProvider>
+            <SidebarProvider defaultOpen={false}>
+              <Sidebar collapsible='icon'>
+                <AppSidebar />
+              </Sidebar>
+              <SidebarInset>
+                <AppHeader />
+                <main className="p-4 sm:p-6 lg:p-8">{children}</main>
+              </SidebarInset>
+            </SidebarProvider>
+        </WorkOrdersClientProvider>
         <Toaster />
       </body>
     </html>
