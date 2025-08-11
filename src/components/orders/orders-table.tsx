@@ -101,6 +101,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
       { key: 'assigned', label: 'Encargado' },
       { key: 'vendedor', label: 'Vendedor' },
       { key: 'status', label: 'Estado' },
+      { key: 'facturado', label: 'Facturado' },
   ];
 
   const statuses: WorkOrder['status'][] = ['Por Iniciar', 'En Progreso', 'Pendiente', 'Atrasada', 'Cerrada'];
@@ -130,7 +131,6 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                             </Button>
                         </TableHead>
                     ))}
-                    <TableHead>Facturado</TableHead>
                 </TableRow>
                 </TableHeader>
                 <TableBody>
