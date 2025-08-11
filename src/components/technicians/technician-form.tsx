@@ -85,6 +85,12 @@ const defaultEppItems = [
     "Arnés de seguridad",
 ];
 
+const defaultCertificationItems = [
+    "Trabajo en altura geográfica",
+    "Espacios confinados",
+    "Operador Elevador",
+];
+
 export default function TechnicianForm({ onSave, technician }: TechnicianFormProps) {
   const form = useForm<TechnicianFormValues>({
     resolver: zodResolver(technicianFormSchema),
@@ -137,6 +143,13 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
             deliveryDate: '',
             expirationDate: '',
         }));
+        const defaultCertifications = defaultCertificationItems.map(name => ({
+            id: crypto.randomUUID(),
+            name,
+            issuingOrganization: '',
+            issueDate: '',
+            expirationDate: '',
+        }));
       form.reset({
         name: '',
         specialty: '',
@@ -145,7 +158,7 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
         license: '',
         workClothing: defaultWorkClothing,
         epp: defaultEpp,
-        certifications: [],
+        certifications: defaultCertifications,
       });
     }
   }, [technician, form]);
@@ -169,7 +182,6 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
                 form.setValue(`epp.${index}.deliveryDate`, deliveryDateStr);
                 form.setValue(`epp.${index}.expirationDate`, expirationDateStr);
                 break;
-            // Certifications might have different logic, so it's handled separately
             case 'certifications':
                  form.setValue(`certifications.${index}.issueDate`, deliveryDateStr);
                  form.setValue(`certifications.${index}.expirationDate`, expirationDateStr);
