@@ -2,14 +2,15 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import type { WorkOrder, OTCategory, Service } from '@/lib/types';
-import { otCategories as initialCategories, services as initialServices } from '@/lib/placeholder-data';
+import type { WorkOrder, OTCategory, Service, Technician } from '@/lib/types';
+import { otCategories as initialCategories, services as initialServices, technicians as initialTechnicians } from '@/lib/placeholder-data';
 
 interface WorkOrdersContextType {
   activeWorkOrders: WorkOrder[];
   historicalWorkOrders: WorkOrder[];
   otCategories: OTCategory[];
   services: Service[];
+  technicians: Technician[];
   updateOrder: (id: string, updatedOrder: WorkOrder) => void;
   getOrder: (id: string) => WorkOrder | undefined;
   setActiveWorkOrders: React.Dispatch<React.SetStateAction<WorkOrder[]>>;
@@ -21,15 +22,19 @@ interface WorkOrdersContextType {
   deleteService: (id: string) => void;
   addOrder: (order: Omit<WorkOrder, 'id'>) => void;
   getNextOtNumber: (prefix: string) => string;
+  addTechnician: (technician: Omit<Technician, 'id'>) => void;
+  updateTechnician: (id: string, technician: Technician) => void;
+  deleteTechnician: (id: string) => void;
 }
 
 const WorkOrdersContext = createContext<WorkOrdersContextType | undefined>(undefined);
 
-export const WorkOrdersProvider = ({ children, active, historical }: { children: ReactNode, active: WorkOrder[], historical: WorkOrder[] }) => {
+export const WorkOrdersProvider = ({ children, active, historical, technicians: initialTechniciansData }: { children: ReactNode, active: WorkOrder[], historical: WorkOrder[], technicians: Technician[] }) => {
   const [activeWorkOrders, setActiveWorkOrders] = useState<WorkOrder[]>(active);
   const [historicalWorkOrders, setHistoricalWorkOrders] = useState<WorkOrder[]>(historical);
   const [otCategories, setOtCategories] = useState<OTCategory[]>(initialCategories);
   const [services, setServices] = useState<Service[]>(initialServices);
+  const [technicians, setTechnicians] = useState<Technician[]>(initialTechniciansData);
 
   const getNextOtNumber = (prefix: string) => {
     const allOrders = [...activeWorkOrders, ...historicalWorkOrders];
@@ -107,6 +112,19 @@ export const WorkOrdersProvider = ({ children, active, historical }: { children:
   const deleteService = (id: string) => {
     setServices(prev => prev.filter(s => s.id !== id));
   };
+  
+  const addTechnician = (technician: Omit<Technician, 'id'>) => {
+    const newId = (Math.max(0, ...technicians.map(t => parseInt(t.id, 10))) + 1).toString();
+    setTechnicians(prev => [...prev, { ...technician, id: newId }]);
+  };
+
+  const updateTechnician = (id: string, updatedTechnician: Technician) => {
+    setTechnicians(prev => prev.map(t => (t.id === id ? updatedTechnician : t)));
+  };
+
+  const deleteTechnician = (id: string) => {
+    setTechnicians(prev => prev.filter(t => t.id !== id));
+  };
 
   return (
     <WorkOrdersContext.Provider value={{ 
@@ -114,6 +132,7 @@ export const WorkOrdersProvider = ({ children, active, historical }: { children:
         historicalWorkOrders, 
         otCategories,
         services,
+        technicians,
         updateOrder, 
         getOrder, 
         setActiveWorkOrders, 
@@ -125,6 +144,9 @@ export const WorkOrdersProvider = ({ children, active, historical }: { children:
         deleteService,
         addOrder,
         getNextOtNumber,
+        addTechnician,
+        updateTechnician,
+        deleteTechnician,
     }}>
       {children}
     </WorkOrdersContext.Provider>

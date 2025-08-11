@@ -45,10 +45,11 @@ export const recentWorkOrders = activeWorkOrders.slice(0, 5);
 export const historicalWorkOrders: WorkOrder[] = []
 
 export const technicians: Technician[] = [
-    { id: '1', name: 'Juan Pérez', specialty: 'HVAC', area: 'Norte', status: 'Activo' },
-    { id: '2', name: 'Maria García', specialty: 'Plomería', area: 'Centro', status: 'Activo' },
-    { id: '3', name: 'Carlos Rivas', specialty: 'Electricidad', area: 'Sur', status: 'Licencia' },
-    { id: '4', name: 'Ana Torres', specialty: 'Seguridad', area: 'Norte', status: 'Activo' },
+    { id: '1', name: 'Cristian Muñoz', specialty: 'Climatización', area: 'RM', status: 'Activo' },
+    { id: '2', name: 'Beatriz Herrera', specialty: 'Electricidad', area: 'RM', status: 'Activo' },
+    { id: '3', name: 'Andrés Castillo', specialty: 'Seguridad', area: 'Zona Norte', status: 'Licencia' },
+    { id: '4', name: 'Juan Pérez', specialty: 'Obras Civiles', area: 'Zona Sur', status: 'Activo' },
+    { id: '5', name: 'Ana Torres', specialty: 'Redes y CCTV', area: 'RM', status: 'Vacaciones' },
 ]
 
 export const vehicles: Vehicle[] = [
