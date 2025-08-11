@@ -93,3 +93,16 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 }
+
+@media print {
+  body {
+    background: white;
+  }
+  .no-print {
+    display: none;
+  }
+  @page {
+    size: auto;
+    margin: 0mm;
+  }
+}
