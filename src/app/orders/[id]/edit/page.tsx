@@ -60,10 +60,11 @@ export default function EditOrderPage() {
     toast({
       title: "Orden de Trabajo Actualizada",
       description: "Los cambios en la orden de trabajo han sido guardados.",
+      duration: 2000,
     });
     setTimeout(() => {
         router.push('/orders');
-    }, 1000);
+    }, 2000);
   };
 
   if (!order) {
