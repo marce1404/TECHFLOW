@@ -30,8 +30,6 @@ export default function EditOrderPage() {
 
   const [order, setOrder] = React.useState<WorkOrder | undefined>(initialOrder);
 
-  const [selectedTechnicians, setSelectedTechnicians] = React.useState<string[]>([]);
-  const [selectedVehicles, setSelectedVehicles] = React.useState<string[]>([]);
   const { toast } = useToast();
 
   const technicians = [
@@ -54,7 +52,7 @@ export default function EditOrderPage() {
     { value: 'daniela-vidal', label: 'Daniela Vidal' },
   ];
 
-  const handleInputChange = (field: keyof WorkOrder, value: string | boolean) => {
+  const handleInputChange = (field: keyof WorkOrder, value: string | boolean | string[]) => {
     if (order) {
       setOrder({ ...order, [field]: value });
     }
@@ -62,7 +60,6 @@ export default function EditOrderPage() {
 
   const handleDateChange = (field: keyof WorkOrder, value: Date | undefined) => {
     if (order && value) {
-      // Keep it in YYYY-MM-DD format for consistency
       handleInputChange(field, format(value, 'yyyy-MM-dd'));
     }
   };
@@ -87,6 +84,7 @@ export default function EditOrderPage() {
   // By replacing hyphens with slashes, we ensure the date is parsed in the local time zone,
   // preventing hydration mismatches between server and client.
   const startDate = order.date ? new Date(order.date.replace(/-/g, '/')) : undefined;
+  const endDate = order.endDate ? new Date(order.endDate.replace(/-/g, '/')) : undefined;
 
   return (
     <div className="flex flex-col gap-8">
@@ -117,9 +115,10 @@ export default function EditOrderPage() {
                         <Select
                           value={order.ot_number.split('-')[0].toLowerCase()}
                           onValueChange={(value) => {
-                            // This is a bit tricky as it's part of the ID. 
-                            // For this simulation, we'll just update the visual part.
-                            // A real implementation would likely regenerate the OT number.
+                            if (order) {
+                                const newOtNumber = `${value.toUpperCase()}-${order.ot_number.split('-')[1]}`
+                                handleInputChange('ot_number', newOtNumber)
+                            }
                           }}
                         >
                         <SelectTrigger id="ot-category">
@@ -196,20 +195,19 @@ export default function EditOrderPage() {
                                     <Button
                                     variant={"outline"}
                                     className={cn(
-                                        "w-full justify-start text-left font-normal"
-                                        // !endDate && "text-muted-foreground"
+                                        "w-full justify-start text-left font-normal",
+                                        !endDate && "text-muted-foreground"
                                     )}
                                     >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {/* {endDate ? format(endDate, "PPP") : <span>Elegir fecha</span>} */}
-                                    <span>Elegir fecha</span>
+                                    {endDate ? format(endDate, "PPP") : <span>Elegir fecha</span>}
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0">
                                     <Calendar
                                     mode="single"
-                                    // selected={endDate}
-                                    // onSelect={setEndDate}
+                                    selected={endDate}
+                                    onSelect={(date) => handleDateChange('endDate', date)}
                                     initialFocus
                                     />
                                 </PopoverContent>
@@ -221,18 +219,18 @@ export default function EditOrderPage() {
                         <Label>Técnicos Asignados</Label>
                         <MultiSelect
                             options={technicians}
-                            selected={selectedTechnicians}
-                            onChange={setSelectedTechnicians}
+                            selected={order.technicians || []}
+                            onChange={(selected) => handleInputChange('technicians', selected)}
                             placeholder="Seleccionar técnicos..."
                         />
                     </div>
                     
                     <div>
                         <Label>Vehículos Asignados</Label>
-                        <MultiSelect
+                         <MultiSelect
                             options={vehicles}
-                            selected={selectedVehicles}
-                            onChange={setSelectedVehicles}
+                            selected={order.vehicles || []}
+                            onChange={(selected) => handleInputChange('vehicles', selected)}
                             placeholder="Seleccionar vehículos..."
                         />
                     </div>
@@ -241,8 +239,8 @@ export default function EditOrderPage() {
                         <Label htmlFor="notes">Descripción / Notas Adicionales</Label>
                         <Textarea 
                           id="notes" 
-                          value={order.description} // Assuming notes are part of description for now
-                          onChange={(e) => handleInputChange('description', e.target.value)} 
+                          value={order.notes}
+                          onChange={(e) => handleInputChange('notes', e.target.value)} 
                           placeholder="Añadir descripción detallada, materiales, notas..." 
                           rows={5} 
                         />
@@ -296,7 +294,12 @@ export default function EditOrderPage() {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <Label htmlFor="net-price">Precio Neto</Label>
-                            <Input id="net-price" type="number" defaultValue="0" />
+                            <Input 
+                                id="net-price" 
+                                type="number" 
+                                value={order.netPrice}
+                                onChange={(e) => handleInputChange('netPrice', e.target.value)}
+                            />
                         </div>
                         <div>
                             <Label htmlFor="total-price">Precio Total</Label>
@@ -361,3 +364,5 @@ export default function EditOrderPage() {
     </div>
   );
 }
+
+    

@@ -9,7 +9,9 @@ export type WorkOrder = {
   id: string;
   ot_number: string;
   date: string;
+  endDate?: string;
   description: string;
+  notes: string;
   client: string;
   service: string;
   assigned: string;
@@ -17,6 +19,9 @@ export type WorkOrder = {
   status: 'Por Iniciar' | 'En Progreso' | 'Pendiente' | 'Atrasada' | 'Cerrada';
   priority: 'Baja' | 'Media' | 'Alta';
   facturado: boolean;
+  technicians: string[];
+  vehicles: string[];
+  netPrice: number;
 };
 
 export type Technician = {
@@ -40,3 +45,5 @@ export type GanttChart = {
   assignedOT: string;
   taskCount: number;
 };
+
+    
