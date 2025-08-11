@@ -72,12 +72,12 @@ export default function EditOrderPage() {
     toast({
       title: "Orden de Trabajo Actualizada",
       description: `La OT "${order.description}" ha sido actualizada.`,
-      duration: 2000,
+      duration: 1000,
     });
     setTimeout(() => {
         const updatedOrderQuery = encodeURIComponent(JSON.stringify(order));
         router.push(`/orders?updatedOrder=${updatedOrderQuery}`);
-    }, 2000);
+    }, 1000);
   };
 
   if (!order) {
