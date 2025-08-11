@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -16,11 +17,12 @@ import * as React from "react";
 import Link from 'next/link';
 import { MultiSelect } from "@/components/ui/multi-select";
 import { useToast } from "@/hooks/use-toast";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { activeWorkOrders, historicalWorkOrders } from "@/lib/placeholder-data";
 
 export default function EditOrderPage() {
   const params = useParams();
+  const router = useRouter();
   const orderId = params.id as string;
   
   // In a real app, you would fetch the order details based on the ID
@@ -57,6 +59,9 @@ export default function EditOrderPage() {
       title: "Orden de Trabajo Actualizada",
       description: "Los cambios en la orden de trabajo han sido guardados.",
     });
+    setTimeout(() => {
+        router.push('/orders');
+    }, 1000);
   };
 
   if (!order) {
