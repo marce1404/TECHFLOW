@@ -14,7 +14,7 @@ export default function HistoryPage() {
 
 
     const filterOrders = (categoryPrefix: string | null) => {
-        if (!categoryPrefix) {
+        if (!categoryPrefix || categoryPrefix === 'todos') {
             setFilteredOrders(historicalWorkOrders);
             return;
         }
@@ -26,7 +26,7 @@ export default function HistoryPage() {
     }, [historicalWorkOrders]);
 
     const categories = [
-        { value: "todos", label: "Todos", prefix: null },
+        { value: "todos", label: "Todos", prefix: 'todos' },
         ...otCategories
             .map(cat => ({
                 value: cat.prefix,
@@ -40,15 +40,20 @@ export default function HistoryPage() {
             <h1 className="text-3xl font-headline font-bold tracking-tight">
                 Historial de Órdenes de Trabajo
             </h1>
-            <Tabs defaultValue="todos" onValueChange={(value) => filterOrders(value === 'todos' ? null : value)}>
+            <Tabs defaultValue="todos" onValueChange={filterOrders}>
               <TabsList>
                 {categories.map(cat => (
-                    <TabsTrigger key={cat.value} value={cat.value}>{cat.label}</TabsTrigger>
+                    <TabsTrigger key={cat.value} value={cat.prefix}>{cat.label}</TabsTrigger>
                 ))}
               </TabsList>
-              <TabsContent value="historical-orders" className="mt-4">
+               <TabsContent value="todos">
                   <HistoricalOrdersTable orders={filteredOrders} />
               </TabsContent>
+              {categories.filter(c => c.value !== 'todos').map(cat => (
+                <TabsContent key={cat.value} value={cat.prefix}>
+                    <HistoricalOrdersTable orders={filteredOrders} />
+                </TabsContent>
+              ))}
             </Tabs>
         </div>
     );

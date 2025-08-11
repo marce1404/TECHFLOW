@@ -15,7 +15,7 @@ export default function ActiveOrdersPage() {
     const [filteredOrders, setFilteredOrders] = React.useState<WorkOrder[]>(activeWorkOrders);
 
     const filterOrders = (categoryPrefix: string | null) => {
-        if (!categoryPrefix) {
+        if (!categoryPrefix || categoryPrefix === 'todos') {
             setFilteredOrders(activeWorkOrders);
             return;
         };
@@ -27,7 +27,7 @@ export default function ActiveOrdersPage() {
     }, [activeWorkOrders]);
 
     const categories = [
-        { value: "todos", label: "Todos", prefix: null },
+        { value: "todos", label: "Todos", prefix: 'todos' },
         ...otCategories
             .filter(cat => cat.status === 'Activa')
             .map(cat => ({
@@ -56,15 +56,20 @@ export default function ActiveOrdersPage() {
                     </Button>
                 </div>
             </div>
-            <Tabs defaultValue="todos" onValueChange={(value) => filterOrders(value === 'todos' ? null : value)}>
+            <Tabs defaultValue="todos" onValueChange={filterOrders}>
               <TabsList>
                 {categories.map(cat => (
-                    <TabsTrigger key={cat.value} value={cat.value}>{cat.label}</TabsTrigger>
+                    <TabsTrigger key={cat.value} value={cat.prefix}>{cat.label}</TabsTrigger>
                 ))}
               </TabsList>
-              <TabsContent value="active-orders" className="mt-4">
+              <TabsContent value="todos">
                   <OrdersTable orders={filteredOrders} />
               </TabsContent>
+              {categories.filter(c => c.value !== 'todos').map(cat => (
+                <TabsContent key={cat.value} value={cat.prefix}>
+                    <OrdersTable orders={filteredOrders} />
+                </TabsContent>
+              ))}
             </Tabs>
         </div>
     );
