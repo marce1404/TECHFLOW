@@ -154,7 +154,7 @@ export default function EditOrderPage() {
                         </SelectTrigger>
                         <SelectContent>
                             {otCategories.map(cat => (
-                              <SelectItem key={cat.prefix} value={cat.prefix}>{cat.name} ({cat.prefix})</SelectItem>
+                              <SelectItem key={cat.id} value={cat.prefix}>{cat.name} ({cat.prefix})</SelectItem>
                             ))}
                         </SelectContent>
                         </Select>
