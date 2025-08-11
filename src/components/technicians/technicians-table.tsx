@@ -71,7 +71,7 @@ export default function TechniciansTable({ technicians }: TechniciansTableProps)
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {technicians.map((technician) => (
+                    {technicians.length > 0 ? technicians.map((technician) => (
                         <TableRow key={technician.id}>
                             <TableCell className="font-medium">{technician.name}</TableCell>
                             <TableCell>{technician.specialty}</TableCell>
@@ -123,7 +123,13 @@ export default function TechniciansTable({ technicians }: TechniciansTableProps)
                                 </AlertDialog>
                             </TableCell>
                         </TableRow>
-                    ))}
+                    )) : (
+                        <TableRow>
+                            <TableCell colSpan={5} className="h-24 text-center">
+                                No hay resultados.
+                            </TableCell>
+                        </TableRow>
+                    )}
                 </TableBody>
             </Table>
         </div>

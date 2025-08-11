@@ -88,7 +88,7 @@ export default function VehiclesTable({ vehicles }: VehiclesTableProps) {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {vehicles.map((vehicle) => {
+                    {vehicles.length > 0 ? vehicles.map((vehicle) => {
                         const statusConfig = getStatusConfig(vehicle.status);
                         return (
                         <TableRow key={vehicle.id}>
@@ -150,7 +150,13 @@ export default function VehiclesTable({ vehicles }: VehiclesTableProps) {
                                 </AlertDialog>
                             </TableCell>
                         </TableRow>
-                    )})}
+                    )}) : (
+                         <TableRow>
+                            <TableCell colSpan={5} className="h-24 text-center">
+                                No hay resultados.
+                            </TableCell>
+                        </TableRow>
+                    )}
                 </TableBody>
             </Table>
         </div>

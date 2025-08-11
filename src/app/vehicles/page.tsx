@@ -9,17 +9,26 @@ import VehiclesTable from '@/components/vehicles/vehicles-table';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import type { Vehicle } from '@/lib/types';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function VehiclesPage() {
     const { vehicles } = useWorkOrders();
     const [search, setSearch] = React.useState('');
+    const [statusFilter, setStatusFilter] = React.useState<Vehicle['status'] | 'Todos'>('Todos');
+
 
     const filteredVehicles = vehicles.filter(
-        (vehicle) =>
-            vehicle.model.toLowerCase().includes(search.toLowerCase()) ||
-            vehicle.plate.toLowerCase().includes(search.toLowerCase()) ||
-            vehicle.year.toString().toLowerCase().includes(search.toLowerCase())
+        (vehicle) => {
+            const matchesStatus = statusFilter === 'Todos' || vehicle.status === statusFilter;
+            const matchesSearch = 
+                vehicle.model.toLowerCase().includes(search.toLowerCase()) ||
+                vehicle.plate.toLowerCase().includes(search.toLowerCase()) ||
+                (vehicle.assignedTo && vehicle.assignedTo.toLowerCase().includes(search.toLowerCase()));
+            return matchesStatus && matchesSearch;
+        }
     );
+
+    const vehicleStatuses: (Vehicle['status'] | 'Todos')[] = ['Todos', 'Disponible', 'Asignado', 'En Mantenimiento'];
 
     return (
         <div className="flex flex-col gap-8">
@@ -35,16 +44,24 @@ export default function VehiclesPage() {
                 </Button>
             </div>
             
-            <div className="flex items-center justify-between">
+             <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as Vehicle['status'] | 'Todos')}>
+              <div className="flex items-center justify-between">
+                <TabsList>
+                    {vehicleStatuses.map(status => (
+                        <TabsTrigger key={status} value={status}>{status}</TabsTrigger>
+                    ))}
+                </TabsList>
                 <Input
-                    placeholder="Buscar por marca, modelo, patente..."
+                    placeholder="Buscar por marca, patente, asignado..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="max-w-sm"
                 />
-            </div>
-            
-            <VehiclesTable vehicles={filteredVehicles} />
+              </div>
+              <TabsContent value={statusFilter}>
+                <VehiclesTable vehicles={filteredVehicles} />
+              </TabsContent>
+            </Tabs>
         </div>
     );
 }
