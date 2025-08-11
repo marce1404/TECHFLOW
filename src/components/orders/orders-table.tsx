@@ -11,11 +11,14 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { activeWorkOrders } from '@/lib/placeholder-data';
 import type { WorkOrder } from '@/lib/types';
 import { ArrowUpDown, CheckCircle } from 'lucide-react';
 
-export default function OrdersTable() {
+interface OrdersTableProps {
+    orders: WorkOrder[];
+}
+
+export default function OrdersTable({ orders }: OrdersTableProps) {
   const [search, setSearch] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: keyof WorkOrder; direction: 'ascending' | 'descending' } | null>(null);
 
@@ -34,7 +37,7 @@ export default function OrdersTable() {
     }
   };
 
-  const sortedData = [...activeWorkOrders].sort((a, b) => {
+  const sortedData = [...orders].sort((a, b) => {
     if (sortConfig !== null) {
       if (a[sortConfig.key] < b[sortConfig.key]) {
         return sortConfig.direction === 'ascending' ? -1 : 1;
@@ -85,33 +88,41 @@ export default function OrdersTable() {
                 </TableRow>
                 </TableHeader>
                 <TableBody>
-                {filteredData.map((order) => (
-                    <TableRow key={order.id}>
-                    <TableCell className="font-medium">
-                      <div>{order.ot_number}</div>
-                      <div className="text-xs text-muted-foreground">{order.date}</div>
-                    </TableCell>
-                    <TableCell>{order.description}</TableCell>
-                    <TableCell>{order.client}</TableCell>
-                    <TableCell>{order.service}</TableCell>
-                    <TableCell>{order.assigned}</TableCell>
-                    <TableCell>{order.vendedor}</TableCell>
-                    <TableCell>
-                        <Badge variant={getStatusVariant(order.status)} className="text-white">
-                            {order.status}
-                        </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {order.facturado ? <CheckCircle className="h-5 w-5 text-green-500" /> : '-'}
-                    </TableCell>
+                {filteredData.length > 0 ? (
+                    filteredData.map((order) => (
+                        <TableRow key={order.id}>
+                        <TableCell className="font-medium">
+                          <div>{order.ot_number}</div>
+                          <div className="text-xs text-muted-foreground">{order.date}</div>
+                        </TableCell>
+                        <TableCell>{order.description}</TableCell>
+                        <TableCell>{order.client}</TableCell>
+                        <TableCell>{order.service}</TableCell>
+                        <TableCell>{order.assigned}</TableCell>
+                        <TableCell>{order.vendedor}</TableCell>
+                        <TableCell>
+                            <Badge variant={getStatusVariant(order.status)} className="text-white">
+                                {order.status}
+                            </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {order.facturado ? <CheckCircle className="h-5 w-5 text-green-500" /> : '-'}
+                        </TableCell>
+                        </TableRow>
+                    ))
+                ) : (
+                    <TableRow>
+                        <TableCell colSpan={8} className="h-24 text-center">
+                            No hay resultados.
+                        </TableCell>
                     </TableRow>
-                ))}
+                )}
                 </TableBody>
             </Table>
         </div>
         <div className="flex items-center justify-between text-sm text-muted-foreground">
             <div>
-                Mostrando {filteredData.length} de {activeWorkOrders.length} órdenes.
+                Mostrando {filteredData.length} de {orders.length} órdenes.
             </div>
             <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" disabled>Anterior</Button>

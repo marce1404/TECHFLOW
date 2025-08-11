@@ -3,8 +3,23 @@ import { PlusCircle, FileUp } from "lucide-react";
 import OrdersTable from "@/components/orders/orders-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
+import { activeWorkOrders } from "@/lib/placeholder-data";
 
 export default function ActiveOrdersPage() {
+    const filterOrders = (category: string) => {
+        if (category === 'todos') return activeWorkOrders;
+        const prefix = category.split('(')[1].split(')')[0];
+        return activeWorkOrders.filter(order => order.ot_number.startsWith(prefix));
+    }
+
+    const categories = [
+        { value: "todos", label: "Todos" },
+        { value: "servicios", label: "Servicios (OS)" },
+        { value: "proyectos", label: "Proyectos (OT)" },
+        { value: "mantenciones", label: "Mantenciones (OM)" },
+        { value: "otros", label: "Otros (OTR)" },
+    ]
+
     return (
         <div className="flex flex-col gap-8">
             <div className="flex items-center justify-between">
@@ -26,35 +41,15 @@ export default function ActiveOrdersPage() {
             </div>
             <Tabs defaultValue="todos">
               <TabsList>
-                <TabsTrigger value="todos">Todos</TabsTrigger>
-                <TabsTrigger value="servicios">Servicios (OS)</TabsTrigger>
-                <TabsTrigger value="proyectos">Proyectos (OT)</TabsTrigger>
-                <TabsTrigger value="mantenciones">Mantenciones (OM)</TabsTrigger>
-                <TabsTrigger value="otros">Otros (OTR)</TabsTrigger>
+                {categories.map(cat => (
+                    <TabsTrigger key={cat.value} value={cat.value}>{cat.label}</TabsTrigger>
+                ))}
               </TabsList>
-              <TabsContent value="todos">
-                <OrdersTable />
-              </TabsContent>
-              <TabsContent value="servicios">
-                <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-8 text-center mt-4">
-                  <p className="text-muted-foreground">No hay órdenes de servicio para mostrar.</p>
-                </div>
-              </TabsContent>
-              <TabsContent value="proyectos">
-                <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-8 text-center mt-4">
-                  <p className="text-muted-foreground">No hay órdenes de proyecto para mostrar.</p>
-                </div>
-              </TabsContent>
-              <TabsContent value="mantenciones">
-                <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-8 text-center mt-4">
-                  <p className="text-muted-foreground">No hay órdenes de mantención para mostrar.</p>
-                </div>
-              </TabsContent>
-              <TabsContent value="otros">
-                <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-8 text-center mt-4">
-                  <p className="text-muted-foreground">No hay otras órdenes de trabajo para mostrar.</p>
-                </div>
-              </TabsContent>
+              {categories.map(cat => (
+                <TabsContent key={cat.value} value={cat.value}>
+                    <OrdersTable orders={filterOrders(cat.label)} />
+                </TabsContent>
+              ))}
             </Tabs>
         </div>
     );
