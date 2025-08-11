@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -114,24 +115,22 @@ export default function EditOrderPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-headline font-bold tracking-tight">
-          Editar Orden de Trabajo
-        </h1>
-        <div className="flex items-center gap-2">
-            <Label htmlFor="ot-name" className="text-sm font-medium">Nombre de OT *</Label>
-            <Input 
-              id="ot-name" 
-              value={order.description} 
-              onChange={(e) => handleInputChange('description', e.target.value)} 
-              placeholder="Nombre de OT..." 
-              className="w-96" 
-            />
-        </div>
-      </div>
+      <h1 className="text-2xl font-headline font-bold tracking-tight">
+        Editar Orden de Trabajo
+      </h1>
 
       <Card>
         <CardContent className="p-6">
+          <div className="space-y-6">
+            <div>
+              <Label htmlFor="ot-name">Nombre de OT *</Label>
+              <Input
+                id="ot-name"
+                value={order.description}
+                onChange={(e) => handleInputChange('description', e.target.value)}
+                placeholder="Escribe el nombre o descripción de la OT..."
+              />
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                 
                 {/* Left Column */}
@@ -387,6 +386,8 @@ export default function EditOrderPage() {
                     </div>
                 </div>
             </div>
+            </div>
+
 
             <div className="flex justify-end gap-2 mt-8">
                 <Button variant="outline" asChild><Link href="/orders">Cancelar</Link></Button>
