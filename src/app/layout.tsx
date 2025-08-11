@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/layout/app-sidebar';
 import { Toaster } from '@/components/ui/toaster';
-import { WorkOrdersClientProvider } from '@/context/work-orders-client-provider';
+import { Providers } from '@/components/providers';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -42,7 +42,7 @@ export default function RootLayout({
           sourceCodePro.variable
         )}
       >
-        <WorkOrdersClientProvider>
+        <Providers>
             <SidebarProvider defaultOpen={false}>
               <Sidebar collapsible='icon'>
                 <AppSidebar />
@@ -51,7 +51,7 @@ export default function RootLayout({
                 <main className="p-4 sm:p-6 lg:p-8">{children}</main>
               </SidebarInset>
             </SidebarProvider>
-        </WorkOrdersClientProvider>
+        </Providers>
         <Toaster />
       </body>
     </html>
