@@ -4,20 +4,32 @@
 import HistoricalOrdersTable from "@/components/orders/historical-orders-table";
 import { useWorkOrders } from "@/context/work-orders-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import * as React from "react";
+import type { WorkOrder } from "@/lib/types";
+
 
 export default function HistoryPage() {
     const { historicalWorkOrders, otCategories } = useWorkOrders();
+    const [filteredOrders, setFilteredOrders] = React.useState<WorkOrder[]>(historicalWorkOrders);
+
 
     const filterOrders = (categoryPrefix: string | null) => {
-        if (!categoryPrefix) return historicalWorkOrders;
-        return historicalWorkOrders.filter(order => order.ot_number.startsWith(categoryPrefix));
+        if (!categoryPrefix) {
+            setFilteredOrders(historicalWorkOrders);
+            return;
+        }
+        setFilteredOrders(historicalWorkOrders.filter(order => order.ot_number.startsWith(categoryPrefix)));
     }
+    
+    React.useEffect(() => {
+        setFilteredOrders(historicalWorkOrders);
+    }, [historicalWorkOrders]);
 
     const categories = [
         { value: "todos", label: "Todos", prefix: null },
         ...otCategories
             .map(cat => ({
-                value: cat.name.toLowerCase(),
+                value: cat.prefix,
                 label: `${cat.name} (${cat.prefix})`,
                 prefix: cat.prefix,
             }))
@@ -28,17 +40,15 @@ export default function HistoryPage() {
             <h1 className="text-3xl font-headline font-bold tracking-tight">
                 Historial de Órdenes de Trabajo
             </h1>
-            <Tabs defaultValue="todos">
+            <Tabs defaultValue="todos" onValueChange={(value) => filterOrders(value === 'todos' ? null : value)}>
               <TabsList>
                 {categories.map(cat => (
                     <TabsTrigger key={cat.value} value={cat.value}>{cat.label}</TabsTrigger>
                 ))}
               </TabsList>
-              {categories.map(cat => (
-                <TabsContent key={cat.value} value={cat.value} className="mt-4">
-                    <HistoricalOrdersTable orders={filterOrders(cat.prefix)} />
-                </TabsContent>
-              ))}
+              <TabsContent value="historical-orders" className="mt-4">
+                  <HistoricalOrdersTable orders={filteredOrders} />
+              </TabsContent>
             </Tabs>
         </div>
     );

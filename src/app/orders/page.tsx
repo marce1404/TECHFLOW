@@ -7,21 +7,31 @@ import OrdersTable from "@/components/orders/orders-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { useWorkOrders } from "@/context/work-orders-context";
+import * as React from "react";
+import type { WorkOrder } from "@/lib/types";
 
 export default function ActiveOrdersPage() {
     const { activeWorkOrders, otCategories } = useWorkOrders();
+    const [filteredOrders, setFilteredOrders] = React.useState<WorkOrder[]>(activeWorkOrders);
 
     const filterOrders = (categoryPrefix: string | null) => {
-        if (!categoryPrefix) return activeWorkOrders;
-        return activeWorkOrders.filter(order => order.ot_number.startsWith(categoryPrefix));
+        if (!categoryPrefix) {
+            setFilteredOrders(activeWorkOrders);
+            return;
+        };
+        setFilteredOrders(activeWorkOrders.filter(order => order.ot_number.startsWith(categoryPrefix)));
     }
+    
+    React.useEffect(() => {
+        setFilteredOrders(activeWorkOrders);
+    }, [activeWorkOrders]);
 
     const categories = [
         { value: "todos", label: "Todos", prefix: null },
         ...otCategories
             .filter(cat => cat.status === 'Activa')
             .map(cat => ({
-                value: cat.name.toLowerCase(),
+                value: cat.prefix,
                 label: `${cat.name} (${cat.prefix})`,
                 prefix: cat.prefix,
             }))
@@ -46,17 +56,15 @@ export default function ActiveOrdersPage() {
                     </Button>
                 </div>
             </div>
-            <Tabs defaultValue="todos">
+            <Tabs defaultValue="todos" onValueChange={(value) => filterOrders(value === 'todos' ? null : value)}>
               <TabsList>
                 {categories.map(cat => (
                     <TabsTrigger key={cat.value} value={cat.value}>{cat.label}</TabsTrigger>
                 ))}
               </TabsList>
-              {categories.map(cat => (
-                <TabsContent key={cat.value} value={cat.value} className="mt-4">
-                    <OrdersTable orders={filterOrders(cat.prefix)} />
-                </TabsContent>
-              ))}
+              <TabsContent value="active-orders" className="mt-4">
+                  <OrdersTable orders={filteredOrders} />
+              </TabsContent>
             </Tabs>
         </div>
     );
