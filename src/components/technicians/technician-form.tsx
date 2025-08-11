@@ -256,9 +256,9 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
                     name="area"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Área/Zona</FormLabel>
+                        <FormLabel>Área</FormLabel>
                         <FormControl>
-                            <Input placeholder="Ej: Zona Norte" {...field} />
+                            <Input placeholder="Ej: RM, Zona Norte..." {...field} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
