@@ -158,7 +158,7 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
         <PopoverTrigger asChild>
             <Button
             variant={"outline"}
-            className={cn("w-[150px] justify-start text-left font-normal", !field.value && "text-muted-foreground")}
+            className={cn("w-[180px] justify-start text-left font-normal", !field.value && "text-muted-foreground")}
             >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {field.value ? format(new Date(field.value.replace(/-/g, '/')), "PPP") : <span>Elegir fecha</span>}
@@ -279,11 +279,11 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
                     <TableHeader>
                         <TableRow>
                             <TableHead>Item</TableHead>
-                            <TableHead>Talla</TableHead>
-                            <TableHead>Cantidad</TableHead>
-                            <TableHead>Fecha de Entrega</TableHead>
-                            <TableHead>Fecha de Caducidad</TableHead>
-                            <TableHead></TableHead>
+                            <TableHead className="w-[100px]">Talla</TableHead>
+                            <TableHead className="w-[120px]">Cantidad</TableHead>
+                            <TableHead className="w-[200px]">Fecha de Entrega</TableHead>
+                            <TableHead className="w-[200px]">Fecha de Caducidad</TableHead>
+                            <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -333,9 +333,9 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
                     <TableHeader>
                         <TableRow>
                             <TableHead>Item</TableHead>
-                            <TableHead>Fecha de Entrega</TableHead>
-                            <TableHead>Fecha de Caducidad</TableHead>
-                            <TableHead></TableHead>
+                            <TableHead className="w-[200px]">Fecha de Entrega</TableHead>
+                            <TableHead className="w-[200px]">Fecha de Caducidad</TableHead>
+                            <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -372,9 +372,9 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
                         <TableRow>
                             <TableHead>Nombre del Certificado</TableHead>
                             <TableHead>Organización Emisora</TableHead>
-                            <TableHead>Fecha de Emisión</TableHead>
-                            <TableHead>Fecha de Caducidad</TableHead>
-                            <TableHead></TableHead>
+                            <TableHead className="w-[200px]">Fecha de Emisión</TableHead>
+                            <TableHead className="w-[200px]">Fecha de Caducidad</TableHead>
+                            <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
