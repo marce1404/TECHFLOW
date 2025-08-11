@@ -14,13 +14,13 @@ export default function NewTechnicianPage() {
   const { addTechnician } = useWorkOrders();
 
   const handleSave = (data: TechnicianFormValues) => {
-    addTechnician(data);
+    const newTechnician = addTechnician(data);
     toast({
       title: 'Técnico Creado',
       description: `El técnico "${data.name}" ha sido creado exitosamente.`,
-      duration: 2000,
+      duration: 1000,
     });
-    setTimeout(() => router.push('/technicians'), 2000);
+    setTimeout(() => router.push(`/technicians/${newTechnician.id}/edit`), 1000);
   };
 
   return (

@@ -23,7 +23,7 @@ interface WorkOrdersContextType {
   deleteService: (id: string) => void;
   addOrder: (order: Omit<WorkOrder, 'id'>) => void;
   getNextOtNumber: (prefix: string) => string;
-  addTechnician: (technician: Omit<Technician, 'id'>) => void;
+  addTechnician: (technician: Omit<Technician, 'id'>) => Technician;
   updateTechnician: (id: string, technician: Omit<Technician, 'id'> | Technician) => void;
   deleteTechnician: (id: string) => void;
   addVehicle: (vehicle: Omit<Vehicle, 'id'>) => void;
@@ -118,9 +118,11 @@ export const WorkOrdersProvider = ({ children, active, historical, technicians: 
     setServices(prev => prev.filter(s => s.id !== id));
   };
   
-  const addTechnician = (technician: Omit<Technician, 'id'>) => {
+  const addTechnician = (technician: Omit<Technician, 'id'>): Technician => {
     const newId = (Math.max(0, ...technicians.map(t => parseInt(t.id, 10))) + 1).toString();
-    setTechnicians(prev => [...prev, { ...technician, id: newId }]);
+    const newTechnician = { ...technician, id: newId };
+    setTechnicians(prev => [...prev, newTechnician]);
+    return newTechnician;
   };
 
   const updateTechnician = (id: string, updatedTechnician: Omit<Technician, 'id'> | Technician) => {
