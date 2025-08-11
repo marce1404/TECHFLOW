@@ -70,7 +70,7 @@ export default function TechniciansTable({ technicians, requestSort, sortConfig 
     return (
         <div className="rounded-md border">
             <Table>
-                <TableHeader>
+                <TableHeader className="bg-muted/50">
                     <TableRow>
                         {headers.map((header) => (
                            <TableHead key={header.key}>

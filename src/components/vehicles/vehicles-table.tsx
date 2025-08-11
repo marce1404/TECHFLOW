@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Wrench, CheckCircle, User, Truck, ArrowUpDown } from 'lucide-react';
+import { MoreHorizontal, ArrowUpDown } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,7 +33,6 @@ import {
 import { useWorkOrders } from '@/context/work-orders-context';
 import type { Vehicle } from '@/lib/types';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
 
 interface VehiclesTableProps {
     vehicles: Vehicle[];
@@ -44,36 +43,16 @@ interface VehiclesTableProps {
 export default function VehiclesTable({ vehicles, requestSort, sortConfig }: VehiclesTableProps) {
     const { deleteVehicle } = useWorkOrders();
 
-    const getStatusConfig = (status: Vehicle['status']) => {
+    const getStatusVariant = (status: Vehicle['status']): 'default' | 'secondary' | 'destructive' | 'outline' => {
         switch (status) {
             case 'Disponible':
-                return {
-                    variant: 'default',
-                    icon: CheckCircle,
-                    className: 'bg-green-500/80 text-white',
-                    label: 'Disponible',
-                };
+                return 'default';
             case 'Asignado':
-                return {
-                    variant: 'secondary',
-                    icon: User,
-                    className: 'bg-blue-500/80 text-white',
-                    label: 'Asignado',
-                };
+                return 'secondary';
             case 'En Mantenimiento':
-                return {
-                    variant: 'destructive',
-                    icon: Wrench,
-                    className: 'bg-yellow-500/80 text-white',
-                    label: 'En Mantenimiento',
-                };
+                return 'destructive';
             default:
-                return {
-                    variant: 'outline',
-                    icon: Truck,
-                    className: '',
-                    label: status,
-                };
+                return 'outline';
         }
     }
     
@@ -87,7 +66,7 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
     return (
         <div className="rounded-md border">
             <Table>
-                <TableHeader>
+                <TableHeader className="bg-muted/50">
                     <TableRow>
                          {headers.map((header) => (
                            <TableHead key={header.key}>
@@ -102,23 +81,16 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
                 </TableHeader>
                 <TableBody>
                     {vehicles.length > 0 ? vehicles.map((vehicle) => {
-                        const statusConfig = getStatusConfig(vehicle.status);
                         return (
                         <TableRow key={vehicle.id}>
                             <TableCell className="font-medium">
-                                <div className="flex items-center gap-2">
-                                    <Truck className="h-5 w-5 text-muted-foreground" />
-                                    <div>
-                                        <div>{vehicle.model}</div>
-                                        <div className="text-xs text-muted-foreground">{vehicle.year}</div>
-                                    </div>
-                                </div>
+                                <div>{vehicle.model}</div>
+                                <div className="text-xs text-muted-foreground">{vehicle.year}</div>
                             </TableCell>
                             <TableCell>{vehicle.plate}</TableCell>
                             <TableCell>
-                                <Badge variant={statusConfig.variant as any} className={cn('gap-1.5', statusConfig.className)}>
-                                    <statusConfig.icon className="h-3.5 w-3.5" />
-                                    {statusConfig.label}
+                                <Badge variant={getStatusVariant(vehicle.status)}>
+                                    {vehicle.status}
                                 </Badge>
                             </TableCell>
                             <TableCell>{vehicle.assignedTo || 'N/A'}</TableCell>
