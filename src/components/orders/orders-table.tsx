@@ -29,6 +29,8 @@ interface OrdersTableProps {
 export default function OrdersTable({ orders }: OrdersTableProps) {
   const [search, setSearch] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: keyof WorkOrder | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
   const { updateOrder } = useWorkOrders();
 
   const getStatusVariant = (
@@ -76,6 +78,20 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
       order.client.toLowerCase().includes(search.toLowerCase()) ||
       order.service.toLowerCase().includes(search.toLowerCase())
   );
+
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const paginatedData = filteredData.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handlePreviousPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
   
   const headerItems: { key: keyof WorkOrder, label: string }[] = [
       { key: 'ot_number', label: 'ID' },
@@ -118,8 +134,8 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                 </TableRow>
                 </TableHeader>
                 <TableBody>
-                {filteredData.length > 0 ? (
-                    filteredData.map((order) => (
+                {paginatedData.length > 0 ? (
+                    paginatedData.map((order) => (
                         <TableRow key={order.id}>
                         <TableCell className="font-medium">
                           <Link href={`/orders/${order.id}/edit`} className="text-primary hover:underline">
@@ -167,12 +183,12 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
         </div>
         <div className="flex items-center justify-between text-sm text-muted-foreground">
             <div>
-                Mostrando {filteredData.length} de {orders.length} órdenes.
+                Mostrando {Math.min(paginatedData.length, itemsPerPage * currentPage)} de {filteredData.length} órdenes.
             </div>
             <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" disabled>Anterior</Button>
-                <span>Página 1 de 1</span>
-                <Button variant="outline" size="sm" disabled>Siguiente</Button>
+                <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>Anterior</Button>
+                <span>Página {currentPage} de {totalPages}</span>
+                <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages}>Siguiente</Button>
             </div>
         </div>
     </div>
