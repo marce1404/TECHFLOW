@@ -136,7 +136,7 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
             id: crypto.randomUUID(),
             item,
             size: '',
-            quantity: 1,
+            quantity: 0,
             deliveryDate: '',
             expirationDate: '',
         }));
@@ -144,7 +144,7 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
             id: crypto.randomUUID(),
             item,
             size: '',
-            quantity: 1,
+            quantity: 0,
             deliveryDate: '',
             expirationDate: '',
         }));
@@ -476,5 +476,7 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
     </Form>
   );
 }
+
+    
 
     
