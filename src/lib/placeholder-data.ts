@@ -57,8 +57,8 @@ export const technicians: Technician[] = [
             { id: 'wc2', item: 'Camisa Corporativa', size: 'M', quantity: 2, deliveryDate: '2025-08-11', expirationDate: '2026-08-11' },
         ],
         epp: [
-            { id: 'epp1', item: 'Casco de Seguridad', deliveryDate: '2025-08-11', expirationDate: '2026-08-11' },
-            { id: 'epp2', item: 'Guantes de Seguridad', deliveryDate: '2025-08-11', expirationDate: '2026-02-11' },
+            { id: 'epp1', item: 'Casco de Seguridad', size: 'L', quantity: 1, deliveryDate: '2025-08-11', expirationDate: '2026-08-11' },
+            { id: 'epp2', item: 'Guantes de Seguridad', size: 'M', quantity: 1, deliveryDate: '2025-08-11', expirationDate: '2026-02-11' },
         ],
         certifications: [
             { id: 'cert1', name: 'Certificación Eléctrica SEC', issuingOrganization: 'SEC', issueDate: '2025-01-15', expirationDate: '2029-01-15' },

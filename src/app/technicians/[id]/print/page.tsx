@@ -103,9 +103,11 @@ export default function PrintTechnicianPage() {
                     </TableRow>
                 ))}
 
-                {renderItemsTable("Equipo de Protección Personal (EPP)", ["Item", "Fecha Entrega", "Fecha Caducidad"], technician.epp, (item: EPPItem) => (
+                {renderItemsTable("Equipo de Protección Personal (EPP)", ["Item", "Talla", "Cantidad", "Fecha Entrega", "Fecha Caducidad"], technician.epp, (item: EPPItem) => (
                      <TableRow key={item.id}>
                         <TableCell>{item.item}</TableCell>
+                        <TableCell>{item.size}</TableCell>
+                        <TableCell>{item.quantity}</TableCell>
                         <TableCell>{item.deliveryDate}</TableCell>
                         <TableCell>{item.expirationDate}</TableCell>
                     </TableRow>

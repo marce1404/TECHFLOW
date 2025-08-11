@@ -37,6 +37,8 @@ const workClothingSchema = z.object({
 const eppSchema = z.object({
   id: z.string(),
   item: z.string().optional(),
+  size: z.string().optional(),
+  quantity: z.coerce.number().optional(),
   deliveryDate: z.string().optional(),
   expirationDate: z.string().optional(),
 });
@@ -141,6 +143,8 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
         const defaultEpp = defaultEppItems.map(item => ({
             id: crypto.randomUUID(),
             item,
+            size: '',
+            quantity: 1,
             deliveryDate: '',
             expirationDate: '',
         }));
@@ -362,7 +366,7 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
             <CardHeader>
                 <div className="flex items-center justify-between">
                     <CardTitle>Equipo de Protección Personal (EPP)</CardTitle>
-                    <Button type="button" size="sm" variant="outline" onClick={() => appendEpp({ id: crypto.randomUUID(), item: '', deliveryDate: '', expirationDate: '' })}>
+                    <Button type="button" size="sm" variant="outline" onClick={() => appendEpp({ id: crypto.randomUUID(), item: '', size: '', quantity: 1, deliveryDate: '', expirationDate: '' })}>
                         <PlusCircle className="mr-2 h-4 w-4"/>
                         Añadir Fila
                     </Button>
@@ -373,6 +377,8 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
                     <TableHeader>
                         <TableRow>
                             <TableHead>Item</TableHead>
+                            <TableHead className="w-[100px]">Talla</TableHead>
+                            <TableHead className="w-[120px]">Cantidad</TableHead>
                             <TableHead className="w-[200px]">Fecha de Entrega</TableHead>
                             <TableHead className="w-[200px]">Fecha de Caducidad</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
@@ -382,6 +388,8 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
                         {eppFields.map((field, index) => (
                             <TableRow key={field.id}>
                                 <TableCell><FormField control={form.control} name={`epp.${index}.item`} render={({ field }) => <Input {...field} placeholder="Casco de seguridad"/>} /></TableCell>
+                                <TableCell><FormField control={form.control} name={`epp.${index}.size`} render={({ field }) => <Input {...field} placeholder="M"/>} /></TableCell>
+                                <TableCell><FormField control={form.control} name={`epp.${index}.quantity`} render={({ field }) => <Input type="number" {...field} />} /></TableCell>
                                 <TableCell>
                                     <FormField 
                                         control={form.control} 

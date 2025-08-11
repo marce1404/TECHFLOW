@@ -39,6 +39,8 @@ export type WorkClothingItem = {
 export type EPPItem = {
   id: string;
   item?: string;
+  size?: string;
+  quantity?: number;
   deliveryDate?: string;
   expirationDate?: string;
 };
