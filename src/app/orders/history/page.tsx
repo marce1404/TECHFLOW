@@ -1,27 +1,28 @@
 
+
 'use client';
 import HistoricalOrdersTable from "@/components/orders/historical-orders-table";
 import { useWorkOrders } from "@/context/work-orders-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function HistoryPage() {
-    const { historicalWorkOrders } = useWorkOrders();
+    const { historicalWorkOrders, otCategories } = useWorkOrders();
 
-    const filterOrders = (category: string) => {
-        if (!category.includes('(')) return historicalWorkOrders;
-        const parts = category.split('(');
-        if (parts.length < 2) return historicalWorkOrders;
-        const prefix = parts[1].split(')')[0];
-        return historicalWorkOrders.filter(order => order.ot_number.startsWith(prefix));
+    const filterOrders = (categoryPrefix: string | null) => {
+        if (!categoryPrefix) return historicalWorkOrders;
+        return historicalWorkOrders.filter(order => order.ot_number.startsWith(categoryPrefix));
     }
 
     const categories = [
-        { value: "todos", label: "Todos" },
-        { value: "servicios", label: "Servicios (OS)" },
-        { value: "proyectos", label: "Proyectos (OT)" },
-        { value: "mantenciones", label: "Mantenciones (OM)" },
-        { value: "otros", label: "Otros (OTR)" },
-    ]
+        { value: "todos", label: "Todos", prefix: null },
+        ...otCategories
+            .filter(cat => cat.status === 'Activa')
+            .map(cat => ({
+                value: cat.name.toLowerCase(),
+                label: `${cat.name} (${cat.prefix})`,
+                prefix: cat.prefix,
+            }))
+    ];
 
     return (
         <div className="flex flex-col gap-8">
@@ -36,7 +37,7 @@ export default function HistoryPage() {
               </TabsList>
               {categories.map(cat => (
                 <TabsContent key={cat.value} value={cat.value}>
-                    <HistoricalOrdersTable orders={filterOrders(cat.label)} />
+                    <HistoricalOrdersTable orders={filterOrders(cat.prefix)} />
                 </TabsContent>
               ))}
             </Tabs>

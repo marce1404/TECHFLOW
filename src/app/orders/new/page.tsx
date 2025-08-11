@@ -15,6 +15,7 @@ import * as React from "react";
 import Link from 'next/link';
 import { MultiSelect } from "@/components/ui/multi-select";
 import { useToast } from "@/hooks/use-toast";
+import { useWorkOrders } from "@/context/work-orders-context";
 
 export default function NewOrderPage() {
   const [startDate, setStartDate] = React.useState<Date>();
@@ -24,6 +25,7 @@ export default function NewOrderPage() {
   const [netPrice, setNetPrice] = React.useState(0);
   const [totalPrice, setTotalPrice] = React.useState(0);
   const { toast } = useToast();
+  const { otCategories } = useWorkOrders();
 
   const technicians = [
     { value: 'cristian-munoz', label: 'Cristian Muñoz' },
@@ -95,10 +97,9 @@ export default function NewOrderPage() {
                             <SelectValue placeholder="Seleccionar categoría" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="servicio">Servicio (OS)</SelectItem>
-                            <SelectItem value="proyecto">Proyecto (OT)</SelectItem>
-                            <SelectItem value="mantencion">Mantención (OM)</SelectItem>
-                            <SelectItem value="otro">Otro (OTR)</SelectItem>
+                            {otCategories.filter(cat => cat.status === 'Activa').map(cat => (
+                                <SelectItem key={cat.prefix} value={cat.prefix}>{cat.name} ({cat.prefix})</SelectItem>
+                            ))}
                         </SelectContent>
                         </Select>
                     </div>

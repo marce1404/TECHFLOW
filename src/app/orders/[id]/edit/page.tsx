@@ -24,7 +24,7 @@ import { useWorkOrders } from "@/context/work-orders-context";
 export default function EditOrderPage() {
   const params = useParams();
   const router = useRouter();
-  const { getOrder, updateOrder } = useWorkOrders();
+  const { getOrder, updateOrder, otCategories } = useWorkOrders();
   const orderId = params.id as string;
   
   const initialOrder = getOrder(orderId);
@@ -112,6 +112,7 @@ export default function EditOrderPage() {
   const startDate = order.date ? new Date(order.date.replace(/-/g, '/')) : undefined;
   const endDate = order.endDate ? new Date(order.endDate.replace(/-/g, '/')) : undefined;
   const totalPrice = Math.round(order.netPrice * 1.19);
+  const currentPrefix = order.ot_number.split('-')[0];
 
   return (
     <div className="flex flex-col gap-8">
@@ -140,10 +141,10 @@ export default function EditOrderPage() {
                     <div>
                         <Label htmlFor="ot-category">Categoría OT *</Label>
                         <Select
-                          value={order.ot_number.split('-')[0].toLowerCase()}
+                          value={currentPrefix}
                           onValueChange={(value) => {
                             if (order) {
-                                const newOtNumber = `${value.toUpperCase()}-${order.ot_number.split('-')[1]}`
+                                const newOtNumber = `${value}-${order.ot_number.split('-')[1]}`
                                 handleInputChange('ot_number', newOtNumber)
                             }
                           }}
@@ -152,10 +153,9 @@ export default function EditOrderPage() {
                             <SelectValue placeholder="Seleccionar categoría" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="os">Servicio (OS)</SelectItem>
-                            <SelectItem value="ot">Proyecto (OT)</SelectItem>
-                            <SelectItem value="om">Mantención (OM)</SelectItem>
-                            <SelectItem value="otr">Otro (OTR)</SelectItem>
+                            {otCategories.map(cat => (
+                              <SelectItem key={cat.prefix} value={cat.prefix}>{cat.name} ({cat.prefix})</SelectItem>
+                            ))}
                         </SelectContent>
                         </Select>
                     </div>
