@@ -20,10 +20,27 @@ export const WorkOrdersProvider = ({ children, active, historical }: { children:
   const [historicalWorkOrders, setHistoricalWorkOrders] = useState<WorkOrder[]>(historical);
 
   const updateOrder = (id: string, updatedOrder: WorkOrder) => {
-    const updateList = (orders: WorkOrder[]) => orders.map(order => (order.id === id ? updatedOrder : order));
-    
-    setActiveWorkOrders(updateList(activeWorkOrders));
-    setHistoricalWorkOrders(updateList(historicalWorkOrders));
+    if (updatedOrder.status === 'Cerrada') {
+      // Remove from active and add/update in historical
+      setActiveWorkOrders(prev => prev.filter(order => order.id !== id));
+      setHistoricalWorkOrders(prev => {
+        const existing = prev.find(order => order.id === id);
+        if (existing) {
+          return prev.map(order => (order.id === id ? updatedOrder : order));
+        }
+        return [...prev, updatedOrder];
+      });
+    } else {
+      // Add/update in active and remove from historical
+      setActiveWorkOrders(prev => {
+        const existing = prev.find(order => order.id === id);
+        if (existing) {
+          return prev.map(order => (order.id === id ? updatedOrder : order));
+        }
+        return [...prev, updatedOrder];
+      });
+      setHistoricalWorkOrders(prev => prev.filter(order => order.id !== id));
+    }
   };
 
   const getOrder = (id: string) => {
