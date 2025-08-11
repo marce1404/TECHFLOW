@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, FileUp } from "lucide-react";
 import OrdersTable from "@/components/orders/orders-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import Link from "next/link";
 
 export default function ActiveOrdersPage() {
     return (
@@ -15,9 +16,11 @@ export default function ActiveOrdersPage() {
                         <FileUp className="mr-2 h-4 w-4" />
                         Exportar a Excel
                     </Button>
-                    <Button>
+                    <Button asChild>
+                      <Link href="/orders/new">
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Nueva OT
+                      </Link>
                     </Button>
                 </div>
             </div>
