@@ -14,12 +14,15 @@ import { format } from "date-fns";
 import * as React from "react";
 import Link from 'next/link';
 import { MultiSelect } from "@/components/ui/multi-select";
+import { useToast } from "@/hooks/use-toast";
 
 export default function NewOrderPage() {
   const [startDate, setStartDate] = React.useState<Date>();
   const [endDate, setEndDate] = React.useState<Date>();
-  const [selected, setSelected] = React.useState<string[]>([]);
-  
+  const [selectedTechnicians, setSelectedTechnicians] = React.useState<string[]>([]);
+  const [selectedVehicles, setSelectedVehicles] = React.useState<string[]>([]);
+  const { toast } = useToast();
+
   const technicians = [
     { value: 'cristian-munoz', label: 'Cristian Muñoz' },
     { value: 'beatriz-herrera', label: 'Beatriz Herrera' },
@@ -39,6 +42,13 @@ export default function NewOrderPage() {
     { value: 'eduardo-flores', label: 'Eduardo Flores' },
     { value: 'daniela-vidal', label: 'Daniela Vidal' },
   ];
+
+  const handleCreateOrder = () => {
+    toast({
+      title: "Orden de Trabajo Creada",
+      description: "La nueva orden de trabajo ha sido creada exitosamente.",
+    });
+  };
 
   return (
     <div className="flex flex-col gap-8">
@@ -151,8 +161,8 @@ export default function NewOrderPage() {
                         <Label>Técnicos Asignados</Label>
                         <MultiSelect
                             options={technicians}
-                            selected={selected}
-                            onChange={setSelected}
+                            selected={selectedTechnicians}
+                            onChange={setSelectedTechnicians}
                             placeholder="Seleccionar técnicos..."
                         />
                     </div>
@@ -161,8 +171,8 @@ export default function NewOrderPage() {
                         <Label>Vehículos Asignados</Label>
                         <MultiSelect
                             options={vehicles}
-                            selected={selected}
-                            onChange={setSelected}
+                            selected={selectedVehicles}
+                            onChange={setSelectedVehicles}
                             placeholder="Seleccionar vehículos..."
                         />
                     </div>
@@ -266,7 +276,7 @@ export default function NewOrderPage() {
 
             <div className="flex justify-end gap-2 mt-8">
                 <Button variant="outline" asChild><Link href="/orders">Cancelar</Link></Button>
-                <Button>Crear OT</Button>
+                <Button onClick={handleCreateOrder}>Crear OT</Button>
             </div>
         </CardContent>
       </Card>
