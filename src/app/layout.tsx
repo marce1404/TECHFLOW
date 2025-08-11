@@ -44,11 +44,11 @@ export default function RootLayout({
         )}
       >
         <WorkOrdersProvider>
-          <SidebarProvider>
-            <Sidebar>
+          <SidebarProvider defaultOpen={false}>
+            <Sidebar collapsible='icon'>
               <AppSidebar />
             </Sidebar>
-            <SidebarInset className="min-h-0">
+            <SidebarInset>
               <AppHeader />
               <main className="p-4 sm:p-6 lg:p-8">{children}</main>
             </SidebarInset>

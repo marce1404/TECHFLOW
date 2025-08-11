@@ -8,69 +8,101 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
   SidebarHeader,
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import {
-  LayoutDashboard,
-  ClipboardList,
-  Network,
+  LayoutGrid,
+  File,
+  History,
   Users,
   Truck,
-  Sparkles,
   Settings,
-  History,
-  ChevronDown,
+  BarChart2
 } from 'lucide-react';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { cn } from '@/lib/utils';
-import { Button } from '../ui/button';
+import { useSidebar } from '@/components/ui/sidebar';
 
-const menuItems = [
-  {
-    href: '/',
-    label: 'Dashboard',
-    icon: LayoutDashboard,
-  },
-  {
-    label: 'Órdenes de Trabajo',
-    icon: ClipboardList,
-    subItems: [
-      { href: '/orders', label: 'OTs Activas' },
-      { href: '/orders/history', label: 'Historial' },
-    ],
-  },
-  {
-    href: '/gantt',
-    label: 'Cartas Gantt',
-    icon: Network,
-  },
-  {
-    href: '/technicians',
-    label: 'Técnicos',
-    icon: Users,
-  },
-  {
-    href: '/vehicles',
-    label: 'Vehículos',
-    icon: Truck,
-  },
-  {
-    href: '/ai-tools/resource-assignment',
-    label: 'AI Asignación',
-    icon: Sparkles,
-  },
-];
 
 export default function AppSidebar() {
   const pathname = usePathname();
+  const { state } = useSidebar();
 
-  const isSubItemActive = (subItems: { href: string }[] | undefined) => {
-    return subItems?.some((item) => pathname.startsWith(item.href)) ?? false;
+  const menuItems = [
+    {
+      href: '/',
+      label: 'Dashboard',
+      icon: LayoutGrid,
+    },
+    {
+      href: '/orders',
+      label: 'OTs Activas',
+      icon: File,
+    },
+     {
+      href: '/orders/history',
+      label: 'Historial',
+      icon: History,
+    },
+    {
+      href: '/gantt',
+      label: 'Cartas Gantt',
+      icon: BarChart2,
+    },
+    {
+      href: '/technicians',
+      label: 'Técnicos',
+      icon: Users,
+    },
+    {
+      href: '/vehicles',
+      label: 'Vehículos',
+      icon: Truck,
+    }
+  ];
+
+  const isActive = (href: string) => {
+    if (href === '/') return pathname === href;
+    return pathname.startsWith(href);
   };
+  
+  if (state === 'collapsed') {
+    return (
+        <>
+            <SidebarHeader/>
+            <SidebarContent>
+                <SidebarMenu>
+                    {menuItems.map((item) => (
+                        <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton
+                            asChild
+                            isActive={isActive(item.href)}
+                            tooltip={item.label}
+                            variant={isActive(item.href) ? 'default' : 'ghost'}
+                            className={isActive(item.href) ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground' : ''}
+                        >
+                            <Link href={item.href}>
+                                <item.icon />
+                            </Link>
+                        </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    ))}
+                </SidebarMenu>
+            </SidebarContent>
+            <SidebarFooter>
+                <SidebarMenu>
+                <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip="Configuración" variant="ghost">
+                    <Link href="#">
+                        <Settings />
+                    </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarFooter>
+        </>
+    )
+  }
+
 
   return (
     <>
@@ -100,45 +132,10 @@ export default function AppSidebar() {
       <SidebarContent>
         <SidebarMenu>
           {menuItems.map((item) =>
-            item.subItems ? (
-              <Collapsible key={item.label} defaultOpen={isSubItemActive(item.subItems)}>
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className={cn(
-                        'flex w-full items-center justify-between gap-2 overflow-hidden rounded-md p-2 text-left text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                        isSubItemActive(item.subItems) && 'bg-sidebar-accent text-sidebar-accent-foreground'
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <item.icon className="h-4 w-4 shrink-0" />
-                        <span>{item.label}</span>
-                      </div>
-                      <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                    </Button>
-                  </CollapsibleTrigger>
-                </SidebarMenuItem>
-                <CollapsibleContent>
-                  <SidebarMenuSub>
-                    {item.subItems.map((subItem) => (
-                      <SidebarMenuSubItem key={subItem.href}>
-                        <SidebarMenuSubButton
-                          asChild
-                          isActive={pathname === subItem.href}
-                        >
-                          <Link href={subItem.href}>{subItem.label}</Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                    ))}
-                  </SidebarMenuSub>
-                </CollapsibleContent>
-              </Collapsible>
-            ) : (
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
-                  isActive={pathname === item.href}
+                  isActive={isActive(item.href)}
                   tooltip={item.label}
                 >
                   <Link href={item.href}>
@@ -147,7 +144,6 @@ export default function AppSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-            )
           )}
         </SidebarMenu>
       </SidebarContent>
