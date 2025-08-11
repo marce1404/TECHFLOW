@@ -69,6 +69,23 @@ export default function EditOrderPage() {
     }
   };
 
+  const formatNumber = (num: number): string => {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
+  const handleNetPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!order) return;
+    const rawValue = e.target.value.replace(/\./g, '');
+    const numericValue = parseInt(rawValue, 10);
+
+    if (!isNaN(numericValue)) {
+      handleInputChange('netPrice', numericValue);
+    } else {
+      handleInputChange('netPrice', 0);
+    }
+  };
+
+
   const handleUpdateOrder = () => {
     if (!order) return;
     updateOrder(orderId, order);
@@ -90,6 +107,7 @@ export default function EditOrderPage() {
   // preventing hydration mismatches between server and client.
   const startDate = order.date ? new Date(order.date.replace(/-/g, '/')) : undefined;
   const endDate = order.endDate ? new Date(order.endDate.replace(/-/g, '/')) : undefined;
+  const totalPrice = Math.round(order.netPrice * 1.19);
 
   return (
     <div className="flex flex-col gap-8">
@@ -301,14 +319,20 @@ export default function EditOrderPage() {
                             <Label htmlFor="net-price">Precio Neto</Label>
                             <Input 
                                 id="net-price" 
-                                type="number" 
-                                value={order.netPrice}
-                                onChange={(e) => handleInputChange('netPrice', Number(e.target.value))}
+                                type="text" 
+                                value={formatNumber(order.netPrice)}
+                                onChange={handleNetPriceChange}
                             />
                         </div>
                         <div>
                             <Label htmlFor="total-price">Precio Total</Label>
-                            <Input id="total-price" type="number" defaultValue="0" />
+                            <Input 
+                              id="total-price" 
+                              type="text" 
+                              value={formatNumber(totalPrice)}
+                              readOnly 
+                              className="bg-muted"
+                            />
                         </div>
                     </div>
 
