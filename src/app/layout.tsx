@@ -4,7 +4,6 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/layout/app-sidebar';
-import AppHeader from '@/components/layout/app-header';
 import { Toaster } from '@/components/ui/toaster';
 import { WorkOrdersClientProvider } from '@/context/work-orders-client-provider';
 
@@ -49,7 +48,6 @@ export default function RootLayout({
                 <AppSidebar />
               </Sidebar>
               <SidebarInset>
-                <AppHeader />
                 <main className="p-4 sm:p-6 lg:p-8">{children}</main>
               </SidebarInset>
             </SidebarProvider>
