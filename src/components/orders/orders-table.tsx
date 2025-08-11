@@ -54,12 +54,19 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
       direction = 'descending';
     }
     setSortConfig({ key, direction });
+    setCurrentPage(1);
   };
 
   const sortedData = [...orders].sort((a, b) => {
     if (sortConfig.key) {
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
+      
+      if (sortConfig.key === 'facturado') {
+        const valA = aValue ? 1 : 0;
+        const valB = bValue ? 1 : 0;
+        return sortConfig.direction === 'ascending' ? valA - valB : valB - valA;
+      }
 
       if (aValue < bValue) {
         return sortConfig.direction === 'ascending' ? -1 : 1;
@@ -112,11 +119,14 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
   };
 
   return (
-    <div className="space-y-4 mt-4">
+    <div className="space-y-4">
         <Input
             placeholder="Buscar por ID, cliente, servicio..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value)
+              setCurrentPage(1);
+            }}
             className="max-w-sm"
         />
         <div className="rounded-md border">
@@ -173,7 +183,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={8} className="h-24 text-center">
+                        <TableCell colSpan={headerItems.length} className="h-24 text-center">
                             No hay resultados.
                         </TableCell>
                     </TableRow>
@@ -183,12 +193,12 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
         </div>
         <div className="flex items-center justify-between text-sm text-muted-foreground">
             <div>
-                Mostrando {Math.min(paginatedData.length, itemsPerPage * currentPage)} de {filteredData.length} órdenes.
+                Mostrando {paginatedData.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} a {Math.min(currentPage * itemsPerPage, filteredData.length)} de {filteredData.length} órdenes.
             </div>
             <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>Anterior</Button>
-                <span>Página {currentPage} de {totalPages}</span>
-                <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages}>Siguiente</Button>
+                <span>Página {currentPage} de {totalPages > 0 ? totalPages : 1}</span>
+                <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages || totalPages === 0}>Siguiente</Button>
             </div>
         </div>
     </div>

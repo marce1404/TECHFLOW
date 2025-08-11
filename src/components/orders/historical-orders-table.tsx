@@ -14,7 +14,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import type { WorkOrder } from '@/lib/types';
 import { ArrowUpDown, CheckCircle } from 'lucide-react';
-import { Card, CardContent } from '../ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,12 +54,19 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
       direction = 'descending';
     }
     setSortConfig({ key, direction });
+    setCurrentPage(1);
   };
 
   const sortedData = [...orders].sort((a, b) => {
     if (sortConfig.key) {
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
+      
+      if (sortConfig.key === 'facturado') {
+        const valA = aValue ? 1 : 0;
+        const valB = bValue ? 1 : 0;
+        return sortConfig.direction === 'ascending' ? valA - valB : valB - valA;
+      }
 
       if (aValue < bValue) {
         return sortConfig.direction === 'ascending' ? -1 : 1;
@@ -114,89 +120,88 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
 
 
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="space-y-4">
-            <Input
-                placeholder="Buscar por ID, cliente, servicio..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="max-w-sm"
-            />
-            <div className="rounded-md border">
-                <Table>
-                    <TableHeader className="bg-muted/50">
-                    <TableRow>
-                        {headerItems.map((item) => (
-                            <TableHead key={item.key}>
-                                <Button variant="ghost" onClick={() => requestSort(item.key)}>
-                                    {item.label}
-                                    <ArrowUpDown className="ml-2 h-4 w-4" />
+    <div className="space-y-4">
+        <Input
+            placeholder="Buscar por ID, cliente, servicio..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="max-w-sm"
+        />
+        <div className="rounded-md border">
+            <Table>
+                <TableHeader className="bg-muted/50">
+                <TableRow>
+                    {headerItems.map((item) => (
+                        <TableHead key={item.key}>
+                            <Button variant="ghost" onClick={() => requestSort(item.key)}>
+                                {item.label}
+                                <ArrowUpDown className="ml-2 h-4 w-4" />
+                            </Button>
+                        </TableHead>
+                    ))}
+                </TableRow>
+                </TableHeader>
+                <TableBody>
+                {paginatedData.length > 0 ? (
+                    paginatedData.map((order) => (
+                        <TableRow key={order.id}>
+                        <TableCell className="font-medium">
+                          <Link href={`/orders/${order.id}/edit`} className="text-primary hover:underline">
+                            {order.ot_number}
+                          </Link>
+                          <div className="text-xs text-muted-foreground">{order.date}</div>
+                        </TableCell>
+                        <TableCell>{order.description}</TableCell>
+                        <TableCell>{order.client}</TableCell>
+                        <TableCell>{order.service}</TableCell>
+                        <TableCell>{order.assigned}</TableCell>
+                        <TableCell>{order.vendedor}</TableCell>
+                        <TableCell>
+                            <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="p-0 h-auto">
+                                <Badge variant={getStatusVariant(order.status)} className="cursor-pointer">
+                                    {order.status}
+                                </Badge>
                                 </Button>
-                            </TableHead>
-                        ))}
-                    </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                    {paginatedData.length > 0 ? (
-                        paginatedData.map((order) => (
-                            <TableRow key={order.id}>
-                            <TableCell className="font-medium">
-                              <Link href={`/orders/${order.id}/edit`} className="text-primary hover:underline">
-                                {order.ot_number}
-                              </Link>
-                              <div className="text-xs text-muted-foreground">{order.date}</div>
-                            </TableCell>
-                            <TableCell>{order.description}</TableCell>
-                            <TableCell>{order.client}</TableCell>
-                            <TableCell>{order.service}</TableCell>
-                            <TableCell>{order.assigned}</TableCell>
-                            <TableCell>{order.vendedor}</TableCell>
-                            <TableCell>
-                                <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" className="p-0 h-auto">
-                                    <Badge variant={getStatusVariant(order.status)} className="cursor-pointer">
-                                        {order.status}
-                                    </Badge>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    {statuses.map(status => (
-                                    <DropdownMenuItem key={status} onSelect={() => handleStatusChange(order, status)}>
-                                        {status}
-                                    </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuContent>
-                                </DropdownMenu>
-                            </TableCell>
-                            <TableCell>
-                              {order.facturado ? <CheckCircle className="h-5 w-5 text-green-500" /> : '-'}
-                            </TableCell>
-                            </TableRow>
-                        ))
-                    ) : (
-                        <TableRow>
-                            <TableCell colSpan={8} className="h-24 text-center">
-                                No hay resultados.
-                            </TableCell>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                {statuses.map(status => (
+                                <DropdownMenuItem key={status} onSelect={() => handleStatusChange(order, status)}>
+                                    {status}
+                                </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                            </DropdownMenu>
+                        </TableCell>
+                        <TableCell>
+                          {order.facturado ? <CheckCircle className="h-5 w-5 text-green-500" /> : '-'}
+                        </TableCell>
                         </TableRow>
-                    )}
-                    </TableBody>
-                </Table>
+                    ))
+                ) : (
+                    <TableRow>
+                        <TableCell colSpan={headerItems.length} className="h-24 text-center">
+                            No hay resultados.
+                        </TableCell>
+                    </TableRow>
+                )}
+                </TableBody>
+            </Table>
+        </div>
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <div>
+                Mostrando {paginatedData.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} a {Math.min(currentPage * itemsPerPage, filteredData.length)} de {filteredData.length} órdenes.
             </div>
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <div>
-                    Mostrando {Math.min(paginatedData.length, itemsPerPage * currentPage)} de {filteredData.length} órdenes.
-                </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>Anterior</Button>
-                    <span>Página {currentPage} de {totalPages}</span>
-                    <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages}>Siguiente</Button>
-                </div>
+            <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>Anterior</Button>
+                <span>Página {currentPage} de {totalPages > 0 ? totalPages : 1}</span>
+                <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages || totalPages === 0}>Siguiente</Button>
             </div>
         </div>
-      </CardContent>
-    </Card>
+    </div>
   );
 }

@@ -53,7 +53,7 @@ export default function ActiveOrdersPage() {
                 ))}
               </TabsList>
               {categories.map(cat => (
-                <TabsContent key={cat.value} value={cat.value}>
+                <TabsContent key={cat.value} value={cat.value} className="mt-4">
                     <OrdersTable orders={filterOrders(cat.prefix)} />
                 </TabsContent>
               ))}

@@ -16,7 +16,6 @@ export default function HistoryPage() {
     const categories = [
         { value: "todos", label: "Todos", prefix: null },
         ...otCategories
-            .filter(cat => cat.status === 'Activa')
             .map(cat => ({
                 value: cat.name.toLowerCase(),
                 label: `${cat.name} (${cat.prefix})`,
@@ -36,7 +35,7 @@ export default function HistoryPage() {
                 ))}
               </TabsList>
               {categories.map(cat => (
-                <TabsContent key={cat.value} value={cat.value}>
+                <TabsContent key={cat.value} value={cat.value} className="mt-4">
                     <HistoricalOrdersTable orders={filterOrders(cat.prefix)} />
                 </TabsContent>
               ))}
