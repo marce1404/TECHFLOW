@@ -27,12 +27,12 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
     status: WorkOrder['status']
   ): 'default' | 'secondary' | 'destructive' | 'outline' => {
      switch (status) {
-      case 'En Progreso':
+      case 'Cerrada':
         return 'default';
-      case 'Pendiente':
-        return 'secondary'; // Using secondary for yellow-ish as in image
-      case 'Por Iniciar':
-        return 'destructive'; // Using destructive for violet-ish as in image
+      case 'En Progreso':
+        return 'secondary';
+      case 'Atrasada':
+        return 'destructive';
       default:
         return 'outline';
     }
@@ -104,7 +104,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                         <TableCell>{order.assigned}</TableCell>
                         <TableCell>{order.vendedor}</TableCell>
                         <TableCell>
-                            <Badge variant={getStatusVariant(order.status)} className="text-white">
+                            <Badge variant={getStatusVariant(order.status)} >
                                 {order.status}
                             </Badge>
                         </TableCell>
