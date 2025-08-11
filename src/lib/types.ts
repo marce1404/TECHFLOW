@@ -26,12 +26,23 @@ export type WorkOrder = {
   invoiceNumber?: string;
 };
 
+export type WorkClothingItem = {
+  id: string;
+  item: string;
+  size: string;
+  quantity: number;
+  deliveryDate: string;
+  expirationDate: string;
+};
+
 export type Technician = {
   id: string;
   name: string;
   specialty: string;
   area: string;
   status: 'Activo' | 'Licencia' | 'Vacaciones';
+  license: string;
+  workClothing: WorkClothingItem[];
 };
 
 export type Vehicle = {

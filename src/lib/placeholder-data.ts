@@ -45,11 +45,54 @@ export const recentWorkOrders = activeWorkOrders.slice(0, 5);
 export const historicalWorkOrders: WorkOrder[] = []
 
 export const technicians: Technician[] = [
-    { id: '1', name: 'Cristian Muñoz', specialty: 'Climatización', area: 'RM', status: 'Activo' },
-    { id: '2', name: 'Beatriz Herrera', specialty: 'Electricidad', area: 'RM', status: 'Activo' },
-    { id: '3', name: 'Andrés Castillo', specialty: 'Seguridad', area: 'Zona Norte', status: 'Licencia' },
-    { id: '4', name: 'Juan Pérez', specialty: 'Obras Civiles', area: 'Zona Sur', status: 'Activo' },
-    { id: '5', name: 'Ana Torres', specialty: 'Redes y CCTV', area: 'RM', status: 'Vacaciones' },
+    { 
+        id: '1', 
+        name: 'Cristian Muñoz', 
+        specialty: 'Climatización', 
+        area: 'RM', 
+        status: 'Activo',
+        license: 'Clase B',
+        workClothing: [
+            { id: '1', item: 'Pantalón Corporativo', size: '44', quantity: 2, deliveryDate: '2025-08-11', expirationDate: '2026-08-11' },
+            { id: '2', item: 'Camisa Corporativa', size: 'M', quantity: 2, deliveryDate: '2025-08-11', expirationDate: '2026-08-11' },
+        ]
+    },
+    { 
+        id: '2', 
+        name: 'Beatriz Herrera', 
+        specialty: 'Electricidad', 
+        area: 'RM', 
+        status: 'Activo',
+        license: 'Clase B',
+        workClothing: []
+    },
+    { 
+        id: '3', 
+        name: 'Andrés Castillo', 
+        specialty: 'Seguridad', 
+        area: 'Zona Norte', 
+        status: 'Licencia',
+        license: 'Clase B',
+        workClothing: []
+    },
+    { 
+        id: '4', 
+        name: 'Juan Pérez', 
+        specialty: 'Obras Civiles', 
+        area: 'Zona Sur', 
+        status: 'Activo',
+        license: 'Clase B',
+        workClothing: []
+    },
+    { 
+        id: '5', 
+        name: 'Ana Torres', 
+        specialty: 'Redes y CCTV', 
+        area: 'RM', 
+        status: 'Vacaciones',
+        license: 'Clase B',
+        workClothing: []
+    },
 ]
 
 export const vehicles: Vehicle[] = [
