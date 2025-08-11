@@ -21,6 +21,8 @@ export default function NewOrderPage() {
   const [endDate, setEndDate] = React.useState<Date>();
   const [selectedTechnicians, setSelectedTechnicians] = React.useState<string[]>([]);
   const [selectedVehicles, setSelectedVehicles] = React.useState<string[]>([]);
+  const [netPrice, setNetPrice] = React.useState(0);
+  const [totalPrice, setTotalPrice] = React.useState(0);
   const { toast } = useToast();
 
   const technicians = [
@@ -49,6 +51,24 @@ export default function NewOrderPage() {
       description: "La nueva orden de trabajo ha sido creada exitosamente.",
     });
   };
+
+  const formatNumber = (num: number): string => {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
+  const handleNetPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value.replace(/\./g, '');
+    const numericValue = parseInt(rawValue, 10);
+
+    if (!isNaN(numericValue)) {
+      setNetPrice(numericValue);
+      setTotalPrice(Math.round(numericValue * 1.19));
+    } else {
+      setNetPrice(0);
+      setTotalPrice(0);
+    }
+  };
+
 
   return (
     <div className="flex flex-col gap-8">
@@ -224,11 +244,22 @@ export default function NewOrderPage() {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <Label htmlFor="net-price">Precio Neto</Label>
-                            <Input id="net-price" type="number" defaultValue="0" />
+                            <Input 
+                              id="net-price" 
+                              type="text" 
+                              value={formatNumber(netPrice)}
+                              onChange={handleNetPriceChange}
+                            />
                         </div>
                         <div>
                             <Label htmlFor="total-price">Precio Total</Label>
-                            <Input id="total-price" type="number" defaultValue="0" />
+                            <Input 
+                              id="total-price" 
+                              type="text" 
+                              value={formatNumber(totalPrice)}
+                              readOnly 
+                              className="bg-muted"
+                            />
                         </div>
                     </div>
 
