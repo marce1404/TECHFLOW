@@ -2,17 +2,13 @@
 
 import {
   suggestOptimalResourceAssignment,
-  SuggestOptimalResourceAssignmentInput,
-  SuggestOptimalResourceAssignmentOutput,
+  type SuggestOptimalResourceAssignmentInput,
+  type SuggestOptimalResourceAssignmentOutputWithError,
 } from '@/ai/flows/suggest-resource-assignment';
-import { z } from 'zod';
-
-const SuggestOptimalResourceAssignmentOutputWithError =
-  SuggestOptimalResourceAssignmentOutput.or(z.object({ error: z.string() }));
 
 export async function getResourceSuggestions(
   input: SuggestOptimalResourceAssignmentInput
-): Promise<z.infer<typeof SuggestOptimalResourceAssignmentOutputWithError>> {
+): Promise<SuggestOptimalResourceAssignmentOutputWithError> {
   try {
     const result = await suggestOptimalResourceAssignment(input);
     return result;

@@ -27,7 +27,7 @@ import {
 } from '@/lib/placeholder-data';
 import { Loader2, Sparkles, Users, Truck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { SuggestOptimalResourceAssignmentOutput } from '@/ai/flows/suggest-resource-assignment';
+import type { SuggestOptimalResourceAssignmentOutputWithError } from '@/ai/flows/suggest-resource-assignment';
 
 const formSchema = z.object({
   taskRequirements: z.string().min(10, 'Por favor, describe la tarea con más detalle.'),
@@ -39,7 +39,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function ResourceSuggester() {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<SuggestOptimalResourceAssignmentOutput | null>(null);
+  const [result, setResult] = useState<SuggestOptimalResourceAssignmentOutputWithError | null>(null);
   const { toast } = useToast();
 
   const form = useForm<FormValues>({
@@ -155,7 +155,7 @@ export default function ResourceSuggester() {
                 <p>Analizando recursos y generando sugerencia...</p>
               </div>
             )}
-            {result && !loading && (
+            {result && !loading && !('error' in result) && (
                 <div className="space-y-6">
                     <div>
                         <h3 className="font-semibold flex items-center gap-2 mb-2"><Users className="h-5 w-5"/>Técnicos Sugeridos</h3>

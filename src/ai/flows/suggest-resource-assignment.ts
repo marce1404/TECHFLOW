@@ -32,7 +32,7 @@ export type SuggestOptimalResourceAssignmentInput = z.infer<
   typeof SuggestOptimalResourceAssignmentInputSchema
 >;
 
-const SuggestOptimalResourceAssignmentOutputSchema = z.object({
+export const SuggestOptimalResourceAssignmentOutputSchema = z.object({
   suggestedTechnicians: z
     .string()
     .describe('A list of suggested technicians for the task.'),
@@ -46,6 +46,14 @@ const SuggestOptimalResourceAssignmentOutputSchema = z.object({
 export type SuggestOptimalResourceAssignmentOutput = z.infer<
   typeof SuggestOptimalResourceAssignmentOutputSchema
 >;
+
+export const SuggestOptimalResourceAssignmentOutputWithErrorSchema =
+  SuggestOptimalResourceAssignmentOutputSchema.or(z.object({ error: z.string() }));
+
+export type SuggestOptimalResourceAssignmentOutputWithError = z.infer<
+    typeof SuggestOptimalResourceAssignmentOutputWithErrorSchema
+    >;
+
 
 export async function suggestOptimalResourceAssignment(
   input: SuggestOptimalResourceAssignmentInput
