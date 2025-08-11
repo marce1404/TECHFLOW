@@ -28,7 +28,9 @@ export default function EditOrderPage() {
   // In a real app, you would fetch the order details based on the ID
   const order = [...activeWorkOrders, ...historicalWorkOrders].find(o => o.id === orderId);
 
-  const [startDate, setStartDate] = React.useState<Date | undefined>(order ? new Date(order.date) : new Date());
+  // By replacing hyphens with slashes, we ensure the date is parsed in the local time zone,
+  // preventing hydration mismatches between server and client.
+  const [startDate, setStartDate] = React.useState<Date | undefined>(order ? new Date(order.date.replace(/-/g, '/')) : new Date());
   const [endDate, setEndDate] = React.useState<Date>();
   const [selectedTechnicians, setSelectedTechnicians] = React.useState<string[]>([]);
   const [selectedVehicles, setSelectedVehicles] = React.useState<string[]>([]);
