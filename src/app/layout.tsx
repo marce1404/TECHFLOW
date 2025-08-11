@@ -23,7 +23,7 @@ const sourceCodePro = Source_Code_Pro({
 });
 
 export const metadata: Metadata = {
-  title: 'TechFlow Operations Manager',
+  title: 'APTECH Operations Manager',
   description: 'Gestión integral de operaciones de servicios técnicos.',
 };
 
