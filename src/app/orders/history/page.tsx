@@ -1,5 +1,6 @@
 import { historicalWorkOrders } from "@/lib/placeholder-data";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -34,7 +35,11 @@ export default function HistoryPage() {
                         <TableBody>
                             {historicalWorkOrders.map((order) => (
                                 <TableRow key={order.id}>
-                                    <TableCell className="font-medium">{order.ot_number}</TableCell>
+                                    <TableCell className="font-medium">
+                                        <Link href={`/orders/${order.id}/edit`} className="text-primary hover:underline">
+                                            {order.ot_number}
+                                        </Link>
+                                    </TableCell>
                                     <TableCell>{order.client}</TableCell>
                                     <TableCell>{order.service}</TableCell>
                                     <TableCell>

@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import Link from 'next/link';
 import {
   Table,
   TableBody,
@@ -92,7 +93,9 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                     filteredData.map((order) => (
                         <TableRow key={order.id}>
                         <TableCell className="font-medium">
-                          <div>{order.ot_number}</div>
+                          <Link href={`/orders/${order.id}/edit`} className="text-primary hover:underline">
+                            {order.ot_number}
+                          </Link>
                           <div className="text-xs text-muted-foreground">{order.date}</div>
                         </TableCell>
                         <TableCell>{order.description}</TableCell>
