@@ -43,12 +43,12 @@ export default function NewOrderPage() {
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-headline font-bold tracking-tight">
+        <h1 className="text-2xl font-headline font-bold tracking-tight">
           Crear Nueva Orden de Trabajo
         </h1>
         <div className="flex items-center gap-2">
             <Label htmlFor="ot-name" className="text-sm font-medium">Nombre de OT *</Label>
-            <Input id="ot-name" placeholder="Nombre de OT..." className="w-auto" />
+            <Input id="ot-name" placeholder="Nombre de OT..." className="w-96" />
         </div>
       </div>
 
