@@ -77,6 +77,14 @@ const defaultClothingItems = [
     "Primera Capa",
 ];
 
+const defaultEppItems = [
+    "Casco de seguridad",
+    "Lentes de seguridad",
+    "Guantes de seguridad",
+    "Zapatos de seguridad",
+    "Arnés de seguridad",
+];
+
 export default function TechnicianForm({ onSave, technician }: TechnicianFormProps) {
   const form = useForm<TechnicianFormValues>({
     resolver: zodResolver(technicianFormSchema),
@@ -123,6 +131,12 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
             deliveryDate: '',
             expirationDate: '',
         }));
+        const defaultEpp = defaultEppItems.map(item => ({
+            id: crypto.randomUUID(),
+            item,
+            deliveryDate: '',
+            expirationDate: '',
+        }));
       form.reset({
         name: '',
         specialty: '',
@@ -130,7 +144,7 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
         status: 'Activo',
         license: '',
         workClothing: defaultWorkClothing,
-        epp: [],
+        epp: defaultEpp,
         certifications: [],
       });
     }
@@ -146,14 +160,25 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
         const expirationDate = addYears(date, 1);
         const expirationDateStr = format(expirationDate, 'yyyy-MM-dd');
         
-        if (fieldName === 'workClothing') {
-            form.setValue(`workClothing.${index}.deliveryDate`, deliveryDateStr);
-            form.setValue(`workClothing.${index}.expirationDate`, expirationDateStr);
+        switch (fieldName) {
+            case 'workClothing':
+                form.setValue(`workClothing.${index}.deliveryDate`, deliveryDateStr);
+                form.setValue(`workClothing.${index}.expirationDate`, expirationDateStr);
+                break;
+            case 'epp':
+                form.setValue(`epp.${index}.deliveryDate`, deliveryDateStr);
+                form.setValue(`epp.${index}.expirationDate`, expirationDateStr);
+                break;
+            // Certifications might have different logic, so it's handled separately
+            case 'certifications':
+                 form.setValue(`certifications.${index}.issueDate`, deliveryDateStr);
+                 form.setValue(`certifications.${index}.expirationDate`, expirationDateStr);
+                 break;
         }
       }
   }
 
-  const renderDateField = (field: any, index: number, onDateSelect?: (date: Date | undefined) => void) => (
+  const renderDateField = (field: any, index: number, fieldType: 'deliveryDate' | 'issueDate' | 'expirationDate', arrayName: 'workClothing' | 'epp' | 'certifications') => (
     <Popover>
         <PopoverTrigger asChild>
             <Button
@@ -169,9 +194,11 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
                 mode="single"
                 selected={field.value ? new Date(field.value.replace(/-/g, '/')) : undefined}
                 onSelect={(date) => {
-                    const dateString = date ? format(date, 'yyyy-MM-dd') : '';
-                    field.onChange(dateString);
-                    onDateSelect?.(date);
+                    if (fieldType === 'deliveryDate' || fieldType === 'issueDate') {
+                         handleDeliveryDateChange(date, index, arrayName)
+                    } else {
+                        field.onChange(date ? format(date, 'yyyy-MM-dd') : '');
+                    }
                 }}
                 initialFocus
             />
@@ -296,14 +323,14 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
                                     <FormField 
                                         control={form.control} 
                                         name={`workClothing.${index}.deliveryDate`} 
-                                        render={({ field }) => renderDateField(field, index, (date) => handleDeliveryDateChange(date, index, 'workClothing'))} 
+                                        render={({ field }) => renderDateField(field, index, 'deliveryDate', 'workClothing')} 
                                     />
                                 </TableCell>
                                 <TableCell>
                                     <FormField 
                                         control={form.control} 
                                         name={`workClothing.${index}.expirationDate`} 
-                                        render={({ field }) => renderDateField(field, index)} 
+                                        render={({ field }) => renderDateField(field, index, 'expirationDate', 'workClothing')} 
                                     />
                                 </TableCell>
                                 <TableCell>
@@ -342,8 +369,20 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
                         {eppFields.map((field, index) => (
                             <TableRow key={field.id}>
                                 <TableCell><FormField control={form.control} name={`epp.${index}.item`} render={({ field }) => <Input {...field} placeholder="Casco de seguridad"/>} /></TableCell>
-                                <TableCell><FormField control={form.control} name={`epp.${index}.deliveryDate`} render={({ field }) => renderDateField(field, index)} /></TableCell>
-                                <TableCell><FormField control={form.control} name={`epp.${index}.expirationDate`} render={({ field }) => renderDateField(field, index)} /></TableCell>
+                                <TableCell>
+                                    <FormField 
+                                        control={form.control} 
+                                        name={`epp.${index}.deliveryDate`} 
+                                        render={({ field }) => renderDateField(field, index, 'deliveryDate', 'epp')} 
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <FormField 
+                                        control={form.control} 
+                                        name={`epp.${index}.expirationDate`} 
+                                        render={({ field }) => renderDateField(field, index, 'expirationDate', 'epp')} 
+                                    />
+                                </TableCell>
                                 <TableCell>
                                     <Button variant="ghost" size="icon" onClick={() => removeEpp(index)}>
                                         <Trash2 className="h-4 w-4 text-destructive"/>
@@ -382,8 +421,20 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
                             <TableRow key={field.id}>
                                 <TableCell><FormField control={form.control} name={`certifications.${index}.name`} render={({ field }) => <Input {...field} placeholder="Certificación SEC"/>} /></TableCell>
                                 <TableCell><FormField control={form.control} name={`certifications.${index}.issuingOrganization`} render={({ field }) => <Input {...field} placeholder="SEC"/>} /></TableCell>
-                                <TableCell><FormField control={form.control} name={`certifications.${index}.issueDate`} render={({ field }) => renderDateField(field, index)} /></TableCell>
-                                <TableCell><FormField control={form.control} name={`certifications.${index}.expirationDate`} render={({ field }) => renderDateField(field, index)} /></TableCell>
+                                <TableCell>
+                                    <FormField 
+                                        control={form.control} 
+                                        name={`certifications.${index}.issueDate`} 
+                                        render={({ field }) => renderDateField(field, index, 'issueDate', 'certifications')} 
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <FormField 
+                                        control={form.control} 
+                                        name={`certifications.${index}.expirationDate`} 
+                                        render={({ field }) => renderDateField(field, index, 'expirationDate', 'certifications')} 
+                                    />
+                                </TableCell>
                                 <TableCell>
                                     <Button variant="ghost" size="icon" onClick={() => removeCertification(index)}>
                                         <Trash2 className="h-4 w-4 text-destructive"/>
