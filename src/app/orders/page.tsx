@@ -1,43 +1,22 @@
 
+
 'use client';
 import { Button } from "@/components/ui/button";
 import { PlusCircle, FileUp } from "lucide-react";
 import OrdersTable from "@/components/orders/orders-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
-import { activeWorkOrders } from "@/lib/placeholder-data";
-import { useSearchParams } from "next/navigation";
-import { useMemo } from "react";
-import type { WorkOrder } from "@/lib/types";
+import { useWorkOrders } from "@/context/work-orders-context";
 
 export default function ActiveOrdersPage() {
-    const searchParams = useSearchParams();
-    const updatedOrderString = searchParams.get('updatedOrder');
-    
-    const ordersWithUpdates = useMemo(() => {
-        if (updatedOrderString) {
-            try {
-                const updatedOrder: WorkOrder = JSON.parse(decodeURIComponent(updatedOrderString));
-                // Create a new array with the updated order
-                const newOrders = activeWorkOrders.map(order => 
-                    order.id === updatedOrder.id ? updatedOrder : order
-                );
-                return newOrders;
-            } catch (error) {
-                console.error("Failed to parse updated order:", error);
-                return activeWorkOrders;
-            }
-        }
-        return activeWorkOrders;
-    }, [updatedOrderString]);
-
+    const { activeWorkOrders } = useWorkOrders();
 
     const filterOrders = (category: string) => {
-        if (!category.includes('(')) return ordersWithUpdates;
+        if (!category.includes('(')) return activeWorkOrders;
         const parts = category.split('(');
-        if (parts.length < 2) return ordersWithUpdates;
+        if (parts.length < 2) return activeWorkOrders;
         const prefix = parts[1].split(')')[0];
-        return ordersWithUpdates.filter(order => order.ot_number.startsWith(prefix));
+        return activeWorkOrders.filter(order => order.ot_number.startsWith(prefix));
     }
 
     const categories = [

@@ -6,6 +6,7 @@ import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar'
 import AppSidebar from '@/components/layout/app-sidebar';
 import AppHeader from '@/components/layout/app-header';
 import { Toaster } from '@/components/ui/toaster';
+import { WorkOrdersProvider } from '@/context/work-orders-context';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -42,15 +43,17 @@ export default function RootLayout({
           sourceCodePro.variable
         )}
       >
-        <SidebarProvider>
-          <Sidebar>
-            <AppSidebar />
-          </Sidebar>
-          <SidebarInset className="min-h-0">
-            <AppHeader />
-            <main className="p-4 sm:p-6 lg:p-8">{children}</main>
-          </SidebarInset>
-        </SidebarProvider>
+        <WorkOrdersProvider>
+          <SidebarProvider>
+            <Sidebar>
+              <AppSidebar />
+            </Sidebar>
+            <SidebarInset className="min-h-0">
+              <AppHeader />
+              <main className="p-4 sm:p-6 lg:p-8">{children}</main>
+            </SidebarInset>
+          </SidebarProvider>
+        </WorkOrdersProvider>
         <Toaster />
       </body>
     </html>

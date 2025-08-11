@@ -1,4 +1,5 @@
-import { historicalWorkOrders } from "@/lib/placeholder-data";
+
+'use client';
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import {
@@ -10,8 +11,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useWorkOrders } from "@/context/work-orders-context";
 
 export default function HistoryPage() {
+    const { historicalWorkOrders } = useWorkOrders();
+
     return (
         <div className="flex flex-col gap-8">
             <h1 className="text-3xl font-headline font-bold tracking-tight">

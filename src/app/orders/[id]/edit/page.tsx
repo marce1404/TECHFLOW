@@ -18,19 +18,24 @@ import Link from 'next/link';
 import { MultiSelect } from "@/components/ui/multi-select";
 import { useToast } from "@/hooks/use-toast";
 import { useParams, useRouter } from "next/navigation";
-import { activeWorkOrders, historicalWorkOrders } from "@/lib/placeholder-data";
 import type { WorkOrder } from "@/lib/types";
+import { useWorkOrders } from "@/context/work-orders-context";
 
 export default function EditOrderPage() {
   const params = useParams();
   const router = useRouter();
+  const { getOrder, updateOrder } = useWorkOrders();
   const orderId = params.id as string;
   
-  const initialOrder = [...activeWorkOrders, ...historicalWorkOrders].find(o => o.id === orderId);
+  const initialOrder = getOrder(orderId);
 
   const [order, setOrder] = React.useState<WorkOrder | undefined>(initialOrder);
 
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    setOrder(initialOrder);
+  }, [initialOrder]);
 
   const technicians = [
     { value: 'cristian-munoz', label: 'Cristian Muñoz' },
@@ -52,7 +57,7 @@ export default function EditOrderPage() {
     { value: 'daniela-vidal', label: 'Daniela Vidal' },
   ];
 
-  const handleInputChange = (field: keyof WorkOrder, value: string | boolean | string[]) => {
+  const handleInputChange = (field: keyof WorkOrder, value: string | boolean | string[] | number) => {
     if (order) {
       setOrder({ ...order, [field]: value });
     }
@@ -66,14 +71,14 @@ export default function EditOrderPage() {
 
   const handleUpdateOrder = () => {
     if (!order) return;
+    updateOrder(orderId, order);
     toast({
       title: "Orden de Trabajo Actualizada",
       description: `La OT "${order.description}" ha sido actualizada.`,
       duration: 1000,
     });
     setTimeout(() => {
-        const updatedOrderQuery = encodeURIComponent(JSON.stringify(order));
-        router.push(`/orders?updatedOrder=${updatedOrderQuery}`);
+        router.push(`/orders`);
     }, 1000);
   };
 
@@ -298,7 +303,7 @@ export default function EditOrderPage() {
                                 id="net-price" 
                                 type="number" 
                                 value={order.netPrice}
-                                onChange={(e) => handleInputChange('netPrice', e.target.value)}
+                                onChange={(e) => handleInputChange('netPrice', Number(e.target.value))}
                             />
                         </div>
                         <div>
@@ -364,5 +369,3 @@ export default function EditOrderPage() {
     </div>
   );
 }
-
-    
