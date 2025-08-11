@@ -32,13 +32,13 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useWorkOrders } from '@/context/work-orders-context';
 import type { Technician } from '@/lib/types';
+import Link from 'next/link';
 
 interface TechniciansTableProps {
     technicians: Technician[];
-    onEdit: (technician: Technician) => void;
 }
 
-export default function TechniciansTable({ technicians, onEdit }: TechniciansTableProps) {
+export default function TechniciansTable({ technicians }: TechniciansTableProps) {
     const { updateTechnician, deleteTechnician } = useWorkOrders();
 
     const handleToggleStatus = (technician: Technician, status: Technician['status']) => {
@@ -89,7 +89,9 @@ export default function TechniciansTable({ technicians, onEdit }: TechniciansTab
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
-                                            <DropdownMenuItem onClick={() => onEdit(technician)}>Editar</DropdownMenuItem>
+                                            <DropdownMenuItem asChild>
+                                                <Link href={`/technicians/${technician.id}/edit`}>Editar</Link>
+                                            </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => handleToggleStatus(technician, 'Activo')}>Marcar como Activo</DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => handleToggleStatus(technician, 'Licencia')}>Marcar como Licencia</DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => handleToggleStatus(technician, 'Vacaciones')}>Marcar como Vacaciones</DropdownMenuItem>
