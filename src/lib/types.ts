@@ -1,4 +1,5 @@
 
+
 export type StatCardData = {
   title: string;
   value: string;
@@ -28,26 +29,26 @@ export type WorkOrder = {
 
 export type WorkClothingItem = {
   id: string;
-  item: string;
-  size: string;
-  quantity: number;
-  deliveryDate: string;
-  expirationDate: string;
+  item?: string;
+  size?: string;
+  quantity?: number;
+  deliveryDate?: string;
+  expirationDate?: string;
 };
 
 export type EPPItem = {
   id: string;
-  item: string;
-  deliveryDate: string;
-  expirationDate: string;
+  item?: string;
+  deliveryDate?: string;
+  expirationDate?: string;
 };
 
 export type CertificationItem = {
   id: string;
-  name: string;
-  issuingOrganization: string;
-  issueDate: string;
-  expirationDate: string;
+  name?: string;
+  issuingOrganization?: string;
+  issueDate?: string;
+  expirationDate?: string;
 };
 
 
@@ -91,3 +92,5 @@ export type Service = {
   name: string;
   status: 'Activa' | 'Inactiva';
 };
+
+    

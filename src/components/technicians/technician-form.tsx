@@ -27,34 +27,34 @@ import Link from 'next/link';
 
 const workClothingSchema = z.object({
   id: z.string(),
-  item: z.string().min(1, "Item es requerido."),
-  size: z.string().min(1, "Talla es requerida."),
-  quantity: z.coerce.number().min(1, "Cantidad debe ser al menos 1."),
-  deliveryDate: z.string().min(1, "Fecha de entrega es requerida."),
-  expirationDate: z.string().min(1, "Fecha de caducidad es requerida."),
+  item: z.string().optional(),
+  size: z.string().optional(),
+  quantity: z.coerce.number().optional(),
+  deliveryDate: z.string().optional(),
+  expirationDate: z.string().optional(),
 });
 
 const eppSchema = z.object({
   id: z.string(),
-  item: z.string().min(1, "Item es requerido."),
-  deliveryDate: z.string().min(1, "Fecha de entrega es requerida."),
-  expirationDate: z.string().min(1, "Fecha de caducidad es requerida."),
+  item: z.string().optional(),
+  deliveryDate: z.string().optional(),
+  expirationDate: z.string().optional(),
 });
 
 const certificationSchema = z.object({
   id: z.string(),
-  name: z.string().min(1, "Nombre es requerido."),
-  issuingOrganization: z.string().min(1, "Organización es requerida."),
-  issueDate: z.string().min(1, "Fecha de emisión es requerida."),
-  expirationDate: z.string().min(1, "Fecha de caducidad es requerida."),
+  name: z.string().optional(),
+  issuingOrganization: z.string().optional(),
+  issueDate: z.string().optional(),
+  expirationDate: z.string().optional(),
 });
 
 const technicianFormSchema = z.object({
   name: z.string().min(3, { message: 'El nombre debe tener al menos 3 caracteres.' }),
-  specialty: z.string().min(2, { message: 'La especialidad debe tener al menos 2 caracteres.' }),
-  area: z.string().min(2, { message: 'El área debe tener al menos 2 caracteres.' }),
+  specialty: z.string().optional(),
+  area: z.string().optional(),
   status: z.enum(['Activo', 'Licencia', 'Vacaciones']),
-  license: z.string().min(1, { message: 'La licencia es requerida.' }),
+  license: z.string().optional(),
   workClothing: z.array(workClothingSchema),
   epp: z.array(eppSchema),
   certifications: z.array(certificationSchema),
@@ -468,3 +468,5 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
     </Form>
   );
 }
+
+    
