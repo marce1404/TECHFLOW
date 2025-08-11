@@ -1,0 +1,39 @@
+export type StatCardData = {
+  title: string;
+  value: string;
+  icon: React.ElementType;
+  description?: string;
+};
+
+export type WorkOrder = {
+  id: string;
+  ot_number: string;
+  description: string;
+  client: string;
+  service: string;
+  assigned: string;
+  status: 'Por Iniciar' | 'En Progreso' | 'Pendiente' | 'Atrasada' | 'Cerrada';
+  priority: 'Baja' | 'Media' | 'Alta';
+};
+
+export type Technician = {
+  id: string;
+  name: string;
+  specialty: string;
+  area: string;
+  status: 'Activo' | 'Licencia' | 'Vacaciones';
+};
+
+export type Vehicle = {
+  id: string;
+  model: string;
+  plate: string;
+  status: 'Disponible' | 'Asignado' | 'Mantenimiento';
+};
+
+export type GanttChart = {
+  id: string;
+  name: string;
+  assignedOT: string;
+  taskCount: number;
+};
