@@ -15,9 +15,36 @@ export default function VehiclesPage() {
     const { vehicles } = useWorkOrders();
     const [search, setSearch] = React.useState('');
     const [statusFilter, setStatusFilter] = React.useState<Vehicle['status'] | 'Todos'>('Todos');
+    const [sortConfig, setSortConfig] = React.useState<{ key: keyof Vehicle | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
+
+    const requestSort = (key: keyof Vehicle) => {
+        let direction: 'ascending' | 'descending' = 'ascending';
+        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+          direction = 'descending';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const sortedVehicles = React.useMemo(() => {
+        let sortableItems = [...vehicles];
+        if (sortConfig.key !== null) {
+            sortableItems.sort((a, b) => {
+                const aValue = a[sortConfig.key];
+                const bValue = b[sortConfig.key];
+                if (aValue === undefined || aValue === null || aValue < bValue!) {
+                    return sortConfig.direction === 'ascending' ? -1 : 1;
+                }
+                if (bValue === undefined || bValue === null || aValue > bValue) {
+                    return sortConfig.direction === 'ascending' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+        return sortableItems;
+    }, [vehicles, sortConfig]);
 
 
-    const filteredVehicles = vehicles.filter(
+    const filteredVehicles = sortedVehicles.filter(
         (vehicle) => {
             const matchesStatus = statusFilter === 'Todos' || vehicle.status === statusFilter;
             const matchesSearch = 
@@ -59,7 +86,11 @@ export default function VehiclesPage() {
                 />
               </div>
               <TabsContent value={statusFilter}>
-                <VehiclesTable vehicles={filteredVehicles} />
+                <VehiclesTable 
+                    vehicles={filteredVehicles}
+                    requestSort={requestSort}
+                    sortConfig={sortConfig}
+                />
               </TabsContent>
             </Tabs>
         </div>

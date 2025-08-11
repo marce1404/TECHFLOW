@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Wrench, CheckCircle, User, Truck } from 'lucide-react';
+import { MoreHorizontal, Wrench, CheckCircle, User, Truck, ArrowUpDown } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,9 +37,11 @@ import { cn } from '@/lib/utils';
 
 interface VehiclesTableProps {
     vehicles: Vehicle[];
+    requestSort: (key: keyof Vehicle) => void;
+    sortConfig: { key: keyof Vehicle | null; direction: 'ascending' | 'descending' };
 }
 
-export default function VehiclesTable({ vehicles }: VehiclesTableProps) {
+export default function VehiclesTable({ vehicles, requestSort, sortConfig }: VehiclesTableProps) {
     const { deleteVehicle } = useWorkOrders();
 
     const getStatusConfig = (status: Vehicle['status']) => {
@@ -74,16 +76,27 @@ export default function VehiclesTable({ vehicles }: VehiclesTableProps) {
                 };
         }
     }
+    
+    const headers: { key: keyof Vehicle, label: string }[] = [
+        { key: 'model', label: 'Vehículo' },
+        { key: 'plate', label: 'Patente' },
+        { key: 'status', label: 'Estado' },
+        { key: 'assignedTo', label: 'Asignado a' },
+    ];
 
     return (
         <div className="rounded-md border">
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Vehículo</TableHead>
-                        <TableHead>Patente</TableHead>
-                        <TableHead>Estado</TableHead>
-                        <TableHead>Asignado a</TableHead>
+                         {headers.map((header) => (
+                           <TableHead key={header.key}>
+                                <Button variant="ghost" onClick={() => requestSort(header.key)}>
+                                    {header.label}
+                                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                                </Button>
+                            </TableHead>
+                        ))}
                         <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
                 </TableHeader>

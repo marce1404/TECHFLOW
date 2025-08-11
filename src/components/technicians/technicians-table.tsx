@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, ArrowUpDown } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,9 +36,11 @@ import Link from 'next/link';
 
 interface TechniciansTableProps {
     technicians: Technician[];
+    requestSort: (key: keyof Technician) => void;
+    sortConfig: { key: keyof Technician | null; direction: 'ascending' | 'descending' };
 }
 
-export default function TechniciansTable({ technicians }: TechniciansTableProps) {
+export default function TechniciansTable({ technicians, requestSort, sortConfig }: TechniciansTableProps) {
     const { updateTechnician, deleteTechnician } = useWorkOrders();
 
     const handleToggleStatus = (technician: Technician, status: Technician['status']) => {
@@ -58,15 +60,26 @@ export default function TechniciansTable({ technicians }: TechniciansTableProps)
         }
     }
 
+    const headers: { key: keyof Technician, label: string }[] = [
+        { key: 'name', label: 'Nombre' },
+        { key: 'specialty', label: 'Especialidad' },
+        { key: 'area', label: 'Área' },
+        { key: 'status', label: 'Estado' },
+    ];
+
     return (
         <div className="rounded-md border">
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Nombre</TableHead>
-                        <TableHead>Especialidad</TableHead>
-                        <TableHead>Área</TableHead>
-                        <TableHead>Estado</TableHead>
+                        {headers.map((header) => (
+                           <TableHead key={header.key}>
+                                <Button variant="ghost" onClick={() => requestSort(header.key)}>
+                                    {header.label}
+                                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                                </Button>
+                            </TableHead>
+                        ))}
                         <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
                 </TableHeader>
