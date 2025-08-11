@@ -8,12 +8,15 @@ export type StatCardData = {
 export type WorkOrder = {
   id: string;
   ot_number: string;
+  date: string;
   description: string;
   client: string;
   service: string;
   assigned: string;
+  vendedor: string;
   status: 'Por Iniciar' | 'En Progreso' | 'Pendiente' | 'Atrasada' | 'Cerrada';
   priority: 'Baja' | 'Media' | 'Alta';
+  facturado: boolean;
 };
 
 export type Technician = {

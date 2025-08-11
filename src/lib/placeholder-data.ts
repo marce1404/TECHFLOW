@@ -9,18 +9,21 @@ export const overviewStats = {
 };
 
 export const activeWorkOrders: WorkOrder[] = [
-  { id: '1', ot_number: 'OT-2024-001', description: 'Instalación de AC', client: 'Constructora XYZ', service: 'HVAC', assigned: 'Juan Pérez', status: 'En Progreso', priority: 'Alta' },
-  { id: '2', ot_number: 'OT-2024-002', description: 'Reparación de fuga', client: 'Hospital Central', service: 'Plomería', assigned: 'Maria García', status: 'Por Iniciar', priority: 'Alta' },
-  { id: '3', ot_number: 'OT-2024-003', description: 'Mantenimiento eléctrico', client: 'Oficinas Corp.', service: 'Electricidad', assigned: 'Carlos Rivas', status: 'Pendiente', priority: 'Media' },
-  { id: '4', ot_number: 'OT-2024-004', description: 'Revisión sistema de seguridad', client: 'Mall del Centro', service: 'Seguridad', assigned: 'Ana Torres', status: 'Atrasada', priority: 'Media' },
-  { id: '5', ot_number: 'OT-2024-005', description: 'Cambio de bomba de agua', client: 'Condominio El Roble', service: 'Plomería', assigned: 'Juan Pérez', status: 'En Progreso', priority: 'Baja' },
+  { id: '1', ot_number: 'OT-004', date: '10 Ago 2025', description: 'LIPIGAS CCTV CONCON 1', client: 'LIPI', service: 'CCTV', assigned: 'Cristian Muñoz', vendedor: 'Fernanda Gómez', status: 'En Progreso', priority: 'Alta', facturado: false },
+  { id: '2', ot_number: 'OM-002', date: '30 Jul 2024', description: 'Mantenimiento de red húmeda y red seca', client: 'Universidad de Chile', service: 'Extincion', assigned: 'Cristian Muñoz', vendedor: 'Fernanda Gómez', status: 'Por Iniciar', priority: 'Alta', facturado: false },
+  { id: '3', ot_number: 'OS-004', date: '28 Jul 2024', description: 'Reparación de barreras de control de acceso vehicular', client: 'Aeropuerto de Santiago', service: 'Cerco', assigned: 'Beatriz Herrera', vendedor: 'Eduardo Flores', status: 'En Progreso', priority: 'Media', facturado: true },
+  { id: '4', ot_number: 'OM-001', date: '25 Jul 2024', description: 'Revisión y limpieza de 150 cámaras de seguridad', client: 'Mall Plaza Vespucio', service: 'CCTV', assigned: 'Andrés Castillo', vendedor: 'Daniela Vidal', status: 'Pendiente', priority: 'Media', facturado: false },
+  { id: '5', ot_number: 'OT-003', date: '22 Jul 2024', description: 'Instalación de sistema de detección de incendios', client: 'Costanera Center', service: 'Deteccion', assigned: 'Cristian Muñoz', vendedor: 'Fernanda Gómez', status: 'En Progreso', priority: 'Baja', facturado: false },
+  { id: '6', ot_number: 'OT-002', date: '20 Jul 2024', description: 'Instalación de sistema VRV para piso 15 del edificio.', client: 'Edificio Corporativo Falabella', service: 'Alarma', assigned: 'Cristian Muñoz', vendedor: 'Fernanda Gómez', status: 'Por Iniciar', priority: 'Baja', facturado: false },
+  { id: '7', ot_number: 'OS-001', date: '18 Jul 2024', description: 'Certificación anual', client: 'Laboratorios Saval', service: 'Deteccion', assigned: 'Beatriz Herrera', vendedor: 'Eduardo Flores', status: 'Pendiente', priority: 'Baja', facturado: false },
+  { id: '8', ot_number: 'OT-001', date: '15 Jul 2024', description: 'Mantenimiento preventivo', client: 'Clínica Las Condes', service: 'CCTV', assigned: 'Andrés Castillo', vendedor: 'Daniela Vidal', status: 'En Progreso', priority: 'Baja', facturado: false },
 ];
 
 export const recentWorkOrders = activeWorkOrders.slice(0, 5);
 
 export const historicalWorkOrders: WorkOrder[] = [
-    { id: '6', ot_number: 'OT-2023-101', description: 'Instalación de cámaras', client: 'Colegio San José', service: 'Seguridad', assigned: 'Ana Torres', status: 'Cerrada', priority: 'Media' },
-    { id: '7', ot_number: 'OT-2023-102', description: 'Mantenimiento preventivo', client: 'Industrias ACME', service: 'HVAC', assigned: 'Juan Pérez', status: 'Cerrada', priority: 'Baja' },
+    { id: '9', ot_number: 'OT-2023-101', date: '15 Dic 2023', description: 'Instalación de cámaras', client: 'Colegio San José', service: 'Seguridad', assigned: 'Ana Torres', vendedor: 'Daniela Vidal', status: 'Cerrada', priority: 'Media', facturado: true },
+    { id: '10', ot_number: 'OT-2023-102', date: '20 Nov 2023', description: 'Mantenimiento preventivo', client: 'Industrias ACME', service: 'HVAC', assigned: 'Juan Pérez', vendedor: 'Fernanda Gómez', status: 'Cerrada', priority: 'Baja', facturado: true },
 ]
 
 export const technicians: Technician[] = [

@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { activeWorkOrders } from '@/lib/placeholder-data';
 import type { WorkOrder } from '@/lib/types';
-import { ArrowUpDown } from 'lucide-react';
+import { ArrowUpDown, CheckCircle } from 'lucide-react';
 
 export default function OrdersTable() {
   const [search, setSearch] = useState('');
@@ -22,12 +22,13 @@ export default function OrdersTable() {
   const getStatusVariant = (
     status: WorkOrder['status']
   ): 'default' | 'secondary' | 'destructive' | 'outline' => {
-    switch (status) {
-      case 'Cerrada': return 'default';
-      case 'En Progreso': return 'secondary';
-      case 'Atrasada': return 'destructive';
-      case 'Por Iniciar': return 'outline';
+     switch (status) {
+      case 'En Progreso':
+        return 'default';
       case 'Pendiente':
+        return 'secondary'; // Using secondary for yellow-ish as in image
+      case 'Por Iniciar':
+        return 'destructive'; // Using destructive for violet-ish as in image
       default:
         return 'outline';
     }
@@ -62,9 +63,9 @@ export default function OrdersTable() {
 
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 mt-4">
         <Input
-            placeholder="Buscar por Nº OT, cliente o servicio..."
+            placeholder="Buscar por ID, cliente, servicio..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="max-w-sm"
@@ -73,31 +74,50 @@ export default function OrdersTable() {
             <Table>
                 <TableHeader>
                 <TableRow>
-                    <TableHead><Button variant="ghost" onClick={() => requestSort('ot_number')}>ID <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
-                    <TableHead><Button variant="ghost" onClick={() => requestSort('description')}>Descripción <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
-                    <TableHead><Button variant="ghost" onClick={() => requestSort('client')}>Cliente <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
-                    <TableHead><Button variant="ghost" onClick={() => requestSort('service')}>Servicio <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
-                    <TableHead><Button variant="ghost" onClick={() => requestSort('assigned')}>Encargado <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
-                    <TableHead><Button variant="ghost" onClick={() => requestSort('status')}>Estado <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Descripción</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Servicio</TableHead>
+                    <TableHead>Encargado</TableHead>
+                    <TableHead>Vendedor</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Facturado</TableHead>
                 </TableRow>
                 </TableHeader>
                 <TableBody>
                 {filteredData.map((order) => (
                     <TableRow key={order.id}>
-                    <TableCell className="font-medium">{order.ot_number}</TableCell>
+                    <TableCell className="font-medium">
+                      <div>{order.ot_number}</div>
+                      <div className="text-xs text-muted-foreground">{order.date}</div>
+                    </TableCell>
                     <TableCell>{order.description}</TableCell>
                     <TableCell>{order.client}</TableCell>
                     <TableCell>{order.service}</TableCell>
                     <TableCell>{order.assigned}</TableCell>
+                    <TableCell>{order.vendedor}</TableCell>
                     <TableCell>
-                        <Badge variant={getStatusVariant(order.status)}>
-                        {order.status}
+                        <Badge variant={getStatusVariant(order.status)} className="text-white">
+                            {order.status}
                         </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {order.facturado ? <CheckCircle className="h-5 w-5 text-green-500" /> : '-'}
                     </TableCell>
                     </TableRow>
                 ))}
                 </TableBody>
             </Table>
+        </div>
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <div>
+                Mostrando {filteredData.length} de {activeWorkOrders.length} órdenes.
+            </div>
+            <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" disabled>Anterior</Button>
+                <span>Página 1 de 1</span>
+                <Button variant="outline" size="sm" disabled>Siguiente</Button>
+            </div>
         </div>
     </div>
   );
