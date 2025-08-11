@@ -1,4 +1,5 @@
-import type { WorkOrder, Technician, Vehicle, GanttChart } from './types';
+
+import type { WorkOrder, Technician, Vehicle, GanttChart, OTCategory } from './types';
 
 export const overviewStats = {
   open: '26',
@@ -62,6 +63,13 @@ export const ganttCharts: GanttChart[] = [
     { id: '3', name: 'Instalación Mall', assignedOT: '', taskCount: 40 },
 ]
 
+export const otCategories: OTCategory[] = [
+    { id: '1', name: 'Servicio', prefix: 'OS', status: 'Activa' },
+    { id: '2', name: 'Proyecto', prefix: 'OT', status: 'Activa' },
+    { id: '3', name: 'Mantención', prefix: 'OM', status: 'Activa' },
+    { id: '4', name: 'Otro', prefix: 'OTR', status: 'Inactiva' },
+];
+
 export const availableTechniciansString = `1. Juan Pérez: HVAC, 2 tareas activas, disponible mañana.
 2. Maria García: Plomería, 1 tarea activa, disponible hoy.
 3. Carlos Rivas: Electricidad, 4 tareas activas, disponible en 3 días.
@@ -71,5 +79,3 @@ export const availableTechniciansString = `1. Juan Pérez: HVAC, 2 tareas activa
 export const availableVehiclesString = `1. Camioneta Ford Ranger: Capacidad media, herramientas de plomería, ubicada en bodega central, disponible.
 2. Furgón Peugeot Partner: Capacidad pequeña, herramientas eléctricas, en ruta, disponible en 2 horas.
 3. Camioneta Toyota Hilux: Capacidad grande, herramientas generales, ubicada en bodega norte, disponible.`;
-
-    

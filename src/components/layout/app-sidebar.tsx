@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -66,15 +67,20 @@ export default function AppSidebar() {
     }
   ];
 
+  const settingsMenuItem = {
+    href: '/settings',
+    label: 'Configuración',
+    icon: Settings,
+  };
+
+
   const isActive = (href: string) => {
     if (href === '/') {
         return pathname === '/';
     }
-    // Handle the case for /orders exactly, but not its sub-routes
     if (href === '/orders') {
         return pathname === '/orders';
     }
-    // For other routes, check if the pathname starts with the href
     return pathname.startsWith(href);
   };
   
@@ -118,8 +124,14 @@ export default function AppSidebar() {
             <SidebarFooter>
                 <SidebarMenu>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild tooltip="Configuración" variant="ghost" className="h-10 w-10">
-                    <Link href="#">
+                    <SidebarMenuButton 
+                        asChild 
+                        tooltip="Configuración" 
+                        variant={isActive(settingsMenuItem.href) ? 'default' : 'ghost'}
+                        className="h-10 w-10"
+                        isActive={isActive(settingsMenuItem.href)}
+                    >
+                    <Link href={settingsMenuItem.href}>
                         <Settings />
                     </Link>
                     </SidebarMenuButton>
@@ -178,8 +190,13 @@ export default function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Configuración">
-              <Link href="#">
+            <SidebarMenuButton 
+                asChild 
+                tooltip="Configuración"
+                isActive={isActive(settingsMenuItem.href)}
+                variant={isActive(settingsMenuItem.href) ? 'default' : 'ghost'}
+            >
+              <Link href={settingsMenuItem.href}>
                 <Settings />
                 <span>Configuración</span>
               </Link>

@@ -1,3 +1,4 @@
+
 export type StatCardData = {
   title: string;
   value: string;
@@ -45,4 +46,11 @@ export type GanttChart = {
   name: string;
   assignedOT: string;
   taskCount: number;
+};
+
+export type OTCategory = {
+  id: string;
+  name: string;
+  prefix: string;
+  status: 'Activa' | 'Inactiva';
 };
