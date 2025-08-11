@@ -7,8 +7,10 @@ import { activeWorkOrders } from "@/lib/placeholder-data";
 
 export default function ActiveOrdersPage() {
     const filterOrders = (category: string) => {
-        if (category === 'todos') return activeWorkOrders;
-        const prefix = category.split('(')[1].split(')')[0];
+        if (!category.includes('(')) return activeWorkOrders;
+        const parts = category.split('(');
+        if (parts.length < 2) return activeWorkOrders;
+        const prefix = parts[1].split(')')[0];
         return activeWorkOrders.filter(order => order.ot_number.startsWith(prefix));
     }
 
