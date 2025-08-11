@@ -59,7 +59,11 @@ export default function EditOrderPage() {
 
   const handleInputChange = (field: keyof WorkOrder, value: string | boolean | string[] | number) => {
     if (order) {
-      setOrder({ ...order, [field]: value });
+      const newOrder = { ...order, [field]: value };
+      if (field === 'invoiceNumber') {
+          newOrder.facturado = !!value;
+      }
+      setOrder(newOrder);
     }
   };
 
@@ -349,7 +353,11 @@ export default function EditOrderPage() {
 
                      <div>
                         <Label htmlFor="invoice-number">Nº Factura</Label>
-                        <Input id="invoice-number" />
+                        <Input 
+                            id="invoice-number" 
+                            value={order.invoiceNumber || ''}
+                            onChange={(e) => handleInputChange('invoiceNumber', e.target.value)}
+                        />
                     </div>
 
                     <div>

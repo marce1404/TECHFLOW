@@ -22,6 +22,7 @@ export type WorkOrder = {
   technicians: string[];
   vehicles: string[];
   netPrice: number;
+  invoiceNumber?: string;
 };
 
 export type Technician = {
@@ -45,5 +46,3 @@ export type GanttChart = {
   assignedOT: string;
   taskCount: number;
 };
-
-    
