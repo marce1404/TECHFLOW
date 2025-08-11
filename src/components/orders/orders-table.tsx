@@ -21,7 +21,7 @@ interface OrdersTableProps {
 
 export default function OrdersTable({ orders }: OrdersTableProps) {
   const [search, setSearch] = useState('');
-  const [sortConfig, setSortConfig] = useState<{ key: keyof WorkOrder; direction: 'ascending' | 'descending' } | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: keyof WorkOrder | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
 
   const getStatusVariant = (
     status: WorkOrder['status']
@@ -37,13 +37,24 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
         return 'outline';
     }
   };
+  
+  const requestSort = (key: keyof WorkOrder) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
 
   const sortedData = [...orders].sort((a, b) => {
-    if (sortConfig !== null) {
-      if (a[sortConfig.key] < b[sortConfig.key]) {
+    if (sortConfig.key) {
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
+
+      if (aValue < bValue) {
         return sortConfig.direction === 'ascending' ? -1 : 1;
       }
-      if (a[sortConfig.key] > b[sortConfig.key]) {
+      if (aValue > bValue) {
         return sortConfig.direction === 'ascending' ? 1 : -1;
       }
     }
@@ -53,17 +64,20 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
   const filteredData = sortedData.filter(
     (order) =>
       order.ot_number.toLowerCase().includes(search.toLowerCase()) ||
+      order.description.toLowerCase().includes(search.toLowerCase()) ||
       order.client.toLowerCase().includes(search.toLowerCase()) ||
       order.service.toLowerCase().includes(search.toLowerCase())
   );
-
-  const requestSort = (key: keyof WorkOrder) => {
-    let direction: 'ascending' | 'descending' = 'ascending';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
-    setSortConfig({ key, direction });
-  };
+  
+  const headerItems: { key: keyof WorkOrder, label: string }[] = [
+      { key: 'ot_number', label: 'ID' },
+      { key: 'description', label: 'Descripción' },
+      { key: 'client', label: 'Cliente' },
+      { key: 'service', label: 'Servicio' },
+      { key: 'assigned', label: 'Encargado' },
+      { key: 'vendedor', label: 'Vendedor' },
+      { key: 'status', label: 'Estado' },
+  ];
 
 
   return (
@@ -76,15 +90,16 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
         />
         <div className="rounded-md border">
             <Table>
-                <TableHeader>
+                <TableHeader className="bg-muted/50">
                 <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Descripción</TableHead>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Servicio</TableHead>
-                    <TableHead>Encargado</TableHead>
-                    <TableHead>Vendedor</TableHead>
-                    <TableHead>Estado</TableHead>
+                    {headerItems.map((item) => (
+                         <TableHead key={item.key}>
+                            <Button variant="ghost" onClick={() => requestSort(item.key)}>
+                                {item.label}
+                                <ArrowUpDown className="ml-2 h-4 w-4" />
+                            </Button>
+                        </TableHead>
+                    ))}
                     <TableHead>Facturado</TableHead>
                 </TableRow>
                 </TableHeader>
