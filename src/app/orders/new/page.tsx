@@ -2,7 +2,7 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,16 +17,30 @@ import Link from 'next/link';
 import { MultiSelect } from "@/components/ui/multi-select";
 import { useToast } from "@/hooks/use-toast";
 import { useWorkOrders } from "@/context/work-orders-context";
+import type { WorkOrder } from "@/lib/types";
+import { useRouter } from "next/navigation";
 
 export default function NewOrderPage() {
-  const [startDate, setStartDate] = React.useState<Date>();
-  const [endDate, setEndDate] = React.useState<Date>();
-  const [selectedTechnicians, setSelectedTechnicians] = React.useState<string[]>([]);
-  const [selectedVehicles, setSelectedVehicles] = React.useState<string[]>([]);
-  const [netPrice, setNetPrice] = React.useState(0);
-  const [totalPrice, setTotalPrice] = React.useState(0);
-  const { toast } = useToast();
-  const { otCategories, services } = useWorkOrders();
+    const router = useRouter();
+    const { toast } = useToast();
+    const { otCategories, services, addOrder, getNextOtNumber } = useWorkOrders();
+
+    const [description, setDescription] = React.useState('');
+    const [categoryPrefix, setCategoryPrefix] = React.useState('');
+    const [client, setClient] = React.useState('');
+    const [service, setService] = React.useState('');
+    const [startDate, setStartDate] = React.useState<Date>();
+    const [endDate, setEndDate] = React.useState<Date>();
+    const [selectedTechnicians, setSelectedTechnicians] = React.useState<string[]>([]);
+    const [selectedVehicles, setSelectedVehicles] = React.useState<string[]>([]);
+    const [notes, setNotes] = React.useState('');
+    const [status, setStatus] = React.useState<WorkOrder['status']>('Por Iniciar');
+    const [priority, setPriority] = React.useState<WorkOrder['priority']>('Baja');
+    const [netPrice, setNetPrice] = React.useState(0);
+    const [invoiceNumber, setInvoiceNumber] = React.useState('');
+    const [assigned, setAssigned] = React.useState('');
+    const [vendedor, setVendedor] = React.useState('');
+    
 
   const technicians = [
     { value: 'cristian-munoz', label: 'Cristian Muñoz' },
@@ -49,10 +63,45 @@ export default function NewOrderPage() {
   ];
 
   const handleCreateOrder = () => {
+    if (!description || !categoryPrefix) {
+        toast({
+            variant: "destructive",
+            title: "Campos Requeridos",
+            description: "Por favor, completa el nombre y la categoría de la OT.",
+        });
+        return;
+    }
+
+    const newOrder: Omit<WorkOrder, 'id'> = {
+        ot_number: getNextOtNumber(categoryPrefix),
+        description,
+        client,
+        service,
+        date: startDate ? format(startDate, 'yyyy-MM-dd') : '',
+        endDate: endDate ? format(endDate, 'yyyy-MM-dd') : '',
+        technicians: selectedTechnicians,
+        vehicles: selectedVehicles,
+        notes,
+        status,
+        priority,
+        netPrice,
+        invoiceNumber,
+        facturado: !!invoiceNumber,
+        assigned,
+        vendedor,
+    };
+    
+    addOrder(newOrder);
+
     toast({
       title: "Orden de Trabajo Creada",
       description: "La nueva orden de trabajo ha sido creada exitosamente.",
+      duration: 1000,
     });
+    
+    setTimeout(() => {
+        router.push('/orders');
+    }, 1000);
   };
 
   const formatNumber = (num: number): string => {
@@ -65,33 +114,38 @@ export default function NewOrderPage() {
 
     if (!isNaN(numericValue)) {
       setNetPrice(numericValue);
-      setTotalPrice(Math.round(numericValue * 1.19));
     } else {
       setNetPrice(0);
-      setTotalPrice(0);
     }
   };
+  
+  const totalPrice = Math.round(netPrice * 1.19);
 
 
   return (
     <div className="flex flex-col gap-8">
-        <h1 className="text-2xl font-headline font-bold tracking-tight">
+      <h1 className="text-2xl font-headline font-bold tracking-tight">
           Crear Nueva Orden de Trabajo
-        </h1>
+      </h1>
 
       <Card>
         <CardContent className="p-6">
             <div className="space-y-6">
                 <div>
                     <Label htmlFor="ot-name">Nombre de OT *</Label>
-                    <Input id="ot-name" placeholder="Escribe el nombre o descripción de la OT..." />
+                    <Input 
+                        id="ot-name" 
+                        placeholder="Escribe el nombre o descripción de la OT..." 
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                    />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                     {/* Left Column */}
                     <div className="space-y-4">
                         <div>
                             <Label htmlFor="ot-category">Categoría OT *</Label>
-                            <Select>
+                            <Select onValueChange={setCategoryPrefix} value={categoryPrefix}>
                             <SelectTrigger id="ot-category">
                                 <SelectValue placeholder="Seleccionar categoría" />
                             </SelectTrigger>
@@ -105,12 +159,17 @@ export default function NewOrderPage() {
 
                         <div>
                             <Label htmlFor="client">Cliente</Label>
-                            <Input id="client" placeholder="Escribe el nombre del cliente..." />
+                            <Input 
+                                id="client" 
+                                placeholder="Escribe el nombre del cliente..." 
+                                value={client}
+                                onChange={(e) => setClient(e.target.value)}
+                            />
                         </div>
 
                         <div>
                             <Label htmlFor="service">Servicio</Label>
-                            <Select>
+                            <Select onValueChange={setService} value={service}>
                             <SelectTrigger id="service">
                                 <SelectValue placeholder="Elegir servicio..." />
                             </SelectTrigger>
@@ -196,8 +255,14 @@ export default function NewOrderPage() {
                         </div>
 
                         <div>
-                            <Label htmlFor="description">Descripción / Notas Adicionales</Label>
-                            <Textarea id="description" placeholder="Añadir descripción detallada, materiales, notas..." rows={5} />
+                            <Label htmlFor="notes">Descripción / Notas Adicionales</Label>
+                            <Textarea 
+                                id="notes" 
+                                placeholder="Añadir descripción detallada, materiales, notas..." 
+                                rows={5}
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
+                             />
                         </div>
                     </div>
 
@@ -211,29 +276,37 @@ export default function NewOrderPage() {
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <Label htmlFor="status">Estado</Label>
-                                <Select defaultValue="por-iniciar">
+                                <Select 
+                                    defaultValue="Por Iniciar" 
+                                    onValueChange={(v) => setStatus(v as WorkOrder['status'])}
+                                    value={status}
+                                >
                                     <SelectTrigger id="status">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="por-iniciar">Por Iniciar</SelectItem>
-                                        <SelectItem value="en-progreso">En Progreso</SelectItem>
-                                        <SelectItem value="pendiente">Pendiente</SelectItem>
-                                        <SelectItem value="atrasada">Atrasada</SelectItem>
-                                        <SelectItem value="cerrada">Cerrada</SelectItem>
+                                        <SelectItem value="Por Iniciar">Por Iniciar</SelectItem>
+                                        <SelectItem value="En Progreso">En Progreso</SelectItem>
+                                        <SelectItem value="Pendiente">Pendiente</SelectItem>
+                                        <SelectItem value="Atrasada">Atrasada</SelectItem>
+                                        <SelectItem value="Cerrada">Cerrada</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div>
                                 <Label htmlFor="priority">Prioridad</Label>
-                                <Select defaultValue="baja">
+                                <Select 
+                                    defaultValue="Baja" 
+                                    onValueChange={(v) => setPriority(v as WorkOrder['priority'])}
+                                    value={priority}
+                                >
                                     <SelectTrigger id="priority">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="baja">Baja</SelectItem>
-                                        <SelectItem value="media">Media</SelectItem>
-                                        <SelectItem value="alta">Alta</SelectItem>
+                                        <SelectItem value="Baja">Baja</SelectItem>
+                                        <SelectItem value="Media">Media</SelectItem>
+                                        <SelectItem value="Alta">Alta</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -274,29 +347,33 @@ export default function NewOrderPage() {
 
                         <div>
                             <Label htmlFor="invoice-number">Nº Factura</Label>
-                            <Input id="invoice-number" />
+                            <Input 
+                                id="invoice-number" 
+                                value={invoiceNumber}
+                                onChange={(e) => setInvoiceNumber(e.target.value)}
+                            />
                         </div>
 
                         <div>
                             <Label htmlFor="manager">Encargado</Label>
-                            <Select>
+                            <Select onValueChange={setAssigned} value={assigned}>
                                 <SelectTrigger id="manager">
                                     <SelectValue placeholder="Seleccionar encargado" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {technicians.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                                    {technicians.map(t => <SelectItem key={t.value} value={t.label}>{t.label}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
 
                         <div>
                             <Label htmlFor="vendor">Vendedor</Label>
-                            <Select>
+                            <Select onValueChange={setVendedor} value={vendedor}>
                                 <SelectTrigger id="vendor">
                                     <SelectValue placeholder="Seleccionar vendedor" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {vendors.map(v => <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>)}
+                                    {vendors.map(v => <SelectItem key={v.value} value={v.label}>{v.label}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>

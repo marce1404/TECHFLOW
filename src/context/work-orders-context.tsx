@@ -16,10 +16,11 @@ interface WorkOrdersContextType {
   setHistoricalWorkOrders: React.Dispatch<React.SetStateAction<WorkOrder[]>>;
   addCategory: (category: Omit<OTCategory, 'id'>) => void;
   updateCategory: (id: string, category: OTCategory) => void;
-  deleteCategory: (id: string) => void;
   addService: (service: Omit<Service, 'id'>) => void;
   updateService: (id: string, service: Service) => void;
   deleteService: (id: string) => void;
+  addOrder: (order: Omit<WorkOrder, 'id'>) => void;
+  getNextOtNumber: (prefix: string) => string;
 }
 
 const WorkOrdersContext = createContext<WorkOrdersContextType | undefined>(undefined);
@@ -30,6 +31,33 @@ export const WorkOrdersProvider = ({ children, active, historical }: { children:
   const [otCategories, setOtCategories] = useState<OTCategory[]>(initialCategories);
   const [services, setServices] = useState<Service[]>(initialServices);
 
+  const getNextOtNumber = (prefix: string) => {
+    const allOrders = [...activeWorkOrders, ...historicalWorkOrders];
+    const relevantOrders = allOrders.filter(o => o.ot_number.startsWith(prefix + '-'));
+    
+    if (relevantOrders.length === 0) {
+      return `${prefix}-1`;
+    }
+    
+    const maxNumber = Math.max(
+      ...relevantOrders.map(o => parseInt(o.ot_number.split('-')[1] || '0', 10))
+    );
+    
+    return `${prefix}-${maxNumber + 1}`;
+  };
+
+  const addOrder = (order: Omit<WorkOrder, 'id'>) => {
+    const allOrders = [...activeWorkOrders, ...historicalWorkOrders];
+    const newId = (Math.max(0, ...allOrders.map(o => parseInt(o.id, 10))) + 1).toString();
+    const newOrder: WorkOrder = { id: newId, ...order };
+
+    if (newOrder.status === 'Cerrada') {
+      setHistoricalWorkOrders(prev => [newOrder, ...prev]);
+    } else {
+      setActiveWorkOrders(prev => [newOrder, ...prev]);
+    }
+  };
+  
   const updateOrder = (id: string, updatedOrder: WorkOrder) => {
     const isCurrentlyActive = activeWorkOrders.some(order => order.id === id);
     const isCurrentlyHistorical = historicalWorkOrders.some(order => order.id === id);
@@ -66,10 +94,6 @@ export const WorkOrdersProvider = ({ children, active, historical }: { children:
   const updateCategory = (id: string, updatedCategory: OTCategory) => {
     setOtCategories(prev => prev.map(cat => (cat.id === id ? updatedCategory : cat)));
   };
-  
-  const deleteCategory = (id: string) => {
-    setOtCategories(prev => prev.filter(c => c.id !== id));
-  };
 
   const addService = (service: Omit<Service, 'id'>) => {
     const newId = (Math.max(0, ...services.map(s => parseInt(s.id, 10))) + 1).toString();
@@ -96,10 +120,11 @@ export const WorkOrdersProvider = ({ children, active, historical }: { children:
         setHistoricalWorkOrders,
         addCategory,
         updateCategory,
-        deleteCategory,
         addService,
         updateService,
         deleteService,
+        addOrder,
+        getNextOtNumber,
     }}>
       {children}
     </WorkOrdersContext.Provider>
