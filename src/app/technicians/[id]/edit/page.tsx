@@ -15,21 +15,17 @@ export default function EditTechnicianPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
-  const { technicians, updateTechnician, fetchData } = useWorkOrders();
+  const { getTechnician, updateTechnician, loading } = useWorkOrders();
   const technicianId = params.id as string;
   
-  const [technician, setTechnician] = React.useState<Technician | undefined>(undefined);
+  const [technician, setTechnician] = React.useState<Technician | undefined | null>(undefined);
 
   React.useEffect(() => {
-    const foundTechnician = technicians.find(t => t.id === technicianId);
-    if (foundTechnician) {
+    if (!loading) {
+      const foundTechnician = getTechnician(technicianId);
       setTechnician(foundTechnician);
-    } else {
-      // If the technician is not found in the current state, it might be because
-      // the state hasn't updated yet after creation. Fetch data again.
-      fetchData();
     }
-  }, [technicianId, technicians, fetchData]);
+  }, [technicianId, loading, getTechnician]);
 
 
   const handleSave = (data: TechnicianFormValues) => {
@@ -43,8 +39,12 @@ export default function EditTechnicianPage() {
     setTimeout(() => router.push('/technicians'), 2000);
   };
   
-  if (!technician) {
+  if (technician === undefined) {
     return <div>Cargando técnico...</div>;
+  }
+  
+  if (technician === null) {
+      return <div>Técnico no encontrado.</div>;
   }
 
   return (

@@ -25,6 +25,7 @@ interface WorkOrdersContextType {
   addOrder: (order: Omit<WorkOrder, 'id'>) => Promise<WorkOrder>;
   getNextOtNumber: (prefix: string) => string;
   addTechnician: (technician: Omit<Technician, 'id'>) => Promise<Technician>;
+  getTechnician: (id: string) => Technician | undefined;
   updateTechnician: (id: string, technician: Partial<Omit<Technician, 'id'>>) => Promise<void>;
   deleteTechnician: (id: string) => Promise<void>;
   addVehicle: (vehicle: Omit<Vehicle, 'id'>) => Promise<Vehicle>;
@@ -173,6 +174,10 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     setTechnicians(prev => [...prev, newTechnician]);
     return newTechnician;
   };
+  
+  const getTechnician = (id: string) => {
+    return technicians.find(technician => technician.id === id);
+  };
 
   const updateTechnician = async (id: string, updatedTechnician: Partial<Omit<Technician, 'id'>>) => {
     const docRef = doc(db, "technicians", id);
@@ -223,6 +228,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         addOrder,
         getNextOtNumber,
         addTechnician,
+        getTechnician,
         updateTechnician,
         deleteTechnician,
         addVehicle,
