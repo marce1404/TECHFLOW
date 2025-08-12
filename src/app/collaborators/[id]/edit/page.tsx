@@ -40,6 +40,10 @@ function EditCollaboratorComponent() {
     setTimeout(() => router.push('/collaborators'), 2000);
   };
   
+  const handlePrint = () => {
+    window.open(`/collaborators/${collaboratorId}/print`, '_blank');
+  };
+  
   if (collaborator === undefined) {
     return <div>Cargando colaborador...</div>;
   }
@@ -59,11 +63,9 @@ function EditCollaboratorComponent() {
             Modifica los detalles del colaborador.
           </p>
         </div>
-        <Button variant="outline" asChild>
-          <Link href={`/collaborators/${collaboratorId}/print`} target="_blank" rel="noopener noreferrer">
+        <Button variant="outline" onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" />
             Imprimir Ficha
-          </Link>
         </Button>
       </div>
       <CollaboratorForm onSave={handleSave} collaborator={collaborator} />

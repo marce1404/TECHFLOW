@@ -7,9 +7,6 @@ import type { CertificationItem, EPPItem, WorkClothingItem } from '@/lib/types';
 import { Printer } from 'lucide-react';
 import { notFound } from 'next/navigation';
 
-// Note: This is now a Server Component.
-// It fetches data on the server before rendering the page.
-
 // Helper function to render tables, kept inside for colocation
 const renderItemsTable = (title: string, headers: string[], items: (WorkClothingItem | EPPItem | CertificationItem)[], renderRow: (item: any, index: number) => React.ReactNode) => (
     <Card>
