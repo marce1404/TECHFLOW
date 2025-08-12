@@ -61,14 +61,14 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
 
   const form = useForm<GanttFormValues>({
     resolver: zodResolver(ganttFormSchema),
-    defaultValues: ganttChart ? {
-        ...ganttChart,
-        tasks: ganttChart.tasks.map(t => ({...t, startDate: new Date(t.startDate.toString().replace(/-/g, '/'))}))
-    } : {
-      name: '',
-      workOnSaturdays: true,
-      workOnSundays: false,
-      tasks: [],
+    defaultValues: {
+      name: ganttChart?.name || '',
+      workOnSaturdays: ganttChart?.workOnSaturdays ?? true,
+      workOnSundays: ganttChart?.workOnSundays ?? false,
+      tasks: ganttChart?.tasks.map(t => ({
+          ...t,
+          startDate: new Date(t.startDate.toString().replace(/-/g, '/'))
+      })) || [],
     },
   });
 
@@ -76,15 +76,6 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
     control: form.control,
     name: 'tasks',
   });
-
-  React.useEffect(() => {
-    if (ganttChart) {
-      form.reset({
-        ...ganttChart,
-        tasks: ganttChart.tasks.map(t => ({...t, startDate: new Date(t.startDate.toString().replace(/-/g, '/'))}))
-      });
-    }
-  }, [ganttChart, form]);
 
   const handleAddTask = () => {
     if (customTaskName.trim()) {
