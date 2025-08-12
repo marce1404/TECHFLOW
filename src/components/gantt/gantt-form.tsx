@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
+import { CalendarIcon, PlusCircle, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
@@ -69,7 +69,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
     },
   });
 
-  const { fields, append, remove, update } = useFieldArray({
+  const { fields, append, remove, swap } = useFieldArray({
     control: form.control,
     name: 'tasks',
   });
@@ -100,20 +100,17 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
   }
 
   const calculateEndDate = (startDate: Date, duration: number, workOnSaturdays: boolean, workOnSundays: boolean) => {
-    let remainingDays = duration;
+    let remainingDays = duration - 1; // Duration includes the start day
     let currentDate = startDate;
 
     while (remainingDays > 0) {
+      currentDate = addDays(currentDate, 1);
       const dayOfWeek = currentDate.getDay();
       const isSaturday = dayOfWeek === 6;
       const isSunday = dayOfWeek === 0;
 
       if ((!isSaturday || workOnSaturdays) && (!isSunday || workOnSundays)) {
         remainingDays--;
-      }
-      
-      if (remainingDays > 0) {
-        currentDate = addDays(currentDate, 1);
       }
     }
     return currentDate;
@@ -200,7 +197,8 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
-                     <div className="hidden md:grid grid-cols-[1fr_auto_auto_auto_auto] gap-2 items-center text-sm font-medium text-muted-foreground">
+                     <div className="hidden md:grid grid-cols-[auto_1fr_auto_auto_auto_auto] gap-2 items-center text-sm font-medium text-muted-foreground">
+                        <div></div>
                         <div>Nombre de la Tarea</div>
                         <div>Fecha Inicio</div>
                         <div>Duración (días)</div>
@@ -210,7 +208,15 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                     {fields.map((field, index) => {
                         const endDate = calculateEndDate(field.startDate, field.duration, watchedWorkdays[0], watchedWorkdays[1]);
                         return (
-                            <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto_auto] gap-2 items-center p-2 rounded-lg border">
+                            <div key={field.id} className="grid grid-cols-1 md:grid-cols-[auto_1fr_auto_auto_auto_auto] gap-2 items-center p-2 rounded-lg border">
+                                <div className="flex flex-col">
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => index > 0 && swap(index, index - 1)} disabled={index === 0}>
+                                        <ArrowUp className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => index < fields.length - 1 && swap(index, index + 1)} disabled={index === fields.length - 1}>
+                                        <ArrowDown className="h-4 w-4" />
+                                    </Button>
+                                </div>
                                 <FormField control={form.control} name={`tasks.${index}.name`} render={({ field }) => <Input {...field} />} />
                                 <FormField control={form.control} name={`tasks.${index}.startDate`} render={({ field }) => (
                                     <Popover>
