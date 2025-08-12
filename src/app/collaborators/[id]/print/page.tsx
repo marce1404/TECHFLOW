@@ -25,33 +25,69 @@ export default function PrintCollaboratorPage() {
           if (data) {
             setCollaborator(data);
           }
-          setLoading(false);
+        })
+        .finally(() => {
+            setLoading(false);
         });
     }
   }, [collaboratorId]);
 
   React.useEffect(() => {
+    // Automatically trigger print when data is loaded
     if (!loading && collaborator) {
-      setTimeout(() => window.print(), 500);
+      setTimeout(() => {
+        window.print();
+      }, 500); // Small delay to ensure content is rendered
     }
   }, [loading, collaborator]);
 
   if (loading) {
      return (
-        <div className="p-12">
+        <div className="bg-white text-black p-8 md:p-12">
             <div className="max-w-4xl mx-auto space-y-8">
-                <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-24 w-full" />
-                <Skeleton className="h-64 w-full" />
-                <Skeleton className="h-64 w-full" />
-                <Skeleton className="h-64 w-full" />
+                <header className="flex justify-between items-center pb-4 border-b">
+                    <div>
+                         <Skeleton className="h-8 w-32 mb-2" />
+                         <Skeleton className="h-4 w-48" />
+                    </div>
+                    <div className="no-print">
+                        <Skeleton className="h-10 w-28" />
+                    </div>
+                </header>
+                <main className="space-y-10">
+                    <div className="space-y-2">
+                        <Skeleton className="h-6 w-48 mb-2" />
+                        <Skeleton className="h-24 w-full" />
+                    </div>
+                    {[...Array(3)].map((_, i) => (
+                        <Card key={i}>
+                            <CardHeader><Skeleton className="h-7 w-56" /></CardHeader>
+                            <CardContent className="space-y-2">
+                                <Skeleton className="h-10 w-full" />
+                                <Skeleton className="h-10 w-full" />
+                                <Skeleton className="h-10 w-full" />
+                            </CardContent>
+                        </Card>
+                    ))}
+                </main>
+                 <footer className="pt-12 text-center text-sm">
+                    <Skeleton className="h-24 w-full" />
+                </footer>
             </div>
         </div>
     );
   }
 
   if (!collaborator) {
-    return <div>Colaborador no encontrado.</div>;
+    return (
+        <div className="bg-white text-black p-8 md:p-12">
+            <div className="max-w-4xl mx-auto space-y-8 text-center">
+                 <h1 className="text-2xl font-bold text-destructive">Colaborador no encontrado</h1>
+                 <p className="text-muted-foreground">No se pudo cargar la información del colaborador. Por favor, verifica que el ID es correcto y vuelve a intentarlo.</p>
+                 <Button onClick={() => window.close()} className="no-print">Cerrar</Button>
+            </div>
+        </div>
+    );
   }
   
   const renderInfoTable = (title: string, data: [string, string | undefined][]) => (
@@ -89,7 +125,7 @@ export default function PrintCollaboratorPage() {
   );
 
   return (
-    <div className="bg-white text-black p-8 md:p-12">
+    <div className="bg-white text-black p-8 md:p-12 print:p-0">
         <div className="max-w-4xl mx-auto space-y-8">
             <header className="flex justify-between items-center pb-4 border-b">
                 <div>
