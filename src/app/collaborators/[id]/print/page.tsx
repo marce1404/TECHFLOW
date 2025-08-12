@@ -31,10 +31,10 @@ export default function PrintCollaboratorPage() {
   }, [collaboratorId]);
 
   React.useEffect(() => {
-    if (collaborator) {
+    if (!loading && collaborator) {
       setTimeout(() => window.print(), 500);
     }
-  }, [collaborator]);
+  }, [loading, collaborator]);
 
   if (loading) {
      return (
