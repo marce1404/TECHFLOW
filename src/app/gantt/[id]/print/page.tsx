@@ -12,6 +12,12 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
         '#FF7F50', '#00CED1', '#FFD700', '#4682B4', '#4F4F4F'
     ];
 
+    React.useEffect(() => {
+        setTimeout(() => {
+            window.print();
+        }, 500);
+    }, []);
+
     const calculateEndDate = (startDate: Date, duration: number, workOnSaturdays: boolean, workOnSundays: boolean) => {
         let remainingDays = duration;
         let currentDate = new Date(startDate);
@@ -64,10 +70,7 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
     }, [ganttChart]);
 
     return (
-        <div className="printable-content bg-white text-black p-4">
-            <div className="text-center p-4 bg-gray-100 border-b mb-4 no-print">
-                <p>Estás en el modo de impresión. Usa la función de impresión de tu navegador (Ctrl+P o Cmd+P) para imprimir el Gantt.</p>
-            </div>
+        <div className="bg-white text-black p-8">
             <Card className="border-none shadow-none">
                 <CardHeader>
                     <CardTitle className="text-2xl font-headline">{ganttChart.name}</CardTitle>
