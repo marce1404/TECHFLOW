@@ -4,7 +4,8 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, query, where, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { WorkOrder, OTCategory, Service, Collaborator, Vehicle } from '@/lib/types';
+import type { WorkOrder, OTCategory, Service, Collaborator, Vehicle, GanttChart } from '@/lib/types';
+import { Timestamp } from 'firebase/firestore';
 
 interface WorkOrdersContextType {
   activeWorkOrders: WorkOrder[];
@@ -13,6 +14,7 @@ interface WorkOrdersContextType {
   services: Service[];
   collaborators: Collaborator[];
   vehicles: Vehicle[];
+  ganttCharts: GanttChart[];
   loading: boolean;
   fetchData: () => Promise<void>;
   updateOrder: (id: string, updatedOrder: Partial<WorkOrder>) => Promise<void>;
@@ -31,6 +33,7 @@ interface WorkOrdersContextType {
   addVehicle: (vehicle: Omit<Vehicle, 'id'>) => Promise<Vehicle>;
   updateVehicle: (id: string, vehicle: Partial<Omit<Vehicle, 'id'>>) => Promise<void>;
   deleteVehicle: (id: string) => Promise<void>;
+  addGanttChart: (ganttChart: Omit<GanttChart, 'id'>) => Promise<GanttChart>;
 }
 
 const WorkOrdersContext = createContext<WorkOrdersContextType | undefined>(undefined);
@@ -42,6 +45,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [services, setServices] = useState<Service[]>([]);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [ganttCharts, setGanttCharts] = useState<GanttChart[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
@@ -53,7 +57,8 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             categoriesSnapshot,
             servicesSnapshot,
             collaboratorsSnapshot,
-            vehiclesSnapshot
+            vehiclesSnapshot,
+            ganttChartsSnapshot,
         ] = await Promise.all([
             getDocs(query(collection(db, "work-orders"), where("status", "!=", "Cerrada"))),
             getDocs(query(collection(db, "work-orders"), where("status", "==", "Cerrada"))),
@@ -61,6 +66,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             getDocs(collection(db, "services")),
             getDocs(collection(db, "collaborators")),
             getDocs(collection(db, "vehicles")),
+            getDocs(collection(db, "gantt-charts")),
         ]);
 
         setActiveWorkOrders(activeWorkOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[]);
@@ -69,6 +75,14 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         setServices(servicesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Service[]);
         setCollaborators(collaboratorsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Collaborator[]);
         setVehicles(vehiclesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Vehicle[]);
+        setGanttCharts(ganttChartsSnapshot.docs.map(doc => {
+            const data = doc.data();
+            const tasks = (data.tasks || []).map((task: any) => ({
+                ...task,
+                startDate: task.startDate instanceof Timestamp ? task.startDate.toDate() : new Date(task.startDate),
+            }));
+            return { id: doc.id, ...data, tasks };
+        }) as GanttChart[]);
 
     } catch (error) {
         console.error("Error fetching data from Firestore: ", error);
@@ -79,6 +93,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         setServices([]);
         setCollaborators([]);
         setVehicles([]);
+        setGanttCharts([]);
     } finally {
         setLoading(false);
     }
@@ -208,6 +223,20 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     setVehicles(prev => prev.filter(v => v.id !== id));
   };
 
+  const addGanttChart = async (ganttChart: Omit<GanttChart, 'id'>): Promise<GanttChart> => {
+    const dataToSave = {
+        ...ganttChart,
+        tasks: ganttChart.tasks.map(task => ({
+            ...task,
+            startDate: Timestamp.fromDate(task.startDate),
+        }))
+    };
+    const docRef = await addDoc(collection(db, "gantt-charts"), dataToSave);
+    const newGanttChart = { ...ganttChart, id: docRef.id } as GanttChart;
+    setGanttCharts(prev => [...prev, newGanttChart]);
+    return newGanttChart;
+  };
+
   return (
     <WorkOrdersContext.Provider value={{ 
         activeWorkOrders, 
@@ -216,6 +245,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         services,
         collaborators,
         vehicles,
+        ganttCharts,
         loading,
         fetchData,
         updateOrder, 
@@ -234,6 +264,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         addVehicle,
         updateVehicle,
         deleteVehicle,
+        addGanttChart,
     }}>
       {children}
     </WorkOrdersContext.Provider>

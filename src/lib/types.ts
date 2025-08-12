@@ -78,11 +78,20 @@ export type Vehicle = {
   assignedTo?: string;
 };
 
+export type GanttTask = {
+    id: string;
+    name: string;
+    startDate: Date;
+    duration: number;
+}
+
 export type GanttChart = {
   id: string;
   name: string;
-  assignedOT: string;
-  taskCount: number;
+  assignedOT?: string;
+  workOnSaturdays: boolean;
+  workOnSundays: boolean;
+  tasks: GanttTask[];
 };
 
 export type OTCategory = {
