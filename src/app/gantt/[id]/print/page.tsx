@@ -1,196 +1,181 @@
 
-import * as React from 'react';
+'use client';
 import { getGanttForPrint } from '@/app/actions';
-import { notFound } from 'next/navigation';
-import PrintButton from './PrintButton';
-import { format, addDays, differenceInCalendarDays, eachDayOfInterval } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import type { GanttChart } from '@/lib/types';
+import { addDays, differenceInCalendarDays, eachDayOfInterval, format } from 'date-fns';
+import * as React from 'react';
 
-const calculateEndDate = (startDate: Date, duration: number, workOnSaturdays: boolean, workOnSundays: boolean) => {
-    let remainingDays = duration;
-    let currentDate = new Date(startDate);
-    currentDate.setDate(currentDate.getDate() - 1);
+function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
+    const colorPalette = [
+        '#3CA7FA', '#F9A825', '#27AE60', '#EB5757', '#BB6BD9', 
+        '#FF7F50', '#00CED1', '#FFD700', '#4682B4', '#4F4F4F'
+    ];
 
-    while (remainingDays > 0) {
-        currentDate = addDays(currentDate, 1);
-        const dayOfWeek = currentDate.getDay();
-        const isSaturday = dayOfWeek === 6;
-        const isSunday = dayOfWeek === 0;
-
-        if ((!isSaturday || workOnSaturdays) && (!isSunday || workOnSundays)) {
-            remainingDays--;
+    const calculateEndDate = (startDate: Date, duration: number, workOnSaturdays: boolean, workOnSundays: boolean) => {
+        let remainingDays = duration;
+        let currentDate = new Date(startDate);
+        if (duration > 0) {
+            currentDate.setDate(currentDate.getDate() - 1);
         }
-    }
-    return currentDate;
-};
 
-const taskColors = [
-    '#3CA7FA', // primary
-    '#4ade80', // green-400
-    '#facc15', // yellow-400
-    '#f87171', // red-400
-    '#fb923c', // orange-400
-    '#a78bfa', // violet-400
-    '#22d3ee', // cyan-400
-];
+        while (remainingDays > 0) {
+            currentDate = addDays(currentDate, 1);
+            const dayOfWeek = currentDate.getDay();
+            const isSaturday = dayOfWeek === 6;
+            const isSunday = dayOfWeek === 0;
 
-export default async function PrintGanttPage({ params }: { params: { id: string } }) {
-  const ganttId = params.id;
-  const gantt = await getGanttForPrint(ganttId);
+            if ((!isSaturday || workOnSaturdays) && (!isSunday || workOnSundays)) {
+                remainingDays--;
+            }
+        }
+        return currentDate;
+    };
 
-  if (!gantt) {
-    notFound();
-  }
+    const ganttChartData = React.useMemo(() => {
+        if (!ganttChart.tasks || ganttChart.tasks.length === 0) {
+            return { days: [], months: [], earliestDate: null, latestDate: null };
+        }
 
-  const { tasks, workOnSaturdays, workOnSundays } = gantt;
+        const validTasks = ganttChart.tasks.filter(t => t.startDate && t.duration > 0);
+        if (validTasks.length === 0) {
+            return { days: [], months: [], earliestDate: null, latestDate: null };
+        }
+        
+        const earliestDate = new Date(Math.min(...validTasks.map(t => new Date(t.startDate).getTime())));
+        const latestDate = new Date(Math.max(...validTasks.map(t => calculateEndDate(new Date(t.startDate), t.duration, ganttChart.workOnSaturdays, ganttChart.workOnSundays).getTime())));
 
-  const validTasks = tasks.filter(t => t.startDate && t.duration > 0);
-  if (validTasks.length === 0) {
-      // Handle case with no valid tasks if necessary
-  }
+        if (isNaN(earliestDate.getTime()) || isNaN(latestDate.getTime())) {
+            return { days: [], months: [], earliestDate: null, latestDate: null };
+        }
 
-  const earliestDate = validTasks.length > 0 ? new Date(Math.min(...validTasks.map(t => new Date(t.startDate).getTime()))) : new Date();
-  const latestDate = validTasks.length > 0 ? new Date(Math.max(...validTasks.map(t => calculateEndDate(new Date(t.startDate), t.duration, workOnSaturdays, workOnSundays).getTime()))) : new Date();
+        const days = eachDayOfInterval({ start: earliestDate, end: latestDate });
 
-  const days = eachDayOfInterval({ start: earliestDate, end: latestDate });
+        const months = days.reduce((acc, day) => {
+            const month = format(day, 'MMMM yyyy');
+            if (!acc[month]) {
+                acc[month] = 0;
+            }
+            acc[month]++;
+            return acc;
+        }, {} as Record<string, number>);
 
-  const months = days.reduce((acc, day) => {
-    const month = format(day, 'MMMM yyyy', { locale: es });
-    if (!acc[month]) {
-      acc[month] = 0;
-    }
-    acc[month]++;
-    return acc;
-  }, {} as Record<string, number>);
+        return { days, months: Object.entries(months), earliestDate, latestDate };
+    }, [ganttChart]);
 
-  return (
-    <div className="bg-white text-black p-8 print:p-4">
-        <div className="max-w-6xl mx-auto space-y-6">
-            <header className="flex justify-between items-center pb-4 border-b">
-                <div>
-                     <h1 className="text-2xl font-bold text-gray-800">APTECH</h1>
-                     <p className="text-sm text-gray-500">Cronograma de Proyecto</p>
-                </div>
-                <div className="no-print">
-                    <PrintButton />
-                </div>
-            </header>
+    return (
+        <div className="printable-content bg-white text-black p-4">
+            <div className="text-center p-4 bg-gray-100 border-b mb-4 no-print">
+                <p>Estás en el modo de impresión. Usa la función de impresión de tu navegador (Ctrl+P o Cmd+P) para imprimir el Gantt.</p>
+            </div>
+            <Card className="border-none shadow-none">
+                <CardHeader>
+                    <CardTitle className="text-2xl font-headline">{ganttChart.name}</CardTitle>
+                    <CardDescription>OT Asociada: {ganttChart.assignedOT || 'N/A'}</CardDescription>
+                </CardHeader>
+                <CardContent className="overflow-x-auto p-0">
+                    {ganttChart.tasks.length > 0 && ganttChartData.days.length > 0 && ganttChartData.earliestDate && ganttChartData.latestDate ? (
+                        <div className="min-w-full text-xs">
+                            <div className="grid" style={{ gridTemplateColumns: `12rem repeat(${ganttChartData.days.length}, minmax(1.5rem, 1fr))` }}>
+                                {/* Month Header */}
+                                <div className="sticky left-0 z-10 bg-white border-b border-r font-semibold"></div>
+                                {ganttChartData.months.map(([month, dayCount]) => (
+                                    <div key={month} className="text-center font-semibold capitalize border-b border-r" style={{ gridColumn: `span ${dayCount}` }}>
+                                        {month}
+                                    </div>
+                                ))}
 
-            <main className="space-y-4">
-                 <div className="border rounded-lg p-4 grid grid-cols-2 gap-4">
-                    <div>
-                        <p className="text-sm text-gray-500">Nombre del Proyecto</p>
-                        <p className="font-medium">{gantt.name || 'N/A'}</p>
-                    </div>
-                     <div>
-                        <p className="text-sm text-gray-500">OT Asociada</p>
-                        <p className="font-medium">{gantt.assignedOT || 'N/A'}</p>
-                    </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                    <div className="min-w-full inline-block align-middle">
-                        <div className="border rounded-lg overflow-hidden">
-                            <div className="grid" style={{ gridTemplateColumns: `minmax(200px, 1.5fr) repeat(${days.length}, minmax(30px, 1fr))`}}>
-                                {/* Header Month */}
-                                <div className="font-semibold p-2 border-r border-b bg-gray-50 sticky left-0 z-10" style={{gridRow: 1, gridColumn: 1}}>Tarea</div>
-                                {Object.entries(months).map(([month, dayCount], index) => {
-                                    const startingColumn = Object.values(months).slice(0, index).reduce((a, b) => a + b, 0);
-                                    return (
-                                        <div key={month} className="text-center font-semibold p-2 border-r border-b bg-gray-50 capitalize" style={{ gridColumn: `${startingColumn + 2} / span ${dayCount}`, gridRow: 1 }}>
-                                            {month}
-                                        </div>
-                                    )
-                                })}
-
-                                {/* Header Day */}
-                                <div className="font-semibold p-2 border-r border-b bg-gray-50 sticky left-0 z-10" style={{gridRow: 2, gridColumn: 1}}></div>
-                                {days.map((day, index) => (
-                                    <div key={day.toISOString()} className="text-center font-semibold p-2 border-r border-b bg-gray-50" style={{gridRow: 2, gridColumn: index + 2}}>
+                                {/* Day Header */}
+                                <div className="sticky left-0 z-10 bg-white border-b border-r font-semibold"></div>
+                                {ganttChartData.days.map((day) => (
+                                    <div key={day.toString()} className="text-center font-semibold border-b border-r h-6 flex items-center justify-center">
                                         {format(day, 'd')}
                                     </div>
                                 ))}
 
-                                {/* Tasks Rows */}
-                                {tasks.map((task, index) => {
-                                    const startDate = new Date(task.startDate);
-                                    const endDate = calculateEndDate(startDate, task.duration, workOnSaturdays, workOnSundays);
-                                    const offset = differenceInCalendarDays(startDate, earliestDate);
-                                    
-                                    let workingDaysCount = 0;
-                                    let currentDateIterator = new Date(startDate);
-                                    while (currentDateIterator <= endDate) {
-                                        const dayOfWeek = currentDateIterator.getDay();
-                                        if ((workOnSaturdays || dayOfWeek !== 6) && (workOnSundays || dayOfWeek !== 0)) {
-                                            workingDaysCount++;
-                                        }
-                                        currentDateIterator = addDays(currentDateIterator, 1);
+                                {/* Task Rows & Bars */}
+                                {ganttChart.tasks.map((task, index) => {
+                                    if (!task.startDate || !task.duration || !ganttChartData.earliestDate) {
+                                        return null;
                                     }
+                                    const startDate = new Date(task.startDate);
+                                    const endDate = calculateEndDate(startDate, task.duration, ganttChart.workOnSaturdays, ganttChart.workOnSundays);
+                                    const offset = differenceInCalendarDays(startDate, ganttChartData.earliestDate);
                                     
-                                    const barColor = taskColors[index % taskColors.length];
+                                    const gridRowStart = index + 3;
 
                                     return (
                                         <React.Fragment key={task.id}>
-                                            <div className="p-2 border-r border-b sticky left-0 bg-white z-10 flex items-center" style={{gridRow: index + 3, gridColumn: 1}}>{task.name}</div>
-                                             {/* Empty cells for the row */}
-                                            {days.map((_, dayIndex) => (
-                                                <div key={dayIndex} className="border-b border-r" style={{ gridRow: index + 3, gridColumn: dayIndex + 2 }}></div>
+                                            <div className="sticky left-0 bg-white z-10 truncate pr-2 py-1 border-b border-r flex items-center" style={{ gridRow: gridRowStart, gridColumnStart: 1, gridColumnEnd: 2 }}>
+                                                {task.name}
+                                            </div>
+                                            
+                                            {ganttChartData.days.map((_, dayIndex) => (
+                                                <div key={dayIndex} className="border-b border-r h-8" style={{ gridRow: gridRowStart, gridColumn: dayIndex + 2 }}></div>
                                             ))}
-                                            {/* Task bar */}
-                                            {offset >= 0 && (
-                                                <div 
-                                                    className="absolute rounded h-4 top-1/2 -translate-y-1/2 flex items-center justify-center text-white text-xs"
+                                            
+                                            {task.duration > 0 && (
+                                                <div
+                                                    className="absolute h-5 top-1.5 rounded"
                                                     style={{ 
-                                                        left: `calc(minmax(200px, 1.5fr) + ${offset} * minmax(30px, 1fr))`,
-                                                        marginLeft: `${offset * 1.25}rem`,
-                                                        gridRow: index + 3,
-                                                        gridColumnStart: offset + 2,
-                                                        gridColumnEnd: `span ${differenceInCalendarDays(endDate, startDate) + 1}`,
-                                                        width: `calc(${differenceInCalendarDays(endDate, startDate) + 1} * minmax(30px, 1fr))`,
-                                                        backgroundColor: barColor,
+                                                        gridRow: gridRowStart,
+                                                        gridColumn: `${offset + 2} / span ${differenceInCalendarDays(endDate, startDate) + 1}`,
+                                                        backgroundColor: colorPalette[index % colorPalette.length],
                                                     }}
-                                                    title={`${task.name}: ${task.duration} días`}
-                                                >
-                                                  <div className="absolute h-full rounded" style={{
-                                                    width: `calc(${workingDaysCount} * (100% / ${differenceInCalendarDays(endDate, startDate) + 1}))`,
-                                                    backgroundColor: barColor
-                                                  }}></div>
-                                                </div>
+                                                    title={`${task.name} - ${format(startDate, 'dd/MM')} a ${format(endDate, 'dd/MM')}`}
+                                                ></div>
                                             )}
-                                             <div
-                                                className="absolute rounded h-4 top-1/2 -translate-y-1/2"
-                                                style={{
-                                                  left: `${offset * 30}px`,
-                                                  width: `${workingDaysCount * 30}px`,
-                                                  backgroundColor: barColor,
-                                                  gridRow: index + 3,
-                                                  gridColumnStart: 2,
-                                                  zIndex: 20
-                                                }}
-                                                title={`${task.name}: ${task.duration} días`}
-                                              ></div>
                                         </React.Fragment>
                                     );
                                 })}
                             </div>
                         </div>
-                    </div>
-                </div>
-            </main>
-
-            <footer className="pt-8 text-center text-sm text-gray-500">
-                <p>Fecha de Emisión: {new Date().toLocaleDateString('es-CL')}</p>
-            </footer>
+                    ) : (
+                        <div className="text-center p-8">
+                            No hay tareas para mostrar en el gráfico.
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
         </div>
-         <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              setTimeout(() => {
-                window.print();
-              }, 500);
-            `,
-          }}
-        />
-    </div>
-  );
+    );
+}
+
+
+export default function PrintGanttPage({ params }: { params: { id: string } }) {
+    const [ganttChart, setGanttChart] = React.useState<GanttChart | null>(null);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState<string | null>(null);
+    
+    React.useEffect(() => {
+        async function fetchGantt() {
+            try {
+                const chart = await getGanttForPrint(params.id);
+                if (chart) {
+                    setGanttChart(chart);
+                } else {
+                    setError('No se pudo encontrar la Carta Gantt.');
+                }
+            } catch (err) {
+                setError('Ocurrió un error al cargar los datos.');
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchGantt();
+    }, [params.id]);
+
+    if (loading) {
+        return <div className="p-8 text-center">Cargando para imprimir...</div>;
+    }
+
+    if (error) {
+        return <div className="p-8 text-center text-red-500">{error}</div>;
+    }
+
+    if (!ganttChart) {
+        return <div className="p-8 text-center">No hay datos de Carta Gantt.</div>;
+    }
+
+    return <PrintGanttPageContent ganttChart={ganttChart} />;
 }
