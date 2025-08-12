@@ -69,7 +69,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
     },
   });
 
-  const { fields, append, remove, swap } = useFieldArray({
+  const { fields, append, remove, swap, replace } = useFieldArray({
     control: form.control,
     name: 'tasks',
   });
@@ -97,14 +97,14 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
 
   const handleSuggestedTasks = (category: string) => {
     const tasksToLoad = suggestedTasks.filter(t => t.category === category);
-    if (tasksToLoad) {
+    if (tasksToLoad.length > 0) {
         const newTasks = tasksToLoad.map(task => ({
             id: crypto.randomUUID(),
             name: task.name,
             startDate: new Date(),
             duration: 1
         }));
-        append(newTasks);
+        replace(newTasks);
     }
   }
 
