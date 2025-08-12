@@ -6,6 +6,7 @@ import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, query, where, w
 import { db } from '@/lib/firebase';
 import type { WorkOrder, OTCategory, Service, Collaborator, Vehicle, GanttChart, SuggestedTask } from '@/lib/types';
 import { Timestamp } from 'firebase/firestore';
+import { initialSuggestedTasks } from '@/lib/placeholder-data';
 
 interface WorkOrdersContextType {
   activeWorkOrders: WorkOrder[];
@@ -91,7 +92,22 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             }));
             return { id: doc.id, ...data, tasks };
         }) as GanttChart[]);
-        setSuggestedTasks(suggestedTasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SuggestedTask[]);
+        
+        let loadedTasks = suggestedTasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SuggestedTask[];
+
+        if (suggestedTasksSnapshot.empty && initialSuggestedTasks.length > 0) {
+            const batch = writeBatch(db);
+            const newTasks: SuggestedTask[] = [];
+            initialSuggestedTasks.forEach(task => {
+                const docRef = doc(collection(db, "suggested-tasks"));
+                batch.set(docRef, task);
+                newTasks.push({ ...task, id: docRef.id });
+            });
+            await batch.commit();
+            loadedTasks = newTasks;
+        }
+
+        setSuggestedTasks(loadedTasks.sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name)));
 
 
     } catch (error) {
@@ -317,3 +333,5 @@ export const useWorkOrders = () => {
   }
   return context;
 };
+
+    

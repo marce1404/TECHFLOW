@@ -1,5 +1,5 @@
 
-import type { WorkOrder, Collaborator, Vehicle, GanttChart, OTCategory, Service } from './types';
+import type { WorkOrder, Collaborator, Vehicle, GanttChart, OTCategory, Service, SuggestedTask } from './types';
 
 export const overviewStats = {
   open: '26',
@@ -10,33 +10,33 @@ export const overviewStats = {
 };
 
 export const activeWorkOrders: WorkOrder[] = [
-  { id: '1', ot_number: 'OT-1374', date: '2025-01-20', endDate: '', description: 'COLLAHUASI MANTENCION CCAA VPEO0430 (EEPP 16) Enero', notes: 'CONTRATO VPEO0430', client: 'COLLAHUASI', service: 'CCAA', assigned: 'ALEXANDER', vendedor: 'Eric Landeros', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 25742143 },
-  { id: '2', ot_number: 'OT-1374', date: '2025-01-23', endDate: '', description: 'COLLAHUASI MANTENCION CCAA VPEO0430 (EEPP 17) Enero', notes: 'CONTRATO VPEO0430', client: 'COLLAHUASI', service: 'CCAA', assigned: 'ALEXANDER', vendedor: 'Eric Landeros', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 2000088 },
-  { id: '3', ot_number: 'OT-1374', date: '2025-01-23', endDate: '', description: 'COLLAHUASI MANTENCION CCAA VPEO0430 (EEPP 18) Enero', notes: 'CONTRATO VPEO0430', client: 'COLLAHUASI', service: 'CCAA', assigned: 'ALEXANDER', vendedor: 'Eric Landeros', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 1865252 },
-  { id: '4', ot_number: 'OT-1497', date: '2025-01-07', endDate: '', description: 'EQUIPAMIENTO MLP STATCOM', notes: 'OC 4510225009', client: 'MLP', service: 'CCAA', assigned: 'PEDRO', vendedor: 'Eric Landeros', status: 'Por Iniciar', priority: 'Baja', facturado: false, technicians: [], vehicles: [], netPrice: 2561195 },
-  { id: '5', ot_number: 'OT-1501', date: '2025-01-22', endDate: '', description: 'ANGLO AMERICAN SUMINISTRO DE CANDADOS PROTEC 2', notes: 'OC 4503592938', client: 'ANGLO AMERICAN', service: 'ABLOY', assigned: 'PEDRO', vendedor: 'Claudina Manqui', status: 'Por Iniciar', priority: 'Baja', facturado: false, technicians: [], vehicles: [], netPrice: 4199300 },
-  { id: '6', ot_number: 'OT-1502', date: '2025-01-22', endDate: '', description: 'ANGLO AMERICAN SUMINISTRO DE CANDADOS PROTEC 2 CON C', notes: 'OC 4503589975', client: 'ANGLO AMERICAN', service: 'ABLOY', assigned: 'PEDRO', vendedor: 'Claudina Manqui', status: 'Por Iniciar', priority: 'Baja', facturado: false, technicians: [], vehicles: [], netPrice: 1063000 },
-  { id: '7', ot_number: 'OT-1503', date: '2025-01-22', endDate: '', description: 'ANGLO AMERICAN SUMINISTRO LLAVES TA77ZZ PROTEC2', notes: 'OC 4500585945', client: 'ANGLO AMERICAN', service: 'ABLOY', assigned: 'PEDRO', vendedor: 'Claudina Manqui', status: 'Por Iniciar', priority: 'Baja', facturado: false, technicians: [], vehicles: [], netPrice: 999500 },
-  { id: '8', ot_number: 'OT-1498', date: '2025-01-13', endDate: '', description: 'ZENIT - MNTTO DETECTORES Y SPRINLERS N°2 - MALL BUENAVENTURA', notes: '', client: 'T ARQUITECTURA INGENIERIA Y CONSTRUCCION', service: 'INCENDIO', assigned: 'FRANCISCO', vendedor: 'Angel Contreras', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 1624678 },
-  { id: '9', ot_number: 'OT-1507', date: '2025-01-31', endDate: '', description: 'IMPORPER MAESTRANZA-MONITOREO-SAN EUGENIO 12351 - SAN', notes: 'OC 100592', client: 'INVERSIONES COLLINS Y COLLINS', service: 'ALARMA', assigned: 'ELIO', vendedor: 'Angel Contreras', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 1030769 },
-  { id: '10', ot_number: 'OT-268', date: '2025-02-03', endDate: '', description: 'MLP EEPP 48 (Mantención Enero)', notes: 'OC 4540005027', client: 'MLP', service: 'CCAA', assigned: 'PEDRO', vendedor: 'Eric Landeros', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 36305106 },
-  { id: '11', ot_number: 'OT-1509', date: '2025-02-10', endDate: '', description: 'PAULINA QUIROZ DIAGNOSTICO SISTEMA DE CCTV', notes: 'Sin OC', client: 'PAULINA QUIROZ', service: 'CCTV', assigned: 'FRANCISCO', vendedor: 'Carlos Puga', status: 'Por Iniciar', priority: 'Baja', facturado: false, technicians: [], vehicles: [], netPrice: 95925 },
-  { id: '12', ot_number: 'OT-1506', date: '2025-01-30', endDate: '', description: 'EQUIPAMIENTO PATACHE 01 CMDIC', notes: 'OC B33481', client: 'COLLAHUASI', service: 'ABLOY', assigned: 'ALEXANDER', vendedor: 'Eric Landeros', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 2976884 },
-  { id: '13', ot_number: 'OT-1374', date: '2025-02-19', endDate: '', description: 'COLLAHUASI MANTENCION CCAA VPEO0430 (EEPP 19) Febrero', notes: 'CONTRATO VPEO0430', client: 'COLLAHUASI', service: 'CCAA', assigned: 'ALEXANDER', vendedor: 'Eric Landeros', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 26742143 },
-  { id: '14', ot_number: 'OT-1499', date: '2025-01-13', endDate: '', description: 'KCC MILL SODEXO MANTENCION SISTEMA CCTV N°1', notes: 'OC 71530-60', client: 'SODEXO', service: 'CCTV', assigned: 'FRANCISCO', vendedor: 'Marcelo Sepulveda', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 371429 },
-  { id: '15', ot_number: 'OT-1514', date: '2025-02-20', endDate: '', description: 'KCC MILL SODEXO MANTENCION SISTEMA CCTV N°2', notes: 'OC 71540-36', client: 'SODEXO', service: 'CCTV', assigned: 'FRANCISCO', vendedor: 'Marcelo Sepulveda', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 371429 },
-  { id: '16', ot_number: 'OT-1514', date: '2025-02-20', endDate: '', description: 'KCC MILL SODEXO MANTENCION SISTEMA CCTV N°2 - ALZA HOMBRE', notes: 'OC 75640-30', client: 'SODEXO', service: 'CCAA', assigned: 'FRANCISCO', vendedor: 'Marcelo Sepulveda', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 580000 },
-  { id: '17', ot_number: 'OT-1510', date: '2025-02-12', endDate: '', description: 'BANINTERFACTORING, MIGRACION ENTRAPASS STAND ALONE A', notes: 'OC 237', client: 'BANINTERFACTORING', service: 'CCAA', assigned: 'FRANCISCO', vendedor: 'Carlos Puga', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 136413 },
-  { id: '18', ot_number: 'OT-1517', date: '2025-02-26', endDate: '', description: 'EQUIPAMIENTO ACOMIN', notes: 'OC 2965', client: 'ACOMIN', service: 'ABLOY', assigned: 'PEDRO', vendedor: 'Eric Landeros', status: 'Por Iniciar', priority: 'Baja', facturado: false, technicians: [], vehicles: [], netPrice: 762252 },
-  { id: '19', ot_number: 'OT-1518', date: '2025-03-04', endDate: '', description: 'GOOGLE PUERTA CASINO REVISION OPERADOR', notes: 'OC 040325', client: 'CD INGENIERIA', service: 'ABLOY', assigned: 'FRANCISCO', vendedor: 'Angel Contreras', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 208159 },
-  { id: '20', ot_number: 'OT-1511', date: '2025-02-14', endDate: '', description: 'BANINTERFACTORING, INSTALACION DE ENTRAPASS DESDE CER', notes: 'OC 238', client: 'BANINTERFACTORING', service: 'CCAA', assigned: 'FRANCISCO', vendedor: 'Carlos Puga', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 121063 },
-  { id: '21', ot_number: 'OT-1508', date: '2025-01-31', endDate: '', description: 'AUTOKAS REVISION CCAA Y COMPUTADOR', notes: '', client: 'AUTOKAS', service: 'CCAA', assigned: 'FRANCISCO', vendedor: 'Carlos Puga', status: 'Por Iniciar', priority: 'Baja', facturado: false, technicians: [], vehicles: [], netPrice: 95960 },
-  { id: '22', ot_number: 'OT-268', date: '2025-03-12', endDate: '', description: 'MLP EEPP 49 (Mantención Febrero)', notes: 'OC 4540005027', client: 'MLP', service: 'CCAA', assigned: 'PEDRO', vendedor: 'Eric Landeros', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 27820636 },
-  { id: '23', ot_number: 'OT-1516', date: '2025-02-21', endDate: '', description: 'BANCO BICE VITACURA REEMPLAZO DE CERRADURA Y LLAVES', notes: 'OC 4500013671', client: 'BANCO BICE', service: 'ABLOY', assigned: 'ELIO', vendedor: 'Denisse Vilches', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 340480 },
-  { id: '24', ot_number: 'OT-1519', date: '2025-03-13', endDate: '', description: 'BISHARA BJ - SISTEMA DE DETECCION DE INCENDIO - VECINOS', notes: 'Autorización por correo', client: 'BISHARA SPA', service: 'INCENDIO', assigned: 'ELIO', vendedor: 'Angel Contreras', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 6939994 },
-  { id: '25', ot_number: 'OT-1521', date: '2025-03-14', endDate: '', description: 'F & S HIDRAULICA Y MONTAJE INDUSTRIAL LTDA -VENTA DE EQUI', notes: 'OC ADQ/2025/4634', client: 'F & S HIDRAULICA Y MONTAJE INDUSTRIAL LTDA', service: 'VENTA', assigned: 'ELIO', vendedor: 'Angel Contreras', status: 'Por Iniciar', priority: 'Baja', facturado: false, technicians: [], vehicles: [], netPrice: 1076706 },
-  { id: '26', ot_number: 'OT-1374', date: '2025-03-21', endDate: '', description: 'COLLAHUASI MANTENCION CCAA VPEO0430 (EEPP 20) Marzo', notes: 'CONTRATO VPEO0430', client: 'COLLAHUASI', service: 'CCAA', assigned: 'ALEXANDER', vendedor: 'Eric Landeros', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 25742143 },
-  { id: '27', ot_number: 'OT-1524', date: '2025-03-20', endDate: '', description: 'PAULINA QUIROZ INSTALACION DE CCTV BUIN', notes: '', client: 'PAULINA QUIROZ', service: 'CCTV', assigned: 'FABIAN', vendedor: 'Carlos Puga', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 572712 }
+  { id: '1', ot_number: 'OT-1374', date: '2025-01-20', endDate: '', description: 'COLLAHUASI MANTENCION CCAA VPEO0430 (EEPP 16) Enero', notes: 'CONTRATO VPEO0430', client: 'COLLAHUASI', service: 'CCAA', assigned: ['ALEXANDER'], vendedor: 'Eric Landeros', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 25742143 },
+  { id: '2', ot_number: 'OT-1374', date: '2025-01-23', endDate: '', description: 'COLLAHUASI MANTENCION CCAA VPEO0430 (EEPP 17) Enero', notes: 'CONTRATO VPEO0430', client: 'COLLAHUASI', service: 'CCAA', assigned: ['ALEXANDER'], vendedor: 'Eric Landeros', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 2000088 },
+  { id: '3', ot_number: 'OT-1374', date: '2025-01-23', endDate: '', description: 'COLLAHUASI MANTENCION CCAA VPEO0430 (EEPP 18) Enero', notes: 'CONTRATO VPEO0430', client: 'COLLAHUASI', service: 'CCAA', assigned: ['ALEXANDER'], vendedor: 'Eric Landeros', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 1865252 },
+  { id: '4', ot_number: 'OT-1497', date: '2025-01-07', endDate: '', description: 'EQUIPAMIENTO MLP STATCOM', notes: 'OC 4510225009', client: 'MLP', service: 'CCAA', assigned: ['PEDRO'], vendedor: 'Eric Landeros', status: 'Por Iniciar', priority: 'Baja', facturado: false, technicians: [], vehicles: [], netPrice: 2561195 },
+  { id: '5', ot_number: 'OT-1501', date: '2025-01-22', endDate: '', description: 'ANGLO AMERICAN SUMINISTRO DE CANDADOS PROTEC 2', notes: 'OC 4503592938', client: 'ANGLO AMERICAN', service: 'ABLOY', assigned: ['PEDRO'], vendedor: 'Claudina Manqui', status: 'Por Iniciar', priority: 'Baja', facturado: false, technicians: [], vehicles: [], netPrice: 4199300 },
+  { id: '6', ot_number: 'OT-1502', date: '2025-01-22', endDate: '', description: 'ANGLO AMERICAN SUMINISTRO DE CANDADOS PROTEC 2 CON C', notes: 'OC 4503589975', client: 'ANGLO AMERICAN', service: 'ABLOY', assigned: ['PEDRO'], vendedor: 'Claudina Manqui', status: 'Por Iniciar', priority: 'Baja', facturado: false, technicians: [], vehicles: [], netPrice: 1063000 },
+  { id: '7', ot_number: 'OT-1503', date: '2025-01-22', endDate: '', description: 'ANGLO AMERICAN SUMINISTRO LLAVES TA77ZZ PROTEC2', notes: 'OC 4500585945', client: 'ANGLO AMERICAN', service: 'ABLOY', assigned: ['PEDRO'], vendedor: 'Claudina Manqui', status: 'Por Iniciar', priority: 'Baja', facturado: false, technicians: [], vehicles: [], netPrice: 999500 },
+  { id: '8', ot_number: 'OT-1498', date: '2025-01-13', endDate: '', description: 'ZENIT - MNTTO DETECTORES Y SPRINLERS N°2 - MALL BUENAVENTURA', notes: '', client: 'T ARQUITECTURA INGENIERIA Y CONSTRUCCION', service: 'INCENDIO', assigned: ['FRANCISCO'], vendedor: 'Angel Contreras', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 1624678 },
+  { id: '9', ot_number: 'OT-1507', date: '2025-01-31', endDate: '', description: 'IMPORPER MAESTRANZA-MONITOREO-SAN EUGENIO 12351 - SAN', notes: 'OC 100592', client: 'INVERSIONES COLLINS Y COLLINS', service: 'ALARMA', assigned: ['ELIO'], vendedor: 'Angel Contreras', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 1030769 },
+  { id: '10', ot_number: 'OT-268', date: '2025-02-03', endDate: '', description: 'MLP EEPP 48 (Mantención Enero)', notes: 'OC 4540005027', client: 'MLP', service: 'CCAA', assigned: ['PEDRO'], vendedor: 'Eric Landeros', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 36305106 },
+  { id: '11', ot_number: 'OT-1509', date: '2025-02-10', endDate: '', description: 'PAULINA QUIROZ DIAGNOSTICO SISTEMA DE CCTV', notes: 'Sin OC', client: 'PAULINA QUIROZ', service: 'CCTV', assigned: ['FRANCISCO'], vendedor: 'Carlos Puga', status: 'Por Iniciar', priority: 'Baja', facturado: false, technicians: [], vehicles: [], netPrice: 95925 },
+  { id: '12', ot_number: 'OT-1506', date: '2025-01-30', endDate: '', description: 'EQUIPAMIENTO PATACHE 01 CMDIC', notes: 'OC B33481', client: 'COLLAHUASI', service: 'ABLOY', assigned: ['ALEXANDER'], vendedor: 'Eric Landeros', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 2976884 },
+  { id: '13', ot_number: 'OT-1374', date: '2025-02-19', endDate: '', description: 'COLLAHUASI MANTENCION CCAA VPEO0430 (EEPP 19) Febrero', notes: 'CONTRATO VPEO0430', client: 'COLLAHUASI', service: 'CCAA', assigned: ['ALEXANDER'], vendedor: 'Eric Landeros', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 26742143 },
+  { id: '14', ot_number: 'OT-1499', date: '2025-01-13', endDate: '', description: 'KCC MILL SODEXO MANTENCION SISTEMA CCTV N°1', notes: 'OC 71530-60', client: 'SODEXO', service: 'CCTV', assigned: ['FRANCISCO'], vendedor: 'Marcelo Sepulveda', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 371429 },
+  { id: '15', ot_number: 'OT-1514', date: '2025-02-20', endDate: '', description: 'KCC MILL SODEXO MANTENCION SISTEMA CCTV N°2', notes: 'OC 71540-36', client: 'SODEXO', service: 'CCTV', assigned: ['FRANCISCO'], vendedor: 'Marcelo Sepulveda', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 371429 },
+  { id: '16', ot_number: 'OT-1514', date: '2025-02-20', endDate: '', description: 'KCC MILL SODEXO MANTENCION SISTEMA CCTV N°2 - ALZA HOMBRE', notes: 'OC 75640-30', client: 'SODEXO', service: 'CCAA', assigned: ['FRANCISCO'], vendedor: 'Marcelo Sepulveda', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 580000 },
+  { id: '17', ot_number: 'OT-1510', date: '2025-02-12', endDate: '', description: 'BANINTERFACTORING, MIGRACION ENTRAPASS STAND ALONE A', notes: 'OC 237', client: 'BANINTERFACTORING', service: 'CCAA', assigned: ['FRANCISCO'], vendedor: 'Carlos Puga', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 136413 },
+  { id: '18', ot_number: 'OT-1517', date: '2025-02-26', endDate: '', description: 'EQUIPAMIENTO ACOMIN', notes: 'OC 2965', client: 'ACOMIN', service: 'ABLOY', assigned: ['PEDRO'], vendedor: 'Eric Landeros', status: 'Por Iniciar', priority: 'Baja', facturado: false, technicians: [], vehicles: [], netPrice: 762252 },
+  { id: '19', ot_number: 'OT-1518', date: '2025-03-04', endDate: '', description: 'GOOGLE PUERTA CASINO REVISION OPERADOR', notes: 'OC 040325', client: 'CD INGENIERIA', service: 'ABLOY', assigned: ['FRANCISCO'], vendedor: 'Angel Contreras', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 208159 },
+  { id: '20', ot_number: 'OT-1511', date: '2025-02-14', endDate: '', description: 'BANINTERFACTORING, INSTALACION DE ENTRAPASS DESDE CER', notes: 'OC 238', client: 'BANINTERFACTORING', service: 'CCAA', assigned: ['FRANCISCO'], vendedor: 'Carlos Puga', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 121063 },
+  { id: '21', ot_number: 'OT-1508', date: '2025-01-31', endDate: '', description: 'AUTOKAS REVISION CCAA Y COMPUTADOR', notes: '', client: 'AUTOKAS', service: 'CCAA', assigned: ['FRANCISCO'], vendedor: 'Carlos Puga', status: 'Por Iniciar', priority: 'Baja', facturado: false, technicians: [], vehicles: [], netPrice: 95960 },
+  { id: '22', ot_number: 'OT-268', date: '2025-03-12', endDate: '', description: 'MLP EEPP 49 (Mantención Febrero)', notes: 'OC 4540005027', client: 'MLP', service: 'CCAA', assigned: ['PEDRO'], vendedor: 'Eric Landeros', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 27820636 },
+  { id: '23', ot_number: 'OT-1516', date: '2025-02-21', endDate: '', description: 'BANCO BICE VITACURA REEMPLAZO DE CERRADURA Y LLAVES', notes: 'OC 4500013671', client: 'BANCO BICE', service: 'ABLOY', assigned: ['ELIO'], vendedor: 'Denisse Vilches', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 340480 },
+  { id: '24', ot_number: 'OT-1519', date: '2025-03-13', endDate: '', description: 'BISHARA BJ - SISTEMA DE DETECCION DE INCENDIO - VECINOS', notes: 'Autorización por correo', client: 'BISHARA SPA', service: 'INCENDIO', assigned: ['ELIO'], vendedor: 'Angel Contreras', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 6939994 },
+  { id: '25', ot_number: 'OT-1521', date: '2025-03-14', endDate: '', description: 'F & S HIDRAULICA Y MONTAJE INDUSTRIAL LTDA -VENTA DE EQUI', notes: 'OC ADQ/2025/4634', client: 'F & S HIDRAULICA Y MONTAJE INDUSTRIAL LTDA', service: 'VENTA', assigned: ['ELIO'], vendedor: 'Angel Contreras', status: 'Por Iniciar', priority: 'Baja', facturado: false, technicians: [], vehicles: [], netPrice: 1076706 },
+  { id: '26', ot_number: 'OT-1374', date: '2025-03-21', endDate: '', description: 'COLLAHUASI MANTENCION CCAA VPEO0430 (EEPP 20) Marzo', notes: 'CONTRATO VPEO0430', client: 'COLLAHUASI', service: 'CCAA', assigned: ['ALEXANDER'], vendedor: 'Eric Landeros', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 25742143 },
+  { id: '27', ot_number: 'OT-1524', date: '2025-03-20', endDate: '', description: 'PAULINA QUIROZ INSTALACION DE CCTV BUIN', notes: '', client: 'PAULINA QUIROZ', service: 'CCTV', assigned: ['FABIAN'], vendedor: 'Carlos Puga', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 572712 }
 ];
 
 
@@ -118,9 +118,6 @@ export const vehicles: Vehicle[] = [
 ]
 
 export const ganttCharts: GanttChart[] = [
-    { id: '1', name: 'Proyecto Edificio Central', assignedOT: 'OT-2024-001', taskCount: 15 },
-    { id: '2', name: 'Renovación Hospital', assignedOT: 'OT-2024-002', taskCount: 25 },
-    { id: '3', name: 'Instalación Mall', assignedOT: '', taskCount: 40 },
 ]
 
 export const otCategories: OTCategory[] = [
@@ -153,3 +150,80 @@ export const availableTechniciansString = `1. Juan Pérez: HVAC, 2 tareas activa
 export const availableVehiclesString = `1. Camioneta Ford Ranger: Capacidad media, herramientas de plomería, ubicada en bodega central, disponible.
 2. Furgón Peugeot Partner: Capacidad pequeña, herramientas eléctricas, en ruta, disponible en 2 horas.
 3. Camioneta Toyota Hilux: Capacidad grande, herramientas generales, ubicada en bodega norte, disponible.`;
+
+
+export const initialSuggestedTasks: Omit<SuggestedTask, 'id'>[] = [
+    // CCTV
+    { name: 'Planificación y Diseño del Sistema', category: 'cctv' },
+    { name: 'Levantamiento en Terreno y Relevamiento', category: 'cctv' },
+    { name: 'Aprobación de Ingeniería de Detalle', category: 'cctv' },
+    { name: 'Compra y Adquisición de Equipos (Cámaras, NVR, etc.)', category: 'cctv' },
+    { name: 'Canalización y Cableado Estructurado', category: 'cctv' },
+    { name: 'Instalación y Montaje de Cámaras', category: 'cctv' },
+    { name: 'Instalación de Gabinete y Equipos Centrales (NVR/Servidor)', category: 'cctv' },
+    { name: 'Configuración de Red y Direccionamiento IP', category: 'cctv' },
+    { name: 'Configuración del Software de Gestión de Video (VMS)', category: 'cctv' },
+    { name: 'Pruebas de Cobertura y Enfoque de Cámaras', category: 'cctv' },
+    { name: 'Puesta en Marcha y Pruebas de Integración', category: 'cctv' },
+    { name: 'Capacitación a Usuario Final', category: 'cctv' },
+    { name: 'Elaboración de Documentación y Planos As-Built', category: 'cctv' },
+    { name: 'Entrega y Recepción Final del Proyecto', category: 'cctv' },
+    // CCAA (Control de Acceso)
+    { name: 'Definición de Alcance y Puntos de Control', category: 'ccaa' },
+    { name: 'Diseño del Sistema y Topología', category: 'ccaa' },
+    { name: 'Adquisición de Equipos (Controladoras, lectoras, cerraduras)', category: 'ccaa' },
+    { name: 'Instalación de Canalizaciones', category: 'ccaa' },
+    { name: 'Instalación de Cerraduras Electromagnéticas/Pestillos', category: 'ccaa' },
+    { name: 'Instalación de Lectoras y Botones de Salida', category: 'ccaa' },
+    { name: 'Cableado de Puntos de Control a Controladora', category: 'ccaa' },
+    { name: 'Instalación de Panel de Control (Controladora)', category: 'ccaa' },
+    { name: 'Configuración de Software de Control de Acceso', category: 'ccaa' },
+    { name: 'Creación de Perfiles y Niveles de Acceso', category: 'ccaa' },
+    { name: 'Registro de Tarjetas/Credenciales de Usuarios', category: 'ccaa' },
+    { name: 'Pruebas de Apertura y Cierre de Puertas', category: 'ccaa' },
+    { name: 'Integración con otros sistemas (incendio, CCTV)', category: 'ccaa' },
+    { name: 'Capacitación a Administradores y Usuarios', category: 'ccaa' },
+    { name: 'Marcha Blanca y Ajustes', category: 'ccaa' },
+    // Detección de Incendios
+    { name: 'Análisis de Riesgos y Diseño según Normativa', category: 'detección' },
+    { name: 'Aprobación de Planos por Autoridad Competente', category: 'detección' },
+    { name: 'Adquisición de Paneles, Detectores y Sirenas', category: 'detección' },
+    { name: 'Trazado y Montaje de Tuberías EMT/PVC', category: 'detección' },
+    { name: 'Cableado de Lazo de Detección', category: 'detección' },
+    { name: 'Instalación de Detectores de Humo/Temperatura', category: 'detección' },
+    { name: 'Instalación de Estaciones Manuales', category: 'detección' },
+    { name: 'Instalación de Sirenas con Estrobo', category: 'detección' },
+    { name: 'Instalación y Conexión del Panel Central', category: 'detección' },
+    { name: 'Programación de Zonas y Lógica de Activación', category: 'detección' },
+    { name: 'Pruebas de Continuidad y Aislación', category: 'detección' },
+    { name: 'Pruebas Funcionales con Humo/Calor', category: 'detección' },
+    { name: 'Certificación del Sistema (SEC/NFPA)', category: 'detección' },
+    // Extinción de Incendios
+    { name: 'Ingeniería y Cálculo Hidráulico', category: 'extinción' },
+    { name: 'Selección de Agente Extintor (Agua, gas, etc.)', category: 'extinción' },
+    { name: 'Adquisición de Rociadores, Válvulas y Tuberías', category: 'extinción' },
+    { name: 'Montaje de Red de Tuberías (Fitting)', category: 'extinción' },
+    { name: 'Instalación de Rociadores (Sprinklers)', category: 'extinción' },
+    { name: 'Instalación de Sala de Bombas', category: 'extinción' },
+    { name: 'Pruebas de Presión y Estanqueidad (Prueba Hidrostática)', category: 'extinción' },
+    { name: 'Conexión a la Red de Agua', category: 'extinción' },
+    { name: 'Puesta en Marcha del Sistema de Bombeo', category: 'extinción' },
+    { name: 'Pruebas de Flujo y Descarga', category: 'extinción' },
+    { name: 'Entrega de Planos y Dossier de Calidad', category: 'extinción' },
+    // Alarma
+    { name: 'Evaluación de Seguridad y Puntos Vulnerables', category: 'alarma' },
+    { name: 'Diseño del Sistema de Alarma (zonificación)', category: 'alarma' },
+    { name: 'Adquisición de Panel, Sensores y Teclados', category: 'alarma' },
+    { name: 'Cableado de Sensores de Movimiento y Magnéticos', category: 'alarma' },
+    { name: 'Instalación de Sensores en Puertas y Ventanas', category: 'alarma' },
+    { name: 'Instalación de Sensores de Movimiento (PIR)', category: 'alarma' },
+    { name: 'Instalación de Teclado y Sirena', category: 'alarma' },
+    { name: 'Instalación y Conexión del Panel Central', category: 'alarma' },
+    { name: 'Configuración de Zonas, Tiempos de Entrada/Salida', category: 'alarma' },
+    { name: 'Configuración de Comunicador (GPRS/IP) a Central de Monitoreo', category: 'alarma' },
+    { name: 'Pruebas de Activación de cada Zona', category: 'alarma' },
+    { name: 'Pruebas de Comunicación con Central', category: 'alarma' },
+    { name: 'Capacitación sobre Uso y Códigos', category: 'alarma' },
+];
+
+    
