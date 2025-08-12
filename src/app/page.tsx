@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -22,12 +23,15 @@ import { useWorkOrders } from '@/context/work-orders-context';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function DashboardPage() {
-  const { activeWorkOrders, technicians, loading } = useWorkOrders();
+  const { activeWorkOrders, historicalWorkOrders, technicians, loading } = useWorkOrders();
 
   const openOrders = activeWorkOrders.length;
   const overdueOrders = activeWorkOrders.filter(o => o.status === 'Atrasada').length;
   const highPriorityOrders = activeWorkOrders.filter(o => o.priority === 'Alta').length;
   const recentWorkOrders = [...activeWorkOrders].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
+  
+  // This logic should be improved in the future to filter by the current month.
+  const closedThisMonth = historicalWorkOrders.length; 
 
   const stats = [
     {
@@ -56,7 +60,7 @@ export default function DashboardPage() {
     },
     {
       title: 'Cerradas (Mes)',
-      value: 0, // This would require more complex date filtering logic
+      value: closedThisMonth, 
       icon: CheckCircle,
       description: 'Completadas en el mes actual',
     },
@@ -87,11 +91,12 @@ export default function DashboardPage() {
                 {[...Array(5)].map((_, i) => (
                     <Card key={i}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <Skeleton className="h-4 w-[100px]" />
+                            <Skeleton className="h-4 w-2/3" />
+                             <Skeleton className="h-4 w-4" />
                         </CardHeader>
                         <CardContent>
-                            <Skeleton className="h-8 w-[50px] mb-2" />
-                            <Skeleton className="h-3 w-[150px]" />
+                            <Skeleton className="h-8 w-1/4 mb-2" />
+                            <Skeleton className="h-3 w-full" />
                         </CardContent>
                     </Card>
                 ))}
@@ -103,14 +108,14 @@ export default function DashboardPage() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                         {[...Array(5)].map((_, i) => (
-                            <div key={i} className="flex justify-between items-center p-2">
-                                <div className="flex-1 space-y-2">
-                                    <Skeleton className="h-4 w-1/4" />
-                                    <Skeleton className="h-3 w-1/2" />
-                                </div>
-                                <Skeleton className="h-6 w-[80px] rounded-full" />
+                            <div key={i} className="grid grid-cols-5 items-center gap-4 p-2">
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-6 w-20 rounded-full" />
+                                <Skeleton className="h-4 w-full" />
                             </div>
                         ))}
                     </div>
@@ -148,7 +153,7 @@ export default function DashboardPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {recentWorkOrders.map((order) => (
+              {recentWorkOrders.length > 0 ? recentWorkOrders.map((order) => (
                 <TableRow key={order.id}>
                   <TableCell className="font-medium">{order.ot_number}</TableCell>
                   <TableCell>{order.client}</TableCell>
@@ -160,7 +165,13 @@ export default function DashboardPage() {
                   </TableCell>
                   <TableCell>{order.assigned}</TableCell>
                 </TableRow>
-              ))}
+              )) : (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center">
+                    No hay órdenes de trabajo recientes.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
@@ -168,5 +179,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    

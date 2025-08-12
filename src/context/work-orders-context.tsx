@@ -52,28 +52,37 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             techniciansSnapshot,
             vehiclesSnapshot
         ] = await Promise.all([
-            getDocs(collection(db, "work-orders")),
+            getDocs(query(collection(db, "work-orders"), where("status", "!=", "Cerrada"))),
+            getDocs(query(collection(db, "work-orders"), where("status", "==", "Cerrada"))),
             getDocs(collection(db, "ot-categories")),
             getDocs(collection(db, "services")),
             getDocs(collection(db, "technicians")),
             getDocs(collection(db, "vehicles")),
         ]);
 
-        const allOrders = workOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[];
-        setActiveWorkOrders(allOrders.filter(o => o.status !== 'Cerrada'));
-        setHistoricalWorkOrders(allOrders.filter(o => o.status === 'Cerrada'));
-
-        setOtCategories(categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as OTCategory[]);
-        setServices(servicesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Service[]);
-        setTechnicians(techniciansSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Technician[]);
-        setVehicles(vehiclesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Vehicle[]);
+        setActiveWorkOrders(workOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[]);
+        setHistoricalWorkOrders(categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[]);
+        setOtCategories(servicesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as OTCategory[]);
+        setServices(techniciansSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Service[]);
+        setTechnicians(vehiclesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Technician[]);
+        
+        const vehicleDocs = await getDocs(collection(db, "vehicles"));
+        setVehicles(vehicleDocs.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Vehicle[]);
 
     } catch (error) {
         console.error("Error fetching data from Firestore: ", error);
+        // Fallback to empty arrays on error
+        setActiveWorkOrders([]);
+        setHistoricalWorkOrders([]);
+        setOtCategories([]);
+        setServices([]);
+        setTechnicians([]);
+        setVehicles([]);
     } finally {
         setLoading(false);
     }
   };
+
 
   useEffect(() => {
     fetchData();
@@ -101,24 +110,24 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const docRef = doc(db, "work-orders", id);
     await updateDoc(docRef, updatedFields);
     
-    // Optimistic update of local state
-    const isCurrentlyActive = activeWorkOrders.some(order => order.id === id);
     const updatedOrder = { ...getOrder(id), ...updatedFields } as WorkOrder;
 
     if (updatedFields.status === 'Cerrada') {
-        if(isCurrentlyActive) {
-            setActiveWorkOrders(prev => prev.filter(order => order.id !== id));
-            setHistoricalWorkOrders(prev => [...prev, updatedOrder]);
-        } else {
-            setHistoricalWorkOrders(prev => prev.map(order => (order.id === id ? updatedOrder : order)));
-        }
-    } else { // Status is not 'Cerrada' or not changing
-        if(!isCurrentlyActive && updatedFields.status) { // Moved from historical to active
-            setHistoricalWorkOrders(prev => prev.filter(order => order.id !== id));
-            setActiveWorkOrders(prev => [...prev, updatedOrder]);
-        } else { // Stays active
-            setActiveWorkOrders(prev => prev.map(order => (order.id === id ? updatedOrder : order)));
-        }
+        setActiveWorkOrders(prev => prev.filter(order => order.id !== id));
+        setHistoricalWorkOrders(prev => {
+            if (prev.some(o => o.id === id)) {
+                return prev.map(o => o.id === id ? updatedOrder : o)
+            }
+            return [...prev, updatedOrder]
+        });
+    } else { 
+        setHistoricalWorkOrders(prev => prev.filter(order => order.id !== id));
+        setActiveWorkOrders(prev => {
+            if (prev.some(o => o.id === id)) {
+                 return prev.map(o => o.id === id ? updatedOrder : o)
+            }
+            return [...prev, updatedOrder]
+        });
     }
   };
 
@@ -224,5 +233,3 @@ export const useWorkOrders = () => {
   }
   return context;
 };
-
-    
