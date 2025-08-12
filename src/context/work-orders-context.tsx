@@ -36,6 +36,8 @@ interface WorkOrdersContextType {
   updateVehicle: (id: string, vehicle: Partial<Omit<Vehicle, 'id'>>) => Promise<void>;
   deleteVehicle: (id: string) => Promise<void>;
   addGanttChart: (ganttChart: Omit<GanttChart, 'id'>) => Promise<GanttChart>;
+  getGanttChart: (id: string) => GanttChart | undefined;
+  updateGanttChart: (id: string, ganttChart: Partial<Omit<GanttChart, 'id'>>) => Promise<void>;
   deleteGanttChart: (id: string) => Promise<void>;
   addSuggestedTask: (task: Omit<SuggestedTask, 'id'>) => Promise<SuggestedTask>;
   updateSuggestedTask: (id: string, task: Partial<SuggestedTask>) => Promise<void>;
@@ -263,6 +265,23 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     setGanttCharts(prev => [...prev, newGanttChart]);
     return newGanttChart;
   };
+  
+  const getGanttChart = (id: string) => {
+    return ganttCharts.find(chart => chart.id === id);
+  };
+
+  const updateGanttChart = async (id: string, ganttChart: Partial<Omit<GanttChart, 'id'>>) => {
+    const docRef = doc(db, "gantt-charts", id);
+    const dataToSave = {
+      ...ganttChart,
+      tasks: ganttChart.tasks?.map(task => ({
+          ...task,
+          startDate: Timestamp.fromDate(task.startDate),
+      }))
+    };
+    await updateDoc(docRef, dataToSave);
+    setGanttCharts(prev => prev.map(chart => (chart.id === id ? { ...chart, ...ganttChart } as GanttChart : chart)));
+  };
 
   const deleteGanttChart = async (id: string) => {
     await deleteDoc(doc(db, "gantt-charts", id));
@@ -316,6 +335,8 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         updateVehicle,
         deleteVehicle,
         addGanttChart,
+        getGanttChart,
+        updateGanttChart,
         deleteGanttChart,
         addSuggestedTask,
         updateSuggestedTask,
@@ -333,5 +354,3 @@ export const useWorkOrders = () => {
   }
   return context;
 };
-
-    

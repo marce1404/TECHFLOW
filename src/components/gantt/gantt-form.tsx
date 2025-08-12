@@ -61,7 +61,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
 
   const form = useForm<GanttFormValues>({
     resolver: zodResolver(ganttFormSchema),
-    defaultValues: {
+    defaultValues: ganttChart || {
       name: '',
       workOnSaturdays: true,
       workOnSundays: false,
@@ -73,6 +73,15 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
     control: form.control,
     name: 'tasks',
   });
+
+  React.useEffect(() => {
+    if (ganttChart) {
+      form.reset({
+        ...ganttChart,
+        tasks: ganttChart.tasks.map(t => ({...t, startDate: new Date(t.startDate)}))
+      });
+    }
+  }, [ganttChart, form]);
 
   const handleAddTask = () => {
     if (customTaskName.trim()) {
@@ -206,14 +215,17 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                         <div></div>
                     </div>
                     {fields.map((field, index) => {
-                        const endDate = calculateEndDate(field.startDate, field.duration, watchedWorkdays[0], watchedWorkdays[1]);
+                        const task = watchedTasks[index];
+                        const startDate = task.startDate ? new Date(task.startDate) : new Date();
+                        const duration = task.duration || 1;
+                        const endDate = calculateEndDate(startDate, duration, watchedWorkdays[0], watchedWorkdays[1]);
                         return (
                             <div key={field.id} className="grid grid-cols-1 md:grid-cols-[auto_1fr_auto_auto_auto_auto] gap-2 items-center p-2 rounded-lg border">
                                 <div className="flex flex-col">
-                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => index > 0 && swap(index, index - 1)} disabled={index === 0}>
+                                    <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => index > 0 && swap(index, index - 1)} disabled={index === 0}>
                                         <ArrowUp className="h-4 w-4" />
                                     </Button>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => index < fields.length - 1 && swap(index, index + 1)} disabled={index === fields.length - 1}>
+                                    <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => index < fields.length - 1 && swap(index, index + 1)} disabled={index === fields.length - 1}>
                                         <ArrowDown className="h-4 w-4" />
                                     </Button>
                                 </div>
@@ -223,7 +235,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                                         <PopoverTrigger asChild>
                                             <Button variant="outline" className={cn('w-[200px] justify-start text-left font-normal', !field.value && 'text-muted-foreground')}>
                                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                                {field.value ? format(field.value, 'PPP') : <span>Elegir fecha</span>}
+                                                {field.value ? format(new Date(field.value), 'PPP') : <span>Elegir fecha</span>}
                                             </Button>
                                         </PopoverTrigger>
                                         <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent>
@@ -231,7 +243,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                                 )}/>
                                 <FormField control={form.control} name={`tasks.${index}.duration`} render={({ field }) => <Input type="number" className="w-20" {...field} />} />
                                 <Input value={format(endDate, 'PPP')} readOnly className="bg-muted w-[200px]" />
-                                <Button variant="ghost" size="icon" onClick={() => remove(index)}>
+                                <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
                                     <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
                             </div>
@@ -263,9 +275,13 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                  {watchedTasks.length > 0 ? (
                     <div className="space-y-2 relative">
                         {watchedTasks.map((task, index) => {
-                            const startDate = task.startDate || new Date();
-                            const endDate = calculateEndDate(startDate, task.duration, watchedWorkdays[0], watchedWorkdays[1]);
-                            const earliestDate = watchedTasks.reduce((earliest, t) => (t.startDate < earliest ? t.startDate : earliest), startDate);
+                            const startDate = task.startDate ? new Date(task.startDate) : new Date();
+                            const duration = task.duration || 1;
+                            const endDate = calculateEndDate(startDate, duration, watchedWorkdays[0], watchedWorkdays[1]);
+                            const earliestDate = watchedTasks.reduce((earliest, t) => {
+                                const tDate = t.startDate ? new Date(t.startDate) : new Date();
+                                return tDate < earliest ? tDate : earliest;
+                            }, startDate);
                             const offset = differenceInCalendarDays(startDate, earliestDate);
                             const width = differenceInCalendarDays(endDate, startDate) + 1;
 
