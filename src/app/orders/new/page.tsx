@@ -38,21 +38,21 @@ export default function NewOrderPage() {
     const [priority, setPriority] = React.useState<WorkOrder['priority']>('Baja');
     const [netPrice, setNetPrice] = React.useState(0);
     const [invoiceNumber, setInvoiceNumber] = React.useState('');
-    const [assigned, setAssigned] = React.useState('');
+    const [assigned, setAssigned] = React.useState<string[]>([]);
     const [vendedor, setVendedor] = React.useState('');
     
 
     const technicians = collaborators
       .filter(c => c.role === 'Técnico' && c.status === 'Activo')
-      .map(c => ({ value: c.name.toLowerCase().replace(' ', '-'), label: c.name }));
+      .map(c => ({ value: c.id, label: c.name }));
     
     const supervisors = collaborators
-      .filter(c => (c.role === 'Supervisor' || c.role === 'Jefe de Proyecto' || c.role === 'Encargado') && c.status === 'Activo')
-      .map(c => ({ value: c.name.toLowerCase().replace(' ', '-'), label: c.name }));
+      .filter(c => (['Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado'].includes(c.role)) && c.status === 'Activo')
+      .map(c => ({ value: c.id, label: c.name }));
 
     const vendors = collaborators
       .filter(c => c.role === 'Vendedor' && c.status === 'Activo')
-      .map(c => ({ value: c.name.toLowerCase().replace(' ', '-'), label: c.name }));
+      .map(c => ({ value: c.id, label: c.name }));
 
   const vehicles = [
     { value: 'hilux', label: 'Toyota Hilux' },
@@ -77,7 +77,7 @@ export default function NewOrderPage() {
         service,
         date: startDate ? format(startDate, 'yyyy-MM-dd') : '',
         endDate: endDate ? format(endDate, 'yyyy-MM-dd') : '',
-        technicians: selectedTechnicians,
+        technicians: selectedTechnicians.map(id => collaborators.find(c => c.id === id)?.name || ''),
         vehicles: selectedVehicles,
         notes,
         status,
@@ -85,8 +85,8 @@ export default function NewOrderPage() {
         netPrice,
         invoiceNumber,
         facturado: !!invoiceNumber,
-        assigned,
-        vendedor,
+        assigned: assigned.map(id => collaborators.find(c => c.id === id)?.name || ''),
+        vendedor: collaborators.find(c => c.id === vendedor)?.name || '',
     };
     
     addOrder(newOrder);
@@ -353,15 +353,13 @@ export default function NewOrderPage() {
                         </div>
 
                         <div>
-                            <Label htmlFor="manager">Encargado</Label>
-                            <Select onValueChange={setAssigned} value={assigned}>
-                                <SelectTrigger id="manager">
-                                    <SelectValue placeholder="Seleccionar encargado" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {supervisors.map(t => <SelectItem key={t.value} value={t.label}>{t.label}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
+                            <Label>Encargados</Label>
+                            <MultiSelect
+                                options={supervisors}
+                                selected={assigned}
+                                onChange={setAssigned}
+                                placeholder="Seleccionar encargados..."
+                            />
                         </div>
 
                         <div>
@@ -371,7 +369,7 @@ export default function NewOrderPage() {
                                     <SelectValue placeholder="Seleccionar vendedor" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {vendors.map(v => <SelectItem key={v.value} value={v.label}>{v.label}</SelectItem>)}
+                                    {vendors.map(v => <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>

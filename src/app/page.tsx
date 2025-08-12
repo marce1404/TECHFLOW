@@ -163,7 +163,7 @@ export default function DashboardPage() {
                       {order.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>{order.assigned}</TableCell>
+                  <TableCell>{order.assigned.join(', ')}</TableCell>
                 </TableRow>
               )) : (
                 <TableRow>

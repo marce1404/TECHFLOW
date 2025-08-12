@@ -17,7 +17,7 @@ export type WorkOrder = {
   notes: string;
   client: string;
   service: string;
-  assigned: string;
+  assigned: string[];
   vendedor: string;
   status: 'Por Iniciar' | 'En Progreso' | 'Pendiente' | 'Atrasada' | 'Cerrada';
   priority: 'Baja' | 'Media' | 'Alta';

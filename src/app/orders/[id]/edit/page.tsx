@@ -38,15 +38,15 @@ export default function EditOrderPage() {
 
   const technicians = collaborators
     .filter(c => c.role === 'Técnico')
-    .map(c => ({ value: c.name.toLowerCase().replace(' ', '-'), label: c.name }));
+    .map(c => ({ value: c.name, label: c.name }));
 
   const supervisors = collaborators
-    .filter(c => c.role === 'Supervisor' || c.role === 'Jefe de Proyecto' || c.role === 'Encargado')
-    .map(c => ({ value: c.name.toLowerCase().replace(' ', '-'), label: c.name }));
+    .filter(c => ['Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado'].includes(c.role))
+    .map(c => ({ value: c.name, label: c.name }));
 
   const vendors = collaborators
     .filter(c => c.role === 'Vendedor')
-    .map(c => ({ value: c.name.toLowerCase().replace(' ', '-'), label: c.name }));
+    .map(c => ({ value: c.name, label: c.name }));
   
   const vehicles = [
     { value: 'hilux', label: 'Toyota Hilux' },
@@ -54,7 +54,7 @@ export default function EditOrderPage() {
     { value: 'navara', label: 'Nissan Navara' },
   ];
 
-  const handleInputChange = (field: keyof WorkOrder, value: string | boolean | string[] | number) => {
+  const handleInputChange = (field: keyof WorkOrder, value: any) => {
     if (order) {
       const newOrder = { ...order, [field]: value };
       if (field === 'invoiceNumber') {
@@ -354,18 +354,13 @@ export default function EditOrderPage() {
                     </div>
 
                     <div>
-                        <Label htmlFor="manager">Encargado</Label>
-                        <Select 
-                          value={order.assigned}
-                          onValueChange={(value) => handleInputChange('assigned', value)}
-                        >
-                            <SelectTrigger id="manager">
-                                <SelectValue placeholder="Seleccionar encargado" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {supervisors.map(t => <SelectItem key={t.value} value={t.label}>{t.label}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
+                        <Label>Encargados</Label>
+                        <MultiSelect
+                            options={supervisors}
+                            selected={order.assigned || []}
+                            onChange={(selected) => handleInputChange('assigned', selected)}
+                            placeholder="Seleccionar encargados..."
+                        />
                     </div>
 
                     <div>

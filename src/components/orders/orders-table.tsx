@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -67,11 +68,14 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
         const valB = bValue ? 1 : 0;
         return sortConfig.direction === 'ascending' ? valA - valB : valB - valA;
       }
+      
+      const valA = Array.isArray(aValue) ? aValue.join(', ') : aValue;
+      const valB = Array.isArray(bValue) ? bValue.join(', ') : bValue;
 
-      if (aValue < bValue) {
+      if (valA < valB) {
         return sortConfig.direction === 'ascending' ? -1 : 1;
       }
-      if (aValue > bValue) {
+      if (valA > valB) {
         return sortConfig.direction === 'ascending' ? 1 : -1;
       }
     }
@@ -156,7 +160,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                         <TableCell>{order.description}</TableCell>
                         <TableCell>{order.client}</TableCell>
                         <TableCell>{order.service}</TableCell>
-                        <TableCell>{order.assigned}</TableCell>
+                        <TableCell>{order.assigned.join(', ')}</TableCell>
                         <TableCell>{order.vendedor}</TableCell>
                         <TableCell>
                             <DropdownMenu>
