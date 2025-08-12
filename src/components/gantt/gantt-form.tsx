@@ -61,7 +61,10 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
 
   const form = useForm<GanttFormValues>({
     resolver: zodResolver(ganttFormSchema),
-    defaultValues: ganttChart || {
+    defaultValues: ganttChart ? {
+        ...ganttChart,
+        tasks: ganttChart.tasks.map(t => ({...t, startDate: new Date(t.startDate.toString().replace(/-/g, '/'))}))
+    } : {
       name: '',
       workOnSaturdays: true,
       workOnSundays: false,
@@ -78,7 +81,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
     if (ganttChart) {
       form.reset({
         ...ganttChart,
-        tasks: ganttChart.tasks.map(t => ({...t, startDate: new Date(t.startDate)}))
+        tasks: ganttChart.tasks.map(t => ({...t, startDate: new Date(t.startDate.toString().replace(/-/g, '/'))}))
       });
     }
   }, [ganttChart, form]);
@@ -275,7 +278,10 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                  {watchedTasks.length > 0 ? (
                     <div className="space-y-2 relative">
                         {watchedTasks.map((task, index) => {
-                            const startDate = task.startDate ? new Date(task.startDate) : new Date();
+                            if (!task.startDate || !task.duration) {
+                                return null;
+                            }
+                            const startDate = new Date(task.startDate);
                             const duration = task.duration || 1;
                             const endDate = calculateEndDate(startDate, duration, watchedWorkdays[0], watchedWorkdays[1]);
                             const earliestDate = watchedTasks.reduce((earliest, t) => {
