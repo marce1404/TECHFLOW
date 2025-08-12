@@ -1,3 +1,4 @@
+
 'use client';
 import { AuthProvider } from "@/context/auth-context";
 import { WorkOrdersClientProvider } from "@/context/work-orders-client-provider";

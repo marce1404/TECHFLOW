@@ -2,10 +2,9 @@ import type { Metadata } from 'next';
 import { Inter, Space_Grotesk, Source_Code_Pro } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
-import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
-import AppSidebar from '@/components/layout/app-sidebar';
 import { Toaster } from '@/components/ui/toaster';
 import { Providers } from '@/components/providers';
+import AppLayout from '@/components/layout/app-layout';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -43,14 +42,7 @@ export default function RootLayout({
         )}
       >
         <Providers>
-            <SidebarProvider defaultOpen={false}>
-              <Sidebar collapsible='icon'>
-                <AppSidebar />
-              </Sidebar>
-              <SidebarInset>
-                <main className="p-4 sm:p-6 lg:p-8">{children}</main>
-              </SidebarInset>
-            </SidebarProvider>
+          <AppLayout>{children}</AppLayout>
         </Providers>
         <Toaster />
       </body>
