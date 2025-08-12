@@ -49,8 +49,8 @@ export default async function PrintGanttPage({ params }: { params: { id: string 
       // Handle case with no valid tasks if necessary
   }
 
-  const earliestDate = new Date(Math.min(...validTasks.map(t => new Date(t.startDate).getTime())));
-  const latestDate = new Date(Math.max(...validTasks.map(t => calculateEndDate(new Date(t.startDate), t.duration, workOnSaturdays, workOnSundays).getTime())));
+  const earliestDate = validTasks.length > 0 ? new Date(Math.min(...validTasks.map(t => new Date(t.startDate).getTime()))) : new Date();
+  const latestDate = validTasks.length > 0 ? new Date(Math.max(...validTasks.map(t => calculateEndDate(new Date(t.startDate), t.duration, workOnSaturdays, workOnSundays).getTime()))) : new Date();
 
   const days = eachDayOfInterval({ start: earliestDate, end: latestDate });
 
@@ -117,38 +117,58 @@ export default async function PrintGanttPage({ params }: { params: { id: string 
                                     const endDate = calculateEndDate(startDate, task.duration, workOnSaturdays, workOnSundays);
                                     const offset = differenceInCalendarDays(startDate, earliestDate);
                                     
-                                    let workingDays = 0;
-                                    let currentDate = new Date(startDate);
-                                    while(currentDate <= endDate) {
-                                      const dayOfWeek = currentDate.getDay();
-                                      if ((dayOfWeek !== 6 || workOnSaturdays) && (dayOfWeek !== 0 || workOnSundays)) {
-                                          workingDays++;
-                                      }
-                                      currentDate.setDate(currentDate.getDate() + 1);
+                                    let workingDaysCount = 0;
+                                    let currentDateIterator = new Date(startDate);
+                                    while (currentDateIterator <= endDate) {
+                                        const dayOfWeek = currentDateIterator.getDay();
+                                        if ((workOnSaturdays || dayOfWeek !== 6) && (workOnSundays || dayOfWeek !== 0)) {
+                                            workingDaysCount++;
+                                        }
+                                        currentDateIterator = addDays(currentDateIterator, 1);
                                     }
                                     
                                     const barColor = taskColors[index % taskColors.length];
-
 
                                     return (
                                         <React.Fragment key={task.id}>
                                             <div className="p-2 border-r border-b sticky left-0 bg-white z-10 flex items-center" style={{gridRow: index + 3, gridColumn: 1}}>{task.name}</div>
                                              {/* Empty cells for the row */}
                                             {days.map((_, dayIndex) => (
-                                                <div key={dayIndex} className="border-b" style={{ gridRow: index + 3, gridColumn: dayIndex + 2 }}></div>
+                                                <div key={dayIndex} className="border-b border-r" style={{ gridRow: index + 3, gridColumn: dayIndex + 2 }}></div>
                                             ))}
                                             {/* Task bar */}
-                                            <div className="relative" style={{ gridRow: index + 3, gridColumn: `2 / span ${days.length}`}}>
+                                            {offset >= 0 && (
                                                 <div 
-                                                    className="absolute rounded h-4 top-1/2 -translate-y-1/2"
+                                                    className="absolute rounded h-4 top-1/2 -translate-y-1/2 flex items-center justify-center text-white text-xs"
                                                     style={{ 
-                                                        left: `calc(${(offset)} * (100% / ${days.length}))`, 
-                                                        width: `calc(${workingDays} * (100% / ${days.length}))`,
+                                                        left: `calc(minmax(200px, 1.5fr) + ${offset} * minmax(30px, 1fr))`,
+                                                        marginLeft: `${offset * 1.25}rem`,
+                                                        gridRow: index + 3,
+                                                        gridColumnStart: offset + 2,
+                                                        gridColumnEnd: `span ${differenceInCalendarDays(endDate, startDate) + 1}`,
+                                                        width: `calc(${differenceInCalendarDays(endDate, startDate) + 1} * minmax(30px, 1fr))`,
                                                         backgroundColor: barColor,
                                                     }}
                                                     title={`${task.name}: ${task.duration} días`}
-                                                ></div>
-                                            </div>
+                                                >
+                                                  <div className="absolute h-full rounded" style={{
+                                                    width: `calc(${workingDaysCount} * (100% / ${differenceInCalendarDays(endDate, startDate) + 1}))`,
+                                                    backgroundColor: barColor
+                                                  }}></div>
+                                                </div>
+                                            )}
+                                             <div
+                                                className="absolute rounded h-4 top-1/2 -translate-y-1/2"
+                                                style={{
+                                                  left: `${offset * 30}px`,
+                                                  width: `${workingDaysCount * 30}px`,
+                                                  backgroundColor: barColor,
+                                                  gridRow: index + 3,
+                                                  gridColumnStart: 2,
+                                                  zIndex: 20
+                                                }}
+                                                title={`${task.name}: ${task.duration} días`}
+                                              ></div>
                                         </React.Fragment>
                                     );
                                 })}
