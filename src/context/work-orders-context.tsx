@@ -109,7 +109,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             loadedTasks = newTasks;
         }
 
-        setSuggestedTasks(loadedTasks.sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name)));
+        setSuggestedTasks(loadedTasks);
 
 
     } catch (error) {
@@ -291,14 +291,14 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const addSuggestedTask = async (task: Omit<SuggestedTask, 'id'>): Promise<SuggestedTask> => {
     const docRef = await addDoc(collection(db, "suggested-tasks"), task);
     const newTask = { id: docRef.id, ...task } as SuggestedTask;
-    setSuggestedTasks(prev => [...prev, newTask].sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name)));
+    setSuggestedTasks(prev => [...prev, newTask]);
     return newTask;
   };
 
   const updateSuggestedTask = async (id: string, updatedTask: Partial<SuggestedTask>) => {
     const docRef = doc(db, "suggested-tasks", id);
     await updateDoc(docRef, updatedTask);
-    setSuggestedTasks(prev => prev.map(t => (t.id === id ? { ...t, ...updatedTask } as SuggestedTask : t)).sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name)));
+    setSuggestedTasks(prev => prev.map(t => (t.id === id ? { ...t, ...updatedTask } as SuggestedTask : t)));
   };
 
   const deleteSuggestedTask = async (id: string) => {
