@@ -82,45 +82,57 @@ export default async function PrintGanttPage({ params }: { params: { id: string 
                 <div className="overflow-x-auto">
                     <div className="min-w-full inline-block align-middle">
                         <div className="border rounded-lg overflow-hidden">
-                            <div className="grid text-xs" style={{ gridTemplateColumns: `minmax(200px, 1.5fr) repeat(${days.length}, minmax(30px, 1fr))`}}>
-                                {/* Header */}
-                                <div className="font-semibold p-2 border-r border-b bg-gray-50 sticky left-0 z-10">Tarea</div>
-                                {Object.entries(months).map(([month, dayCount]) => (
-                                    <div key={month} className="text-center font-semibold p-2 border-r border-b bg-gray-50 capitalize" style={{ gridColumn: `span ${dayCount}` }}>
-                                        {month}
-                                    </div>
-                                ))}
+                            <div className="grid" style={{ gridTemplateColumns: `minmax(200px, 1.5fr) repeat(${days.length}, minmax(30px, 1fr))`, gridTemplateRows: `auto auto repeat(${tasks.length}, auto)`}}>
+                                {/* Header Month */}
+                                <div className="font-semibold p-2 border-r border-b bg-gray-50 sticky left-0 z-10" style={{gridRow: 1, gridColumn: 1}}>Tarea</div>
+                                {Object.entries(months).map(([month, dayCount], index) => {
+                                    const startingColumn = Object.values(months).slice(0, index).reduce((a, b) => a + b, 0);
+                                    return (
+                                        <div key={month} className="text-center font-semibold p-2 border-r border-b bg-gray-50 capitalize" style={{ gridColumn: `${startingColumn + 2} / span ${dayCount}`, gridRow: 1 }}>
+                                            {month}
+                                        </div>
+                                    )
+                                })}
 
-                                <div className="font-semibold p-2 border-r border-b bg-gray-50 sticky left-0 z-10"></div>
-                                {days.map((day) => (
-                                    <div key={day.toISOString()} className="text-center font-semibold p-2 border-r border-b bg-gray-50">
+                                {/* Header Day */}
+                                <div className="font-semibold p-2 border-r border-b bg-gray-50 sticky left-0 z-10" style={{gridRow: 2, gridColumn: 1}}></div>
+                                {days.map((day, index) => (
+                                    <div key={day.toISOString()} className="text-center font-semibold p-2 border-r border-b bg-gray-50" style={{gridRow: 2, gridColumn: index + 2}}>
                                         {format(day, 'd')}
                                     </div>
                                 ))}
 
-                                {/* Tasks */}
+                                {/* Tasks Rows */}
                                 {tasks.map((task, index) => {
                                     const startDate = new Date(task.startDate);
                                     const endDate = calculateEndDate(startDate, task.duration, workOnSaturdays, workOnSundays);
                                     const offset = differenceInCalendarDays(startDate, earliestDate);
+                                    const durationInDays = differenceInCalendarDays(endDate, startDate) + 1;
+                                    
                                     let workingDays = 0;
-                                    let currentDate = new Date(startDate);
-                                    while(currentDate <= endDate) {
-                                        const dayOfWeek = currentDate.getDay();
-                                        if ((dayOfWeek !== 6 || workOnSaturdays) && (dayOfWeek !== 0 || workOnSundays)) {
-                                            workingDays++;
-                                        }
-                                        currentDate.setDate(currentDate.getDate() + 1);
+                                    let currentDay = new Date(startDate);
+                                    while(currentDay <= endDate) {
+                                      const dayOfWeek = currentDay.getDay();
+                                      if ((dayOfWeek !== 6 || workOnSaturdays) && (dayOfWeek !== 0 || workOnSundays)) {
+                                          workingDays++;
+                                      }
+                                      currentDay.setDate(currentDay.getDate() + 1);
                                     }
+
 
                                     return (
                                         <React.Fragment key={task.id}>
-                                            <div className="p-2 border-r border-b sticky left-0 bg-white z-10">{task.name}</div>
-                                            <div className="relative border-b" style={{ gridColumn: `${offset + 2} / span ${workingDays}`}}>
-                                                <div className="absolute inset-0 bg-blue-500 rounded-full mx-1 my-2"></div>
+                                            <div className="p-2 border-r border-b sticky left-0 bg-white z-10 flex items-center" style={{gridRow: index + 3, gridColumn: 1}}>{task.name}</div>
+                                            <div className="relative border-b" style={{ gridRow: index + 3, gridColumn: `2 / span ${days.length}`}}>
+                                                <div 
+                                                    className="absolute bg-primary rounded h-4 top-1/2 -translate-y-1/2"
+                                                    style={{ 
+                                                        left: `${offset * 100 / days.length}%`, 
+                                                        width: `${durationInDays * 100 / days.length}%`
+                                                    }}
+                                                    title={`${task.name}: ${task.duration} días`}
+                                                ></div>
                                             </div>
-                                            {/* Empty cells for timeline */}
-                                            <div className="border-b" style={{ gridColumn: `2 / span ${days.length}`}}></div>
                                         </React.Fragment>
                                     );
                                 })}
