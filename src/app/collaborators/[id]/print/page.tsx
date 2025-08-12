@@ -1,11 +1,9 @@
-
 import { getCollaboratorForPrint } from '@/app/actions';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { CertificationItem, EPPItem, WorkClothingItem } from '@/lib/types';
-import { Printer } from 'lucide-react';
 import { notFound } from 'next/navigation';
+import PrintButton from './PrintButton';
 
 // Helper function to render tables, kept inside for colocation
 const renderItemsTable = (title: string, headers: string[], items: (WorkClothingItem | EPPItem | CertificationItem)[], renderRow: (item: any, index: number) => React.ReactNode) => (
@@ -60,10 +58,7 @@ export default async function PrintCollaboratorPage({ params }: { params: { id: 
                      <p className="text-sm text-gray-500">Ficha de Entrega de Recursos</p>
                 </div>
                 <div className="no-print">
-                    <Button onClick={() => window.print()}>
-                        <Printer className="mr-2 h-4 w-4" />
-                        Imprimir
-                    </Button>
+                    <PrintButton />
                 </div>
             </header>
 
