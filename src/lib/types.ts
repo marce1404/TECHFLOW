@@ -66,6 +66,8 @@ export type Collaborator = {
   certifications: CertificationItem[];
 };
 
+export type CollaboratorPrintData = Omit<Collaborator, 'id'>;
+
 export type Vehicle = {
   id: string;
   model: string;
@@ -90,7 +92,7 @@ export type OTCategory = {
 };
 
 export type Service = {
-  id: string;
+  id:string;
   name: string;
   status: 'Activa' | 'Inactiva';
 };

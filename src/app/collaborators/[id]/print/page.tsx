@@ -1,27 +1,34 @@
 
-
 'use client';
 
 import * as React from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { useWorkOrders } from '@/context/work-orders-context';
-import type { CertificationItem, EPPItem, Collaborator, WorkClothingItem } from '@/lib/types';
+import { useParams } from 'next/navigation';
+import type { CollaboratorPrintData, CertificationItem, EPPItem, WorkClothingItem } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Printer } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { getCollaboratorForPrint } from '@/app/actions';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PrintCollaboratorPage() {
   const params = useParams();
-  const { collaborators } = useWorkOrders();
   const collaboratorId = params.id as string;
   
-  const [collaborator, setCollaborator] = React.useState<Collaborator | undefined>(undefined);
+  const [collaborator, setCollaborator] = React.useState<CollaboratorPrintData | null>(null);
+  const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    const foundCollaborator = collaborators.find(t => t.id === collaboratorId);
-    setCollaborator(foundCollaborator);
-  }, [collaboratorId, collaborators]);
+    if (collaboratorId) {
+      getCollaboratorForPrint(collaboratorId)
+        .then(data => {
+          if (data) {
+            setCollaborator(data);
+          }
+          setLoading(false);
+        });
+    }
+  }, [collaboratorId]);
 
   React.useEffect(() => {
     if (collaborator) {
@@ -29,9 +36,22 @@ export default function PrintCollaboratorPage() {
     }
   }, [collaborator]);
 
+  if (loading) {
+     return (
+        <div className="p-12">
+            <div className="max-w-4xl mx-auto space-y-8">
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-64 w-full" />
+            </div>
+        </div>
+    );
+  }
 
   if (!collaborator) {
-    return <div>Cargando ficha del colaborador...</div>;
+    return <div>Colaborador no encontrado.</div>;
   }
   
   const renderInfoTable = (title: string, data: [string, string | undefined][]) => (
@@ -61,7 +81,7 @@ export default function PrintCollaboratorPage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {items.length > 0 ? items.map((item) => renderRow(item)) : <TableRow><TableCell colSpan={headers.length} className="text-center">No hay registros.</TableCell></TableRow>}
+                    {items && items.length > 0 ? items.map((item) => renderRow(item)) : <TableRow><TableCell colSpan={headers.length} className="text-center">No hay registros.</TableCell></TableRow>}
                 </TableBody>
             </Table>
         </CardContent>
@@ -94,7 +114,7 @@ export default function PrintCollaboratorPage() {
                     ["Licencia de Conducir", collaborator.license],
                 ])}
 
-                {renderItemsTable("Vestimenta de Trabajo", ["Item", "Talla", "Cantidad", "Fecha Entrega", "Fecha Caducidad"], collaborator.workClothing, (item: WorkClothingItem) => (
+                {renderItemsTable("Vestimenta de Trabajo", ["Item", "Talla", "Cantidad", "Fecha Entrega", "Fecha Caducidad"], collaborator.workClothing || [], (item: WorkClothingItem) => (
                     <TableRow key={item.id}>
                         <TableCell>{item.item}</TableCell>
                         <TableCell>{item.size}</TableCell>
@@ -104,7 +124,7 @@ export default function PrintCollaboratorPage() {
                     </TableRow>
                 ))}
 
-                {renderItemsTable("Equipo de Protección Personal (EPP)", ["Item", "Talla", "Cantidad", "Fecha Entrega", "Fecha Caducidad"], collaborator.epp, (item: EPPItem) => (
+                {renderItemsTable("Equipo de Protección Personal (EPP)", ["Item", "Talla", "Cantidad", "Fecha Entrega", "Fecha Caducidad"], collaborator.epp || [], (item: EPPItem) => (
                      <TableRow key={item.id}>
                         <TableCell>{item.item}</TableCell>
                         <TableCell>{item.size}</TableCell>
@@ -114,7 +134,7 @@ export default function PrintCollaboratorPage() {
                     </TableRow>
                 ))}
 
-                {renderItemsTable("Certificados", ["Nombre", "Organización Emisora", "Fecha Emisión", "Fecha Caducidad"], collaborator.certifications, (item: CertificationItem) => (
+                {renderItemsTable("Certificados", ["Nombre", "Organización Emisora", "Fecha Emisión", "Fecha Caducidad"], collaborator.certifications || [], (item: CertificationItem) => (
                     <TableRow key={item.id}>
                         <TableCell>{item.name}</TableCell>
                         <TableCell>{item.issuingOrganization}</TableCell>
