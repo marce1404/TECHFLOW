@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { Button } from "@/components/ui/button";
-import { PlusCircle, MoreHorizontal, Edit } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useWorkOrders } from "@/context/work-orders-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,7 +51,7 @@ export default function GanttPage() {
                 <CardContent>
                     <div className="rounded-md border">
                         <Table>
-                            <TableHeader>
+                            <TableHeader className="bg-muted/50">
                                 <TableRow>
                                     <TableHead>Nombre</TableHead>
                                     <TableHead>Nº de Tareas</TableHead>
@@ -83,7 +83,7 @@ export default function GanttPage() {
                                                             </DropdownMenuItem>
                                                             <AlertDialogTrigger asChild>
                                                                 <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                                                    Eliminar
+                                                                    <Trash2 className="mr-2 h-4 w-4" /> Eliminar
                                                                 </DropdownMenuItem>
                                                             </AlertDialogTrigger>
                                                         </DropdownMenuContent>
