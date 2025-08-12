@@ -27,7 +27,7 @@ import { CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { format, addDays, differenceInCalendarDays } from 'date-fns';
+import { format, addDays, differenceInCalendarDays, eachDayOfInterval } from 'date-fns';
 import type { GanttChart, Service } from '@/lib/types';
 import Link from 'next/link';
 import { useWorkOrders } from '@/context/work-orders-context';
@@ -103,8 +103,9 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
   }
 
   const calculateEndDate = (startDate: Date, duration: number, workOnSaturdays: boolean, workOnSundays: boolean) => {
-    let remainingDays = duration - 1; // Duration includes the start day
-    let currentDate = startDate;
+    let remainingDays = duration;
+    let currentDate = new Date(startDate);
+    currentDate.setDate(currentDate.getDate() - 1); 
 
     while (remainingDays > 0) {
       currentDate = addDays(currentDate, 1);
@@ -121,6 +122,33 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
   
   const watchedTasks = form.watch('tasks');
   const watchedWorkdays = form.watch(['workOnSaturdays', 'workOnSundays']);
+  
+  const ganttChartData = React.useMemo(() => {
+    if (!watchedTasks || watchedTasks.length === 0) {
+      return { days: [], months: [], earliestDate: null };
+    }
+
+    const validTasks = watchedTasks.filter(t => t.startDate && t.duration > 0);
+    if (validTasks.length === 0) {
+        return { days: [], months: [], earliestDate: null };
+    }
+
+    const earliestDate = new Date(Math.min(...validTasks.map(t => new Date(t.startDate).getTime())));
+    const latestDate = new Date(Math.max(...validTasks.map(t => calculateEndDate(new Date(t.startDate), t.duration, watchedWorkdays[0], watchedWorkdays[1]).getTime())));
+
+    const days = eachDayOfInterval({ start: earliestDate, end: latestDate });
+
+    const months = days.reduce((acc, day) => {
+      const month = format(day, 'MMMM yyyy');
+      if (!acc[month]) {
+        acc[month] = 0;
+      }
+      acc[month]++;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return { days, months: Object.entries(months), earliestDate };
+  }, [watchedTasks, watchedWorkdays]);
 
 
   return (
@@ -256,36 +284,48 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                     Una representación visual simple de tu cronograma.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="overflow-x-auto">
-                 {watchedTasks.length > 0 ? (
-                    <div className="space-y-2 relative">
-                        {watchedTasks.map((task, index) => {
-                            if (!task.startDate || !task.duration) {
-                                return null;
-                            }
-                            const startDate = new Date(task.startDate);
-                            const duration = task.duration || 1;
-                            const endDate = calculateEndDate(startDate, duration, watchedWorkdays[0], watchedWorkdays[1]);
-                            const earliestDate = watchedTasks.reduce((earliest, t) => {
-                                const tDate = t.startDate ? new Date(t.startDate) : new Date();
-                                return tDate < earliest ? tDate : earliest;
-                            }, startDate);
-                            const offset = differenceInCalendarDays(startDate, earliestDate);
-                            const width = differenceInCalendarDays(endDate, startDate) + 1;
-
-                            return (
-                                <div key={task.id} className="flex items-center h-10">
-                                    <div className="w-48 pr-2 text-sm truncate border-r">{task.name}</div>
-                                    <div className="pl-2 flex-1 relative h-full">
-                                        <div 
-                                            className="absolute bg-primary/80 h-6 top-2 rounded" 
-                                            style={{ left: `${offset * 2.5}rem`, width: `${width * 2.5}rem` }}
-                                            title={`${task.name} - ${format(startDate, 'dd/MM')} a ${format(endDate, 'dd/MM')}`}
-                                        ></div>
-                                    </div>
+            <CardContent className="overflow-x-auto p-0">
+                 {watchedTasks.length > 0 && ganttChartData.days.length > 0 ? (
+                    <div className="min-w-[800px] p-6">
+                        <div className="grid" style={{ gridTemplateColumns: `12rem repeat(${ganttChartData.days.length}, 2rem)`}}>
+                           {/* Header */}
+                           <div className="sticky left-0 bg-card z-10"></div>
+                            {ganttChartData.months.map(([month, dayCount]) => (
+                                <div key={month} className="text-center text-sm font-semibold text-muted-foreground capitalize" style={{ gridColumn: `span ${dayCount}` }}>
+                                    {month}
                                 </div>
-                            )
-                        })}
+                            ))}
+                           <div className="sticky left-0 bg-card z-10"></div>
+                            {ganttChartData.days.map((day) => (
+                                <div key={day.toString()} className="text-center text-xs text-muted-foreground border-r border-dashed">
+                                    {format(day, 'd')}
+                                </div>
+                            ))}
+
+                           {/* Tasks */}
+                           {watchedTasks.map((task, index) => {
+                                if (!task.startDate || !task.duration) {
+                                    return <div key={task.id}></div>;
+                                }
+                                const startDate = new Date(task.startDate);
+                                const endDate = calculateEndDate(startDate, task.duration, watchedWorkdays[0], watchedWorkdays[1]);
+                                const offset = differenceInCalendarDays(startDate, ganttChartData.earliestDate!);
+                                const durationInDays = differenceInCalendarDays(endDate, startDate) + 1;
+
+                                return (
+                                    <React.Fragment key={task.id}>
+                                        <div className="sticky left-0 bg-card z-10 text-sm truncate pr-2 py-1 border-t flex items-center">{task.name}</div>
+                                        <div className="relative border-t col-span-full h-8" style={{ gridColumnStart: 2, gridRowStart: index + 3}}>
+                                            <div
+                                                className="absolute bg-primary/80 h-6 top-1 rounded"
+                                                style={{ left: `${offset * 2}rem`, width: `${durationInDays * 2}rem` }}
+                                                title={`${task.name} - ${format(startDate, 'dd/MM')} a ${format(endDate, 'dd/MM')}`}
+                                            ></div>
+                                        </div>
+                                    </React.Fragment>
+                                )
+                           })}
+                        </div>
                     </div>
                 ) : (
                     <div className="text-center text-muted-foreground p-8">
