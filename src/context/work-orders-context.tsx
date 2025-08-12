@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, query, where, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { WorkOrder, OTCategory, Service, Technician, Vehicle } from '@/lib/types';
@@ -14,14 +14,15 @@ interface WorkOrdersContextType {
   technicians: Technician[];
   vehicles: Vehicle[];
   loading: boolean;
+  fetchData: () => Promise<void>;
   updateOrder: (id: string, updatedOrder: Partial<WorkOrder>) => Promise<void>;
   getOrder: (id: string) => WorkOrder | undefined;
-  addCategory: (category: Omit<OTCategory, 'id' | 'status'> & { status: string }) => Promise<void>;
+  addCategory: (category: Omit<OTCategory, 'id' | 'status'> & { status: string }) => Promise<OTCategory>;
   updateCategory: (id: string, category: Partial<OTCategory>) => Promise<void>;
-  addService: (service: Omit<Service, 'id' | 'status'> & { status: string }) => Promise<void>;
+  addService: (service: Omit<Service, 'id' | 'status'> & { status: string }) => Promise<Service>;
   updateService: (id: string, service: Partial<Service>) => Promise<void>;
   deleteService: (id: string) => Promise<void>;
-  addOrder: (order: Omit<WorkOrder, 'id'>) => Promise<void>;
+  addOrder: (order: Omit<WorkOrder, 'id'>) => Promise<WorkOrder>;
   getNextOtNumber: (prefix: string) => string;
   addTechnician: (technician: Omit<Technician, 'id'>) => Promise<Technician>;
   updateTechnician: (id: string, technician: Partial<Omit<Technician, 'id'>>) => Promise<void>;
@@ -42,7 +43,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
         setLoading(true);
         const [
@@ -80,12 +81,12 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     } finally {
         setLoading(false);
     }
-  };
+  }, []);
 
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   const getNextOtNumber = (prefix: string) => {
     const allOrders = [...activeWorkOrders, ...historicalWorkOrders];
@@ -95,7 +96,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     return `${prefix}-${maxNumber + 1}`;
   };
 
-  const addOrder = async (order: Omit<WorkOrder, 'id'>) => {
+  const addOrder = async (order: Omit<WorkOrder, 'id'>): Promise<WorkOrder> => {
     const docRef = await addDoc(collection(db, "work-orders"), order);
     const newOrder = { id: docRef.id, ...order } as WorkOrder;
     if (newOrder.status === 'Cerrada') {
@@ -103,6 +104,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     } else {
       setActiveWorkOrders(prev => [newOrder, ...prev]);
     }
+    return newOrder;
   };
   
   const updateOrder = async (id: string, updatedFields: Partial<WorkOrder>) => {
@@ -134,10 +136,11 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     return [...activeWorkOrders, ...historicalWorkOrders].find(order => order.id === id);
   };
   
-  const addCategory = async (category: Omit<OTCategory, 'id'>) => {
+  const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory> => {
     const docRef = await addDoc(collection(db, "ot-categories"), category);
     const newCategory = { id: docRef.id, ...category } as OTCategory;
     setOtCategories(prev => [...prev, newCategory]);
+    return newCategory;
   };
 
   const updateCategory = async (id: string, updatedCategory: Partial<OTCategory>) => {
@@ -146,10 +149,11 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     setOtCategories(prev => prev.map(cat => (cat.id === id ? { ...cat, ...updatedCategory } : cat)));
   };
 
-  const addService = async (service: Omit<Service, 'id'>) => {
+  const addService = async (service: Omit<Service, 'id'>): Promise<Service> => {
     const docRef = await addDoc(collection(db, "services"), service);
     const newService = { id: docRef.id, ...service } as Service;
     setServices(prev => [...prev, newService]);
+    return newService;
   };
 
   const updateService = async (id: string, updatedService: Partial<Service>) => {
@@ -208,6 +212,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         technicians,
         vehicles,
         loading,
+        fetchData,
         updateOrder, 
         getOrder, 
         addCategory,

@@ -15,15 +15,21 @@ export default function EditTechnicianPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
-  const { technicians, updateTechnician } = useWorkOrders();
+  const { technicians, updateTechnician, fetchData } = useWorkOrders();
   const technicianId = params.id as string;
   
   const [technician, setTechnician] = React.useState<Technician | undefined>(undefined);
 
   React.useEffect(() => {
     const foundTechnician = technicians.find(t => t.id === technicianId);
-    setTechnician(foundTechnician);
-  }, [technicianId, technicians]);
+    if (foundTechnician) {
+      setTechnician(foundTechnician);
+    } else {
+      // If the technician is not found in the current state, it might be because
+      // the state hasn't updated yet after creation. Fetch data again.
+      fetchData();
+    }
+  }, [technicianId, technicians, fetchData]);
 
 
   const handleSave = (data: TechnicianFormValues) => {
