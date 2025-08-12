@@ -46,7 +46,8 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     try {
         setLoading(true);
         const [
-            workOrdersSnapshot,
+            activeWorkOrdersSnapshot,
+            historicalWorkOrdersSnapshot,
             categoriesSnapshot,
             servicesSnapshot,
             techniciansSnapshot,
@@ -60,14 +61,12 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             getDocs(collection(db, "vehicles")),
         ]);
 
-        setActiveWorkOrders(workOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[]);
-        setHistoricalWorkOrders(categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[]);
-        setOtCategories(servicesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as OTCategory[]);
-        setServices(techniciansSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Service[]);
-        setTechnicians(vehiclesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Technician[]);
-        
-        const vehicleDocs = await getDocs(collection(db, "vehicles"));
-        setVehicles(vehicleDocs.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Vehicle[]);
+        setActiveWorkOrders(activeWorkOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[]);
+        setHistoricalWorkOrders(historicalWorkOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[]);
+        setOtCategories(categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as OTCategory[]);
+        setServices(servicesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Service[]);
+        setTechnicians(techniciansSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Technician[]);
+        setVehicles(vehiclesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Vehicle[]);
 
     } catch (error) {
         console.error("Error fetching data from Firestore: ", error);
@@ -137,7 +136,8 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   
   const addCategory = async (category: Omit<OTCategory, 'id'>) => {
     const docRef = await addDoc(collection(db, "ot-categories"), category);
-    setOtCategories(prev => [...prev, { ...category, id: docRef.id }]);
+    const newCategory = { id: docRef.id, ...category } as OTCategory;
+    setOtCategories(prev => [...prev, newCategory]);
   };
 
   const updateCategory = async (id: string, updatedCategory: Partial<OTCategory>) => {
@@ -148,7 +148,8 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
   const addService = async (service: Omit<Service, 'id'>) => {
     const docRef = await addDoc(collection(db, "services"), service);
-    setServices(prev => [...prev, { ...service, id: docRef.id }]);
+    const newService = { id: docRef.id, ...service } as Service;
+    setServices(prev => [...prev, newService]);
   };
 
   const updateService = async (id: string, updatedService: Partial<Service>) => {
@@ -182,7 +183,8 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   
   const addVehicle = async (vehicle: Omit<Vehicle, 'id'>) => {
     const docRef = await addDoc(collection(db, "vehicles"), vehicle);
-    setVehicles(prev => [{ ...vehicle, id: docRef.id } as Vehicle, ...prev]);
+    const newVehicle = { ...vehicle, id: docRef.id } as Vehicle;
+    setVehicles(prev => [newVehicle, ...prev]);
   };
 
   const updateVehicle = async (id: string, updatedVehicle: Partial<Omit<Vehicle, 'id'>>) => {
