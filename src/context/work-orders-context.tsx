@@ -45,8 +45,8 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
+    setLoading(true);
     try {
-        setLoading(true);
         const [
             activeWorkOrdersSnapshot,
             historicalWorkOrdersSnapshot,

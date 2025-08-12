@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Printer } from 'lucide-react';
 
-export default function EditCollaboratorPage() {
+function EditCollaboratorComponent() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
@@ -69,4 +69,8 @@ export default function EditCollaboratorPage() {
       <CollaboratorForm onSave={handleSave} collaborator={collaborator} />
     </div>
   );
+}
+
+export default function EditCollaboratorPage() {
+    return <EditCollaboratorComponent />;
 }
