@@ -26,7 +26,7 @@ interface WorkOrdersContextType {
   addTechnician: (technician: Omit<Technician, 'id'>) => Promise<Technician>;
   updateTechnician: (id: string, technician: Partial<Omit<Technician, 'id'>>) => Promise<void>;
   deleteTechnician: (id: string) => Promise<void>;
-  addVehicle: (vehicle: Omit<Vehicle, 'id'>) => Promise<void>;
+  addVehicle: (vehicle: Omit<Vehicle, 'id'>) => Promise<Vehicle>;
   updateVehicle: (id: string, vehicle: Partial<Omit<Vehicle, 'id'>>) => Promise<void>;
   deleteVehicle: (id: string) => Promise<void>;
 }
@@ -181,10 +181,11 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     setTechnicians(prev => prev.filter(t => t.id !== id));
   };
   
-  const addVehicle = async (vehicle: Omit<Vehicle, 'id'>) => {
+  const addVehicle = async (vehicle: Omit<Vehicle, 'id'>): Promise<Vehicle> => {
     const docRef = await addDoc(collection(db, "vehicles"), vehicle);
     const newVehicle = { ...vehicle, id: docRef.id } as Vehicle;
-    setVehicles(prev => [newVehicle, ...prev]);
+    setVehicles(prev => [...prev, newVehicle]);
+    return newVehicle;
   };
 
   const updateVehicle = async (id: string, updatedVehicle: Partial<Omit<Vehicle, 'id'>>) => {
