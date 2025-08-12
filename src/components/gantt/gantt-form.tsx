@@ -171,9 +171,18 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
   }, [watchedTasks, watchedWorkdays]);
 
 
+  const onSubmitForm = (data: GanttFormValues) => {
+    const dataToSave = {
+        ...data,
+        assignedOT: data.assignedOT === 'none' ? '' : data.assignedOT,
+    };
+    onSave(dataToSave);
+  };
+
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit((data) => onSave(data))} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmitForm)} className="space-y-6">
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">
@@ -215,7 +224,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                                 </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    <SelectItem value="">Ninguna</SelectItem>
+                                    <SelectItem value="none">Ninguna</SelectItem>
                                     {activeWorkOrders.map((ot: WorkOrder) => (
                                         <SelectItem key={ot.id} value={ot.ot_number}>
                                             {ot.ot_number} - {ot.description}
