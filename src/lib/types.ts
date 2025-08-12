@@ -1,4 +1,5 @@
 
+import { z } from 'zod';
 
 export type StatCardData = {
   title: string;
@@ -96,3 +97,45 @@ export type Service = {
   name: string;
   status: 'Activa' | 'Inactiva';
 };
+
+// AI Resource Assignment Types
+export const SuggestOptimalResourceAssignmentInputSchema = z.object({
+  taskRequirements: z
+    .string()
+    .describe('A description of the task requirements, including skills needed, tools, and time estimate.'),
+  availableTechnicians: z
+    .string()
+    .describe(
+      'A list of available technicians with their skills, current workload, and availability.'
+    ),
+  availableVehicles: z
+    .string()
+    .describe(
+      'A list of available vehicles with their type, capacity, location, and availability.'
+    ),
+});
+export type SuggestOptimalResourceAssignmentInput = z.infer<
+  typeof SuggestOptimalResourceAssignmentInputSchema
+>;
+
+export const SuggestOptimalResourceAssignmentOutputSchema = z.object({
+  suggestedTechnicians: z
+    .string()
+    .describe('A list of suggested technicians for the task.'),
+  suggestedVehicles: z.string().describe('A list of suggested vehicles for the task.'),
+  justification: z
+    .string()
+    .describe(
+      'A justification for the suggested assignments, considering task requirements and resource availability.'
+    ),
+});
+export type SuggestOptimalResourceAssignmentOutput = z.infer<
+  typeof SuggestOptimalResourceAssignmentOutputSchema
+>;
+
+export const SuggestOptimalResourceAssignmentOutputWithErrorSchema =
+  SuggestOptimalResourceAssignmentOutputSchema.or(z.object({ error: z.string() }));
+
+export type SuggestOptimalResourceAssignmentOutputWithError = z.infer<
+    typeof SuggestOptimalResourceAssignmentOutputWithErrorSchema
+    >;

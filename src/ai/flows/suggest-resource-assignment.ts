@@ -1,4 +1,3 @@
-// This file is machine-generated - edit at your own risk.
 
 'use server';
 
@@ -6,53 +5,15 @@
  * @fileOverview An AI agent that suggests optimal technician and vehicle assignments based on task requirements and resource availability.
  *
  * - suggestOptimalResourceAssignment - A function that suggests optimal resource assignments.
- * - SuggestOptimalResourceAssignmentInput - The input type for the suggestOptimalResourceAssignment function.
- * - SuggestOptimalResourceAssignmentOutput - The return type for the suggestOptimalResourceAssignment function.
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
-
-const SuggestOptimalResourceAssignmentInputSchema = z.object({
-  taskRequirements: z
-    .string()
-    .describe('A description of the task requirements, including skills needed, tools, and time estimate.'),
-  availableTechnicians: z
-    .string()
-    .describe(
-      'A list of available technicians with their skills, current workload, and availability.'
-    ),
-  availableVehicles: z
-    .string()
-    .describe(
-      'A list of available vehicles with their type, capacity, location, and availability.'
-    ),
-});
-export type SuggestOptimalResourceAssignmentInput = z.infer<
-  typeof SuggestOptimalResourceAssignmentInputSchema
->;
-
-export const SuggestOptimalResourceAssignmentOutputSchema = z.object({
-  suggestedTechnicians: z
-    .string()
-    .describe('A list of suggested technicians for the task.'),
-  suggestedVehicles: z.string().describe('A list of suggested vehicles for the task.'),
-  justification: z
-    .string()
-    .describe(
-      'A justification for the suggested assignments, considering task requirements and resource availability.'
-    ),
-});
-export type SuggestOptimalResourceAssignmentOutput = z.infer<
-  typeof SuggestOptimalResourceAssignmentOutputSchema
->;
-
-export const SuggestOptimalResourceAssignmentOutputWithErrorSchema =
-  SuggestOptimalResourceAssignmentOutputSchema.or(z.object({ error: z.string() }));
-
-export type SuggestOptimalResourceAssignmentOutputWithError = z.infer<
-    typeof SuggestOptimalResourceAssignmentOutputWithErrorSchema
-    >;
+import {
+    SuggestOptimalResourceAssignmentInput,
+    SuggestOptimalResourceAssignmentInputSchema,
+    SuggestOptimalResourceAssignmentOutput,
+    SuggestOptimalResourceAssignmentOutputSchema
+} from '@/lib/types';
 
 
 export async function suggestOptimalResourceAssignment(

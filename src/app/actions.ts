@@ -1,13 +1,13 @@
 
 'use server';
 
-import {
-  suggestOptimalResourceAssignment,
-  type SuggestOptimalResourceAssignmentInput,
-  type SuggestOptimalResourceAssignmentOutputWithError,
-} from '@/ai/flows/suggest-resource-assignment';
+import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
 import { db } from '@/lib/firebase';
-import type { CollaboratorPrintData } from '@/lib/types';
+import type { 
+  CollaboratorPrintData, 
+  SuggestOptimalResourceAssignmentInput, 
+  SuggestOptimalResourceAssignmentOutputWithError 
+} from '@/lib/types';
 import { doc, getDoc } from 'firebase/firestore';
 
 
