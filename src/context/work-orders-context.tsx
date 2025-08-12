@@ -34,6 +34,7 @@ interface WorkOrdersContextType {
   updateVehicle: (id: string, vehicle: Partial<Omit<Vehicle, 'id'>>) => Promise<void>;
   deleteVehicle: (id: string) => Promise<void>;
   addGanttChart: (ganttChart: Omit<GanttChart, 'id'>) => Promise<GanttChart>;
+  deleteGanttChart: (id: string) => Promise<void>;
 }
 
 const WorkOrdersContext = createContext<WorkOrdersContextType | undefined>(undefined);
@@ -237,6 +238,11 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     return newGanttChart;
   };
 
+  const deleteGanttChart = async (id: string) => {
+    await deleteDoc(doc(db, "gantt-charts", id));
+    setGanttCharts(prev => prev.filter(chart => chart.id !== id));
+  };
+
   return (
     <WorkOrdersContext.Provider value={{ 
         activeWorkOrders, 
@@ -265,6 +271,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         updateVehicle,
         deleteVehicle,
         addGanttChart,
+        deleteGanttChart,
     }}>
       {children}
     </WorkOrdersContext.Provider>
