@@ -1,93 +1,43 @@
 
-'use client';
-
-import * as React from 'react';
-import { useParams } from 'next/navigation';
-import type { CollaboratorPrintData, CertificationItem, EPPItem, WorkClothingItem } from '@/lib/types';
+import { getCollaboratorForPrint } from '@/app/actions';
 import { Button } from '@/components/ui/button';
-import { Printer } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { getCollaboratorForPrint } from '@/app/actions';
-import { Skeleton } from '@/components/ui/skeleton';
+import type { CertificationItem, EPPItem, WorkClothingItem } from '@/lib/types';
+import { Printer } from 'lucide-react';
+import { notFound } from 'next/navigation';
 
-export default function PrintCollaboratorPage() {
-  const params = useParams();
-  const collaboratorId = params.id as string;
-  
-  const [collaborator, setCollaborator] = React.useState<CollaboratorPrintData | null>(null);
-  const [loading, setLoading] = React.useState(true);
+// Note: This is now a Server Component.
+// It fetches data on the server before rendering the page.
 
-  React.useEffect(() => {
-    if (collaboratorId) {
-      getCollaboratorForPrint(collaboratorId)
-        .then(data => {
-          if (data) {
-            setCollaborator(data);
-          }
-        })
-        .finally(() => {
-            setLoading(false);
-        });
-    }
-  }, [collaboratorId]);
+// Helper function to render tables, kept inside for colocation
+const renderItemsTable = (title: string, headers: string[], items: (WorkClothingItem | EPPItem | CertificationItem)[], renderRow: (item: any, index: number) => React.ReactNode) => (
+    <Card>
+        <CardHeader>
+            <CardTitle className="text-xl">{title}</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        {headers.map(header => <TableHead key={header}>{header}</TableHead>)}
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {items && items.length > 0 ? items.map((item, index) => renderRow(item, index)) : <TableRow><TableCell colSpan={headers.length} className="text-center">No hay registros.</TableCell></TableRow>}
+                </TableBody>
+            </Table>
+        </CardContent>
+    </Card>
+);
 
-  React.useEffect(() => {
-    // Automatically trigger print when data is loaded
-    if (!loading && collaborator) {
-      setTimeout(() => {
-        window.print();
-      }, 500); // Small delay to ensure content is rendered
-    }
-  }, [loading, collaborator]);
+export default async function PrintCollaboratorPage({ params }: { params: { id: string } }) {
+  const collaboratorId = params.id;
+  const collaborator = await getCollaboratorForPrint(collaboratorId);
 
-  if (loading) {
-     return (
-        <div className="bg-white text-black p-8 md:p-12">
-            <div className="max-w-4xl mx-auto space-y-8">
-                <header className="flex justify-between items-center pb-4 border-b">
-                    <div>
-                         <Skeleton className="h-8 w-32 mb-2" />
-                         <Skeleton className="h-4 w-48" />
-                    </div>
-                    <div className="no-print">
-                        <Skeleton className="h-10 w-28" />
-                    </div>
-                </header>
-                <main className="space-y-10">
-                    <div className="space-y-2">
-                        <Skeleton className="h-6 w-48 mb-2" />
-                        <Skeleton className="h-24 w-full" />
-                    </div>
-                    {[...Array(3)].map((_, i) => (
-                        <Card key={i}>
-                            <CardHeader><Skeleton className="h-7 w-56" /></CardHeader>
-                            <CardContent className="space-y-2">
-                                <Skeleton className="h-10 w-full" />
-                                <Skeleton className="h-10 w-full" />
-                                <Skeleton className="h-10 w-full" />
-                            </CardContent>
-                        </Card>
-                    ))}
-                </main>
-                 <footer className="pt-12 text-center text-sm">
-                    <Skeleton className="h-24 w-full" />
-                </footer>
-            </div>
-        </div>
-    );
-  }
-
+  // If no collaborator is found, show a 404 page.
   if (!collaborator) {
-    return (
-        <div className="bg-white text-black p-8 md:p-12">
-            <div className="max-w-4xl mx-auto space-y-8 text-center">
-                 <h1 className="text-2xl font-bold text-destructive">Colaborador no encontrado</h1>
-                 <p className="text-muted-foreground">No se pudo cargar la información del colaborador. Por favor, verifica que el ID es correcto y vuelve a intentarlo.</p>
-                 <Button onClick={() => window.close()} className="no-print">Cerrar</Button>
-            </div>
-        </div>
-    );
+    notFound();
   }
   
   const renderInfoTable = (title: string, data: [string, string | undefined][]) => (
@@ -103,33 +53,12 @@ export default function PrintCollaboratorPage() {
         </div>
     </div>
   );
-  
-  const renderItemsTable = (title: string, headers: string[], items: (WorkClothingItem | EPPItem | CertificationItem)[], renderRow: (item: any) => React.ReactNode) => (
-    <Card>
-        <CardHeader>
-            <CardTitle className="text-xl">{title}</CardTitle>
-        </CardHeader>
-        <CardContent>
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        {headers.map(header => <TableHead key={header}>{header}</TableHead>)}
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {items && items.length > 0 ? items.map((item) => renderRow(item)) : <TableRow><TableCell colSpan={headers.length} className="text-center">No hay registros.</TableCell></TableRow>}
-                </TableBody>
-            </Table>
-        </CardContent>
-    </Card>
-  );
 
   return (
     <div className="bg-white text-black p-8 md:p-12 print:p-0">
         <div className="max-w-4xl mx-auto space-y-8">
             <header className="flex justify-between items-center pb-4 border-b">
                 <div>
-                     {/* Placeholder for company logo */}
                      <h1 className="text-2xl font-bold text-gray-800">APTECH</h1>
                      <p className="text-sm text-gray-500">Ficha de Entrega de Recursos</p>
                 </div>
@@ -150,8 +79,8 @@ export default function PrintCollaboratorPage() {
                     ["Licencia de Conducir", collaborator.license],
                 ])}
 
-                {renderItemsTable("Vestimenta de Trabajo", ["Item", "Talla", "Cantidad", "Fecha Entrega", "Fecha Caducidad"], collaborator.workClothing || [], (item: WorkClothingItem) => (
-                    <TableRow key={item.id}>
+                {renderItemsTable("Vestimenta de Trabajo", ["Item", "Talla", "Cantidad", "Fecha Entrega", "Fecha Caducidad"], collaborator.workClothing || [], (item: WorkClothingItem, index: number) => (
+                    <TableRow key={item.id || index}>
                         <TableCell>{item.item}</TableCell>
                         <TableCell>{item.size}</TableCell>
                         <TableCell>{item.quantity}</TableCell>
@@ -160,8 +89,8 @@ export default function PrintCollaboratorPage() {
                     </TableRow>
                 ))}
 
-                {renderItemsTable("Equipo de Protección Personal (EPP)", ["Item", "Talla", "Cantidad", "Fecha Entrega", "Fecha Caducidad"], collaborator.epp || [], (item: EPPItem) => (
-                     <TableRow key={item.id}>
+                {renderItemsTable("Equipo de Protección Personal (EPP)", ["Item", "Talla", "Cantidad", "Fecha Entrega", "Fecha Caducidad"], collaborator.epp || [], (item: EPPItem, index: number) => (
+                     <TableRow key={item.id || index}>
                         <TableCell>{item.item}</TableCell>
                         <TableCell>{item.size}</TableCell>
                         <TableCell>{item.quantity}</TableCell>
@@ -170,8 +99,8 @@ export default function PrintCollaboratorPage() {
                     </TableRow>
                 ))}
 
-                {renderItemsTable("Certificados", ["Nombre", "Organización Emisora", "Fecha Emisión", "Fecha Caducidad"], collaborator.certifications || [], (item: CertificationItem) => (
-                    <TableRow key={item.id}>
+                {renderItemsTable("Certificados", ["Nombre", "Organización Emisora", "Fecha Emisión", "Fecha Caducidad"], collaborator.certifications || [], (item: CertificationItem, index: number) => (
+                    <TableRow key={item.id || index}>
                         <TableCell>{item.name}</TableCell>
                         <TableCell>{item.issuingOrganization}</TableCell>
                         <TableCell>{item.issueDate}</TableCell>
@@ -198,6 +127,15 @@ export default function PrintCollaboratorPage() {
                 </p>
             </footer>
         </div>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              setTimeout(() => {
+                window.print();
+              }, 500);
+            `,
+          }}
+        />
     </div>
   );
 }
