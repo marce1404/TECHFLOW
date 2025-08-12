@@ -60,7 +60,7 @@ function EditCollaboratorComponent() {
           </p>
         </div>
         <Button variant="outline" asChild>
-          <Link href={`/collaborators/${collaboratorId}/print`} target="_blank">
+          <Link href={`/collaborators/${collaboratorId}/print`} target="_blank" rel="noopener noreferrer">
             <Printer className="mr-2 h-4 w-4" />
             Imprimir Ficha
           </Link>
