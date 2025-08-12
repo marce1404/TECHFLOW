@@ -107,6 +107,12 @@ export type Service = {
   status: 'Activa' | 'Inactiva';
 };
 
+export type SuggestedTask = {
+    id: string;
+    name: string;
+    category: string; // This will be the lowercase name of the service
+}
+
 // AI Resource Assignment Types
 export const SuggestOptimalResourceAssignmentInputSchema = z.object({
   taskRequirements: z

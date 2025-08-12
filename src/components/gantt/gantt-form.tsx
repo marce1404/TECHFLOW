@@ -30,6 +30,8 @@ import { cn } from '@/lib/utils';
 import { format, addDays, differenceInCalendarDays } from 'date-fns';
 import type { GanttChart, Service } from '@/lib/types';
 import Link from 'next/link';
+import { useWorkOrders } from '@/context/work-orders-context';
+
 
 const taskSchema = z.object({
   id: z.string(),
@@ -47,12 +49,6 @@ const ganttFormSchema = z.object({
 
 type GanttFormValues = z.infer<typeof ganttFormSchema>;
 
-const suggestedTasksByCategory: Record<string, string[]> = {
-  cctv: ['Instalación de cámaras', 'Configuración de NVR/DVR', 'Cableado estructurado', 'Puesta en marcha'],
-  incendio: ['Instalación de detectores', 'Montaje de tablero de control', 'Canalización', 'Pruebas de sistema'],
-  alarma: ['Instalación de sensores', 'Configuración de panel', 'Cableado', 'Pruebas de intrusión'],
-};
-
 interface GanttFormProps {
   onSave: (data: Omit<GanttChart, 'id'>) => void;
   services: Service[];
@@ -60,6 +56,7 @@ interface GanttFormProps {
 }
 
 export default function GanttForm({ onSave, services, ganttChart }: GanttFormProps) {
+  const { suggestedTasks } = useWorkOrders();
   const [customTaskName, setCustomTaskName] = React.useState('');
 
   const form = useForm<GanttFormValues>({
@@ -89,12 +86,12 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
     }
   };
 
-  const handleSuggestedTasks = (serviceName: string) => {
-    const tasks = suggestedTasksByCategory[serviceName.toLowerCase()];
-    if (tasks) {
-        const newTasks = tasks.map(name => ({
+  const handleSuggestedTasks = (category: string) => {
+    const tasksToLoad = suggestedTasks.filter(t => t.category === category);
+    if (tasksToLoad) {
+        const newTasks = tasksToLoad.map(task => ({
             id: crypto.randomUUID(),
-            name,
+            name: task.name,
             startDate: new Date(),
             duration: 1
         }));
@@ -188,7 +185,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                   <SelectValue placeholder="Seleccionar una categoría de servicio..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {services.filter(s => s.status === 'Activa' && Object.keys(suggestedTasksByCategory).includes(s.name.toLowerCase())).map(service => (
+                  {services.filter(s => s.status === 'Activa').map(service => (
                     <SelectItem key={service.id} value={service.name.toLowerCase()}>{service.name}</SelectItem>
                   ))}
                 </SelectContent>

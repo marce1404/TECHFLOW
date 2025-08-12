@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, query, where, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { WorkOrder, OTCategory, Service, Collaborator, Vehicle, GanttChart } from '@/lib/types';
+import type { WorkOrder, OTCategory, Service, Collaborator, Vehicle, GanttChart, SuggestedTask } from '@/lib/types';
 import { Timestamp } from 'firebase/firestore';
 
 interface WorkOrdersContextType {
@@ -15,6 +15,7 @@ interface WorkOrdersContextType {
   collaborators: Collaborator[];
   vehicles: Vehicle[];
   ganttCharts: GanttChart[];
+  suggestedTasks: SuggestedTask[];
   loading: boolean;
   fetchData: () => Promise<void>;
   updateOrder: (id: string, updatedOrder: Partial<WorkOrder>) => Promise<void>;
@@ -35,6 +36,9 @@ interface WorkOrdersContextType {
   deleteVehicle: (id: string) => Promise<void>;
   addGanttChart: (ganttChart: Omit<GanttChart, 'id'>) => Promise<GanttChart>;
   deleteGanttChart: (id: string) => Promise<void>;
+  addSuggestedTask: (task: Omit<SuggestedTask, 'id'>) => Promise<SuggestedTask>;
+  updateSuggestedTask: (id: string, task: Partial<SuggestedTask>) => Promise<void>;
+  deleteSuggestedTask: (id: string) => Promise<void>;
 }
 
 const WorkOrdersContext = createContext<WorkOrdersContextType | undefined>(undefined);
@@ -47,6 +51,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [ganttCharts, setGanttCharts] = useState<GanttChart[]>([]);
+  const [suggestedTasks, setSuggestedTasks] = useState<SuggestedTask[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
@@ -60,6 +65,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             collaboratorsSnapshot,
             vehiclesSnapshot,
             ganttChartsSnapshot,
+            suggestedTasksSnapshot,
         ] = await Promise.all([
             getDocs(query(collection(db, "work-orders"), where("status", "!=", "Cerrada"))),
             getDocs(query(collection(db, "work-orders"), where("status", "==", "Cerrada"))),
@@ -68,6 +74,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             getDocs(collection(db, "collaborators")),
             getDocs(collection(db, "vehicles")),
             getDocs(collection(db, "gantt-charts")),
+            getDocs(collection(db, "suggested-tasks")),
         ]);
 
         setActiveWorkOrders(activeWorkOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[]);
@@ -84,6 +91,8 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             }));
             return { id: doc.id, ...data, tasks };
         }) as GanttChart[]);
+        setSuggestedTasks(suggestedTasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SuggestedTask[]);
+
 
     } catch (error) {
         console.error("Error fetching data from Firestore: ", error);
@@ -95,6 +104,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         setCollaborators([]);
         setVehicles([]);
         setGanttCharts([]);
+        setSuggestedTasks([]);
     } finally {
         setLoading(false);
     }
@@ -242,6 +252,24 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     await deleteDoc(doc(db, "gantt-charts", id));
     setGanttCharts(prev => prev.filter(chart => chart.id !== id));
   };
+  
+  const addSuggestedTask = async (task: Omit<SuggestedTask, 'id'>): Promise<SuggestedTask> => {
+    const docRef = await addDoc(collection(db, "suggested-tasks"), task);
+    const newTask = { id: docRef.id, ...task } as SuggestedTask;
+    setSuggestedTasks(prev => [...prev, newTask].sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name)));
+    return newTask;
+  };
+
+  const updateSuggestedTask = async (id: string, updatedTask: Partial<SuggestedTask>) => {
+    const docRef = doc(db, "suggested-tasks", id);
+    await updateDoc(docRef, updatedTask);
+    setSuggestedTasks(prev => prev.map(t => (t.id === id ? { ...t, ...updatedTask } as SuggestedTask : t)).sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name)));
+  };
+
+  const deleteSuggestedTask = async (id: string) => {
+    await deleteDoc(doc(db, "suggested-tasks", id));
+    setSuggestedTasks(prev => prev.filter(t => t.id !== id));
+  };
 
   return (
     <WorkOrdersContext.Provider value={{ 
@@ -252,6 +280,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         collaborators,
         vehicles,
         ganttCharts,
+        suggestedTasks,
         loading,
         fetchData,
         updateOrder, 
@@ -272,6 +301,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         deleteVehicle,
         addGanttChart,
         deleteGanttChart,
+        addSuggestedTask,
+        updateSuggestedTask,
+        deleteSuggestedTask,
     }}>
       {children}
     </WorkOrdersContext.Provider>

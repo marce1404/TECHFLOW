@@ -15,6 +15,11 @@ export default function SettingsPage() {
             description: 'Gestiona los servicios ofrecidos.',
             href: '/settings/services',
         },
+        {
+            title: 'Tareas Sugeridas para Gantt',
+            description: 'Gestiona las tareas predefinidas para las Cartas Gantt.',
+            href: '/settings/suggested-tasks',
+        },
     ];
 
     return (
