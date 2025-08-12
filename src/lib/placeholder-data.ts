@@ -1,10 +1,10 @@
 
-import type { WorkOrder, Technician, Vehicle, GanttChart, OTCategory, Service } from './types';
+import type { WorkOrder, Collaborator, Vehicle, GanttChart, OTCategory, Service } from './types';
 
 export const overviewStats = {
   open: '26',
   overdue: '3',
-  totalTechnicians: '32',
+  totalCollaborators: '32',
   highPriority: '5',
   closedThisMonth: '0',
 };
@@ -44,11 +44,11 @@ export const recentWorkOrders = activeWorkOrders.slice(0, 5);
 
 export const historicalWorkOrders: WorkOrder[] = []
 
-export const technicians: Technician[] = [
+export const collaborators: Collaborator[] = [
     { 
         id: '1', 
         name: 'Cristian Muñoz', 
-        specialty: 'Climatización', 
+        role: 'Técnico', 
         area: 'RM', 
         status: 'Activo',
         license: 'Clase B',
@@ -68,7 +68,7 @@ export const technicians: Technician[] = [
     { 
         id: '2', 
         name: 'Beatriz Herrera', 
-        specialty: 'Electricidad', 
+        role: 'Supervisor', 
         area: 'RM', 
         status: 'Activo',
         license: 'Clase B',
@@ -79,7 +79,7 @@ export const technicians: Technician[] = [
     { 
         id: '3', 
         name: 'Andrés Castillo', 
-        specialty: 'Seguridad', 
+        role: 'Técnico', 
         area: 'Zona Norte', 
         status: 'Licencia',
         license: 'Clase B',
@@ -90,7 +90,7 @@ export const technicians: Technician[] = [
     { 
         id: '4', 
         name: 'Juan Pérez', 
-        specialty: 'Obras Civiles', 
+        role: 'Jefe de Proyecto', 
         area: 'Zona Sur', 
         status: 'Activo',
         license: 'Clase B',
@@ -101,7 +101,7 @@ export const technicians: Technician[] = [
     { 
         id: '5', 
         name: 'Ana Torres', 
-        specialty: 'Redes y CCTV', 
+        role: 'Vendedor', 
         area: 'RM', 
         status: 'Vacaciones',
         license: 'Clase B',

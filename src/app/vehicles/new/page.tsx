@@ -10,7 +10,7 @@ import VehicleForm, { type VehicleFormValues } from '@/components/vehicles/vehic
 export default function NewVehiclePage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { addVehicle, technicians } = useWorkOrders();
+  const { addVehicle, collaborators } = useWorkOrders();
 
   const handleSave = async (data: VehicleFormValues) => {
     const newVehicle = await addVehicle(data);
@@ -32,7 +32,7 @@ export default function NewVehiclePage() {
           Completa los detalles para registrar un nuevo vehículo.
         </p>
       </div>
-      <VehicleForm onSave={handleSave} technicians={technicians} />
+      <VehicleForm onSave={handleSave} collaborators={collaborators} />
     </div>
   );
 }

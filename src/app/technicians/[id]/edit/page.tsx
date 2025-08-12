@@ -5,46 +5,46 @@ import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { useWorkOrders } from '@/context/work-orders-context';
-import type { Technician } from '@/lib/types';
-import TechnicianForm, { type TechnicianFormValues } from '@/components/technicians/technician-form';
+import type { Collaborator } from '@/lib/types';
+import CollaboratorForm, { type CollaboratorFormValues } from '@/components/collaborators/collaborator-form';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Printer } from 'lucide-react';
 
-export default function EditTechnicianPage() {
+export default function EditCollaboratorPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
-  const { getTechnician, updateTechnician, loading } = useWorkOrders();
-  const technicianId = params.id as string;
+  const { getCollaborator, updateCollaborator, loading } = useWorkOrders();
+  const collaboratorId = params.id as string;
   
-  const [technician, setTechnician] = React.useState<Technician | undefined | null>(undefined);
+  const [collaborator, setCollaborator] = React.useState<Collaborator | undefined | null>(undefined);
 
   React.useEffect(() => {
     if (!loading) {
-      const foundTechnician = getTechnician(technicianId);
-      setTechnician(foundTechnician);
+      const foundCollaborator = getCollaborator(collaboratorId);
+      setCollaborator(foundCollaborator);
     }
-  }, [technicianId, loading, getTechnician]);
+  }, [collaboratorId, loading, getCollaborator]);
 
 
-  const handleSave = (data: TechnicianFormValues) => {
-    if (!technician) return;
-    updateTechnician(technician.id, { id: technician.id, ...data });
+  const handleSave = (data: CollaboratorFormValues) => {
+    if (!collaborator) return;
+    updateCollaborator(collaborator.id, { id: collaborator.id, ...data });
     toast({
-      title: 'Técnico Actualizado',
-      description: `El técnico "${data.name}" ha sido actualizado exitosamente.`,
+      title: 'Colaborador Actualizado',
+      description: `El colaborador "${data.name}" ha sido actualizado exitosamente.`,
       duration: 2000,
     });
-    setTimeout(() => router.push('/technicians'), 2000);
+    setTimeout(() => router.push('/collaborators'), 2000);
   };
   
-  if (technician === undefined) {
-    return <div>Cargando técnico...</div>;
+  if (collaborator === undefined) {
+    return <div>Cargando colaborador...</div>;
   }
   
-  if (technician === null) {
-      return <div>Técnico no encontrado.</div>;
+  if (collaborator === null) {
+      return <div>Colaborador no encontrado.</div>;
   }
 
   return (
@@ -52,20 +52,20 @@ export default function EditTechnicianPage() {
       <div className="flex justify-between items-center">
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-headline font-bold tracking-tight">
-            Editar Técnico
+            Editar Colaborador
           </h1>
           <p className="text-muted-foreground">
-            Modifica los detalles del técnico.
+            Modifica los detalles del colaborador.
           </p>
         </div>
         <Button variant="outline" asChild>
-          <Link href={`/technicians/${technicianId}/print`} target="_blank">
+          <Link href={`/collaborators/${collaboratorId}/print`} target="_blank">
             <Printer className="mr-2 h-4 w-4" />
             Imprimir Ficha
           </Link>
         </Button>
       </div>
-      <TechnicianForm onSave={handleSave} technician={technician} />
+      <CollaboratorForm onSave={handleSave} collaborator={collaborator} />
     </div>
   );
 }

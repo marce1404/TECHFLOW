@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Technician } from '@/lib/types';
+import type { Collaborator } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Calendar } from '../ui/calendar';
@@ -51,9 +51,9 @@ const certificationSchema = z.object({
   expirationDate: z.string().optional(),
 });
 
-const technicianFormSchema = z.object({
+const collaboratorFormSchema = z.object({
   name: z.string().min(3, { message: 'El nombre debe tener al menos 3 caracteres.' }),
-  specialty: z.string().optional(),
+  role: z.enum(['Técnico', 'Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado', 'Vendedor']),
   area: z.string().optional(),
   status: z.enum(['Activo', 'Licencia', 'Vacaciones']),
   license: z.string().optional(),
@@ -62,11 +62,11 @@ const technicianFormSchema = z.object({
   certifications: z.array(certificationSchema),
 });
 
-export type TechnicianFormValues = z.infer<typeof technicianFormSchema>;
+export type CollaboratorFormValues = z.infer<typeof collaboratorFormSchema>;
 
-interface TechnicianFormProps {
-  onSave: (data: TechnicianFormValues) => void;
-  technician?: Technician | null;
+interface CollaboratorFormProps {
+  onSave: (data: CollaboratorFormValues) => void;
+  collaborator?: Collaborator | null;
 }
 
 const defaultClothingItems = [
@@ -94,12 +94,12 @@ const defaultCertificationItems = [
     "Operador Elevador",
 ];
 
-export default function TechnicianForm({ onSave, technician }: TechnicianFormProps) {
-  const form = useForm<TechnicianFormValues>({
-    resolver: zodResolver(technicianFormSchema),
+export default function CollaboratorForm({ onSave, collaborator }: CollaboratorFormProps) {
+  const form = useForm<CollaboratorFormValues>({
+    resolver: zodResolver(collaboratorFormSchema),
     defaultValues: {
       name: '',
-      specialty: '',
+      role: 'Técnico',
       area: '',
       status: 'Activo',
       license: '',
@@ -120,16 +120,16 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
   });
 
   React.useEffect(() => {
-    if (technician) {
+    if (collaborator) {
       form.reset({
-        name: technician.name,
-        specialty: technician.specialty,
-        area: technician.area,
-        status: technician.status,
-        license: technician.license,
-        workClothing: technician.workClothing,
-        epp: technician.epp,
-        certifications: technician.certifications,
+        name: collaborator.name,
+        role: collaborator.role,
+        area: collaborator.area,
+        status: collaborator.status,
+        license: collaborator.license,
+        workClothing: collaborator.workClothing,
+        epp: collaborator.epp,
+        certifications: collaborator.certifications,
       });
     } else {
         const defaultWorkClothing = defaultClothingItems.map(item => ({
@@ -157,7 +157,7 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
         }));
       form.reset({
         name: '',
-        specialty: '',
+        role: 'Técnico',
         area: '',
         status: 'Activo',
         license: '',
@@ -166,9 +166,9 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
         certifications: defaultCertifications,
       });
     }
-  }, [technician, form]);
+  }, [collaborator, form]);
 
-  const onSubmit = (data: TechnicianFormValues) => {
+  const onSubmit = (data: CollaboratorFormValues) => {
     onSave(data);
   };
 
@@ -222,12 +222,15 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
         </PopoverContent>
     </Popover>
   );
+  
+  const roles: Collaborator['role'][] = ['Técnico', 'Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado', 'Vendedor'];
+
 
   return (
     <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Card>
-            <CardHeader><CardTitle>Información del Técnico</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Información del Colaborador</CardTitle></CardHeader>
             <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
@@ -244,18 +247,27 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
                         )}
                         />
                     <FormField
-                    control={form.control}
-                    name="specialty"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Especialidad</FormLabel>
-                        <FormControl>
-                            <Input placeholder="Ej: Electricista" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
+                      control={form.control}
+                      name="role"
+                      render={({ field }) => (
+                          <FormItem>
+                              <FormLabel>Cargo</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl>
+                                  <SelectTrigger>
+                                      <SelectValue placeholder="Seleccionar cargo" />
+                                  </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                      {roles.map(role => (
+                                          <SelectItem key={role} value={role}>{role}</SelectItem>
+                                      ))}
+                                  </SelectContent>
+                              </Select>
+                              <FormMessage />
+                          </FormItem>
+                      )}
+                      />
                     <FormField
                     control={form.control}
                     name="area"
@@ -469,14 +481,10 @@ export default function TechnicianForm({ onSave, technician }: TechnicianFormPro
         </Card>
 
         <div className="flex justify-end gap-2">
-            <Button variant="outline" asChild><Link href="/technicians">Cancelar</Link></Button>
+            <Button variant="outline" asChild><Link href="/collaborators">Cancelar</Link></Button>
             <Button type="submit">Guardar Cambios</Button>
         </div>
         </form>
     </Form>
   );
 }
-
-    
-
-    

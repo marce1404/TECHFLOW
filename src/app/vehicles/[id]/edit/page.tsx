@@ -12,7 +12,7 @@ export default function EditVehiclePage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
-  const { vehicles, technicians, updateVehicle } = useWorkOrders();
+  const { vehicles, collaborators, updateVehicle } = useWorkOrders();
   const vehicleId = params.id as string;
   
   const [vehicle, setVehicle] = React.useState<Vehicle | undefined>(undefined);
@@ -48,7 +48,7 @@ export default function EditVehiclePage() {
           Modifica los detalles del vehículo.
         </p>
       </div>
-      <VehicleForm onSave={handleSave} vehicle={vehicle} technicians={technicians} />
+      <VehicleForm onSave={handleSave} vehicle={vehicle} collaborators={collaborators} />
     </div>
   );
 }

@@ -5,22 +5,21 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { useWorkOrders } from '@/context/work-orders-context';
-import type { Technician } from '@/lib/types';
-import TechnicianForm, { type TechnicianFormValues } from '@/components/technicians/technician-form';
+import CollaboratorForm, { type CollaboratorFormValues } from '@/components/collaborators/collaborator-form';
 
-export default function NewTechnicianPage() {
+export default function NewCollaboratorPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { addTechnician, fetchData } = useWorkOrders();
+  const { addCollaborator, fetchData } = useWorkOrders();
 
-  const handleSave = async (data: TechnicianFormValues) => {
-    await addTechnician(data);
+  const handleSave = async (data: CollaboratorFormValues) => {
+    await addCollaborator(data);
     toast({
-      title: 'Técnico Creado',
-      description: `El técnico "${data.name}" ha sido creado exitosamente.`,
+      title: 'Colaborador Creado',
+      description: `El colaborador "${data.name}" ha sido creado exitosamente.`,
       duration: 2000,
     });
-    router.push('/technicians');
+    router.push('/collaborators');
     // After pushing, fetch the data again to ensure the list is up-to-date.
     // A small delay can help ensure the navigation has completed.
     setTimeout(() => {
@@ -32,13 +31,13 @@ export default function NewTechnicianPage() {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-headline font-bold tracking-tight">
-          Nuevo Técnico
+          Nuevo Colaborador
         </h1>
         <p className="text-muted-foreground">
-          Completa los detalles para crear un nuevo técnico.
+          Completa los detalles para crear un nuevo colaborador.
         </p>
       </div>
-      <TechnicianForm onSave={handleSave} />
+      <CollaboratorForm onSave={handleSave} />
     </div>
   );
 }

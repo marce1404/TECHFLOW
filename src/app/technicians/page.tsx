@@ -1,23 +1,24 @@
 
+
 'use client';
 
 import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import { useWorkOrders } from '@/context/work-orders-context';
-import TechniciansTable from '@/components/technicians/technicians-table';
+import CollaboratorsTable from '@/components/collaborators/collaborators-table';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { Technician } from '@/lib/types';
+import type { Collaborator } from '@/lib/types';
 
-export default function TechniciansPage() {
-    const { technicians } = useWorkOrders();
+export default function CollaboratorsPage() {
+    const { collaborators } = useWorkOrders();
     const [search, setSearch] = React.useState('');
-    const [statusFilter, setStatusFilter] = React.useState<Technician['status'] | 'Todos'>('Todos');
-    const [sortConfig, setSortConfig] = React.useState<{ key: keyof Technician | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
+    const [roleFilter, setRoleFilter] = React.useState<Collaborator['role'] | 'Todos'>('Todos');
+    const [sortConfig, setSortConfig] = React.useState<{ key: keyof Collaborator | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
 
-    const requestSort = (key: keyof Technician) => {
+    const requestSort = (key: keyof Collaborator) => {
         let direction: 'ascending' | 'descending' = 'ascending';
         if (sortConfig.key === key && sortConfig.direction === 'ascending') {
           direction = 'descending';
@@ -25,8 +26,8 @@ export default function TechniciansPage() {
         setSortConfig({ key, direction });
     };
 
-    const sortedTechnicians = React.useMemo(() => {
-        let sortableItems = [...technicians];
+    const sortedCollaborators = React.useMemo(() => {
+        let sortableItems = [...collaborators];
         if (sortConfig.key !== null) {
             sortableItems.sort((a, b) => {
                 if (a[sortConfig.key]! < b[sortConfig.key]!) {
@@ -39,50 +40,50 @@ export default function TechniciansPage() {
             });
         }
         return sortableItems;
-    }, [technicians, sortConfig]);
+    }, [collaborators, sortConfig]);
 
-    const filteredTechnicians = sortedTechnicians.filter((technician) => {
-        const matchesStatus = statusFilter === 'Todos' || technician.status === statusFilter;
+    const filteredCollaborators = sortedCollaborators.filter((collaborator) => {
+        const matchesRole = roleFilter === 'Todos' || collaborator.role === roleFilter;
         const matchesSearch = 
-            technician.name.toLowerCase().includes(search.toLowerCase()) ||
-            technician.specialty.toLowerCase().includes(search.toLowerCase()) ||
-            technician.area.toLowerCase().includes(search.toLowerCase());
-        return matchesStatus && matchesSearch;
+            collaborator.name.toLowerCase().includes(search.toLowerCase()) ||
+            collaborator.role.toLowerCase().includes(search.toLowerCase()) ||
+            collaborator.area.toLowerCase().includes(search.toLowerCase());
+        return matchesRole && matchesSearch;
     });
 
-    const technicianStatuses: (Technician['status'] | 'Todos')[] = ['Todos', 'Activo', 'Licencia', 'Vacaciones'];
+    const collaboratorRoles: (Collaborator['role'] | 'Todos')[] = ['Todos', 'Técnico', 'Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado', 'Vendedor'];
 
     return (
         <div className="flex flex-col gap-8">
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-headline font-bold tracking-tight">
-                    Técnicos
+                    Colaboradores
                 </h1>
                 <Button asChild>
-                    <Link href="/technicians/new">
+                    <Link href="/collaborators/new">
                         <PlusCircle className="mr-2 h-4 w-4" />
-                        Nuevo Técnico
+                        Nuevo Colaborador
                     </Link>
                 </Button>
             </div>
             
-            <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as Technician['status'] | 'Todos')}>
+            <Tabs value={roleFilter} onValueChange={(value) => setRoleFilter(value as Collaborator['role'] | 'Todos')}>
               <div className="flex items-center justify-between">
                 <TabsList>
-                    {technicianStatuses.map(status => (
-                        <TabsTrigger key={status} value={status}>{status}</TabsTrigger>
+                    {collaboratorRoles.map(role => (
+                        <TabsTrigger key={role} value={role}>{role}</TabsTrigger>
                     ))}
                 </TabsList>
                 <Input
-                    placeholder="Buscar por nombre, especialidad..."
+                    placeholder="Buscar por nombre, cargo..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="max-w-sm"
                 />
               </div>
-              <TabsContent value={statusFilter}>
-                  <TechniciansTable 
-                    technicians={filteredTechnicians}
+              <TabsContent value={roleFilter}>
+                  <CollaboratorsTable 
+                    collaborators={filteredCollaborators}
                     requestSort={requestSort}
                     sortConfig={sortConfig}
                   />

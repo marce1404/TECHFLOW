@@ -51,8 +51,8 @@ export default function AppSidebar() {
       icon: BarChart2,
     },
     {
-      href: '/technicians',
-      label: 'Técnicos',
+      href: '/collaborators',
+      label: 'Colaboradores',
       icon: Users,
     },
     {
@@ -80,6 +80,9 @@ export default function AppSidebar() {
     }
     if (href === '/orders') {
         return pathname === '/orders';
+    }
+    if (href === '/collaborators') {
+        return pathname.startsWith('/collaborators');
     }
     return pathname.startsWith(href);
   };

@@ -23,7 +23,7 @@ import { useWorkOrders } from '@/context/work-orders-context';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function DashboardPage() {
-  const { activeWorkOrders, historicalWorkOrders, technicians, loading } = useWorkOrders();
+  const { activeWorkOrders, historicalWorkOrders, collaborators, loading } = useWorkOrders();
 
   const openOrders = activeWorkOrders.length;
   const overdueOrders = activeWorkOrders.filter(o => o.status === 'Atrasada').length;
@@ -47,10 +47,10 @@ export default function DashboardPage() {
       description: 'Pendientes y fuera de plazo',
     },
     {
-      title: 'Técnicos Totales',
-      value: technicians.length,
+      title: 'Colaboradores',
+      value: collaborators.length,
       icon: Users,
-      description: 'Equipo de campo disponible',
+      description: 'Equipo total disponible',
     },
     {
       title: 'Prioridad Alta',

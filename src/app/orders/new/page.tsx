@@ -23,7 +23,7 @@ import { useRouter } from "next/navigation";
 export default function NewOrderPage() {
     const router = useRouter();
     const { toast } = useToast();
-    const { otCategories, services, addOrder, getNextOtNumber } = useWorkOrders();
+    const { otCategories, services, addOrder, getNextOtNumber, collaborators } = useWorkOrders();
 
     const [description, setDescription] = React.useState('');
     const [categoryPrefix, setCategoryPrefix] = React.useState('');
@@ -42,24 +42,22 @@ export default function NewOrderPage() {
     const [vendedor, setVendedor] = React.useState('');
     
 
-  const technicians = [
-    { value: 'cristian-munoz', label: 'Cristian Muñoz' },
-    { value: 'beatriz-herrera', label: 'Beatriz Herrera' },
-    { value: 'andres-castillo', label: 'Andrés Castillo' },
-    { value: 'juan-perez', label: 'Juan Pérez' },
-    { value: 'ana-torres', label: 'Ana Torres' },
-  ];
-  
+    const technicians = collaborators
+      .filter(c => c.role === 'Técnico' && c.status === 'Activo')
+      .map(c => ({ value: c.name.toLowerCase().replace(' ', '-'), label: c.name }));
+    
+    const supervisors = collaborators
+      .filter(c => (c.role === 'Supervisor' || c.role === 'Jefe de Proyecto' || c.role === 'Encargado') && c.status === 'Activo')
+      .map(c => ({ value: c.name.toLowerCase().replace(' ', '-'), label: c.name }));
+
+    const vendors = collaborators
+      .filter(c => c.role === 'Vendedor' && c.status === 'Activo')
+      .map(c => ({ value: c.name.toLowerCase().replace(' ', '-'), label: c.name }));
+
   const vehicles = [
     { value: 'hilux', label: 'Toyota Hilux' },
     { value: 'ranger', label: 'Ford Ranger' },
     { value: 'navara', label: 'Nissan Navara' },
-  ];
-
-  const vendors = [
-    { value: 'fernanda-gomez', label: 'Fernanda Gómez' },
-    { value: 'eduardo-flores', label: 'Eduardo Flores' },
-    { value: 'daniela-vidal', label: 'Daniela Vidal' },
   ];
 
   const handleCreateOrder = () => {
@@ -361,7 +359,7 @@ export default function NewOrderPage() {
                                     <SelectValue placeholder="Seleccionar encargado" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {technicians.map(t => <SelectItem key={t.value} value={t.label}>{t.label}</SelectItem>)}
+                                    {supervisors.map(t => <SelectItem key={t.value} value={t.label}>{t.label}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>

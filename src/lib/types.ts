@@ -54,10 +54,10 @@ export type CertificationItem = {
 };
 
 
-export type Technician = {
+export type Collaborator = {
   id: string;
   name: string;
-  specialty: string;
+  role: 'Técnico' | 'Supervisor' | 'Coordinador' | 'Jefe de Proyecto' | 'Encargado' | 'Vendedor';
   area: string;
   status: 'Activo' | 'Licencia' | 'Vacaciones';
   license: string;
@@ -94,5 +94,3 @@ export type Service = {
   name: string;
   status: 'Activa' | 'Inactiva';
 };
-
-    

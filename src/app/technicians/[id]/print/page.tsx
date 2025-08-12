@@ -4,33 +4,33 @@
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useWorkOrders } from '@/context/work-orders-context';
-import type { CertificationItem, EPPItem, Technician, WorkClothingItem } from '@/lib/types';
+import type { CertificationItem, EPPItem, Collaborator, WorkClothingItem } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Printer } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
-export default function PrintTechnicianPage() {
+export default function PrintCollaboratorPage() {
   const params = useParams();
-  const { technicians } = useWorkOrders();
-  const technicianId = params.id as string;
+  const { collaborators } = useWorkOrders();
+  const collaboratorId = params.id as string;
   
-  const [technician, setTechnician] = React.useState<Technician | undefined>(undefined);
+  const [collaborator, setCollaborator] = React.useState<Collaborator | undefined>(undefined);
 
   React.useEffect(() => {
-    const foundTechnician = technicians.find(t => t.id === technicianId);
-    setTechnician(foundTechnician);
-  }, [technicianId, technicians]);
+    const foundCollaborator = collaborators.find(t => t.id === collaboratorId);
+    setCollaborator(foundCollaborator);
+  }, [collaboratorId, collaborators]);
 
   React.useEffect(() => {
-    if (technician) {
+    if (collaborator) {
       setTimeout(() => window.print(), 500);
     }
-  }, [technician]);
+  }, [collaborator]);
 
 
-  if (!technician) {
-    return <div>Cargando ficha del técnico...</div>;
+  if (!collaborator) {
+    return <div>Cargando ficha del colaborador...</div>;
   }
   
   const renderInfoTable = (title: string, data: [string, string | undefined][]) => (
@@ -85,15 +85,15 @@ export default function PrintTechnicianPage() {
             </header>
 
             <main className="space-y-10">
-                {renderInfoTable("Información del Técnico", [
-                    ["Nombre Completo", technician.name],
-                    ["Especialidad", technician.specialty],
-                    ["Área", technician.area],
-                    ["Estado", technician.status],
-                    ["Licencia de Conducir", technician.license],
+                {renderInfoTable("Información del Colaborador", [
+                    ["Nombre Completo", collaborator.name],
+                    ["Cargo", collaborator.role],
+                    ["Área", collaborator.area],
+                    ["Estado", collaborator.status],
+                    ["Licencia de Conducir", collaborator.license],
                 ])}
 
-                {renderItemsTable("Vestimenta de Trabajo", ["Item", "Talla", "Cantidad", "Fecha Entrega", "Fecha Caducidad"], technician.workClothing, (item: WorkClothingItem) => (
+                {renderItemsTable("Vestimenta de Trabajo", ["Item", "Talla", "Cantidad", "Fecha Entrega", "Fecha Caducidad"], collaborator.workClothing, (item: WorkClothingItem) => (
                     <TableRow key={item.id}>
                         <TableCell>{item.item}</TableCell>
                         <TableCell>{item.size}</TableCell>
@@ -103,7 +103,7 @@ export default function PrintTechnicianPage() {
                     </TableRow>
                 ))}
 
-                {renderItemsTable("Equipo de Protección Personal (EPP)", ["Item", "Talla", "Cantidad", "Fecha Entrega", "Fecha Caducidad"], technician.epp, (item: EPPItem) => (
+                {renderItemsTable("Equipo de Protección Personal (EPP)", ["Item", "Talla", "Cantidad", "Fecha Entrega", "Fecha Caducidad"], collaborator.epp, (item: EPPItem) => (
                      <TableRow key={item.id}>
                         <TableCell>{item.item}</TableCell>
                         <TableCell>{item.size}</TableCell>
@@ -113,7 +113,7 @@ export default function PrintTechnicianPage() {
                     </TableRow>
                 ))}
 
-                {renderItemsTable("Certificados", ["Nombre", "Organización Emisora", "Fecha Emisión", "Fecha Caducidad"], technician.certifications, (item: CertificationItem) => (
+                {renderItemsTable("Certificados", ["Nombre", "Organización Emisora", "Fecha Emisión", "Fecha Caducidad"], collaborator.certifications, (item: CertificationItem) => (
                     <TableRow key={item.id}>
                         <TableCell>{item.name}</TableCell>
                         <TableCell>{item.issuingOrganization}</TableCell>
@@ -128,7 +128,7 @@ export default function PrintTechnicianPage() {
                     <div>
                         <div className="border-t border-gray-400 pt-2 w-full max-w-xs mx-auto">
                             <p>Firma del Trabajador</p>
-                            <p className="mt-1">Nombre: {technician.name}</p>
+                            <p className="mt-1">Nombre: {collaborator.name}</p>
                             <p className="mt-1">RUT: _________________________</p>
                         </div>
                     </div>

@@ -4,14 +4,14 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, query, where, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { WorkOrder, OTCategory, Service, Technician, Vehicle } from '@/lib/types';
+import type { WorkOrder, OTCategory, Service, Collaborator, Vehicle } from '@/lib/types';
 
 interface WorkOrdersContextType {
   activeWorkOrders: WorkOrder[];
   historicalWorkOrders: WorkOrder[];
   otCategories: OTCategory[];
   services: Service[];
-  technicians: Technician[];
+  collaborators: Collaborator[];
   vehicles: Vehicle[];
   loading: boolean;
   fetchData: () => Promise<void>;
@@ -24,10 +24,10 @@ interface WorkOrdersContextType {
   deleteService: (id: string) => Promise<void>;
   addOrder: (order: Omit<WorkOrder, 'id'>) => Promise<WorkOrder>;
   getNextOtNumber: (prefix: string) => string;
-  addTechnician: (technician: Omit<Technician, 'id'>) => Promise<Technician>;
-  getTechnician: (id: string) => Technician | undefined;
-  updateTechnician: (id: string, technician: Partial<Omit<Technician, 'id'>>) => Promise<void>;
-  deleteTechnician: (id: string) => Promise<void>;
+  addCollaborator: (collaborator: Omit<Collaborator, 'id'>) => Promise<Collaborator>;
+  getCollaborator: (id: string) => Collaborator | undefined;
+  updateCollaborator: (id: string, collaborator: Partial<Omit<Collaborator, 'id'>>) => Promise<void>;
+  deleteCollaborator: (id: string) => Promise<void>;
   addVehicle: (vehicle: Omit<Vehicle, 'id'>) => Promise<Vehicle>;
   updateVehicle: (id: string, vehicle: Partial<Omit<Vehicle, 'id'>>) => Promise<void>;
   deleteVehicle: (id: string) => Promise<void>;
@@ -40,7 +40,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [historicalWorkOrders, setHistoricalWorkOrders] = useState<WorkOrder[]>([]);
   const [otCategories, setOtCategories] = useState<OTCategory[]>([]);
   const [services, setServices] = useState<Service[]>([]);
-  const [technicians, setTechnicians] = useState<Technician[]>([]);
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -52,14 +52,14 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             historicalWorkOrdersSnapshot,
             categoriesSnapshot,
             servicesSnapshot,
-            techniciansSnapshot,
+            collaboratorsSnapshot,
             vehiclesSnapshot
         ] = await Promise.all([
             getDocs(query(collection(db, "work-orders"), where("status", "!=", "Cerrada"))),
             getDocs(query(collection(db, "work-orders"), where("status", "==", "Cerrada"))),
             getDocs(collection(db, "ot-categories")),
             getDocs(collection(db, "services")),
-            getDocs(collection(db, "technicians")),
+            getDocs(collection(db, "collaborators")),
             getDocs(collection(db, "vehicles")),
         ]);
 
@@ -67,7 +67,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         setHistoricalWorkOrders(historicalWorkOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[]);
         setOtCategories(categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as OTCategory[]);
         setServices(servicesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Service[]);
-        setTechnicians(techniciansSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Technician[]);
+        setCollaborators(collaboratorsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Collaborator[]);
         setVehicles(vehiclesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Vehicle[]);
 
     } catch (error) {
@@ -77,7 +77,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         setHistoricalWorkOrders([]);
         setOtCategories([]);
         setServices([]);
-        setTechnicians([]);
+        setCollaborators([]);
         setVehicles([]);
     } finally {
         setLoading(false);
@@ -168,26 +168,26 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     setServices(prev => prev.filter(s => s.id !== id));
   };
   
-  const addTechnician = async (technician: Omit<Technician, 'id'>): Promise<Technician> => {
-    const docRef = await addDoc(collection(db, "technicians"), technician);
-    const newTechnician = { ...technician, id: docRef.id } as Technician;
-    setTechnicians(prev => [...prev, newTechnician]);
-    return newTechnician;
+  const addCollaborator = async (collaborator: Omit<Collaborator, 'id'>): Promise<Collaborator> => {
+    const docRef = await addDoc(collection(db, "collaborators"), collaborator);
+    const newCollaborator = { ...collaborator, id: docRef.id } as Collaborator;
+    setCollaborators(prev => [...prev, newCollaborator]);
+    return newCollaborator;
   };
   
-  const getTechnician = (id: string) => {
-    return technicians.find(technician => technician.id === id);
+  const getCollaborator = (id: string) => {
+    return collaborators.find(collaborator => collaborator.id === id);
   };
 
-  const updateTechnician = async (id: string, updatedTechnician: Partial<Omit<Technician, 'id'>>) => {
-    const docRef = doc(db, "technicians", id);
-    await updateDoc(docRef, updatedTechnician);
-    setTechnicians(prev => prev.map(t => (t.id === id ? { ...t, ...updatedTechnician} as Technician : t)));
+  const updateCollaborator = async (id: string, updatedCollaborator: Partial<Omit<Collaborator, 'id'>>) => {
+    const docRef = doc(db, "collaborators", id);
+    await updateDoc(docRef, updatedCollaborator);
+    setCollaborators(prev => prev.map(t => (t.id === id ? { ...t, ...updatedCollaborator} as Collaborator : t)));
   };
 
-  const deleteTechnician = async (id: string) => {
-    await deleteDoc(doc(db, "technicians", id));
-    setTechnicians(prev => prev.filter(t => t.id !== id));
+  const deleteCollaborator = async (id: string) => {
+    await deleteDoc(doc(db, "collaborators", id));
+    setCollaborators(prev => prev.filter(t => t.id !== id));
   };
   
   const addVehicle = async (vehicle: Omit<Vehicle, 'id'>): Promise<Vehicle> => {
@@ -214,7 +214,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         historicalWorkOrders, 
         otCategories,
         services,
-        technicians,
+        collaborators,
         vehicles,
         loading,
         fetchData,
@@ -227,10 +227,10 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         deleteService,
         addOrder,
         getNextOtNumber,
-        addTechnician,
-        getTechnician,
-        updateTechnician,
-        deleteTechnician,
+        addCollaborator,
+        getCollaborator,
+        updateCollaborator,
+        deleteCollaborator,
         addVehicle,
         updateVehicle,
         deleteVehicle,

@@ -20,8 +20,8 @@ const sourceCodePro = Source_Code_Pro({
 });
 
 export const metadata: Metadata = {
-  title: 'Ficha de Técnico',
-  description: 'Ficha imprimible del técnico.',
+  title: 'Ficha de Colaborador',
+  description: 'Ficha imprimible del colaborador.',
 };
 
 export default function PrintLayout({

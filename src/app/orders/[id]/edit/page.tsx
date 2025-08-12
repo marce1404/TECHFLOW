@@ -17,13 +17,13 @@ import Link from 'next/link';
 import { MultiSelect } from "@/components/ui/multi-select";
 import { useToast } from "@/hooks/use-toast";
 import { useParams, useRouter } from "next/navigation";
-import type { WorkOrder } from "@/lib/types";
+import type { WorkOrder, Collaborator } from "@/lib/types";
 import { useWorkOrders } from "@/context/work-orders-context";
 
 export default function EditOrderPage() {
   const params = useParams();
   const router = useRouter();
-  const { getOrder, updateOrder, otCategories, services } = useWorkOrders();
+  const { getOrder, updateOrder, otCategories, services, collaborators } = useWorkOrders();
   const orderId = params.id as string;
   
   const initialOrder = getOrder(orderId);
@@ -36,24 +36,22 @@ export default function EditOrderPage() {
     setOrder(initialOrder);
   }, [initialOrder]);
 
-  const technicians = [
-    { value: 'cristian-munoz', label: 'Cristian Muñoz' },
-    { value: 'beatriz-herrera', label: 'Beatriz Herrera' },
-    { value: 'andres-castillo', label: 'Andrés Castillo' },
-    { value: 'juan-perez', label: 'Juan Pérez' },
-    { value: 'ana-torres', label: 'Ana Torres' },
-  ];
+  const technicians = collaborators
+    .filter(c => c.role === 'Técnico')
+    .map(c => ({ value: c.name.toLowerCase().replace(' ', '-'), label: c.name }));
+
+  const supervisors = collaborators
+    .filter(c => c.role === 'Supervisor' || c.role === 'Jefe de Proyecto' || c.role === 'Encargado')
+    .map(c => ({ value: c.name.toLowerCase().replace(' ', '-'), label: c.name }));
+
+  const vendors = collaborators
+    .filter(c => c.role === 'Vendedor')
+    .map(c => ({ value: c.name.toLowerCase().replace(' ', '-'), label: c.name }));
   
   const vehicles = [
     { value: 'hilux', label: 'Toyota Hilux' },
     { value: 'ranger', label: 'Ford Ranger' },
     { value: 'navara', label: 'Nissan Navara' },
-  ];
-
-  const vendors = [
-    { value: 'fernanda-gomez', label: 'Fernanda Gómez' },
-    { value: 'eduardo-flores', label: 'Eduardo Flores' },
-    { value: 'daniela-vidal', label: 'Daniela Vidal' },
   ];
 
   const handleInputChange = (field: keyof WorkOrder, value: string | boolean | string[] | number) => {
@@ -365,7 +363,7 @@ export default function EditOrderPage() {
                                 <SelectValue placeholder="Seleccionar encargado" />
                             </SelectTrigger>
                             <SelectContent>
-                                {technicians.map(t => <SelectItem key={t.value} value={t.label}>{t.label}</SelectItem>)}
+                                {supervisors.map(t => <SelectItem key={t.value} value={t.label}>{t.label}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>

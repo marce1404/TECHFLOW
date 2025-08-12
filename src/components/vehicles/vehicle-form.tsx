@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Technician, Vehicle } from '@/lib/types';
+import type { Collaborator, Vehicle } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import Link from 'next/link';
 
@@ -32,11 +32,11 @@ export type VehicleFormValues = z.infer<typeof vehicleFormSchema>;
 interface VehicleFormProps {
   onSave: (data: VehicleFormValues) => void;
   vehicle?: Vehicle | null;
-  technicians: Technician[];
+  collaborators: Collaborator[];
 }
 
 
-export default function VehicleForm({ onSave, vehicle, technicians }: VehicleFormProps) {
+export default function VehicleForm({ onSave, vehicle, collaborators }: VehicleFormProps) {
   const form = useForm<VehicleFormValues>({
     resolver: zodResolver(vehicleFormSchema),
     defaultValues: {
@@ -149,12 +149,12 @@ export default function VehicleForm({ onSave, vehicle, technicians }: VehicleFor
                                 <Select onValueChange={field.onChange} value={field.value} defaultValue="">
                                     <FormControl>
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Seleccionar técnico (opcional)" />
+                                            <SelectValue placeholder="Seleccionar colaborador (opcional)" />
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
                                         <SelectItem value="">N/A</SelectItem>
-                                        {technicians.filter(t => t.status === 'Activo').map(t => (
+                                        {collaborators.filter(t => t.status === 'Activo').map(t => (
                                             <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>
                                         ))}
                                     </SelectContent>
@@ -175,4 +175,3 @@ export default function VehicleForm({ onSave, vehicle, technicians }: VehicleFor
     </Form>
   );
 }
-

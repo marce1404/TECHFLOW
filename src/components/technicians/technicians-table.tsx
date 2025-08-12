@@ -31,23 +31,23 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useWorkOrders } from '@/context/work-orders-context';
-import type { Technician } from '@/lib/types';
+import type { Collaborator } from '@/lib/types';
 import Link from 'next/link';
 
-interface TechniciansTableProps {
-    technicians: Technician[];
-    requestSort: (key: keyof Technician) => void;
-    sortConfig: { key: keyof Technician | null; direction: 'ascending' | 'descending' };
+interface CollaboratorsTableProps {
+    collaborators: Collaborator[];
+    requestSort: (key: keyof Collaborator) => void;
+    sortConfig: { key: keyof Collaborator | null; direction: 'ascending' | 'descending' };
 }
 
-export default function TechniciansTable({ technicians, requestSort, sortConfig }: TechniciansTableProps) {
-    const { updateTechnician, deleteTechnician } = useWorkOrders();
+export default function CollaboratorsTable({ collaborators, requestSort, sortConfig }: CollaboratorsTableProps) {
+    const { updateCollaborator, deleteCollaborator } = useWorkOrders();
 
-    const handleToggleStatus = (technician: Technician, status: Technician['status']) => {
-        updateTechnician(technician.id, { ...technician, status });
+    const handleToggleStatus = (collaborator: Collaborator, status: Collaborator['status']) => {
+        updateCollaborator(collaborator.id, { ...collaborator, status });
     };
 
-    const getStatusVariant = (status: Technician['status']): 'default' | 'secondary' | 'outline' | 'destructive' => {
+    const getStatusVariant = (status: Collaborator['status']): 'default' | 'secondary' | 'outline' | 'destructive' => {
         switch (status) {
             case 'Activo':
                 return 'default';
@@ -60,9 +60,9 @@ export default function TechniciansTable({ technicians, requestSort, sortConfig 
         }
     }
 
-    const headers: { key: keyof Technician, label: string }[] = [
+    const headers: { key: keyof Collaborator, label: string }[] = [
         { key: 'name', label: 'Nombre' },
-        { key: 'specialty', label: 'Especialidad' },
+        { key: 'role', label: 'Cargo' },
         { key: 'area', label: 'Área' },
         { key: 'status', label: 'Estado' },
     ];
@@ -84,13 +84,13 @@ export default function TechniciansTable({ technicians, requestSort, sortConfig 
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {technicians.length > 0 ? technicians.map((technician) => (
-                        <TableRow key={technician.id}>
-                            <TableCell className="font-medium">{technician.name}</TableCell>
-                            <TableCell>{technician.specialty}</TableCell>
-                            <TableCell>{technician.area}</TableCell>
+                    {collaborators.length > 0 ? collaborators.map((collaborator) => (
+                        <TableRow key={collaborator.id}>
+                            <TableCell className="font-medium">{collaborator.name}</TableCell>
+                            <TableCell>{collaborator.role}</TableCell>
+                            <TableCell>{collaborator.area}</TableCell>
                             <TableCell>
-                                <Badge variant={getStatusVariant(technician.status)}>{technician.status}</Badge>
+                                <Badge variant={getStatusVariant(collaborator.status)}>{collaborator.status}</Badge>
                             </TableCell>
                             <TableCell className="text-right">
                                 <AlertDialog>
@@ -103,11 +103,11 @@ export default function TechniciansTable({ technicians, requestSort, sortConfig 
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuItem asChild>
-                                                <Link href={`/technicians/${technician.id}/edit`}>Editar</Link>
+                                                <Link href={`/collaborators/${collaborator.id}/edit`}>Editar</Link>
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleToggleStatus(technician, 'Activo')}>Marcar como Activo</DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleToggleStatus(technician, 'Licencia')}>Marcar como Licencia</DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleToggleStatus(technician, 'Vacaciones')}>Marcar como Vacaciones</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleToggleStatus(collaborator, 'Activo')}>Marcar como Activo</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleToggleStatus(collaborator, 'Licencia')}>Marcar como Licencia</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleToggleStatus(collaborator, 'Vacaciones')}>Marcar como Vacaciones</DropdownMenuItem>
                                             <AlertDialogTrigger asChild>
                                                 <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
                                                     Eliminar
@@ -119,15 +119,15 @@ export default function TechniciansTable({ technicians, requestSort, sortConfig 
                                         <AlertDialogHeader>
                                         <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                                         <AlertDialogDescription>
-                                            Esta acción no se puede deshacer. Esto eliminará permanentemente al técnico
-                                            <span className="font-bold"> {technician.name}</span>.
+                                            Esta acción no se puede deshacer. Esto eliminará permanentemente al colaborador
+                                            <span className="font-bold"> {collaborator.name}</span>.
                                         </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                         <AlertDialogAction
                                             className="bg-destructive hover:bg-destructive/90"
-                                            onClick={() => deleteTechnician(technician.id)}
+                                            onClick={() => deleteCollaborator(collaborator.id)}
                                         >
                                             Eliminar
                                         </AlertDialogAction>
