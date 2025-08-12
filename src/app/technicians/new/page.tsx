@@ -11,16 +11,21 @@ import TechnicianForm, { type TechnicianFormValues } from '@/components/technici
 export default function NewTechnicianPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { addTechnician } = useWorkOrders();
+  const { addTechnician, fetchData } = useWorkOrders();
 
-  const handleSave = (data: TechnicianFormValues) => {
-    const newTechnician = addTechnician(data);
+  const handleSave = async (data: TechnicianFormValues) => {
+    await addTechnician(data);
     toast({
       title: 'Técnico Creado',
       description: `El técnico "${data.name}" ha sido creado exitosamente.`,
-      duration: 1000,
+      duration: 2000,
     });
-    setTimeout(() => router.push(`/technicians/${newTechnician.id}/edit`), 1000);
+    router.push('/technicians');
+    // After pushing, fetch the data again to ensure the list is up-to-date.
+    // A small delay can help ensure the navigation has completed.
+    setTimeout(() => {
+        fetchData();
+    }, 100);
   };
 
   return (
