@@ -27,7 +27,7 @@
   animation-iteration-count: infinite;
   animation-timing-function: linear;
   animation-name: ticker;
-  animation-duration: 400s; 
+  animation-duration: 800s; 
 }
 
 .ticker__item {
