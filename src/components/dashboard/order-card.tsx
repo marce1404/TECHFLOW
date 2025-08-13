@@ -73,7 +73,7 @@ export function OrderCard({ order, progress }: OrderCardProps) {
     <Card className="flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <CardDescription>{order.ot_number} - {order.client}</CardDescription>
             <CardTitle className="text-lg font-bold leading-tight mt-1 truncate">{order.description}</CardTitle>
           </div>
