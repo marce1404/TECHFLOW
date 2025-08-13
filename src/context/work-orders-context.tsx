@@ -157,7 +157,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     } else {
       setActiveWorkOrders(prev => [newOrder, ...prev]);
     }
-    await fetchData();
+    // No need to call fetchData(), we are updating the state locally.
     return newOrder;
   };
   
@@ -165,29 +165,34 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const orderRef = doc(db, 'work-orders', id);
     await updateDoc(orderRef, updatedFields);
 
-    const fullUpdatedOrder = { ...getOrder(id), ...updatedFields } as WorkOrder;
+    // Get the current state of the order
+    const originalOrder = getOrder(id);
+    if (!originalOrder) return;
 
-    if (updatedFields.status === 'Cerrada') {
-      setActiveWorkOrders((prev) => prev.filter((order) => order.id !== id));
-      setHistoricalWorkOrders((prev) => {
-        const existing = prev.find(o => o.id === id);
-        if (existing) {
-          return prev.map(o => o.id === id ? fullUpdatedOrder : o);
-        }
-        return [...prev, fullUpdatedOrder];
-      });
-    } else {
-      setHistoricalWorkOrders((prev) => prev.filter((order) => order.id !== id));
-      setActiveWorkOrders((prev) => {
-        const existing = prev.find(o => o.id === id);
-        if (existing) {
-          return prev.map(o => o.id === id ? fullUpdatedOrder : o);
-        }
-        return [...prev, fullUpdatedOrder];
-      });
+    const updatedOrder = { ...originalOrder, ...updatedFields };
+
+    const wasActive = originalOrder.status !== 'Cerrada';
+    const isActiveNow = updatedOrder.status !== 'Cerrada';
+
+    // Case 1: Order becomes closed
+    if (wasActive && !isActiveNow) {
+        setActiveWorkOrders(prev => prev.filter(o => o.id !== id));
+        setHistoricalWorkOrders(prev => [updatedOrder, ...prev.filter(o => o.id !== id)]);
+    } 
+    // Case 2: Order becomes active
+    else if (!wasActive && isActiveNow) {
+        setHistoricalWorkOrders(prev => prev.filter(o => o.id !== id));
+        setActiveWorkOrders(prev => [updatedOrder, ...prev.filter(o => o.id !== id)]);
+    } 
+    // Case 3: Order state changes but remains active
+    else if (wasActive && isActiveNow) {
+        setActiveWorkOrders(prev => prev.map(o => o.id === id ? updatedOrder : o));
+    }
+    // Case 4: Order state changes but remains historical
+    else {
+        setHistoricalWorkOrders(prev => prev.map(o => o.id === id ? updatedOrder : o));
     }
   };
-
 
   const getOrder = (id: string) => {
     return [...activeWorkOrders, ...historicalWorkOrders].find(order => order.id === id);
@@ -384,6 +389,3 @@ export const useWorkOrders = () => {
 };
 
     
-
-    
-
