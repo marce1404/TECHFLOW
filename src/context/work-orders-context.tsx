@@ -152,12 +152,11 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const addOrder = async (order: Omit<WorkOrder, 'id'>): Promise<WorkOrder> => {
     const docRef = await addDoc(collection(db, "work-orders"), order);
     const newOrder = { id: docRef.id, ...order } as WorkOrder;
-    if (newOrder.status === 'Cerrada') {
+    if (newOrder.status.toLowerCase() === 'cerrada') {
       setHistoricalWorkOrders(prev => [newOrder, ...prev]);
     } else {
       setActiveWorkOrders(prev => [newOrder, ...prev]);
     }
-    // No need to call fetchData(), we are updating the state locally.
     return newOrder;
   };
   
@@ -168,7 +167,30 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const updateOrder = async (id: string, updatedFields: Partial<WorkOrder>) => {
     const orderRef = doc(db, 'work-orders', id);
     await updateDoc(orderRef, updatedFields);
-    await fetchData();
+
+    const originalOrder = getOrder(id);
+    if (!originalOrder) return;
+
+    const newStatus = updatedFields.status;
+    const oldStatus = originalOrder.status;
+
+    if (newStatus && newStatus.toLowerCase() !== oldStatus.toLowerCase()) {
+      const updatedOrder = { ...originalOrder, ...updatedFields };
+
+      if (newStatus.toLowerCase() === 'cerrada') {
+        setActiveWorkOrders(prev => prev.filter(order => order.id !== id));
+        setHistoricalWorkOrders(prev => [updatedOrder, ...prev.filter(order => order.id !== id)]);
+      } else if (oldStatus.toLowerCase() === 'cerrada') {
+        setHistoricalWorkOrders(prev => prev.filter(order => order.id !== id));
+        setActiveWorkOrders(prev => [updatedOrder, ...prev.filter(order => order.id !== id)]);
+      } else {
+        setActiveWorkOrders(prev => prev.map(order => order.id === id ? updatedOrder : order));
+      }
+    } else {
+      // Status didn't change category, just update in place
+      setActiveWorkOrders(prev => prev.map(order => order.id === id ? { ...order, ...updatedFields } : order));
+      setHistoricalWorkOrders(prev => prev.map(order => order.id === id ? { ...order, ...updatedFields } : order));
+    }
   };
   
   const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory> => {
@@ -360,5 +382,3 @@ export const useWorkOrders = () => {
   }
   return context;
 };
-
-    

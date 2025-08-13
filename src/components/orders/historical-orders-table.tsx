@@ -35,12 +35,12 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
   const getStatusVariant = (
     status: WorkOrder['status']
   ): 'default' | 'secondary' | 'destructive' | 'outline' => {
-     switch (status) {
-      case 'Cerrada':
+     switch (status.toLowerCase()) {
+      case 'cerrada':
         return 'default';
-      case 'En Progreso':
+      case 'en progreso':
         return 'secondary';
-      case 'Atrasada':
+      case 'atrasada':
         return 'destructive';
       default:
         return 'outline';
