@@ -2,21 +2,33 @@
 'use client';
 import { getGanttForPrint } from '@/app/actions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import type { GanttChart } from '@/lib/types';
-import { addDays, differenceInCalendarDays, eachDayOfInterval, format } from 'date-fns';
+import { addDays, differenceInCalendarDays, eachDayOfInterval, format, isPast, isToday } from 'date-fns';
 import * as React from 'react';
 
 function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
-    const colorPalette = [
-        '#3CA7FA', '#F9A825', '#27AE60', '#EB5757', '#BB6BD9', 
-        '#FF7F50', '#00CED1', '#FFD700', '#4682B4', '#4F4F4F'
-    ];
-
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
     React.useEffect(() => {
         setTimeout(() => {
             window.print();
         }, 500);
     }, []);
+
+    const calculateWorkingDays = (startDate: Date, endDate: Date, workOnSaturdays: boolean, workOnSundays: boolean) => {
+        let count = 0;
+        let currentDate = new Date(startDate);
+        while (currentDate <= endDate) {
+            const dayOfWeek = currentDate.getDay();
+            if ((dayOfWeek !== 0 || workOnSundays) && (dayOfWeek !== 6 || workOnSaturdays)) {
+                count++;
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        return count;
+    };
 
     const calculateEndDate = (startDate: Date, duration: number, workOnSaturdays: boolean, workOnSundays: boolean) => {
         let remainingDays = duration;
@@ -104,6 +116,24 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
                                     const startDate = new Date(task.startDate);
                                     const endDate = calculateEndDate(startDate, task.duration, ganttChart.workOnSaturdays, ganttChart.workOnSundays);
                                     const offset = differenceInCalendarDays(startDate, ganttChartData.earliestDate);
+                                    const totalWorkingDays = calculateWorkingDays(startDate, endDate, ganttChart.workOnSaturdays, ganttChart.workOnSundays);
+
+                                    let progressColor = 'bg-blue-500';
+                                    if (isPast(endDate) && (task.progress || 0) < 100) {
+                                      progressColor = 'bg-red-500'; // Late and not finished
+                                    } else if ((isPast(startDate) || isToday(startDate)) && !isPast(endDate)) {
+                                      const elapsedWorkingDays = calculateWorkingDays(startDate, today, ganttChart.workOnSaturdays, ganttChart.workOnSundays);
+                                      const expectedProgress = Math.min(Math.round((elapsedWorkingDays / totalWorkingDays) * 100), 100);
+                                      
+                                      if ((task.progress || 0) < expectedProgress) {
+                                        progressColor = 'bg-red-500'; // Behind schedule
+                                      } else {
+                                        progressColor = 'bg-green-500'; // On schedule or ahead
+                                      }
+                                    }
+                                    if ((task.progress || 0) >= 100) {
+                                        progressColor = 'bg-blue-500'; // Completed
+                                    }
                                     
                                     const gridRowStart = index + 3;
 
@@ -119,19 +149,17 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
                                             
                                             {task.duration > 0 && (
                                                 <div
-                                                    className="absolute h-5 top-1.5 rounded"
+                                                    className="absolute h-5 top-1.5 rounded bg-gray-200"
                                                     style={{ 
                                                         gridRow: gridRowStart,
                                                         gridColumn: `${offset + 2} / span ${differenceInCalendarDays(endDate, startDate) + 1}`,
-                                                        backgroundColor: colorPalette[index % colorPalette.length] + '33', // 20% opacity
                                                     }}
                                                     title={`${task.name} - ${format(startDate, 'dd/MM')} a ${format(endDate, 'dd/MM')}`}
                                                 >
                                                     <div 
-                                                        className="h-full rounded"
+                                                        className={cn("h-full rounded", progressColor)}
                                                         style={{
                                                             width: `${task.progress || 0}%`,
-                                                            backgroundColor: colorPalette[index % colorPalette.length],
                                                         }}
                                                     ></div>
                                                 </div>

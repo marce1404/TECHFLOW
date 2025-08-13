@@ -22,13 +22,34 @@ import {
   Settings,
   BarChart2,
   Sparkles,
+  LogOut,
 } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
+import { signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
 
 
 export default function AppSidebar() {
   const pathname = usePathname();
   const { state } = useSidebar();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      toast({
+        title: 'Sesión Cerrada',
+        description: 'Has cerrado sesión exitosamente.',
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo cerrar la sesión. Inténtalo de nuevo.',
+      });
+    }
+  };
 
   const menuItems = [
     {
@@ -136,6 +157,16 @@ export default function AppSidebar() {
                     </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton 
+                        onClick={handleLogout}
+                        tooltip="Cerrar Sesión"
+                        variant='ghost'
+                        className="h-10 w-10"
+                    >
+                        <LogOut />
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarFooter>
         </>
@@ -148,7 +179,7 @@ export default function AppSidebar() {
       <SidebarHeader>
         <div className="flex items-center gap-2 p-2">
             <div className="bg-primary p-2 rounded-lg">
-                <svg
+                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"
                     fill="none"
@@ -158,9 +189,11 @@ export default function AppSidebar() {
                     strokeLinejoin="round"
                     className="h-6 w-6 text-primary-foreground"
                 >
-                    <path d="M5 12h14" />
-                    <path d="M12 5v14" />
-                    <path d="m19 12-7 7-7-7" />
+                    <path d="M12 2 L12 22" />
+                    <path d="M12 2 L6 8" />
+                    <path d="M12 2 L18 8" />
+                    <path d="M12 14 L6 20" />
+                    <path d="M12 14 L18 20" />
                 </svg>
             </div>
             <span className="font-headline text-lg font-semibold text-sidebar-foreground">
@@ -200,6 +233,16 @@ export default function AppSidebar() {
                 <Settings />
                 <span>Configuración</span>
               </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <SidebarMenuButton 
+                onClick={handleLogout}
+                tooltip="Cerrar Sesión"
+                variant='ghost'
+            >
+              <LogOut />
+              <span>Cerrar Sesión</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
