@@ -82,7 +82,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 space-y-8">
+      <div className="flex-1 space-y-8 pb-20">
         <h1 className="text-3xl font-headline font-bold tracking-tight">
           Dashboard
         </h1>
@@ -127,9 +127,9 @@ export default function DashboardPage() {
             </Table>
           </CardContent>
         </Card>
-        <DashboardStats />
       </div>
-       <footer className="fixed bottom-0 left-0 right-0 z-10">
+       <footer className="fixed bottom-0 left-0 lg:left-[var(--sidebar-width)] right-0 z-10 transition-[left] ease-linear duration-200 group-data-[state=collapsed]/sidebar-wrapper:lg:left-[var(--sidebar-width-icon)]">
+            <DashboardStats />
             <MotivationalTicker />
         </footer>
     </div>
