@@ -38,6 +38,7 @@ export default function NewOrderPage() {
     const [priority, setPriority] = React.useState<WorkOrder['priority']>('Baja');
     const [netPrice, setNetPrice] = React.useState(0);
     const [invoiceNumber, setInvoiceNumber] = React.useState('');
+    const [ocNumber, setOcNumber] = React.useState('');
     const [assigned, setAssigned] = React.useState<string[]>([]);
     const [vendedor, setVendedor] = React.useState('');
     
@@ -84,6 +85,7 @@ export default function NewOrderPage() {
         priority,
         netPrice,
         invoiceNumber,
+        ocNumber,
         facturado: !!invoiceNumber,
         assigned: assigned.map(id => collaborators.find(c => c.id === id)?.name || ''),
         vendedor: collaborators.find(c => c.id === vendedor)?.name || '',
@@ -332,7 +334,7 @@ export default function NewOrderPage() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-3 gap-4">
                             <div>
                                 <Label htmlFor="sale-number">Nº Venta</Label>
                                 <Input id="sale-number" />
@@ -340,6 +342,14 @@ export default function NewOrderPage() {
                             <div>
                                 <Label htmlFor="hes-em-migo">HES / EM / MIGO</Label>
                                 <Input id="hes-em-migo" />
+                            </div>
+                             <div>
+                                <Label htmlFor="oc-number">OC</Label>
+                                <Input 
+                                    id="oc-number" 
+                                    value={ocNumber}
+                                    onChange={(e) => setOcNumber(e.target.value)}
+                                />
                             </div>
                         </div>
 

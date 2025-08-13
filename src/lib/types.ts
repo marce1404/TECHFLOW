@@ -26,6 +26,7 @@ export type WorkOrder = {
   vehicles: string[];
   netPrice: number;
   invoiceNumber?: string;
+  ocNumber?: string;
 };
 
 export type WorkClothingItem = {

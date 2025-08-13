@@ -335,7 +335,7 @@ export default function EditOrderPage() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                         <div>
                             <Label htmlFor="sale-number">Nº Venta</Label>
                             <Input id="sale-number" />
@@ -343,6 +343,14 @@ export default function EditOrderPage() {
                         <div>
                             <Label htmlFor="hes-em-migo">HES / EM / MIGO</Label>
                             <Input id="hes-em-migo" />
+                        </div>
+                         <div>
+                            <Label htmlFor="oc-number">OC</Label>
+                            <Input 
+                                id="oc-number"
+                                value={order.ocNumber || ''}
+                                onChange={(e) => handleInputChange('ocNumber', e.target.value)}
+                            />
                         </div>
                     </div>
 
@@ -407,5 +415,3 @@ export default function EditOrderPage() {
     </div>
   );
 }
-
-    
