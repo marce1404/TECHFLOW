@@ -14,8 +14,6 @@ export default function DashboardPage() {
   const statusOrder: WorkOrder['status'][] = ['Atrasada', 'En Progreso', 'Pendiente', 'Por Iniciar'];
 
   const sortedOrders = [...activeWorkOrders]
-    // Ensure we are not showing closed orders as active cards
-    .filter(o => o.status !== 'Cerrada') 
     .sort((a, b) => {
       const statusIndexA = statusOrder.indexOf(a.status);
       const statusIndexB = statusOrder.indexOf(b.status);
