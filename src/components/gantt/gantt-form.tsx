@@ -417,7 +417,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                                         <div className="sticky left-0 bg-card z-10 text-sm truncate pr-2 py-1 border-t flex items-center">{task.name}</div>
                                         <div className="relative border-t col-span-full h-8" style={{ gridColumnStart: 2, gridRowStart: index + 3}}>
                                             <div
-                                                className="absolute bg-primary/80 h-6 top-1 rounded"
+                                                className="absolute bg-secondary h-6 top-1 rounded"
                                                 style={{ left: `${offset * 2}rem`, width: `${workingDays * 2}rem` }}
                                                 title={`${task.name} - ${format(startDate, 'dd/MM')} a ${format(endDate, 'dd/MM')}`}
                                             >

@@ -123,7 +123,7 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
                                                     style={{ 
                                                         gridRow: gridRowStart,
                                                         gridColumn: `${offset + 2} / span ${differenceInCalendarDays(endDate, startDate) + 1}`,
-                                                        backgroundColor: colorPalette[index % colorPalette.length] + '80', // semi-transparent background
+                                                        backgroundColor: colorPalette[index % colorPalette.length] + '33', // 20% opacity
                                                     }}
                                                     title={`${task.name} - ${format(startDate, 'dd/MM')} a ${format(endDate, 'dd/MM')}`}
                                                 >
