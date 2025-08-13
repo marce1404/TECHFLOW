@@ -66,7 +66,7 @@ export default function DashboardPage() {
         return {
             categoryName: category.name,
             total: categoryOrders.length,
-            chartData: chartData,
+            data: chartData,
         }
     });
 
@@ -178,7 +178,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-      <footer className="fixed bottom-0 left-0 right-0 z-20">
+      <footer className="fixed bottom-0 left-0 right-0 z-20 md:left-auto md:w-[calc(100%_-_var(--sidebar-width))] group-data-[sidebar-state=collapsed]/sidebar-wrapper:md:w-[calc(100%_-_var(--sidebar-width-icon))]">
         <MotivationalTicker />
       </footer>
     </>
