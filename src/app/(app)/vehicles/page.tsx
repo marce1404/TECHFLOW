@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -10,6 +11,7 @@ import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import type { Vehicle } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 export default function VehiclesPage() {
     const { vehicles } = useWorkOrders();
@@ -72,17 +74,20 @@ export default function VehiclesPage() {
             </div>
             
              <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as Vehicle['status'] | 'Todos')}>
-              <div className="flex items-center justify-between mb-4">
-                <TabsList>
-                    {vehicleStatuses.map(status => (
-                        <TabsTrigger key={status} value={status}>{status}</TabsTrigger>
-                    ))}
-                </TabsList>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                 <ScrollArea className="w-full sm:w-auto">
+                    <TabsList className="w-max">
+                        {vehicleStatuses.map(status => (
+                            <TabsTrigger key={status} value={status}>{status}</TabsTrigger>
+                        ))}
+                    </TabsList>
+                    <ScrollBar orientation="horizontal" />
+                </ScrollArea>
                 <Input
                     placeholder="Buscar por marca, patente, asignado..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="max-w-sm"
+                    className="w-full sm:max-w-sm"
                 />
               </div>
               <TabsContent value={statusFilter}>

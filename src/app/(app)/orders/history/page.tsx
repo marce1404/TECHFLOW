@@ -6,6 +6,7 @@ import { useWorkOrders } from "@/context/work-orders-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import * as React from "react";
 import type { WorkOrder } from "@/lib/types";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 
 export default function HistoryPage() {
@@ -45,12 +46,15 @@ export default function HistoryPage() {
                 Historial de Órdenes de Trabajo
             </h1>
             <Tabs value={activeTab} onValueChange={filterOrders}>
-              <TabsList>
-                {categories.map(cat => (
-                    <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
-                ))}
-              </TabsList>
-              <TabsContent value={activeTab}>
+                <ScrollArea className="w-full">
+                    <TabsList className="w-max">
+                        {categories.map(cat => (
+                            <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
+                        ))}
+                    </TabsList>
+                    <ScrollBar orientation="horizontal" />
+                </ScrollArea>
+              <TabsContent value={activeTab} className="mt-4">
                   <HistoricalOrdersTable orders={filteredOrders} />
               </TabsContent>
             </Tabs>
