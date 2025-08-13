@@ -164,38 +164,35 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const updateOrder = async (id: string, updatedFields: Partial<WorkOrder>) => {
     const orderRef = doc(db, 'work-orders', id);
     
+    // Find the original order and its original status
     const originalOrder = getOrder(id);
-    if (!originalOrder) return;
-
+    if (!originalOrder) {
+        console.error("Order not found in local state");
+        return;
+    }
     const previousStatus = originalOrder.status;
-    const newStatus = updatedFields.status;
+    const newStatus = updatedFields.status || previousStatus;
 
+    // Update in Firestore
     await updateDoc(orderRef, updatedFields);
-
+    
     const updatedOrder: WorkOrder = { ...originalOrder, ...updatedFields };
 
-    if (previousStatus !== 'Cerrada' && newStatus === 'Cerrada') {
+    // Update local state based on status change
+    const wasActive = previousStatus !== 'Cerrada';
+    const isNowClosed = newStatus === 'Cerrada';
+
+    if (wasActive && isNowClosed) {
+      // Move from active to historical
       setActiveWorkOrders(prev => prev.filter(order => order.id !== id));
-      setHistoricalWorkOrders(prev => {
-        const existing = prev.find(o => o.id === id);
-        if (existing) {
-            return prev.map(o => o.id === id ? updatedOrder : o);
-        }
-        return [...prev, updatedOrder];
-      });
-    } 
-    else if (previousStatus === 'Cerrada' && newStatus !== 'Cerrada') {
+      setHistoricalWorkOrders(prev => [updatedOrder, ...prev.filter(o => o.id !== id)]);
+    } else if (!wasActive && !isNowClosed) {
+      // Move from historical to active
       setHistoricalWorkOrders(prev => prev.filter(order => order.id !== id));
-      setActiveWorkOrders(prev => {
-         const existing = prev.find(o => o.id === id);
-         if (existing) {
-             return prev.map(o => o.id === id ? updatedOrder : o);
-         }
-         return [...prev, updatedOrder];
-      });
-    } 
-    else {
-      if (newStatus === 'Cerrada') {
+      setActiveWorkOrders(prev => [updatedOrder, ...prev.filter(o => o.id !== id)]);
+    } else {
+      // Just update in the current list
+      if (isNowClosed) {
         setHistoricalWorkOrders(prev => prev.map(order => order.id === id ? updatedOrder : order));
       } else {
         setActiveWorkOrders(prev => prev.map(order => order.id === id ? updatedOrder : order));
