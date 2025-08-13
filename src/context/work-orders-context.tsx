@@ -162,9 +162,30 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   };
   
   const updateOrder = async (id: string, updatedFields: Partial<WorkOrder>) => {
-    const docRef = doc(db, "work-orders", id);
-    await updateDoc(docRef, updatedFields);
-    await fetchData();
+    const orderRef = doc(db, 'work-orders', id);
+    await updateDoc(orderRef, updatedFields);
+
+    const fullUpdatedOrder = { ...getOrder(id), ...updatedFields } as WorkOrder;
+
+    if (updatedFields.status === 'Cerrada') {
+      setActiveWorkOrders((prev) => prev.filter((order) => order.id !== id));
+      setHistoricalWorkOrders((prev) => {
+        const existing = prev.find(o => o.id === id);
+        if (existing) {
+          return prev.map(o => o.id === id ? fullUpdatedOrder : o);
+        }
+        return [...prev, fullUpdatedOrder];
+      });
+    } else {
+      setHistoricalWorkOrders((prev) => prev.filter((order) => order.id !== id));
+      setActiveWorkOrders((prev) => {
+        const existing = prev.find(o => o.id === id);
+        if (existing) {
+          return prev.map(o => o.id === id ? fullUpdatedOrder : o);
+        }
+        return [...prev, fullUpdatedOrder];
+      });
+    }
   };
 
 
@@ -365,3 +386,4 @@ export const useWorkOrders = () => {
     
 
     
+

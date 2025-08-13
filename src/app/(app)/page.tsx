@@ -7,6 +7,7 @@ import { OrderCard } from '@/components/dashboard/order-card';
 import MotivationalTicker from '@/components/dashboard/motivational-ticker';
 import type { WorkOrder } from '@/lib/types';
 import { ClosedOrdersCard } from '@/components/dashboard/closed-orders-card';
+import React from 'react';
 
 export default function DashboardPage() {
   const { activeWorkOrders, historicalWorkOrders, loading, ganttCharts } = useWorkOrders();
