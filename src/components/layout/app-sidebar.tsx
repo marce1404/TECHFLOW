@@ -20,7 +20,8 @@ import {
   Users,
   Truck,
   Settings,
-  BarChart2
+  BarChart2,
+  Sparkles,
 } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
 
@@ -63,7 +64,7 @@ export default function AppSidebar() {
      {
       href: '/ai-tools/resource-assignment',
       label: 'Asistente IA',
-      icon: Users,
+      icon: Sparkles,
     }
   ];
 
@@ -78,13 +79,8 @@ export default function AppSidebar() {
     if (href === '/') {
         return pathname === '/';
     }
-    if (href === '/orders') {
-        return pathname === '/orders';
-    }
-    if (href === '/collaborators') {
-        return pathname.startsWith('/collaborators');
-    }
-    return pathname.startsWith(href);
+    // For other paths, use startsWith to handle nested routes correctly
+    return pathname.startsWith(href) && href !== '/';
   };
   
   if (state === 'collapsed') {

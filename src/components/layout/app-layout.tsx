@@ -7,6 +7,7 @@ import AppHeader from '@/components/layout/app-header';
 import { useAuth } from '@/context/auth-context';
 import LoginPage from '@/app/login/page';
 import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
@@ -23,21 +24,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         return <main>{children}</main>;
     }
     
-    if (isDashboard) {
-      return (
-         <div className="flex flex-col min-h-screen">
-            <AppHeader />
-            <main className="p-4 sm:p-6 lg:p-8">{children}</main>
-        </div>
-      )
-    }
-    
     return (
         <SidebarProvider>
-            <div className="md:flex">
-                <Sidebar>
-                    <AppSidebar />
-                </Sidebar>
+            <div className="flex">
+                 <div className={cn("hidden", !isDashboard && "md:block")}>
+                    <Sidebar>
+                        <AppSidebar />
+                    </Sidebar>
+                </div>
                 <SidebarInset>
                     <AppHeader />
                     <main className="p-4 sm:p-6 lg:p-8">{children}</main>
