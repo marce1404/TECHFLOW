@@ -164,24 +164,32 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const docRef = doc(db, "work-orders", id);
     await updateDoc(docRef, updatedFields);
     
-    const updatedOrder = { ...getOrder(id), ...updatedFields } as WorkOrder;
+    let orderToUpdate: WorkOrder | undefined;
 
-    if (updatedFields.status === 'Cerrada') {
+    // Find the order in either active or historical lists
+    orderToUpdate = activeWorkOrders.find(o => o.id === id) || historicalWorkOrders.find(o => o.id === id);
+
+    if (!orderToUpdate) return;
+
+    const updatedOrder: WorkOrder = { ...orderToUpdate, ...updatedFields };
+
+    const wasActive = orderToUpdate.status !== 'Cerrada';
+    const isNowClosed = updatedOrder.status === 'Cerrada';
+    
+    if (wasActive && isNowClosed) {
+        // Move from active to historical
         setActiveWorkOrders(prev => prev.filter(order => order.id !== id));
-        setHistoricalWorkOrders(prev => {
-            if (prev.some(o => o.id === id)) {
-                return prev.map(o => o.id === id ? updatedOrder : o)
-            }
-            return [...prev, updatedOrder]
-        });
-    } else { 
+        setHistoricalWorkOrders(prev => [updatedOrder, ...prev.filter(o => o.id !== id)]);
+    } else if (!wasActive && !isNowClosed) {
+        // Move from historical to active
         setHistoricalWorkOrders(prev => prev.filter(order => order.id !== id));
-        setActiveWorkOrders(prev => {
-            if (prev.some(o => o.id === id)) {
-                 return prev.map(o => o.id === id ? updatedOrder : o)
-            }
-            return [...prev, updatedOrder]
-        });
+        setActiveWorkOrders(prev => [updatedOrder, ...prev.filter(o => o.id !== id)]);
+    } else if (isNowClosed) {
+        // Update within historical
+        setHistoricalWorkOrders(prev => prev.map(order => order.id === id ? updatedOrder : order));
+    } else {
+        // Update within active
+        setActiveWorkOrders(prev => prev.map(order => order.id === id ? updatedOrder : order));
     }
   };
 
@@ -378,3 +386,5 @@ export const useWorkOrders = () => {
   }
   return context;
 };
+
+    
