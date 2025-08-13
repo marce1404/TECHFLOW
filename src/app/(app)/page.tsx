@@ -5,12 +5,23 @@ import { useWorkOrders } from '@/context/work-orders-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import { OrderCard } from '@/components/dashboard/order-card';
 import MotivationalTicker from '@/components/dashboard/motivational-ticker';
+import type { WorkOrder } from '@/lib/types';
 
 export default function DashboardPage() {
   const { activeWorkOrders, loading, ganttCharts } = useWorkOrders();
 
-  const ordersToShow = activeWorkOrders
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const statusOrder: WorkOrder['status'][] = ['Atrasada', 'En Progreso', 'Pendiente', 'Por Iniciar'];
+
+  const ordersToShow = [...activeWorkOrders].sort((a, b) => {
+    const statusIndexA = statusOrder.indexOf(a.status);
+    const statusIndexB = statusOrder.indexOf(b.status);
+
+    if (statusIndexA !== statusIndexB) {
+      return statusIndexA - statusIndexB;
+    }
+
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
+  });
 
   const getGanttProgress = (otNumber: string) => {
     const assignedGantt = ganttCharts.find(g => g.assignedOT === otNumber);
