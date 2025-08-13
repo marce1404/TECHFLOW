@@ -26,9 +26,6 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex flex-col gap-8">
-        <h1 className="text-3xl font-headline font-bold tracking-tight">
-          Dashboard
-        </h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {[...Array(8)].map((_, i) => (
             <Skeleton key={i} className="h-64 w-full" />
@@ -41,10 +38,6 @@ export default function DashboardPage() {
   return (
     <>
       <div className="flex flex-1 flex-col gap-8">
-        <h1 className="text-3xl font-headline font-bold tracking-tight">
-          OT ACTIVAS
-        </h1>
-        
         {ordersToShow.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {ordersToShow.map((order) => (
