@@ -82,11 +82,10 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 space-y-8 pb-20">
+      <div className="flex-1 space-y-8 pb-8">
         <h1 className="text-3xl font-headline font-bold tracking-tight">
           Dashboard
         </h1>
-        <DashboardStats />
         <Card>
           <CardHeader>
             <CardTitle className="font-headline">
@@ -128,8 +127,9 @@ export default function DashboardPage() {
             </Table>
           </CardContent>
         </Card>
+        <DashboardStats />
       </div>
-       <footer className="sticky bottom-0 -mx-8 -mb-8">
+       <footer className="-mx-8 -mb-8">
             <MotivationalTicker />
         </footer>
     </div>

@@ -10,7 +10,7 @@ export default function AppProtectedLayout({
   return (
     <div className="flex flex-col min-h-screen">
         <AppLayout>
-            <div className="flex-1 pb-20">
+            <div className="flex-1 pb-8">
              {children}
             </div>
         </AppLayout>
