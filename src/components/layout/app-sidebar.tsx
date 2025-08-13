@@ -76,6 +76,7 @@ export default function AppSidebar() {
 
 
   const isActive = (href: string) => {
+    // For the root path, we need an exact match.
     if (href === '/') {
         return pathname === '/';
     }
