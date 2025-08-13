@@ -4,7 +4,6 @@
 import {
   ClipboardList,
   Clock,
-  Users,
   AlertTriangle,
   CheckCircle,
 } from 'lucide-react';
@@ -12,7 +11,7 @@ import StatCard from '@/components/dashboard/stat-card';
 import { useWorkOrders } from '@/context/work-orders-context';
 
 export default function DashboardStats() {
-  const { activeWorkOrders, historicalWorkOrders, collaborators } = useWorkOrders();
+  const { activeWorkOrders, historicalWorkOrders } = useWorkOrders();
 
   const openOrders = activeWorkOrders.length;
   const overdueOrders = activeWorkOrders.filter(o => o.status === 'Atrasada').length;
@@ -35,12 +34,6 @@ export default function DashboardStats() {
       description: 'Pendientes y fuera de plazo',
     },
     {
-      title: 'Colaboradores',
-      value: collaborators.length,
-      icon: Users,
-      description: 'Equipo total disponible',
-    },
-    {
       title: 'Prioridad Alta',
       value: highPriorityOrders,
       icon: AlertTriangle,
@@ -55,7 +48,7 @@ export default function DashboardStats() {
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
       {stats.map((stat) => (
         <StatCard key={stat.title} {...stat} value={String(stat.value)} />
       ))}
