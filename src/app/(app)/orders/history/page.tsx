@@ -6,8 +6,8 @@ import { useWorkOrders } from "@/context/work-orders-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import * as React from "react";
 import type { WorkOrder } from "@/lib/types";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
 
 
 export default function HistoryPage() {
@@ -55,27 +55,26 @@ export default function HistoryPage() {
                     Historial de Órdenes de Trabajo
                 </h1>
             </div>
-            <Tabs value={activeTab} onValueChange={filterOrders}>
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
-                    <ScrollArea className="w-full sm:w-auto">
-                        <TabsList className="w-max">
+            <Card>
+                <Tabs value={activeTab} onValueChange={filterOrders} className="p-4">
+                    <div className="flex items-center justify-between mb-4">
+                        <TabsList>
                             {categories.map(cat => (
                                 <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
                             ))}
                         </TabsList>
-                        <ScrollBar orientation="horizontal" />
-                    </ScrollArea>
-                    <Input
-                        placeholder="Buscar por ID, cliente, servicio..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="w-full sm:max-w-sm"
-                    />
-                </div>
-              <TabsContent value={activeTab} className="mt-4">
-                  <HistoricalOrdersTable orders={filteredOrders} />
-              </TabsContent>
-            </Tabs>
+                        <Input
+                            placeholder="Buscar por ID, cliente, servicio..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="max-w-sm"
+                        />
+                    </div>
+                <TabsContent value={activeTab} className="mt-4">
+                    <HistoricalOrdersTable orders={filteredOrders} />
+                </TabsContent>
+                </Tabs>
+            </Card>
         </div>
     );
 }

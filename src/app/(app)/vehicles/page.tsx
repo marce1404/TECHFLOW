@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import type { Vehicle } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Card } from '@/components/ui/card';
 
 export default function VehiclesPage() {
     const { vehicles } = useWorkOrders();
@@ -73,31 +73,30 @@ export default function VehiclesPage() {
                 </Button>
             </div>
             
-             <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as Vehicle['status'] | 'Todos')}>
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
-                    <ScrollArea className="w-full sm:w-auto">
-                        <TabsList className="w-max">
+            <Card>
+                <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as Vehicle['status'] | 'Todos')} className="p-4">
+                    <div className="flex items-center justify-between mb-4">
+                        <TabsList>
                             {vehicleStatuses.map(status => (
                                 <TabsTrigger key={status} value={status}>{status}</TabsTrigger>
                             ))}
                         </TabsList>
-                        <ScrollBar orientation="horizontal" />
-                    </ScrollArea>
-                    <Input
-                        placeholder="Buscar por marca, patente, asignado..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="w-full sm:max-w-sm"
+                        <Input
+                            placeholder="Buscar por marca, patente, asignado..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="max-w-sm"
+                        />
+                    </div>
+                <TabsContent value={statusFilter}>
+                    <VehiclesTable 
+                        vehicles={filteredVehicles}
+                        requestSort={requestSort}
+                        sortConfig={sortConfig}
                     />
-                </div>
-              <TabsContent value={statusFilter}>
-                <VehiclesTable 
-                    vehicles={filteredVehicles}
-                    requestSort={requestSort}
-                    sortConfig={sortConfig}
-                />
-              </TabsContent>
-            </Tabs>
+                </TabsContent>
+                </Tabs>
+            </Card>
         </div>
     );
 }
