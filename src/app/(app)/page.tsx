@@ -11,7 +11,6 @@ export default function DashboardPage() {
   const { activeWorkOrders, loading, ganttCharts } = useWorkOrders();
 
   const ordersToShow = activeWorkOrders
-    .filter(order => ['En Progreso', 'Por Iniciar', 'Pendiente', 'Atrasada'].includes(order.status))
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const getGanttProgress = (otNumber: string) => {
