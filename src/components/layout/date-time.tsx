@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -24,13 +25,11 @@ export default function DateTime() {
     return null;
   }
   
-  const formattedDate = format(currentDateTime, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es });
-  const formattedTime = format(currentDateTime, 'HH:mm:ss');
+  const formattedDateTime = format(currentDateTime, "EEEE, d 'de' MMMM 'de' yyyy - HH:mm:ss", { locale: es });
 
   return (
     <div className="hidden text-right text-sm text-muted-foreground md:block">
-      <div className="font-medium capitalize">{formattedDate}</div>
-      <div>{formattedTime}</div>
+      <div className="font-medium capitalize">{formattedDateTime}</div>
     </div>
   );
 }
