@@ -81,57 +81,53 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 space-y-8">
-        <h1 className="text-3xl font-headline font-bold tracking-tight">
-          Dashboard
-        </h1>
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-headline">
-              Órdenes de Trabajo Recientes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>OT Nº</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Servicio</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Encargado</TableHead>
+    <div className="flex flex-col gap-8">
+      <h1 className="text-3xl font-headline font-bold tracking-tight">
+        Dashboard
+      </h1>
+      <DashboardStats />
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-headline">
+            Órdenes de Trabajo Recientes
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>OT Nº</TableHead>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Servicio</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Encargado</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {recentWorkOrders.length > 0 ? recentWorkOrders.map((order) => (
+                <TableRow key={order.id}>
+                  <TableCell className="font-medium">{order.ot_number}</TableCell>
+                  <TableCell>{order.client}</TableCell>
+                  <TableCell>{order.service}</TableCell>
+                  <TableCell>
+                    <Badge variant={getStatusVariant(order.status)}>
+                      {order.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{order.assigned.join(', ')}</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recentWorkOrders.length > 0 ? recentWorkOrders.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell className="font-medium">{order.ot_number}</TableCell>
-                    <TableCell>{order.client}</TableCell>
-                    <TableCell>{order.service}</TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusVariant(order.status)}>
-                        {order.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{order.assigned.join(', ')}</TableCell>
-                  </TableRow>
-                )) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
-                      No hay órdenes de trabajo recientes.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-        <DashboardStats />
-      </div>
-       <footer className="mt-auto">
-        <MotivationalTicker />
-      </footer>
+              )) : (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center">
+                    No hay órdenes de trabajo recientes.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+       <MotivationalTicker />
     </div>
   );
 }
