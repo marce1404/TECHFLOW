@@ -31,7 +31,7 @@ export default function DashboardPage() {
     });
 
   // Limit active orders to leave space for the fixed closed orders card
-  const ordersToShow = sortedOrders.slice(0, 7);
+  const ordersToShow = sortedOrders.slice(0, 11);
 
   const getGanttProgress = (otNumber: string) => {
     const assignedGantt = ganttCharts.find(g => g.assignedOT === otNumber);
@@ -56,7 +56,7 @@ export default function DashboardPage() {
     return (
       <div className="flex flex-col gap-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {[...Array(8)].map((_, i) => (
+          {[...Array(12)].map((_, i) => (
             <Skeleton key={i} className="h-64 w-full" />
           ))}
         </div>
