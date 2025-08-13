@@ -129,7 +129,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-      <footer className="fixed bottom-0 left-0 right-0 z-20 ml-0 peer-data-[variant=inset]:ml-2 md:ml-[var(--sidebar-width-icon)] peer-data-[state=expanded]:md:ml-[var(--sidebar-width)] transition-[margin-left] duration-200">
+      <footer className="fixed bottom-0 left-0 right-0 z-20">
         <MotivationalTicker />
       </footer>
     </>
