@@ -16,13 +16,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 import MotivationalTicker from '@/components/dashboard/motivational-ticker';
 import type { WorkOrder } from '@/lib/types';
 import { Progress } from '@/components/ui/progress';
+import DashboardStats from '@/components/dashboard/dashboard-stats';
 
 export default function DashboardPage() {
   const { activeWorkOrders, loading, ganttCharts } = useWorkOrders();
 
   const ordersToShow = activeWorkOrders
     .filter(order => ['En Progreso', 'Por Iniciar', 'Pendiente', 'Atrasada'].includes(order.status))
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 10); // Mostramos las 10 más recientes
 
   const getStatusVariant = (
     status: WorkOrder['status']
@@ -51,14 +53,19 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex flex-col gap-8">
-        <h1 className="text-3xl font-headline font-bold tracking-tight">
-          Dashboard
-        </h1>
+        <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-headline font-bold tracking-tight">
+            Dashboard
+            </h1>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-28 w-full" />
+            ))}
+        </div>
         <Card>
           <CardHeader>
-            <CardTitle className="font-headline">
-              Órdenes de Trabajo Activas
-            </CardTitle>
+            <Skeleton className="h-6 w-1/3" />
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -81,15 +88,17 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="flex flex-col gap-8 flex-1 pb-16">
+      <div className="flex flex-1 flex-col gap-8">
         <h1 className="text-3xl font-headline font-bold tracking-tight">
           Dashboard
         </h1>
         
+        <DashboardStats />
+        
         <Card>
           <CardHeader>
             <CardTitle className="font-headline">
-              Órdenes de Trabajo Activas
+              Órdenes de Trabajo Recientes
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -137,7 +146,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-      <footer className="fixed bottom-0 left-0 right-0 z-20">
+      <footer className="fixed bottom-0 left-0 right-0 z-20 w-full peer-data-[state=expanded]:peer-data-[side=left]:pl-[16rem] peer-data-[state=expanded]:peer-data-[side=right]:pr-[16rem] peer-data-[collapsible=icon]:peer-data-[state=expanded]:pl-[16rem] md:peer-data-[state=collapsed]:peer-data-[collapsible=icon]:pl-[3.5rem] transition-[padding] ease-linear">
         <MotivationalTicker />
       </footer>
     </>
