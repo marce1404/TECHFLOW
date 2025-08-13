@@ -27,7 +27,7 @@ import { CalendarIcon, PlusCircle, Trash2, Printer } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { format, addDays, differenceInCalendarDays, eachDayOfInterval } from 'date-fns';
+import { format, addDays, differenceInCalendarDays, eachDayOfInterval, isPast } from 'date-fns';
 import type { GanttChart, Service, WorkOrder } from '@/lib/types';
 import Link from 'next/link';
 import { useWorkOrders } from '@/context/work-orders-context';
@@ -39,6 +39,7 @@ const taskSchema = z.object({
   name: z.string().min(1, { message: 'El nombre de la tarea es requerido.' }),
   startDate: z.date({ required_error: 'La fecha de inicio es requerida.' }),
   duration: z.coerce.number().min(1, { message: 'La duración debe ser al menos 1.' }),
+  progress: z.coerce.number().min(0).max(100).optional().default(0),
 });
 
 const ganttFormSchema = z.object({
@@ -63,6 +64,8 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
   const router = useRouter();
   const params = useParams();
   const ganttId = params.id as string;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   const form = useForm<GanttFormValues>({
     resolver: zodResolver(ganttFormSchema),
@@ -73,6 +76,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
       workOnSundays: ganttChart?.workOnSundays ?? false,
       tasks: ganttChart?.tasks.map(t => ({
           ...t,
+          progress: t.progress || 0,
           // Ensure startDate is a Date object, converting from string or Firestore Timestamp
           startDate: t.startDate ? new Date(t.startDate.toString().replace(/-/g, '/')) : new Date(),
       })) || [],
@@ -91,6 +95,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
         name: customTaskName.trim(),
         startDate: new Date(),
         duration: 1,
+        progress: 0,
       });
       setCustomTaskName('');
     }
@@ -103,7 +108,8 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
             id: crypto.randomUUID(),
             name: task.name,
             startDate: new Date(),
-            duration: 1
+            duration: 1,
+            progress: 0,
         }));
         replace(newTasks);
     }
@@ -290,11 +296,12 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
-                     <div className="hidden md:grid grid-cols-[1fr_auto_auto_auto_auto] gap-2 items-center text-sm font-medium text-muted-foreground">
+                     <div className="hidden md:grid grid-cols-[1fr,150px,120px,120px,120px,auto] gap-2 items-center text-sm font-medium text-muted-foreground">
                         <div>Nombre de la Tarea</div>
-                        <div>Fecha Inicio</div>
-                        <div>Duración (días)</div>
-                        <div>Fecha Término</div>
+                        <div className="text-center">Fecha Inicio</div>
+                        <div className="text-center">Duración (días)</div>
+                        <div className="text-center">Avance (%)</div>
+                        <div className="text-center">Fecha Término</div>
                         <div></div>
                     </div>
                     {fields.map((field, index) => {
@@ -302,8 +309,9 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                         const startDate = task.startDate ? new Date(task.startDate) : new Date();
                         const duration = task.duration || 1;
                         const endDate = calculateEndDate(startDate, duration, watchedWorkdays[0], watchedWorkdays[1]);
+                        const isPastTask = isPast(startDate) || startDate.getTime() === today.getTime();
                         return (
-                            <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto_auto] gap-2 items-center p-2 rounded-lg border">
+                            <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr,150px,120px,120px,120px,auto] gap-2 items-center p-2 rounded-lg border">
                                 <Controller
                                     control={form.control}
                                     name={`tasks.${index}.name`}
@@ -315,9 +323,9 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                                     render={({ field }) => (
                                         <Popover>
                                             <PopoverTrigger asChild>
-                                                <Button variant="outline" className={cn('w-[200px] justify-start text-left font-normal', !field.value && 'text-muted-foreground')}>
+                                                <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !field.value && 'text-muted-foreground')}>
                                                     <CalendarIcon className="mr-2 h-4 w-4" />
-                                                    {field.value ? format(new Date(field.value), 'PPP') : <span>Elegir fecha</span>}
+                                                    {field.value ? format(new Date(field.value), 'dd/MM/yy') : <span>Elegir</span>}
                                                 </Button>
                                             </PopoverTrigger>
                                             <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent>
@@ -327,9 +335,14 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                                 <Controller
                                     control={form.control}
                                     name={`tasks.${index}.duration`}
-                                    render={({ field }) => <Input type="number" className="w-20" {...field} />}
+                                    render={({ field }) => <Input type="number" className="w-full text-center" {...field} />}
                                 />
-                                <Input value={endDate ? format(endDate, 'PPP') : 'N/A'} readOnly className="bg-muted w-[200px]" />
+                                 <Controller
+                                    control={form.control}
+                                    name={`tasks.${index}.progress`}
+                                    render={({ field }) => <Input type="number" className="w-full text-center" {...field} disabled={!isPastTask} />}
+                                />
+                                <Input value={endDate ? format(endDate, 'dd/MM/yy') : 'N/A'} readOnly className="bg-muted w-full text-center" />
                                 <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
                                     <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
@@ -407,7 +420,9 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                                                 className="absolute bg-primary/80 h-6 top-1 rounded"
                                                 style={{ left: `${offset * 2}rem`, width: `${workingDays * 2}rem` }}
                                                 title={`${task.name} - ${format(startDate, 'dd/MM')} a ${format(endDate, 'dd/MM')}`}
-                                            ></div>
+                                            >
+                                                <div className="bg-primary h-full rounded" style={{ width: `${task.progress || 0}%`}}></div>
+                                            </div>
                                         </div>
                                     </React.Fragment>
                                 )

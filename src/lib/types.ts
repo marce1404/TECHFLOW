@@ -83,6 +83,7 @@ export type GanttTask = {
     name: string;
     startDate: Date;
     duration: number;
+    progress: number;
 }
 
 export type GanttChart = {

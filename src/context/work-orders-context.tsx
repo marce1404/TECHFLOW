@@ -272,13 +272,13 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
   const updateGanttChart = async (id: string, ganttChart: Partial<Omit<GanttChart, 'id'>>) => {
     const docRef = doc(db, "gantt-charts", id);
-    const dataToSave = {
-      ...ganttChart,
-      tasks: ganttChart.tasks?.map(task => ({
-          ...task,
-          startDate: Timestamp.fromDate(task.startDate),
-      }))
-    };
+    const dataToSave: Partial<{ [key in keyof GanttChart]: any }> = { ...ganttChart };
+    if (ganttChart.tasks) {
+        dataToSave.tasks = ganttChart.tasks.map(task => ({
+            ...task,
+            startDate: Timestamp.fromDate(task.startDate),
+        }));
+    }
     await updateDoc(docRef, dataToSave);
     setGanttCharts(prev => prev.map(chart => (chart.id === id ? { ...chart, ...ganttChart } as GanttChart : chart)));
   };
