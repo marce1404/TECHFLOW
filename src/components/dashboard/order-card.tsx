@@ -43,7 +43,7 @@ export function OrderCard({ order, progress }: OrderCardProps) {
       case 'Atrasada':
         return 'hsl(var(--destructive))'; // Red
       case 'En Progreso':
-        return 'hsl(var(--primary))'; // Blue
+        return 'hsl(142, 71%, 45%)'; // Green
       case 'Por Iniciar':
          return 'hsl(var(--muted))'; // Gray
       default:
