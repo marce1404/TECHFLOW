@@ -7,5 +7,13 @@ export default function AppProtectedLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <AppLayout>{children}</AppLayout>;
+  return (
+    <div className="flex flex-col min-h-screen">
+        <AppLayout>
+            <div className="flex-1 pb-20">
+             {children}
+            </div>
+        </AppLayout>
+    </div>
+  );
 }

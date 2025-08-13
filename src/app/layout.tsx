@@ -34,14 +34,16 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className={cn(
-          'min-h-screen bg-background font-body antialiased',
+          'min-h-screen bg-background font-body antialiased flex flex-col',
           inter.variable,
           spaceGrotesk.variable,
           sourceCodePro.variable
         )}
       >
         <Providers>
-          {children}
+            <div className="flex-1">
+                {children}
+            </div>
         </Providers>
         <Toaster />
       </body>

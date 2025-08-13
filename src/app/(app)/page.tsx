@@ -1,14 +1,6 @@
 
 'use client';
 
-import {
-  ClipboardList,
-  Clock,
-  Users,
-  AlertTriangle,
-  CheckCircle,
-} from 'lucide-react';
-import StatCard from '@/components/dashboard/stat-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -21,51 +13,14 @@ import {
 } from '@/components/ui/table';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { Skeleton } from '@/components/ui/skeleton';
+import MotivationalTicker from '@/components/dashboard/motivational-ticker';
+import DashboardStats from '@/components/dashboard/dashboard-stats';
 
 export default function DashboardPage() {
-  const { activeWorkOrders, historicalWorkOrders, collaborators, loading } = useWorkOrders();
+  const { activeWorkOrders, loading } = useWorkOrders();
 
-  const openOrders = activeWorkOrders.length;
-  const overdueOrders = activeWorkOrders.filter(o => o.status === 'Atrasada').length;
-  const highPriorityOrders = activeWorkOrders.filter(o => o.priority === 'Alta').length;
   const recentWorkOrders = [...activeWorkOrders].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
   
-  // This logic should be improved in the future to filter by the current month.
-  const closedThisMonth = historicalWorkOrders.length; 
-
-  const stats = [
-    {
-      title: 'OT Abiertas',
-      value: openOrders,
-      icon: ClipboardList,
-      description: 'Órdenes de trabajo activas',
-    },
-    {
-      title: 'OTs Atrasadas',
-      value: overdueOrders,
-      icon: Clock,
-      description: 'Pendientes y fuera de plazo',
-    },
-    {
-      title: 'Colaboradores',
-      value: collaborators.length,
-      icon: Users,
-      description: 'Equipo total disponible',
-    },
-    {
-      title: 'Prioridad Alta',
-      value: highPriorityOrders,
-      icon: AlertTriangle,
-      description: 'Requieren atención inmediata',
-    },
-    {
-      title: 'Cerradas (Mes)',
-      value: closedThisMonth, 
-      icon: CheckCircle,
-      description: 'Completadas en el mes actual',
-    },
-  ];
-
   const getStatusVariant = (
     status: 'Por Iniciar' | 'En Progreso' | 'Pendiente' | 'Atrasada' | 'Cerrada'
   ): 'default' | 'secondary' | 'destructive' | 'outline' => {
@@ -126,56 +81,58 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      <h1 className="text-3xl font-headline font-bold tracking-tight">
-        Dashboard
-      </h1>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        {stats.map((stat) => (
-          <StatCard key={stat.title} {...stat} value={String(stat.value)} />
-        ))}
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-headline">
-            Órdenes de Trabajo Recientes
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>OT Nº</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Servicio</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Encargado</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentWorkOrders.length > 0 ? recentWorkOrders.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell className="font-medium">{order.ot_number}</TableCell>
-                  <TableCell>{order.client}</TableCell>
-                  <TableCell>{order.service}</TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusVariant(order.status)}>
-                      {order.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{order.assigned.join(', ')}</TableCell>
-                </TableRow>
-              )) : (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 space-y-8">
+        <h1 className="text-3xl font-headline font-bold tracking-tight">
+          Dashboard
+        </h1>
+        <DashboardStats />
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-headline">
+              Órdenes de Trabajo Recientes
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
-                    No hay órdenes de trabajo recientes.
-                  </TableCell>
+                  <TableHead>OT Nº</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Servicio</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Encargado</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              </TableHeader>
+              <TableBody>
+                {recentWorkOrders.length > 0 ? recentWorkOrders.map((order) => (
+                  <TableRow key={order.id}>
+                    <TableCell className="font-medium">{order.ot_number}</TableCell>
+                    <TableCell>{order.client}</TableCell>
+                    <TableCell>{order.service}</TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusVariant(order.status)}>
+                        {order.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{order.assigned.join(', ')}</TableCell>
+                  </TableRow>
+                )) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                      No hay órdenes de trabajo recientes.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+
+      <footer className="fixed bottom-0 left-0 md:left-64 right-0 z-20">
+        <MotivationalTicker />
+      </footer>
     </div>
   );
 }
