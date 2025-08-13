@@ -13,7 +13,7 @@ export default function DashboardPage() {
 
   const statusOrder: WorkOrder['status'][] = ['Atrasada', 'En Progreso', 'Pendiente', 'Por Iniciar'];
 
-  const ordersToShow = [...activeWorkOrders].sort((a, b) => {
+  const sortedOrders = [...activeWorkOrders].sort((a, b) => {
     const statusIndexA = statusOrder.indexOf(a.status);
     const statusIndexB = statusOrder.indexOf(b.status);
 
@@ -21,13 +21,13 @@ export default function DashboardPage() {
       return statusIndexA - statusIndexB;
     }
 
-    // By replacing hyphens with slashes, we ensure the date is parsed in the local time zone,
-    // preventing hydration mismatches between server and client.
     const dateA = new Date(a.date.replace(/-/g, '/')).getTime();
     const dateB = new Date(b.date.replace(/-/g, '/')).getTime();
 
     return dateB - dateA;
   });
+
+  const ordersToShow = sortedOrders;
 
   const getGanttProgress = (otNumber: string) => {
     const assignedGantt = ganttCharts.find(g => g.assignedOT === otNumber);
@@ -39,12 +39,9 @@ export default function DashboardPage() {
   };
   
   const closedOrdersThisMonth = historicalWorkOrders.filter(order => {
-      // Ensure there is a valid date to compare. Fallback to 'date' if 'endDate' is not present.
       const closingDateStr = order.endDate || order.date;
       if (!closingDateStr) return false;
 
-      // By replacing hyphens with slashes, we ensure the date is parsed in the local time zone,
-      // preventing hydration mismatches between server and client.
       const orderDate = new Date(closingDateStr.replace(/-/g, '/'));
       const today = new Date();
       return orderDate.getMonth() === today.getMonth() && orderDate.getFullYear() === today.getFullYear();
@@ -68,7 +65,7 @@ export default function DashboardPage() {
       <div className="flex flex-1 flex-col gap-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {ordersToShow.length > 0 ? (
-            ordersToShow.map((order) => (
+            ordersToShow.slice(0, 7).map((order) => (
               <OrderCard key={order.id} order={order} progress={getGanttProgress(order.ot_number)} />
             ))
           ) : (
