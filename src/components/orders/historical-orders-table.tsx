@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -11,7 +12,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import type { WorkOrder } from '@/lib/types';
 import { ArrowUpDown, CheckCircle } from 'lucide-react';
@@ -28,7 +28,6 @@ interface HistoricalOrdersTableProps {
 }
 
 export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableProps) {
-  const [search, setSearch] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: keyof WorkOrder | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
@@ -82,16 +81,8 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
     return 0;
   });
 
-  const filteredData = sortedData.filter(
-    (order) =>
-      order.ot_number.toLowerCase().includes(search.toLowerCase()) ||
-      order.description.toLowerCase().includes(search.toLowerCase()) ||
-      order.client.toLowerCase().includes(search.toLowerCase()) ||
-      order.service.toLowerCase().includes(search.toLowerCase())
-  );
-  
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const paginatedData = filteredData.slice(
+  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+  const paginatedData = sortedData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -125,15 +116,6 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
 
   return (
     <div className="space-y-4">
-        <Input
-            placeholder="Buscar por ID, cliente, servicio..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="max-w-sm"
-        />
         <div className="rounded-md border">
             <Table>
                 <TableHeader className="bg-muted/50">
@@ -198,7 +180,7 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
         </div>
         <div className="flex items-center justify-between text-sm text-muted-foreground">
             <div>
-                Mostrando {paginatedData.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} a {Math.min(currentPage * itemsPerPage, filteredData.length)} de {filteredData.length} órdenes.
+                Mostrando {paginatedData.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} a {Math.min(currentPage * itemsPerPage, sortedData.length)} de {sortedData.length} órdenes.
             </div>
             <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>Anterior</Button>

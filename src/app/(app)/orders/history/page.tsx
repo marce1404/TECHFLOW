@@ -7,27 +7,35 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import * as React from "react";
 import type { WorkOrder } from "@/lib/types";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
 
 
 export default function HistoryPage() {
     const { historicalWorkOrders, otCategories } = useWorkOrders();
-    const [filteredOrders, setFilteredOrders] = React.useState<WorkOrder[]>(historicalWorkOrders);
+    const [search, setSearch] = React.useState('');
     const [activeTab, setActiveTab] = React.useState('todos');
 
 
     const filterOrders = (categoryPrefix: string | null) => {
         setActiveTab(categoryPrefix || 'todos');
-        if (!categoryPrefix || categoryPrefix === 'todos') {
-            setFilteredOrders(historicalWorkOrders);
-            return;
-        }
-        setFilteredOrders(historicalWorkOrders.filter(order => order.ot_number.startsWith(categoryPrefix)));
     }
     
-    React.useEffect(() => {
-        setFilteredOrders(historicalWorkOrders);
-        setActiveTab('todos');
-    }, [historicalWorkOrders]);
+    const filteredOrders = React.useMemo(() => {
+        let orders = historicalWorkOrders;
+        if (activeTab !== 'todos') {
+            orders = orders.filter(order => order.ot_number.startsWith(activeTab));
+        }
+        if (search) {
+            orders = orders.filter(order =>
+                order.ot_number.toLowerCase().includes(search.toLowerCase()) ||
+                order.description.toLowerCase().includes(search.toLowerCase()) ||
+                order.client.toLowerCase().includes(search.toLowerCase()) ||
+                order.service.toLowerCase().includes(search.toLowerCase())
+            );
+        }
+        return orders;
+    }, [historicalWorkOrders, activeTab, search]);
+
 
     const categories = [
         { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
@@ -46,14 +54,22 @@ export default function HistoryPage() {
                 Historial de Órdenes de Trabajo
             </h1>
             <Tabs value={activeTab} onValueChange={filterOrders}>
-                <ScrollArea className="w-full">
-                    <TabsList className="w-max">
-                        {categories.map(cat => (
-                            <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
-                        ))}
-                    </TabsList>
-                    <ScrollBar orientation="horizontal" />
-                </ScrollArea>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                    <ScrollArea className="w-full sm:w-auto">
+                        <TabsList className="w-max">
+                            {categories.map(cat => (
+                                <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
+                            ))}
+                        </TabsList>
+                        <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
+                    <Input
+                        placeholder="Buscar por ID, cliente, servicio..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-full sm:max-w-sm"
+                    />
+                </div>
               <TabsContent value={activeTab} className="mt-4">
                   <HistoricalOrdersTable orders={filteredOrders} />
               </TabsContent>

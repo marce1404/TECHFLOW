@@ -74,22 +74,22 @@ export default function VehiclesPage() {
             </div>
             
              <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as Vehicle['status'] | 'Todos')}>
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
-                 <ScrollArea className="w-full sm:w-auto">
-                    <TabsList className="w-max">
-                        {vehicleStatuses.map(status => (
-                            <TabsTrigger key={status} value={status}>{status}</TabsTrigger>
-                        ))}
-                    </TabsList>
-                    <ScrollBar orientation="horizontal" />
-                </ScrollArea>
-                <Input
-                    placeholder="Buscar por marca, patente, asignado..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="w-full sm:max-w-sm"
-                />
-              </div>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                    <ScrollArea className="w-full sm:w-auto">
+                        <TabsList className="w-max">
+                            {vehicleStatuses.map(status => (
+                                <TabsTrigger key={status} value={status}>{status}</TabsTrigger>
+                            ))}
+                        </TabsList>
+                        <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
+                    <Input
+                        placeholder="Buscar por marca, patente, asignado..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-full sm:max-w-sm"
+                    />
+                </div>
               <TabsContent value={statusFilter}>
                 <VehiclesTable 
                     vehicles={filteredVehicles}

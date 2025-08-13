@@ -69,29 +69,29 @@ export default function CollaboratorsPage() {
             </div>
             
             <Tabs value={roleFilter} onValueChange={(value) => setRoleFilter(value as Collaborator['role'] | 'Todos')}>
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
-                <ScrollArea className="w-full sm:w-auto">
-                    <TabsList className="w-max">
-                        {collaboratorRoles.map(role => (
-                            <TabsTrigger key={role} value={role}>{role}</TabsTrigger>
-                        ))}
-                    </TabsList>
-                    <ScrollBar orientation="horizontal" />
-                </ScrollArea>
-                <Input
-                    placeholder="Buscar por nombre, cargo..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="w-full sm:max-w-sm"
-                />
-              </div>
-              <TabsContent value={roleFilter}>
-                  <CollaboratorsTable 
-                    collaborators={filteredCollaborators}
-                    requestSort={requestSort}
-                    sortConfig={sortConfig}
-                  />
-              </TabsContent>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                    <ScrollArea className="w-full sm:w-auto">
+                        <TabsList className="w-max">
+                            {collaboratorRoles.map(role => (
+                                <TabsTrigger key={role} value={role}>{role}</TabsTrigger>
+                            ))}
+                        </TabsList>
+                        <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
+                    <Input
+                        placeholder="Buscar por nombre, cargo..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-full sm:max-w-sm"
+                    />
+                </div>
+                <TabsContent value={roleFilter}>
+                    <CollaboratorsTable 
+                        collaborators={filteredCollaborators}
+                        requestSort={requestSort}
+                        sortConfig={sortConfig}
+                    />
+                </TabsContent>
             </Tabs>
         </div>
     );
