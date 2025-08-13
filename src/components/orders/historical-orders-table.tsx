@@ -31,7 +31,7 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
   const [sortConfig, setSortConfig] = useState<{ key: keyof WorkOrder | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
-  const { updateOrder } = useWorkOrders();
+  const { updateOrder, otStatuses } = useWorkOrders();
 
   const getStatusVariant = (
     status: WorkOrder['status']
@@ -106,8 +106,6 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
       { key: 'facturado', label: 'Facturado' },
   ];
 
-  const statuses: WorkOrder['status'][] = ['Por Iniciar', 'En Progreso', 'Pendiente', 'Atrasada', 'Cerrada'];
-
   const handleStatusChange = (order: WorkOrder, newStatus: WorkOrder['status']) => {
     const updatedOrder = { ...order, status: newStatus };
     updateOrder(order.id, updatedOrder);
@@ -155,9 +153,9 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
-                                {statuses.map(status => (
-                                <DropdownMenuItem key={status} onSelect={() => handleStatusChange(order, status)}>
-                                    {status}
+                                {otStatuses.map(status => (
+                                <DropdownMenuItem key={status.id} onSelect={() => handleStatusChange(order, status.name as WorkOrder['status'])}>
+                                    {status.name}
                                 </DropdownMenuItem>
                                 ))}
                             </DropdownMenuContent>

@@ -23,7 +23,7 @@ import { useRouter } from "next/navigation";
 export default function NewOrderPage() {
     const router = useRouter();
     const { toast } = useToast();
-    const { otCategories, services, addOrder, getNextOtNumber, collaborators } = useWorkOrders();
+    const { otCategories, services, addOrder, getNextOtNumber, collaborators, otStatuses } = useWorkOrders();
 
     const [description, setDescription] = React.useState('');
     const [categoryPrefix, setCategoryPrefix] = React.useState('');
@@ -34,7 +34,7 @@ export default function NewOrderPage() {
     const [selectedTechnicians, setSelectedTechnicians] = React.useState<string[]>([]);
     const [selectedVehicles, setSelectedVehicles] = React.useState<string[]>([]);
     const [notes, setNotes] = React.useState('');
-    const [status, setStatus] = React.useState<WorkOrder['status']>('Por Iniciar');
+    const [status, setStatus] = React.useState<WorkOrder['status']>(otStatuses.length > 0 ? otStatuses[0].name as WorkOrder['status'] : 'Por Iniciar');
     const [priority, setPriority] = React.useState<WorkOrder['priority']>('Baja');
     const [netPrice, setNetPrice] = React.useState(0);
     const [invoiceNumber, setInvoiceNumber] = React.useState('');
@@ -277,7 +277,6 @@ export default function NewOrderPage() {
                             <div>
                                 <Label htmlFor="status">Estado</Label>
                                 <Select 
-                                    defaultValue="Por Iniciar" 
                                     onValueChange={(v) => setStatus(v as WorkOrder['status'])}
                                     value={status}
                                 >
@@ -285,11 +284,9 @@ export default function NewOrderPage() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="Por Iniciar">Por Iniciar</SelectItem>
-                                        <SelectItem value="En Progreso">En Progreso</SelectItem>
-                                        <SelectItem value="Pendiente">Pendiente</SelectItem>
-                                        <SelectItem value="Atrasada">Atrasada</SelectItem>
-                                        <SelectItem value="Cerrada">Cerrada</SelectItem>
+                                        {otStatuses.map(s => (
+                                            <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </div>

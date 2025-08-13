@@ -23,7 +23,7 @@ import { useWorkOrders } from "@/context/work-orders-context";
 export default function EditOrderPage() {
   const params = useParams();
   const router = useRouter();
-  const { getOrder, updateOrder, otCategories, services, collaborators, ganttCharts } = useWorkOrders();
+  const { getOrder, updateOrder, otCategories, services, collaborators, ganttCharts, otStatuses } = useWorkOrders();
   const orderId = params.id as string;
   
   const initialOrder = getOrder(orderId);
@@ -287,11 +287,9 @@ export default function EditOrderPage() {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="Por Iniciar">Por Iniciar</SelectItem>
-                                    <SelectItem value="En Progreso">En Progreso</SelectItem>
-                                    <SelectItem value="Pendiente">Pendiente</SelectItem>
-                                    <SelectItem value="Atrasada">Atrasada</SelectItem>
-                                    <SelectItem value="Cerrada">Cerrada</SelectItem>
+                                    {otStatuses.map(status => (
+                                        <SelectItem key={status.id} value={status.name}>{status.name}</SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
