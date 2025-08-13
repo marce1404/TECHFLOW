@@ -27,8 +27,6 @@ interface OrderCardProps {
 export function OrderCard({ order, progress }: OrderCardProps) {
   const getStatusVariant = (status: WorkOrder['status']) => {
     switch (status) {
-      case 'En Progreso':
-        return 'default';
       case 'Atrasada':
         return 'destructive';
       case 'Por Iniciar':
@@ -36,7 +34,7 @@ export function OrderCard({ order, progress }: OrderCardProps) {
       case 'Pendiente':
         return 'secondary';
       default:
-        return 'secondary';
+        return 'default';
     }
   };
   
@@ -64,15 +62,15 @@ export function OrderCard({ order, progress }: OrderCardProps) {
             <CardDescription>{order.ot_number} - {order.client}</CardDescription>
             <CardTitle className="text-lg font-bold leading-tight mt-1 truncate">{order.description}</CardTitle>
           </div>
-          <div className="flex items-center gap-1">
-             <Badge variant={getStatusVariant(order.status)} style={statusBadgeStyle} className="capitalize text-xs">{order.status}</Badge>
-          </div>
         </div>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col justify-between">
         <div className="flex items-center justify-between gap-4">
           <div className="text-sm text-muted-foreground flex-1 space-y-2 min-w-0">
-            <p className="font-semibold text-foreground truncate">{order.service}</p>
+            <div className="flex items-center gap-2">
+                <p className="font-semibold text-foreground truncate">{order.service}</p>
+                <Badge variant={getStatusVariant(order.status)} style={statusBadgeStyle} className="capitalize text-xs">{order.status}</Badge>
+            </div>
             <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 flex-shrink-0" />
                 <span className="truncate">{order.assigned.join(', ')}</span>
