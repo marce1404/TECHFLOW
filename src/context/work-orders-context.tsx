@@ -157,42 +157,14 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     } else {
       setActiveWorkOrders(prev => [newOrder, ...prev]);
     }
+    await fetchData();
     return newOrder;
   };
   
   const updateOrder = async (id: string, updatedFields: Partial<WorkOrder>) => {
     const docRef = doc(db, "work-orders", id);
     await updateDoc(docRef, updatedFields);
-
-    const isNowClosed = updatedFields.status === 'Cerrada';
-    
-    // Optimistically update UI
-    let orderToMove: WorkOrder | undefined;
-
-    const currentActive = activeWorkOrders.find(o => o.id === id);
-    const currentHistorical = historicalWorkOrders.find(o => o.id === id);
-    
-    if (isNowClosed) {
-      // Moving from Active to Historical
-      if (currentActive) {
-        orderToMove = { ...currentActive, ...updatedFields };
-        setActiveWorkOrders(prev => prev.filter(o => o.id !== id));
-        setHistoricalWorkOrders(prev => [orderToMove!, ...prev]);
-      } else if (currentHistorical) {
-        // Just update within historical
-        setHistoricalWorkOrders(prev => prev.map(o => o.id === id ? { ...o, ...updatedFields } : o));
-      }
-    } else {
-      // Moving from Historical to Active OR staying in Active
-      if (currentHistorical) {
-        orderToMove = { ...currentHistorical, ...updatedFields };
-        setHistoricalWorkOrders(prev => prev.filter(o => o.id !== id));
-        setActiveWorkOrders(prev => [orderToMove!, ...prev]);
-      } else if (currentActive) {
-        // Just update within active
-        setActiveWorkOrders(prev => prev.map(o => o.id === id ? { ...o, ...updatedFields } : o));
-      }
-    }
+    await fetchData();
   };
 
 
