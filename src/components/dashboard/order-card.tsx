@@ -85,18 +85,18 @@ export function OrderCard({ order, progress }: OrderCardProps) {
       </CardHeader>
       <CardContent className="flex-1 flex flex-col justify-between">
         <div className="flex items-center justify-between gap-4">
-          <div className="text-sm text-muted-foreground flex-1 space-y-1">
-            <p className="font-semibold text-foreground">{order.service}</p>
+          <div className="text-sm text-muted-foreground flex-1 space-y-2 min-w-0">
+            <p className="font-semibold text-foreground truncate">{order.service}</p>
             <div className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                <span>{order.assigned.join(', ')}</span>
+                <Users className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">{order.assigned.join(', ')}</span>
             </div>
              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                <span>{order.date}</span>
+                <Calendar className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">{order.date}</span>
             </div>
           </div>
-          <div className="h-24 w-24">
+          <div className="h-24 w-24 flex-shrink-0">
             <ChartContainer config={chartConfig} className="mx-auto aspect-square h-full">
               <PieChart>
                 <ChartTooltip
