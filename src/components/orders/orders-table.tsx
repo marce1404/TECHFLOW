@@ -39,7 +39,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
       case 'cerrada':
         return 'default';
       case 'en progreso':
-        return 'secondary';
+        return 'default'; // Changed to default to allow custom bg
       case 'atrasada':
         return 'destructive';
       default:
@@ -146,7 +146,8 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                                 <Button variant="ghost" className="p-0 h-auto">
                                   <Badge 
                                     variant={getStatusVariant(order.status)} 
-                                    className={`cursor-pointer ${order.status.toLowerCase() === 'en progreso' ? 'bg-green-500 text-white' : ''}`}
+                                    style={order.status.toLowerCase() === 'en progreso' ? { backgroundColor: 'hsl(142, 71%, 45%)', color: 'white' } : {}}
+                                    className="cursor-pointer"
                                   >
                                       {order.status}
                                   </Badge>
