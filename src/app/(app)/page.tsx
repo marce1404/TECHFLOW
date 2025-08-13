@@ -14,16 +14,15 @@ import {
 import { useWorkOrders } from '@/context/work-orders-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import MotivationalTicker from '@/components/dashboard/motivational-ticker';
-import StatCardV2 from '@/components/dashboard/stat-card-v2';
 import type { WorkOrder } from '@/lib/types';
 import { Progress } from '@/components/ui/progress';
 
 export default function DashboardPage() {
-  const { activeWorkOrders, loading, otCategories, ganttCharts } = useWorkOrders();
+  const { activeWorkOrders, loading, ganttCharts } = useWorkOrders();
 
-  const recentWorkOrders = [...activeWorkOrders]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 5);
+  const ordersToShow = activeWorkOrders
+    .filter(order => ['En Progreso', 'Por Iniciar', 'Pendiente', 'Atrasada'].includes(order.status))
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const getStatusVariant = (
     status: WorkOrder['status']
@@ -49,50 +48,16 @@ export default function DashboardPage() {
     return Math.round(totalProgress / assignedGantt.tasks.length);
   };
 
-  const dashboardStats = otCategories
-    .filter(cat => cat.status === 'Activa')
-    .map(category => {
-        const categoryOrders = activeWorkOrders.filter(order => order.ot_number.startsWith(category.prefix));
-        const statusCounts = categoryOrders.reduce((acc, order) => {
-            acc[order.status] = (acc[order.status] || 0) + 1;
-            return acc;
-        }, {} as Record<WorkOrder['status'], number>);
-        
-        const chartData = Object.entries(statusCounts).map(([status, count]) => ({
-            name: status,
-            value: count,
-        }));
-
-        return {
-            categoryName: category.name,
-            total: categoryOrders.length,
-            data: chartData,
-        }
-    });
-
   if (loading) {
     return (
       <div className="flex flex-col gap-8">
         <h1 className="text-3xl font-headline font-bold tracking-tight">
           Dashboard
         </h1>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {[...Array(3)].map((_, i) => (
-                <Card key={i}>
-                    <CardHeader>
-                        <Skeleton className="h-6 w-1/2" />
-                        <Skeleton className="h-4 w-1/3" />
-                    </CardHeader>
-                    <CardContent className="flex items-center justify-center">
-                        <Skeleton className="h-32 w-32 rounded-full" />
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
         <Card>
           <CardHeader>
             <CardTitle className="font-headline">
-              Órdenes de Trabajo Recientes
+              Órdenes de Trabajo Activas
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -116,21 +81,15 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="flex flex-col gap-8 pb-16">
+      <div className="flex flex-col gap-8 flex-1 pb-16">
         <h1 className="text-3xl font-headline font-bold tracking-tight">
           Dashboard
         </h1>
         
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {dashboardStats.map(stat => (
-                <StatCardV2 key={stat.categoryName} title={stat.categoryName} total={stat.total} data={stat.data} />
-            ))}
-        </div>
-
         <Card>
           <CardHeader>
             <CardTitle className="font-headline">
-              Órdenes de Trabajo Recientes
+              Órdenes de Trabajo Activas
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -146,8 +105,8 @@ export default function DashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentWorkOrders.length > 0 ? (
-                  recentWorkOrders.map((order) => (
+                {ordersToShow.length > 0 ? (
+                  ordersToShow.map((order) => (
                     <TableRow key={order.id}>
                       <TableCell className="font-medium">{order.ot_number}</TableCell>
                       <TableCell>{order.client}</TableCell>
@@ -169,7 +128,7 @@ export default function DashboardPage() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={6} className="h-24 text-center">
-                      No hay órdenes de trabajo recientes.
+                      No hay órdenes de trabajo activas.
                     </TableCell>
                   </TableRow>
                 )}
@@ -178,7 +137,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-      <footer className="fixed bottom-0 left-0 right-0 z-20 md:left-auto md:w-[calc(100%_-_var(--sidebar-width))] group-data-[sidebar-state=collapsed]/sidebar-wrapper:md:w-[calc(100%_-_var(--sidebar-width-icon))]">
+      <footer className="fixed bottom-0 left-0 right-0 z-20">
         <MotivationalTicker />
       </footer>
     </>
