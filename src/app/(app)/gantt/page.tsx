@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 
 export default function GanttPage() {
@@ -33,18 +33,18 @@ export default function GanttPage() {
 
     return (
         <div className="flex flex-col gap-8">
-            <div className="flex items-center justify-end">
-                <Button asChild>
-                    <Link href="/gantt/new">
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Nueva Carta Gantt
-                    </Link>
-                </Button>
-            </div>
-            
             <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle>Cartas Gantt Creadas</CardTitle>
+                    <Button asChild>
+                        <Link href="/gantt/new">
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Nueva Carta Gantt
+                        </Link>
+                    </Button>
+                </CardHeader>
                 <CardContent className="p-0">
-                    <div className="rounded-md border">
+                    <div className="rounded-b-lg border-t">
                         <Table>
                             <TableHeader className="bg-muted/50">
                                 <TableRow>
