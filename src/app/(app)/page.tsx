@@ -5,6 +5,7 @@ import { useWorkOrders } from '@/context/work-orders-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { WorkOrder } from '@/lib/types';
 import { OrderCard } from '@/components/dashboard/order-card';
+import MotivationalTicker from '@/components/dashboard/motivational-ticker';
 
 export default function DashboardPage() {
   const { activeWorkOrders, loading, ganttCharts } = useWorkOrders();
