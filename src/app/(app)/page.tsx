@@ -42,7 +42,7 @@ export default function DashboardPage() {
     <>
       <div className="flex flex-1 flex-col gap-8">
         <h1 className="text-3xl font-headline font-bold tracking-tight">
-          Dashboard de Órdenes Activas
+          OT ACTIVAS
         </h1>
         
         {ordersToShow.length > 0 ? (
