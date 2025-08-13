@@ -28,7 +28,7 @@ export function OrderCard({ order, progress }: OrderCardProps) {
   const getStatusVariant = (status: WorkOrder['status']) => {
     switch (status) {
       case 'En Progreso':
-        return 'default'; // This will be customized with green color
+        return 'default';
       case 'Atrasada':
         return 'destructive';
       case 'Por Iniciar':
@@ -40,23 +40,12 @@ export function OrderCard({ order, progress }: OrderCardProps) {
     }
   };
   
-  const getPriorityVariant = (priority: WorkOrder['priority']) => {
-    switch (priority) {
-      case 'Alta':
-        return 'destructive';
-      case 'Media':
-        return 'secondary';
-      default:
-        return 'outline';
-    }
-  };
-
   const getChartColor = (status: WorkOrder['status']) => {
      switch (status) {
       case 'Atrasada':
-        return 'hsl(var(--chart-5))'; // Red
+        return 'hsl(var(--destructive))'; // Red
       case 'En Progreso':
-        return 'hsl(var(--chart-1))'; // Blue
+        return 'hsl(var(--primary))'; // Blue
       case 'Por Iniciar':
          return 'hsl(var(--muted))'; // Gray
       default:
@@ -64,7 +53,7 @@ export function OrderCard({ order, progress }: OrderCardProps) {
     }
   }
   
-  const statusBadgeStyle = order.status === 'En Progreso' ? { backgroundColor: 'hsl(var(--chart-3))' } : {};
+  const statusBadgeStyle = order.status === 'En Progreso' ? { backgroundColor: 'hsl(142, 71%, 45%)' } : {};
 
 
   return (
@@ -76,7 +65,6 @@ export function OrderCard({ order, progress }: OrderCardProps) {
             <CardTitle className="text-lg font-bold leading-tight mt-1 truncate">{order.description}</CardTitle>
           </div>
           <div className="flex items-center gap-1">
-             <Badge variant={getPriorityVariant(order.priority)} className="capitalize text-xs">{order.priority}</Badge>
              <Badge variant={getStatusVariant(order.status)} style={statusBadgeStyle} className="capitalize text-xs">{order.status}</Badge>
           </div>
         </div>
