@@ -35,6 +35,8 @@ export function OrderCard({ order, progress }: OrderCardProps) {
         return 'outline';
       case 'pendiente':
         return 'secondary';
+      case 'en progreso':
+        return 'default'; // Using default for a custom color background
       default:
         return 'default';
     }
@@ -48,6 +50,8 @@ export function OrderCard({ order, progress }: OrderCardProps) {
         return 'hsl(142, 71%, 45%)'; // Green
       case 'por iniciar':
          return 'hsl(var(--muted))'; // Gray
+      case 'pendiente':
+         return 'hsl(215, 28%, 17%)';
       default:
         return 'hsl(var(--muted))'; // Gray for others
     }
