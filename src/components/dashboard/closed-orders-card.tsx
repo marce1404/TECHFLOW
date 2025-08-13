@@ -29,8 +29,8 @@ export function ClosedOrdersCard({ orders }: ClosedOrdersCardProps) {
           <ScrollArea className="h-48">
             <div className="flex flex-wrap gap-2 pt-2">
               {orders.map((order) => (
-                <Badge key={order.id} variant="secondary" className="text-sm">
-                  {order.ot_number}
+                <Badge key={order.id} variant="secondary" className="text-sm font-normal">
+                  {`${order.ot_number} - ${order.description}`}
                 </Badge>
               ))}
             </div>
