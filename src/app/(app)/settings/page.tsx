@@ -11,6 +11,11 @@ export default function SettingsPage() {
             href: '/settings/ot-categories',
         },
         {
+            title: 'Estados de OT',
+            description: 'Gestiona los estados de las órdenes de trabajo.',
+            href: '/settings/ot-statuses',
+        },
+        {
             title: 'Servicios',
             description: 'Gestiona los servicios ofrecidos.',
             href: '/settings/services',

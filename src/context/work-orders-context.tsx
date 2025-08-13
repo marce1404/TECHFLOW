@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, query, where, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { WorkOrder, OTCategory, Service, Collaborator, Vehicle, GanttChart, SuggestedTask } from '@/lib/types';
+import type { WorkOrder, OTCategory, Service, Collaborator, Vehicle, GanttChart, SuggestedTask, OTStatus } from '@/lib/types';
 import { Timestamp } from 'firebase/firestore';
 import { initialSuggestedTasks } from '@/lib/placeholder-data';
 
@@ -12,6 +12,7 @@ interface WorkOrdersContextType {
   activeWorkOrders: WorkOrder[];
   historicalWorkOrders: WorkOrder[];
   otCategories: OTCategory[];
+  otStatuses: OTStatus[];
   services: Service[];
   collaborators: Collaborator[];
   vehicles: Vehicle[];
@@ -23,6 +24,8 @@ interface WorkOrdersContextType {
   getOrder: (id: string) => WorkOrder | undefined;
   addCategory: (category: Omit<OTCategory, 'id' | 'status'> & { status: string }) => Promise<OTCategory>;
   updateCategory: (id: string, category: Partial<OTCategory>) => Promise<void>;
+  addStatus: (status: Omit<OTStatus, 'id'>) => Promise<OTStatus>;
+  updateStatus: (id: string, status: Partial<OTStatus>) => Promise<void>;
   addService: (service: Omit<Service, 'id' | 'status'> & { status: string }) => Promise<Service>;
   updateService: (id: string, service: Partial<Service>) => Promise<void>;
   deleteService: (id: string) => Promise<void>;
@@ -50,6 +53,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [activeWorkOrders, setActiveWorkOrders] = useState<WorkOrder[]>([]);
   const [historicalWorkOrders, setHistoricalWorkOrders] = useState<WorkOrder[]>([]);
   const [otCategories, setOtCategories] = useState<OTCategory[]>([]);
+  const [otStatuses, setOtStatuses] = useState<OTStatus[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -64,6 +68,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             activeWorkOrdersSnapshot,
             historicalWorkOrdersSnapshot,
             categoriesSnapshot,
+            statusesSnapshot,
             servicesSnapshot,
             collaboratorsSnapshot,
             vehiclesSnapshot,
@@ -73,6 +78,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             getDocs(query(collection(db, "work-orders"), where("status", "!=", "Cerrada"))),
             getDocs(query(collection(db, "work-orders"), where("status", "==", "Cerrada"))),
             getDocs(collection(db, "ot-categories")),
+            getDocs(collection(db, "ot-statuses")),
             getDocs(collection(db, "services")),
             getDocs(collection(db, "collaborators")),
             getDocs(collection(db, "vehicles")),
@@ -83,6 +89,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         setActiveWorkOrders(activeWorkOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[]);
         setHistoricalWorkOrders(historicalWorkOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[]);
         setOtCategories(categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as OTCategory[]);
+        setOtStatuses(statusesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as OTStatus[]);
         setServices(servicesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Service[]);
         setCollaborators(collaboratorsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Collaborator[]);
         setVehicles(vehiclesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Vehicle[]);
@@ -118,6 +125,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         setActiveWorkOrders([]);
         setHistoricalWorkOrders([]);
         setOtCategories([]);
+        setOtStatuses([]);
         setServices([]);
         setCollaborators([]);
         setVehicles([]);
@@ -192,6 +200,19 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const docRef = doc(db, "ot-categories", id);
     await updateDoc(docRef, updatedCategory);
     setOtCategories(prev => prev.map(cat => (cat.id === id ? { ...cat, ...updatedCategory } : cat)));
+  };
+
+  const addStatus = async (status: Omit<OTStatus, 'id'>): Promise<OTStatus> => {
+    const docRef = await addDoc(collection(db, "ot-statuses"), status);
+    const newStatus = { id: docRef.id, ...status } as OTStatus;
+    setOtStatuses(prev => [...prev, newStatus]);
+    return newStatus;
+  };
+
+  const updateStatus = async (id: string, updatedStatus: Partial<OTStatus>) => {
+    const docRef = doc(db, "ot-statuses", id);
+    await updateDoc(docRef, updatedStatus);
+    setOtStatuses(prev => prev.map(s => (s.id === id ? { ...s, ...updatedStatus } : s)));
   };
 
   const addService = async (service: Omit<Service, 'id'>): Promise<Service> => {
@@ -311,6 +332,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         activeWorkOrders, 
         historicalWorkOrders, 
         otCategories,
+        otStatuses,
         services,
         collaborators,
         vehicles,
@@ -322,6 +344,8 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         getOrder, 
         addCategory,
         updateCategory,
+        addStatus,
+        updateStatus,
         addService,
         updateService,
         deleteService,
