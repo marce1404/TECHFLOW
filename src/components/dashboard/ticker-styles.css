@@ -14,7 +14,6 @@
   width: 100%;
   overflow: hidden;
   height: 2.5rem; /* 40px */
-  padding-left: 100%;
   box-sizing: content-box;
 }
 
