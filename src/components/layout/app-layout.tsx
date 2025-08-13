@@ -7,7 +7,6 @@ import AppHeader from '@/components/layout/app-header';
 import { useAuth } from '@/context/auth-context';
 import LoginPage from '@/app/login/page';
 import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
@@ -18,13 +17,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         return <LoginPage />;
     }
     
+    // For print views, we render only the children without any layout.
     if (isPrintView) {
         return <main>{children}</main>;
     }
     
     return (
         <SidebarProvider>
-            <div className={cn('no-print')}>
+            <div className="md:flex">
                 <Sidebar>
                     <AppSidebar />
                 </Sidebar>
