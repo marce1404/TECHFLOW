@@ -1,6 +1,6 @@
 'use client';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { Button } from '@/components/ui/button';
+import DateTime from './date-time';
 
 export default function AppHeader() {
   return (
@@ -9,7 +9,7 @@ export default function AppHeader() {
         <SidebarTrigger />
       </div>
       <div className="flex items-center gap-4">
-        {/* Placeholder for future items like user menu or theme toggle */}
+        <DateTime />
       </div>
     </header>
   );
