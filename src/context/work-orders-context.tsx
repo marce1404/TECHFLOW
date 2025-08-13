@@ -161,24 +161,26 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     return newOrder;
   };
   
+  const getOrder = (id: string) => {
+    return [...activeWorkOrders, ...historicalWorkOrders].find(order => order.id === id);
+  };
+
   const updateOrder = async (id: string, updatedFields: Partial<WorkOrder>) => {
     const orderRef = doc(db, 'work-orders', id);
-    
-    // Find the original order and its original status
     const originalOrder = getOrder(id);
+
     if (!originalOrder) {
-        console.error("Order not found in local state");
-        return;
+      console.error("Order not found, cannot update.");
+      return;
     }
+
     const previousStatus = originalOrder.status;
     const newStatus = updatedFields.status || previousStatus;
 
-    // Update in Firestore
     await updateDoc(orderRef, updatedFields);
     
     const updatedOrder: WorkOrder = { ...originalOrder, ...updatedFields };
 
-    // Update local state based on status change
     const wasActive = previousStatus !== 'Cerrada';
     const isNowClosed = newStatus === 'Cerrada';
 
@@ -198,10 +200,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         setActiveWorkOrders(prev => prev.map(order => order.id === id ? updatedOrder : order));
       }
     }
-  };
-
-  const getOrder = (id: string) => {
-    return [...activeWorkOrders, ...historicalWorkOrders].find(order => order.id === id);
   };
   
   const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory> => {
@@ -393,3 +391,5 @@ export const useWorkOrders = () => {
   }
   return context;
 };
+
+    
