@@ -86,6 +86,7 @@ export default function DashboardPage() {
         <h1 className="text-3xl font-headline font-bold tracking-tight">
           Dashboard
         </h1>
+        <DashboardStats />
         <Card>
           <CardHeader>
             <CardTitle className="font-headline">
@@ -128,8 +129,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-       <footer className="fixed bottom-0 left-0 lg:left-[var(--sidebar-width)] right-0 z-10 transition-[left] ease-linear duration-200 group-data-[state=collapsed]/sidebar-wrapper:lg:left-[var(--sidebar-width-icon)]">
-            <DashboardStats />
+       <footer className="sticky bottom-0 -mx-8 -mb-8">
             <MotivationalTicker />
         </footer>
     </div>
