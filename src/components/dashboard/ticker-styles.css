@@ -28,17 +28,17 @@
   animation-iteration-count: infinite;
   animation-timing-function: linear;
   animation-name: ticker;
-  animation-duration: 250s; 
+  animation-duration: 450s; 
 }
 
 .ticker__item {
   display: inline-block;
-  padding: 0 2rem;
+  padding: 0 4rem;
   font-size: 0.875rem; /* 14px */
   color: hsl(var(--primary-foreground));
 }
 
 .ticker__item::after {
     content: "•";
-    margin-left: 2rem;
+    margin-left: 4rem;
 }
