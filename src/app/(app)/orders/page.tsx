@@ -51,20 +51,6 @@ export default function ActiveOrdersPage() {
 
     return (
         <div className="flex flex-col gap-8">
-            <div className="flex items-center justify-end">
-                <div className="flex items-center gap-2">
-                    <Button variant="outline">
-                        <FileUp className="mr-2 h-4 w-4" />
-                        Exportar a Excel
-                    </Button>
-                    <Button asChild>
-                      <Link href="/orders/new">
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Nueva OT
-                      </Link>
-                    </Button>
-                </div>
-            </div>
             <Tabs value={activeTab} onValueChange={filterOrders}>
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
                     <ScrollArea className="w-full sm:w-auto">
@@ -75,12 +61,24 @@ export default function ActiveOrdersPage() {
                         </TabsList>
                         <ScrollBar orientation="horizontal" />
                     </ScrollArea>
-                     <Input
-                        placeholder="Buscar por ID, cliente, servicio..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="w-full sm:max-w-sm"
-                    />
+                    <div className="flex w-full sm:w-auto items-center gap-2">
+                        <Input
+                            placeholder="Buscar por ID, cliente, servicio..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full sm:max-w-sm"
+                        />
+                        <Button variant="outline">
+                            <FileUp className="mr-2 h-4 w-4" />
+                            Exportar
+                        </Button>
+                        <Button asChild>
+                        <Link href="/orders/new">
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Nueva OT
+                        </Link>
+                        </Button>
+                    </div>
                 </div>
               <TabsContent value={activeTab}>
                   <OrdersTable orders={filteredOrders} />
