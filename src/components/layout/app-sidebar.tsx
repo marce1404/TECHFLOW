@@ -164,7 +164,7 @@ export default function AppSidebar() {
                 </svg>
             </div>
             <span className="font-headline text-lg font-semibold text-sidebar-foreground">
-              APTECH
+              TechFlow
             </span>
         </div>
       </SidebarHeader>
