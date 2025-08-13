@@ -86,7 +86,6 @@ export default function DashboardPage() {
         <h1 className="text-3xl font-headline font-bold tracking-tight">
           Dashboard
         </h1>
-        <DashboardStats />
         <Card>
           <CardHeader>
             <CardTitle className="font-headline">
@@ -128,6 +127,7 @@ export default function DashboardPage() {
             </Table>
           </CardContent>
         </Card>
+        <DashboardStats />
       </div>
        <footer className="fixed bottom-0 left-0 right-0 z-10">
             <MotivationalTicker />
