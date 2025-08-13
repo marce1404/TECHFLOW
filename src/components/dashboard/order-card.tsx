@@ -28,15 +28,15 @@ export function OrderCard({ order, progress }: OrderCardProps) {
   const getStatusVariant = (status: WorkOrder['status']) => {
     switch (status) {
       case 'En Progreso':
-        return 'secondary';
+        return 'default'; // This will be customized with green color
       case 'Atrasada':
         return 'destructive';
       case 'Por Iniciar':
         return 'outline';
       case 'Pendiente':
-        return 'default';
+        return 'secondary';
       default:
-        return 'default';
+        return 'secondary';
     }
   };
   
@@ -56,17 +56,15 @@ export function OrderCard({ order, progress }: OrderCardProps) {
       case 'Atrasada':
         return 'hsl(var(--chart-5))'; // Red
       case 'En Progreso':
-        return 'hsl(var(--chart-2))'; // Yellow
+        return 'hsl(var(--chart-1))'; // Blue
       case 'Por Iniciar':
-         return 'hsl(var(--chart-1))'; // Blue
+         return 'hsl(var(--muted))'; // Gray
       default:
         return 'hsl(var(--muted))'; // Gray for others
     }
   }
-
-  const chartData: DonutChartData[] = [
-      { name: 'progress', value: progress, fill: getChartColor(order.status) }
-  ];
+  
+  const statusBadgeStyle = order.status === 'En Progreso' ? { backgroundColor: 'hsl(var(--chart-3))' } : {};
 
 
   return (
@@ -79,7 +77,7 @@ export function OrderCard({ order, progress }: OrderCardProps) {
           </div>
           <div className="flex items-center gap-1">
              <Badge variant={getPriorityVariant(order.priority)} className="capitalize text-xs">{order.priority}</Badge>
-             <Badge variant={getStatusVariant(order.status)} className="capitalize text-xs">{order.status}</Badge>
+             <Badge variant={getStatusVariant(order.status)} style={statusBadgeStyle} className="capitalize text-xs">{order.status}</Badge>
           </div>
         </div>
       </CardHeader>
