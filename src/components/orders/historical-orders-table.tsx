@@ -1,5 +1,4 @@
 
-
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -107,8 +106,7 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
   ];
 
   const handleStatusChange = (order: WorkOrder, newStatus: WorkOrder['status']) => {
-    const updatedOrder = { ...order, status: newStatus };
-    updateOrder(order.id, updatedOrder);
+    updateOrder(order.id, { status: newStatus });
   };
 
 

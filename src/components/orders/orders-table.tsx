@@ -106,8 +106,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
   ];
 
   const handleStatusChange = (order: WorkOrder, newStatus: WorkOrder['status']) => {
-    const updatedOrder = { ...order, status: newStatus };
-    updateOrder(order.id, updatedOrder);
+    updateOrder(order.id, { status: newStatus });
   };
 
   return (

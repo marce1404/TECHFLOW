@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
@@ -162,8 +163,37 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   
   const updateOrder = async (id: string, updatedFields: Partial<WorkOrder>) => {
     const orderRef = doc(db, 'work-orders', id);
+    
+    // Find the original order to know its previous status
+    const originalOrder = getOrder(id);
+    if (!originalOrder) return;
+
+    const previousStatus = originalOrder.status;
+    const newStatus = updatedFields.status;
+
+    // Update in Firestore
     await updateDoc(orderRef, updatedFields);
-    await fetchData();
+
+    const updatedOrder = { ...originalOrder, ...updatedFields };
+
+    // If the status changes from 'active' to 'Cerrada'
+    if (previousStatus !== 'Cerrada' && newStatus === 'Cerrada') {
+      setActiveWorkOrders(prev => prev.filter(order => order.id !== id));
+      setHistoricalWorkOrders(prev => [...prev.filter(order => order.id !== id), updatedOrder]);
+    } 
+    // If the status changes from 'Cerrada' to 'active'
+    else if (previousStatus === 'Cerrada' && newStatus !== 'Cerrada') {
+      setHistoricalWorkOrders(prev => prev.filter(order => order.id !== id));
+      setActiveWorkOrders(prev => [...prev.filter(order => order.id !== id), updatedOrder]);
+    } 
+    // If the status changes but remains in the same category (active or historical)
+    else {
+      if (newStatus === 'Cerrada') {
+        setHistoricalWorkOrders(prev => prev.map(order => order.id === id ? updatedOrder : order));
+      } else {
+        setActiveWorkOrders(prev => prev.map(order => order.id === id ? updatedOrder : order));
+      }
+    }
   };
 
   const getOrder = (id: string) => {
@@ -359,8 +389,3 @@ export const useWorkOrders = () => {
   }
   return context;
 };
-
-    
-
-    
-
