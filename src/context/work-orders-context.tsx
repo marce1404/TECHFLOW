@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
@@ -164,34 +163,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const updateOrder = async (id: string, updatedFields: Partial<WorkOrder>) => {
     const orderRef = doc(db, 'work-orders', id);
     await updateDoc(orderRef, updatedFields);
-
-    // Get the full original order from either active or historical list
-    const originalOrder = getOrder(id);
-    if (!originalOrder) return;
-    
-    const updatedOrder = { ...originalOrder, ...updatedFields };
-    
-    const wasActive = originalOrder.status !== 'Cerrada';
-    const isNowActive = updatedOrder.status !== 'Cerrada';
-
-    // If status changes from active to closed
-    if (wasActive && !isNowActive) {
-      setActiveWorkOrders(prev => prev.filter(o => o.id !== id));
-      setHistoricalWorkOrders(prev => [updatedOrder, ...prev.filter(o => o.id !== id)]);
-    } 
-    // If status changes from closed to active
-    else if (!wasActive && isNowActive) {
-      setHistoricalWorkOrders(prev => prev.filter(o => o.id !== id));
-      setActiveWorkOrders(prev => [updatedOrder, ...prev.filter(o => o.id !== id)]);
-    } 
-    // If status changes but remains in the active list
-    else if (wasActive && isNowActive) {
-      setActiveWorkOrders(prev => prev.map(o => (o.id === id ? updatedOrder : o)));
-    } 
-    // If status changes but remains in the historical list
-    else {
-      setHistoricalWorkOrders(prev => prev.map(o => (o.id === id ? updatedOrder : o)));
-    }
+    await fetchData();
   };
 
   const getOrder = (id: string) => {
@@ -391,3 +363,4 @@ export const useWorkOrders = () => {
     
 
     
+
