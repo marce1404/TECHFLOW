@@ -31,7 +31,7 @@ export default function GanttPage() {
     const { ganttCharts, deleteGanttChart } = useWorkOrders();
 
     return (
-        <div className="container mx-auto px-4 w-full flex flex-col gap-8">
+        <div className="flex flex-col gap-8">
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-headline font-bold tracking-tight">
                     Cartas Gantt

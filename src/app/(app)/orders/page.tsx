@@ -10,6 +10,7 @@ import { useWorkOrders } from "@/context/work-orders-context";
 import * as React from "react";
 import type { WorkOrder } from "@/lib/types";
 import { Input } from "@/components/ui/input";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 export default function ActiveOrdersPage() {
     const { activeWorkOrders, otCategories } = useWorkOrders();
@@ -68,17 +69,20 @@ export default function ActiveOrdersPage() {
                 </div>
             </div>
             <Tabs value={activeTab} onValueChange={filterOrders}>
-                <div className="flex items-center justify-between mb-4">
-                    <TabsList>
-                        {categories.map(cat => (
-                            <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
-                        ))}
-                    </TabsList>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                    <ScrollArea className="w-full sm:w-auto">
+                        <TabsList className="w-max">
+                            {categories.map(cat => (
+                                <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
+                            ))}
+                        </TabsList>
+                        <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
                      <Input
                         placeholder="Buscar por ID, cliente, servicio..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="max-w-sm"
+                        className="w-full sm:max-w-sm"
                     />
                 </div>
               <TabsContent value={activeTab}>
