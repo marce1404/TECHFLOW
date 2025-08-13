@@ -56,11 +56,13 @@ export default function AppSidebar() {
       href: '/',
       label: 'Dashboard',
       icon: LayoutGrid,
+      exact: true,
     },
     {
       href: '/orders',
       label: 'OTs Activas',
       icon: File,
+      exact: true,
     },
      {
       href: '/orders/history',
@@ -96,13 +98,11 @@ export default function AppSidebar() {
   };
 
 
-  const isActive = (href: string) => {
-    // For the root path, we need an exact match.
-    if (href === '/') {
-        return pathname === '/';
+  const isActive = (href: string, exact: boolean = false) => {
+    if (exact) {
+      return pathname === href;
     }
-    // For other paths, use startsWith to handle nested routes correctly
-    return pathname.startsWith(href) && href !== '/';
+    return pathname.startsWith(href);
   };
   
   if (state === 'collapsed') {
@@ -112,9 +112,9 @@ export default function AppSidebar() {
                 <div className="flex items-center justify-center p-2">
                     <SidebarMenuButton
                         asChild
-                        isActive={pathname === '/'}
+                        isActive={isActive(menuItems[0].href, menuItems[0].exact)}
                         tooltip="Dashboard"
-                        variant={pathname === '/' ? 'default' : 'ghost'}
+                        variant={isActive(menuItems[0].href, menuItems[0].exact) ? 'default' : 'ghost'}
                         className="h-10 w-10"
                     >
                         <Link href="/">
@@ -129,9 +129,9 @@ export default function AppSidebar() {
                         <SidebarMenuItem key={item.href}>
                         <SidebarMenuButton
                             asChild
-                            isActive={isActive(item.href)}
+                            isActive={isActive(item.href, item.exact)}
                             tooltip={item.label}
-                            variant={isActive(item.href) ? 'default' : 'ghost'}
+                            variant={isActive(item.href, item.exact) ? 'default' : 'ghost'}
                             className="h-10 w-10"
                         >
                             <Link href={item.href}>
@@ -207,9 +207,9 @@ export default function AppSidebar() {
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
-                  isActive={isActive(item.href)}
+                  isActive={isActive(item.href, item.exact)}
                   tooltip={item.label}
-                  variant={isActive(item.href) ? 'default' : 'ghost'}
+                  variant={isActive(item.href, item.exact) ? 'default' : 'ghost'}
                 >
                   <Link href={item.href}>
                     <item.icon />
