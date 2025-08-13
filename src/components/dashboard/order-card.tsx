@@ -104,19 +104,21 @@ export function OrderCard({ order, progress }: OrderCardProps) {
                   content={<ChartTooltipContent hideLabel />}
                 />
                 <Pie
-                  data={chartData}
+                  data={[{ value: progress }, { value: 100 - progress }]}
                   dataKey="value"
                   nameKey="name"
                   innerRadius={28}
                   strokeWidth={5}
+                  startAngle={90}
+                  endAngle={450}
                   label={({payload}) => {
-                      return <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="fill-foreground text-lg font-bold">{`${payload.value}%`}</text>
+                      return <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="fill-foreground text-lg font-bold">{`${progress}%`}</text>
                   }}
                   labelLine={false}
                 >
                     <Cell 
-                        key={chartData[0].name} 
-                        fill={chartData[0].fill}
+                        key="progress" 
+                        fill={getChartColor(order.status)}
                         radius={[8, 8, 8, 8]}
                      />
                      <Cell 
