@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useWorkOrders } from "@/context/work-orders-context";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   DropdownMenu,
@@ -44,84 +43,77 @@ export default function GanttPage() {
                 </Button>
             </div>
             
-            <Card>
-                <CardHeader>
-                    <CardTitle>Cartas Gantt Existentes</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="rounded-md border">
-                        <Table>
-                            <TableHeader className="bg-muted/50">
-                                <TableRow>
-                                    <TableHead>Nombre</TableHead>
-                                    <TableHead>Nº de Tareas</TableHead>
-                                    <TableHead>OT Asociada</TableHead>
-                                    <TableHead className="text-right">Acciones</TableHead>
+            <div className="rounded-md border">
+                <Table>
+                    <TableHeader className="bg-muted/50">
+                        <TableRow>
+                            <TableHead>Nombre</TableHead>
+                            <TableHead>Nº de Tareas</TableHead>
+                            <TableHead>OT Asociada</TableHead>
+                            <TableHead className="text-right">Acciones</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {ganttCharts.length > 0 ? (
+                            ganttCharts.map((chart) => (
+                                <TableRow key={chart.id}>
+                                    <TableCell className="font-medium">{chart.name}</TableCell>
+                                    <TableCell>{chart.tasks.length}</TableCell>
+                                    <TableCell>{chart.assignedOT || 'N/A'}</TableCell>
+                                    <TableCell className="text-right">
+                                        <AlertDialog>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                                        <span className="sr-only">Abrir menú</span>
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem asChild>
+                                                        <Link href={`/gantt/${chart.id}/edit`}>
+                                                            <Edit className="mr-2 h-4 w-4" /> Ver/Editar
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                    <AlertDialogTrigger asChild>
+                                                        <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                                            <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                                                        </DropdownMenuItem>
+                                                    </AlertDialogTrigger>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                                <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Esta acción no se puede deshacer. Esto eliminará permanentemente la carta gantt
+                                                    <span className="font-bold"> {chart.name}</span>.
+                                                </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                <AlertDialogAction
+                                                    className="bg-destructive hover:bg-destructive/90"
+                                                    onClick={() => deleteGanttChart(chart.id)}
+                                                >
+                                                    Eliminar
+                                                </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </TableCell>
                                 </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {ganttCharts.length > 0 ? (
-                                    ganttCharts.map((chart) => (
-                                        <TableRow key={chart.id}>
-                                            <TableCell className="font-medium">{chart.name}</TableCell>
-                                            <TableCell>{chart.tasks.length}</TableCell>
-                                            <TableCell>{chart.assignedOT || 'N/A'}</TableCell>
-                                            <TableCell className="text-right">
-                                                <AlertDialog>
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                                                <span className="sr-only">Abrir menú</span>
-                                                                <MoreHorizontal className="h-4 w-4" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuItem asChild>
-                                                                <Link href={`/gantt/${chart.id}/edit`}>
-                                                                    <Edit className="mr-2 h-4 w-4" /> Ver/Editar
-                                                                </Link>
-                                                            </DropdownMenuItem>
-                                                            <AlertDialogTrigger asChild>
-                                                                <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                                                    <Trash2 className="mr-2 h-4 w-4" /> Eliminar
-                                                                </DropdownMenuItem>
-                                                            </AlertDialogTrigger>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                     <AlertDialogContent>
-                                                        <AlertDialogHeader>
-                                                        <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                            Esta acción no se puede deshacer. Esto eliminará permanentemente la carta gantt
-                                                            <span className="font-bold"> {chart.name}</span>.
-                                                        </AlertDialogDescription>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooter>
-                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                        <AlertDialogAction
-                                                            className="bg-destructive hover:bg-destructive/90"
-                                                            onClick={() => deleteGanttChart(chart.id)}
-                                                        >
-                                                            Eliminar
-                                                        </AlertDialogAction>
-                                                        </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={4} className="h-24 text-center">
-                                            No se han creado cartas Gantt todavía.
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
-                </CardContent>
-            </Card>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={4} className="h-24 text-center">
+                                    No se han creado cartas Gantt todavía.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
         </div>
     );
 }
