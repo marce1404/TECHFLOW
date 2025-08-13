@@ -106,7 +106,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
   ];
 
   const handleStatusChange = (order: WorkOrder, newStatus: WorkOrder['status']) => {
-    updateOrder(order.id, { status: newStatus });
+    updateOrder(order.id, { ...order, status: newStatus });
   };
 
   return (
@@ -144,7 +144,10 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="p-0 h-auto">
-                                  <Badge variant={getStatusVariant(order.status)} className="cursor-pointer">
+                                  <Badge 
+                                    variant={getStatusVariant(order.status)} 
+                                    className={`cursor-pointer ${order.status.toLowerCase() === 'en progreso' ? 'bg-green-500 text-white' : ''}`}
+                                  >
                                       {order.status}
                                   </Badge>
                                 </Button>

@@ -51,7 +51,7 @@ export function OrderCard({ order, progress }: OrderCardProps) {
       case 'por iniciar':
          return 'hsl(var(--muted))'; // Gray
       case 'pendiente':
-         return 'hsl(215, 28%, 17%)';
+         return 'hsl(var(--secondary-foreground))';
       default:
         return 'hsl(var(--muted))'; // Gray for others
     }
