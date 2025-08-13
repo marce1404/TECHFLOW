@@ -50,9 +50,11 @@ export default function HistoryPage() {
 
     return (
         <div className="flex flex-col gap-8">
-            <h1 className="text-3xl font-headline font-bold tracking-tight">
-                Historial de Órdenes de Trabajo
-            </h1>
+             <div className="flex items-center justify-between">
+                <h1 className="text-3xl font-headline font-bold tracking-tight">
+                    Historial de Órdenes de Trabajo
+                </h1>
+            </div>
             <Tabs value={activeTab} onValueChange={filterOrders}>
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
                     <ScrollArea className="w-full sm:w-auto">

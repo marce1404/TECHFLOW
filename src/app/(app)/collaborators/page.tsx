@@ -85,6 +85,7 @@ export default function CollaboratorsPage() {
                         className="w-full sm:max-w-sm"
                     />
                 </div>
+                
                 <TabsContent value={roleFilter}>
                     <CollaboratorsTable 
                         collaborators={filteredCollaborators}
