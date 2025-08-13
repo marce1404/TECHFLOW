@@ -26,12 +26,14 @@ interface OrderCardProps {
 
 export function OrderCard({ order, progress }: OrderCardProps) {
   const getStatusVariant = (status: WorkOrder['status']) => {
-    switch (status) {
-      case 'Atrasada':
+    switch (status.toLowerCase()) {
+      case 'atrasada':
         return 'destructive';
-      case 'Por Iniciar':
+      case 'cerrada':
+        return 'default';
+      case 'por iniciar':
         return 'outline';
-      case 'Pendiente':
+      case 'pendiente':
         return 'secondary';
       default:
         return 'default';
@@ -39,19 +41,19 @@ export function OrderCard({ order, progress }: OrderCardProps) {
   };
   
   const getChartColor = (status: WorkOrder['status']) => {
-     switch (status) {
-      case 'Atrasada':
+     switch (status.toLowerCase()) {
+      case 'atrasada':
         return 'hsl(var(--destructive))'; // Red
-      case 'En Progreso':
+      case 'en progreso':
         return 'hsl(142, 71%, 45%)'; // Green
-      case 'Por Iniciar':
+      case 'por iniciar':
          return 'hsl(var(--muted))'; // Gray
       default:
         return 'hsl(var(--muted))'; // Gray for others
     }
   }
   
-  const statusBadgeStyle = order.status === 'En Progreso' ? { backgroundColor: 'hsl(142, 71%, 45%)', color: 'white' } : {};
+  const statusBadgeStyle = order.status.toLowerCase() === 'en progreso' ? { backgroundColor: 'hsl(142, 71%, 45%)', color: 'white' } : {};
 
 
   return (

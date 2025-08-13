@@ -13,8 +13,10 @@ export default function DashboardPage() {
   const { activeWorkOrders, historicalWorkOrders, loading, ganttCharts } = useWorkOrders();
 
   const statusOrder: WorkOrder['status'][] = ['Atrasada', 'En Progreso', 'Pendiente', 'Por Iniciar'];
+  
+  const filteredActiveOrders = activeWorkOrders.filter(o => o.status.toLowerCase() !== 'cerrada');
 
-  const sortedOrders = [...activeWorkOrders]
+  const sortedOrders = [...filteredActiveOrders]
     .sort((a, b) => {
       const statusIndexA = statusOrder.indexOf(a.status);
       const statusIndexB = statusOrder.indexOf(b.status);
