@@ -27,7 +27,7 @@ import { CalendarIcon, PlusCircle, Trash2, Printer } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { format, addDays, differenceInCalendarDays, eachDayOfInterval, isPast } from 'date-fns';
+import { format, addDays, differenceInCalendarDays, eachDayOfInterval, isPast, isToday } from 'date-fns';
 import type { GanttChart, Service, WorkOrder } from '@/lib/types';
 import Link from 'next/link';
 import { useWorkOrders } from '@/context/work-orders-context';
@@ -124,6 +124,19 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
     }
   };
 
+  const calculateWorkingDays = (startDate: Date, endDate: Date, workOnSaturdays: boolean, workOnSundays: boolean) => {
+    let count = 0;
+    let currentDate = new Date(startDate);
+    while (currentDate <= endDate) {
+        const dayOfWeek = currentDate.getDay();
+        if ((dayOfWeek !== 0 || workOnSundays) && (dayOfWeek !== 6 || workOnSaturdays)) {
+            count++;
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+    return count;
+  };
+  
   const calculateEndDate = (startDate: Date, duration: number, workOnSaturdays: boolean, workOnSundays: boolean) => {
     let remainingDays = duration;
     let currentDate = new Date(startDate);
@@ -309,7 +322,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                         const startDate = task.startDate ? new Date(task.startDate) : new Date();
                         const duration = task.duration || 1;
                         const endDate = calculateEndDate(startDate, duration, watchedWorkdays[0], watchedWorkdays[1]);
-                        const isPastTask = isPast(startDate) || startDate.getTime() === today.getTime();
+                        const isPastOrToday = isPast(startDate) || isToday(startDate);
                         return (
                             <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr,150px,120px,120px,120px,auto] gap-2 items-center p-2 rounded-lg border">
                                 <Controller
@@ -340,7 +353,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                                  <Controller
                                     control={form.control}
                                     name={`tasks.${index}.progress`}
-                                    render={({ field }) => <Input type="number" className="w-full text-center" {...field} disabled={!isPastTask} />}
+                                    render={({ field }) => <Input type="number" className="w-full text-center" {...field} disabled={!isPastOrToday} />}
                                 />
                                 <Input value={endDate ? format(endDate, 'dd/MM/yy') : 'N/A'} readOnly className="bg-muted w-full text-center" />
                                 <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
@@ -399,18 +412,26 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                                 const endDate = calculateEndDate(startDate, task.duration, watchedWorkdays[0], watchedWorkdays[1]);
                                 const offset = differenceInCalendarDays(startDate, ganttChartData.earliestDate);
                                 
-                                // Calculate duration considering only working days
-                                let workingDays = 0;
-                                let currentDate = new Date(startDate);
-                                while(currentDate <= endDate) {
-                                    const dayOfWeek = currentDate.getDay();
-                                    const isSaturday = dayOfWeek === 6;
-                                    const isSunday = dayOfWeek === 0;
-                                    if ((!isSaturday || watchedWorkdays[0]) && (!isSunday || watchedWorkdays[1])) {
-                                        workingDays++;
-                                    }
-                                    currentDate.setDate(currentDate.getDate() + 1);
+                                const totalWorkingDays = calculateWorkingDays(startDate, endDate, watchedWorkdays[0], watchedWorkdays[1]);
+                                if (totalWorkingDays === 0) return null;
+
+                                let progressColor = 'bg-primary';
+                                if (isPast(endDate) && (task.progress || 0) < 100) {
+                                  progressColor = 'bg-destructive'; // Late and not finished
+                                } else if ((isPast(startDate) || isToday(startDate)) && !isPast(endDate)) {
+                                  const elapsedWorkingDays = calculateWorkingDays(startDate, today, watchedWorkdays[0], watchedWorkdays[1]);
+                                  const expectedProgress = Math.min(Math.round((elapsedWorkingDays / totalWorkingDays) * 100), 100);
+                                  
+                                  if ((task.progress || 0) < expectedProgress) {
+                                    progressColor = 'bg-destructive'; // Behind schedule
+                                  } else {
+                                    progressColor = 'bg-green-500'; // On schedule or ahead
+                                  }
                                 }
+                                if ((task.progress || 0) >= 100) {
+                                    progressColor = 'bg-primary'; // Completed
+                                }
+
 
                                 return (
                                     <React.Fragment key={task.id || index}>
@@ -418,10 +439,10 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                                         <div className="relative border-t col-span-full h-8" style={{ gridColumnStart: 2, gridRowStart: index + 3}}>
                                             <div
                                                 className="absolute bg-secondary h-6 top-1 rounded"
-                                                style={{ left: `${offset * 2}rem`, width: `${workingDays * 2}rem` }}
+                                                style={{ left: `${offset * 2}rem`, width: `${totalWorkingDays * 2}rem` }}
                                                 title={`${task.name} - ${format(startDate, 'dd/MM')} a ${format(endDate, 'dd/MM')}`}
                                             >
-                                                <div className="bg-primary h-full rounded" style={{ width: `${task.progress || 0}%`}}></div>
+                                                <div className={cn("h-full rounded", progressColor)} style={{ width: `${task.progress || 0}%`}}></div>
                                             </div>
                                         </div>
                                     </React.Fragment>
