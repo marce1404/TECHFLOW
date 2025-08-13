@@ -163,32 +163,38 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const updateOrder = async (id: string, updatedFields: Partial<WorkOrder>) => {
     const docRef = doc(db, "work-orders", id);
     await updateDoc(docRef, updatedFields);
+
+    const isNowClosed = updatedFields.status === 'Cerrada';
     
-    // Determine the full updated order
-    const originalOrder = activeWorkOrders.find(o => o.id === id) || historicalWorkOrders.find(o => o.id === id);
-    if (!originalOrder) return;
-    const updatedOrder = { ...originalOrder, ...updatedFields };
+    // Optimistically update UI
+    let orderToMove: WorkOrder | undefined;
 
-    const wasActive = originalOrder.status !== 'Cerrada';
-    const isNowActive = updatedOrder.status !== 'Cerrada';
-
-    // State transition logic
-    if (wasActive && !isNowActive) {
-        // Move from active to historical
+    const currentActive = activeWorkOrders.find(o => o.id === id);
+    const currentHistorical = historicalWorkOrders.find(o => o.id === id);
+    
+    if (isNowClosed) {
+      // Moving from Active to Historical
+      if (currentActive) {
+        orderToMove = { ...currentActive, ...updatedFields };
         setActiveWorkOrders(prev => prev.filter(o => o.id !== id));
-        setHistoricalWorkOrders(prev => [updatedOrder, ...prev.filter(o => o.id !== id)]);
-    } else if (!wasActive && isNowActive) {
-        // Move from historical to active
-        setHistoricalWorkOrders(prev => prev.filter(o => o.id !== id));
-        setActiveWorkOrders(prev => [updatedOrder, ...prev.filter(o => o.id !== id)]);
-    } else if (isNowActive) {
-        // Update within active
-        setActiveWorkOrders(prev => prev.map(o => o.id === id ? updatedOrder : o));
+        setHistoricalWorkOrders(prev => [orderToMove!, ...prev]);
+      } else if (currentHistorical) {
+        // Just update within historical
+        setHistoricalWorkOrders(prev => prev.map(o => o.id === id ? { ...o, ...updatedFields } : o));
+      }
     } else {
-        // Update within historical
-        setHistoricalWorkOrders(prev => prev.map(o => o.id === id ? updatedOrder : o));
+      // Moving from Historical to Active OR staying in Active
+      if (currentHistorical) {
+        orderToMove = { ...currentHistorical, ...updatedFields };
+        setHistoricalWorkOrders(prev => prev.filter(o => o.id !== id));
+        setActiveWorkOrders(prev => [orderToMove!, ...prev]);
+      } else if (currentActive) {
+        // Just update within active
+        setActiveWorkOrders(prev => prev.map(o => o.id === id ? { ...o, ...updatedFields } : o));
+      }
     }
   };
+
 
   const getOrder = (id: string) => {
     return [...activeWorkOrders, ...historicalWorkOrders].find(order => order.id === id);
@@ -383,5 +389,7 @@ export const useWorkOrders = () => {
   }
   return context;
 };
+
+    
 
     
