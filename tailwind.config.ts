@@ -1,3 +1,4 @@
+
 import type { Config } from 'tailwindcss';
 const { fontFamily } = require('tailwindcss/defaultTheme');
 
@@ -57,11 +58,11 @@ export default {
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
         chart: {
-          '1': 'hsl(var(--chart-1))',
-          '2': 'hsl(var(--chart-2))',
-          '3': 'hsl(var(--chart-3))',
-          '4': 'hsl(var(--chart-4))',
-          '5': 'hsl(var(--chart-5))',
+          '1': 'hsl(206, 98%, 51%)', // Blue
+          '2': 'hsl(48, 96%, 50%)', // Yellow
+          '3': 'hsl(142, 71%, 45%)', // Green
+          '4': 'hsl(262, 82%, 58%)', // Violet
+          '5': 'hsl(0, 84%, 60%)', // Red
         },
         sidebar: {
           DEFAULT: 'hsl(var(--sidebar-background))',

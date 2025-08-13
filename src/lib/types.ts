@@ -158,30 +158,14 @@ export type SuggestOptimalResourceAssignmentOutputWithError = z.infer<
     typeof SuggestOptimalResourceAssignmentOutputWithErrorSchema
     >;
 
-export const statusChartConfig = {
-  value: {
-    label: "Total",
+export const DonutChartConfig = {
+  progress: {
+    label: "Avance",
   },
-  "En Progreso": {
-    label: "En Progreso",
-    color: "hsl(var(--chart-1))",
-  },
-  "Por Iniciar": {
-    label: "Por Iniciar",
-    color: "hsl(var(--chart-2))",
-  },
-  "Atrasada": {
-    label: "Atrasada",
-    color: "hsl(var(--chart-3))",
-  },
-  "Pendiente": {
-    label: "Pendiente",
-    color: "hsl(var(--chart-4))",
-  },
-} satisfies ChartConfig
+} satisfies ChartConfig;
 
-export type StatusChartData = {
-    name: string;
+export type DonutChartData = {
+    name: 'progress';
     value: number;
     fill: string;
 };
