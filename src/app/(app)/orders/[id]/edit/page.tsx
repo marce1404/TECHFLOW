@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import * as React from "react";
@@ -23,7 +23,7 @@ import { useWorkOrders } from "@/context/work-orders-context";
 export default function EditOrderPage() {
   const params = useParams();
   const router = useRouter();
-  const { getOrder, updateOrder, otCategories, services, collaborators } = useWorkOrders();
+  const { getOrder, updateOrder, otCategories, services, collaborators, ganttCharts } = useWorkOrders();
   const orderId = params.id as string;
   
   const initialOrder = getOrder(orderId);
@@ -110,6 +110,8 @@ export default function EditOrderPage() {
   const endDate = order.endDate ? new Date(order.endDate.replace(/-/g, '/')) : undefined;
   const totalPrice = Math.round(order.netPrice * 1.19);
   const currentPrefix = order.ot_number.split('-')[0];
+  
+  const assignedGantt = ganttCharts.find(g => g.assignedOT === order.ot_number);
 
   return (
     <div className="flex flex-col gap-8">
@@ -278,34 +280,34 @@ export default function EditOrderPage() {
                         <div>
                             <Label htmlFor="status">Estado</Label>
                             <Select 
-                              value={order.status.toLowerCase().replace(' ', '-')}
+                              value={order.status}
                               onValueChange={(value) => handleInputChange('status', value)}
                             >
                                 <SelectTrigger id="status">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="por-iniciar">Por Iniciar</SelectItem>
-                                    <SelectItem value="en-progreso">En Progreso</SelectItem>
-                                    <SelectItem value="pendiente">Pendiente</SelectItem>
-                                    <SelectItem value="atrasada">Atrasada</SelectItem>
-                                    <SelectItem value="cerrada">Cerrada</SelectItem>
+                                    <SelectItem value="Por Iniciar">Por Iniciar</SelectItem>
+                                    <SelectItem value="En Progreso">En Progreso</SelectItem>
+                                    <SelectItem value="Pendiente">Pendiente</SelectItem>
+                                    <SelectItem value="Atrasada">Atrasada</SelectItem>
+                                    <SelectItem value="Cerrada">Cerrada</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         <div>
                             <Label htmlFor="priority">Prioridad</Label>
                             <Select 
-                              value={order.priority.toLowerCase()}
+                              value={order.priority}
                               onValueChange={(value) => handleInputChange('priority', value)}
                             >
                                 <SelectTrigger id="priority">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="baja">Baja</SelectItem>
-                                    <SelectItem value="media">Media</SelectItem>
-                                    <SelectItem value="alta">Alta</SelectItem>
+                                    <SelectItem value="Baja">Baja</SelectItem>
+                                    <SelectItem value="Media">Media</SelectItem>
+                                    <SelectItem value="Alta">Alta</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -377,6 +379,20 @@ export default function EditOrderPage() {
                             </SelectContent>
                         </Select>
                     </div>
+
+                     {assignedGantt && (
+                        <div>
+                            <Label>Carta Gantt Asignada</Label>
+                            <div className="flex items-center gap-2">
+                                <Input value={assignedGantt.name} readOnly className="bg-muted flex-1"/>
+                                <Button asChild variant="outline" size="icon">
+                                    <Link href={`/gantt/${assignedGantt.id}/edit`}>
+                                        <ArrowRight className="h-4 w-4" />
+                                    </Link>
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
             </div>
@@ -391,3 +407,5 @@ export default function EditOrderPage() {
     </div>
   );
 }
+
+    
