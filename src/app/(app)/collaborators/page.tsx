@@ -57,15 +57,6 @@ export default function CollaboratorsPage() {
 
     return (
         <div className="flex flex-col gap-8">
-            <div className="flex items-center justify-end">
-                <Button asChild>
-                    <Link href="/collaborators/new">
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Nuevo Colaborador
-                    </Link>
-                </Button>
-            </div>
-            
             <Card>
                 <CardContent className="p-4">
                     <Tabs value={roleFilter} onValueChange={(value) => setRoleFilter(value as Collaborator['role'] | 'Todos')}>
@@ -78,12 +69,20 @@ export default function CollaboratorsPage() {
                                 </TabsList>
                                 <ScrollBar orientation="horizontal" />
                             </ScrollArea>
-                            <Input
-                                placeholder="Buscar por nombre, cargo..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="w-full sm:max-w-sm"
-                            />
+                            <div className="flex w-full sm:w-auto items-center gap-2">
+                                <Input
+                                    placeholder="Buscar por nombre, cargo..."
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    className="w-full sm:max-w-sm"
+                                />
+                                <Button asChild>
+                                    <Link href="/collaborators/new">
+                                        <PlusCircle className="mr-2 h-4 w-4" />
+                                        Nuevo Colaborador
+                                    </Link>
+                                </Button>
+                            </div>
                         </div>
                         
                         <TabsContent value={roleFilter}>
