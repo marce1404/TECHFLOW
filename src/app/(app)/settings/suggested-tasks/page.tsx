@@ -52,10 +52,7 @@ export default function SuggestedTasksPage() {
 
     return (
         <div className="flex flex-col gap-8">
-            <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-headline font-bold tracking-tight">
-                    Tareas Sugeridas para Gantt
-                </h1>
+            <div className="flex items-center justify-end">
                 <Button onClick={handleAddNew}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Nueva Tarea

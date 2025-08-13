@@ -24,9 +24,6 @@ export default function SettingsPage() {
 
     return (
         <div className="flex flex-col gap-8">
-            <h1 className="text-3xl font-headline font-bold tracking-tight">
-                Configuración
-            </h1>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {settingsOptions.map((option) => (
                     <Link href={option.href} key={option.href}>

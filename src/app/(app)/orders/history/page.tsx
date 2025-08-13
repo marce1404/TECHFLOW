@@ -51,11 +51,6 @@ export default function HistoryPage() {
 
     return (
         <div className="flex flex-col gap-8">
-             <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-headline font-bold tracking-tight">
-                    Historial de Órdenes de Trabajo
-                </h1>
-            </div>
             <Card>
                 <CardContent className="p-4">
                     <Tabs value={activeTab} onValueChange={filterOrders}>

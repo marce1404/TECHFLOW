@@ -62,10 +62,7 @@ export default function VehiclesPage() {
 
     return (
         <div className="flex flex-col gap-8">
-            <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-headline font-bold tracking-tight">
-                    Vehículos
-                </h1>
+            <div className="flex items-center justify-end">
                 <Button asChild>
                     <Link href="/vehicles/new">
                         <PlusCircle className="mr-2 h-4 w-4" />
