@@ -21,7 +21,12 @@ export default function DashboardPage() {
       return statusIndexA - statusIndexB;
     }
 
-    return new Date(b.date).getTime() - new Date(a.date).getTime();
+    // By replacing hyphens with slashes, we ensure the date is parsed in the local time zone,
+    // preventing hydration mismatches between server and client.
+    const dateA = new Date(a.date.replace(/-/g, '/')).getTime();
+    const dateB = new Date(b.date.replace(/-/g, '/')).getTime();
+
+    return dateB - dateA;
   });
 
   const getGanttProgress = (otNumber: string) => {
@@ -34,7 +39,13 @@ export default function DashboardPage() {
   };
   
   const closedOrdersThisMonth = historicalWorkOrders.filter(order => {
-      const orderDate = new Date(order.endDate || order.date);
+      // Ensure there is a valid date to compare. Fallback to 'date' if 'endDate' is not present.
+      const closingDateStr = order.endDate || order.date;
+      if (!closingDateStr) return false;
+
+      // By replacing hyphens with slashes, we ensure the date is parsed in the local time zone,
+      // preventing hydration mismatches between server and client.
+      const orderDate = new Date(closingDateStr.replace(/-/g, '/'));
       const today = new Date();
       return orderDate.getMonth() === today.getMonth() && orderDate.getFullYear() === today.getFullYear();
   });

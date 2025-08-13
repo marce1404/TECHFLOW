@@ -24,10 +24,10 @@ export function ClosedOrdersCard({ orders }: ClosedOrdersCardProps) {
         <CardTitle className="text-lg font-bold leading-tight">OT Cerradas del Mes</CardTitle>
         <CardDescription>Resumen de OTs completadas</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 flex flex-col">
         {orders.length > 0 ? (
           <ScrollArea className="h-48">
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 pt-2">
               {orders.map((order) => (
                 <Badge key={order.id} variant="secondary" className="text-sm">
                   {order.ot_number}
@@ -36,7 +36,7 @@ export function ClosedOrdersCard({ orders }: ClosedOrdersCardProps) {
             </div>
           </ScrollArea>
         ) : (
-          <div className="flex items-center justify-center h-48 text-center">
+          <div className="flex-1 flex items-center justify-center h-full text-center">
             <p className="text-sm text-muted-foreground">
               Aún no se han cerrado OTs este mes.
             </p>
