@@ -68,7 +68,7 @@ export default function CollaboratorsPage() {
             </div>
             
             <Tabs value={roleFilter} onValueChange={(value) => setRoleFilter(value as Collaborator['role'] | 'Todos')}>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-4">
                 <TabsList>
                     {collaboratorRoles.map(role => (
                         <TabsTrigger key={role} value={role}>{role}</TabsTrigger>

@@ -9,25 +9,32 @@ import Link from "next/link";
 import { useWorkOrders } from "@/context/work-orders-context";
 import * as React from "react";
 import type { WorkOrder } from "@/lib/types";
+import { Input } from "@/components/ui/input";
 
 export default function ActiveOrdersPage() {
     const { activeWorkOrders, otCategories } = useWorkOrders();
-    const [filteredOrders, setFilteredOrders] = React.useState<WorkOrder[]>(activeWorkOrders);
+    const [search, setSearch] = React.useState('');
     const [activeTab, setActiveTab] = React.useState('todos');
 
     const filterOrders = (categoryPrefix: string | null) => {
         setActiveTab(categoryPrefix || 'todos');
-        if (!categoryPrefix || categoryPrefix === 'todos') {
-            setFilteredOrders(activeWorkOrders);
-            return;
-        };
-        setFilteredOrders(activeWorkOrders.filter(order => order.ot_number.startsWith(categoryPrefix)));
-    }
+    };
     
-    React.useEffect(() => {
-        setFilteredOrders(activeWorkOrders);
-        setActiveTab('todos');
-    }, [activeWorkOrders]);
+    const filteredOrders = React.useMemo(() => {
+        let orders = activeWorkOrders;
+        if (activeTab !== 'todos') {
+            orders = orders.filter(order => order.ot_number.startsWith(activeTab));
+        }
+        if (search) {
+            orders = orders.filter(order =>
+                order.ot_number.toLowerCase().includes(search.toLowerCase()) ||
+                order.description.toLowerCase().includes(search.toLowerCase()) ||
+                order.client.toLowerCase().includes(search.toLowerCase()) ||
+                order.service.toLowerCase().includes(search.toLowerCase())
+            );
+        }
+        return orders;
+    }, [activeWorkOrders, activeTab, search]);
 
     const categories = [
         { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
@@ -61,11 +68,19 @@ export default function ActiveOrdersPage() {
                 </div>
             </div>
             <Tabs value={activeTab} onValueChange={filterOrders}>
-              <TabsList>
-                {categories.map(cat => (
-                    <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
-                ))}
-              </TabsList>
+                <div className="flex items-center justify-between mb-4">
+                    <TabsList>
+                        {categories.map(cat => (
+                            <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
+                        ))}
+                    </TabsList>
+                     <Input
+                        placeholder="Buscar por ID, cliente, servicio..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="max-w-sm"
+                    />
+                </div>
               <TabsContent value={activeTab}>
                   <OrdersTable orders={filteredOrders} />
               </TabsContent>

@@ -72,7 +72,7 @@ export default function VehiclesPage() {
             </div>
             
              <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as Vehicle['status'] | 'Todos')}>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-4">
                 <TabsList>
                     {vehicleStatuses.map(status => (
                         <TabsTrigger key={status} value={status}>{status}</TabsTrigger>
