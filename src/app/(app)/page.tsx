@@ -6,9 +6,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { OrderCard } from '@/components/dashboard/order-card';
 import MotivationalTicker from '@/components/dashboard/motivational-ticker';
 import type { WorkOrder } from '@/lib/types';
+import { ClosedOrdersCard } from '@/components/dashboard/closed-orders-card';
 
 export default function DashboardPage() {
-  const { activeWorkOrders, loading, ganttCharts } = useWorkOrders();
+  const { activeWorkOrders, historicalWorkOrders, loading, ganttCharts } = useWorkOrders();
 
   const statusOrder: WorkOrder['status'][] = ['Atrasada', 'En Progreso', 'Pendiente', 'Por Iniciar'];
 
@@ -31,6 +32,13 @@ export default function DashboardPage() {
     const totalProgress = assignedGantt.tasks.reduce((sum, task) => sum + (task.progress || 0), 0);
     return Math.round(totalProgress / assignedGantt.tasks.length);
   };
+  
+  const closedOrdersThisMonth = historicalWorkOrders.filter(order => {
+      const orderDate = new Date(order.endDate || order.date);
+      const today = new Date();
+      return orderDate.getMonth() === today.getMonth() && orderDate.getFullYear() === today.getFullYear();
+  });
+
 
   if (loading) {
     return (
@@ -52,10 +60,14 @@ export default function DashboardPage() {
             {ordersToShow.map((order) => (
               <OrderCard key={order.id} order={order} progress={getGanttProgress(order.ot_number)} />
             ))}
+            <ClosedOrdersCard orders={closedOrdersThisMonth} />
           </div>
         ) : (
-          <div className="flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
-            <p className="text-muted-foreground">No hay órdenes de trabajo activas.</p>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
+                <p className="text-muted-foreground">No hay órdenes de trabajo activas.</p>
+            </div>
+            <ClosedOrdersCard orders={closedOrdersThisMonth} />
           </div>
         )}
       </div>
