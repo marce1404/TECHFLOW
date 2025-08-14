@@ -46,6 +46,8 @@ interface WorkOrdersContextType {
   addSuggestedTask: (task: Omit<SuggestedTask, 'id'>) => Promise<SuggestedTask>;
   updateSuggestedTask: (id: string, task: Partial<SuggestedTask>) => Promise<void>;
   deleteSuggestedTask: (id: string) => Promise<void>;
+  addReportTemplate: (template: Omit<ReportTemplate, 'id'>) => Promise<ReportTemplate>;
+  updateReportTemplate: (id: string, template: Partial<ReportTemplate>) => Promise<void>;
   deleteReportTemplate: (id: string) => Promise<void>;
 }
 
@@ -315,6 +317,20 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     await deleteDoc(doc(db, "suggested-tasks", id));
     setSuggestedTasks(prev => prev.filter(t => t.id !== id));
   };
+  
+  const addReportTemplate = async (template: Omit<ReportTemplate, 'id'>): Promise<ReportTemplate> => {
+    const docRef = await addDoc(collection(db, "report-templates"), template);
+    const newTemplate = { id: docRef.id, ...template } as ReportTemplate;
+    setReportTemplates(prev => [...prev, newTemplate]);
+    return newTemplate;
+  };
+
+  const updateReportTemplate = async (id: string, updatedTemplate: Partial<ReportTemplate>) => {
+    const docRef = doc(db, "report-templates", id);
+    await updateDoc(docRef, updatedTemplate);
+    setReportTemplates(prev => prev.map(t => (t.id === id ? { ...t, ...updatedTemplate } as ReportTemplate : t)));
+  };
+
 
   const deleteReportTemplate = async (id: string) => {
     await deleteDoc(doc(db, "report-templates", id));
@@ -360,6 +376,8 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         addSuggestedTask,
         updateSuggestedTask,
         deleteSuggestedTask,
+        addReportTemplate,
+        updateReportTemplate,
         deleteReportTemplate,
     }}>
       {children}
