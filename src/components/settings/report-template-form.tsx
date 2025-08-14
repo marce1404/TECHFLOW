@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -22,8 +23,9 @@ const fieldSchema = z.object({
   id: z.string(),
   name: z.string().min(1, 'El nombre del campo es requerido.'),
   label: z.string().min(1, 'La etiqueta es requerida.'),
-  type: z.enum(['text', 'textarea', 'number', 'checkbox', 'date']),
+  type: z.enum(['text', 'textarea', 'number', 'checkbox', 'date', 'select']),
   required: z.boolean(),
+  options: z.literal('technicians').optional(),
 });
 
 const templateFormSchema = z.object({
@@ -208,6 +210,7 @@ export default function ReportTemplateForm({ onSave, template }: ReportTemplateF
                                       <SelectItem value="number">Número</SelectItem>
                                       <SelectItem value="checkbox">Checkbox</SelectItem>
                                       <SelectItem value="date">Fecha</SelectItem>
+                                      <SelectItem value="select">Desplegable</SelectItem>
                                   </SelectContent>
                               </Select>
                           )}

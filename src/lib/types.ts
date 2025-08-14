@@ -135,8 +135,9 @@ export type ReportTemplateField = {
     id: string;
     name: string;
     label: string;
-    type: 'text' | 'textarea' | 'number' | 'checkbox' | 'date';
+    type: 'text' | 'textarea' | 'number' | 'checkbox' | 'date' | 'select';
     required: boolean;
+    options?: 'technicians';
 }
 export type ReportTemplate = {
     id: string;

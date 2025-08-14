@@ -22,7 +22,7 @@ export const predefinedReportTemplates: Omit<ReportTemplate, 'id'>[] = [
       { id: 'field_13', name: 'automatic_charge', label: 'Cargo Automático', type: 'checkbox', required: false },
       { id: 'field_14', name: 'invoice_number', label: 'Factura N°', type: 'text', required: false },
       { id: 'field_15', name: 'client_signature', label: 'Firma Cliente', type: 'text', required: false },
-      { id: 'field_16', name: 'tech_signature', label: 'Firma Técnico', type: 'text', required: false },
+      { id: 'field_16', name: 'tech_signature', label: 'Firma Técnico', type: 'select', required: false, options: 'technicians' },
     ],
   },
 ];

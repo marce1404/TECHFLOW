@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useSearchParams } from 'next/navigation';
 import * as React from 'react';
@@ -19,7 +20,7 @@ export default function NewReportPage() {
   const searchParams = useSearchParams();
   const otNumber = searchParams.get('ot_number');
   
-  const { activeWorkOrders, reportTemplates } = useWorkOrders();
+  const { activeWorkOrders, reportTemplates, collaborators } = useWorkOrders();
   
   const [selectedTemplate, setSelectedTemplate] = React.useState<ReportTemplate | null>(null);
   const [formData, setFormData] = React.useState<Record<string, any>>({});
@@ -29,6 +30,10 @@ export default function NewReportPage() {
   const workOrder = React.useMemo(() => {
     return activeWorkOrders.find(o => o.ot_number === otNumber);
   }, [activeWorkOrders, otNumber]);
+
+  const technicians = React.useMemo(() => {
+    return collaborators.filter(c => c.role === 'Técnico' && c.status === 'Activo');
+  }, [collaborators]);
 
   const handleTemplateChange = (templateId: string) => {
     const template = reportTemplates.find(t => t.id === templateId);
@@ -178,6 +183,20 @@ export default function NewReportPage() {
                                     {field.label}
                                 </label>
                                 </div>
+                            )}
+                            {field.type === 'select' && field.options === 'technicians' && (
+                                <Select onValueChange={(value) => handleInputChange(field.name, value)} value={formData[field.name]}>
+                                    <SelectTrigger id={field.name}>
+                                        <SelectValue placeholder={`Seleccionar ${field.label}...`} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {technicians.map(tech => (
+                                            <SelectItem key={tech.id} value={tech.name}>
+                                                {tech.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             )}
                         </div>
                     ))}
