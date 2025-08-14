@@ -3,17 +3,16 @@
 'use client';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { SubmittedReport, ReportTemplate } from '@/lib/types';
+import type { SubmittedReport, ReportTemplate, CompanyInfo } from '@/lib/types';
 import * as React from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CheckSquare, Square } from 'lucide-react';
-import BrandDescription from '@/components/layout/brand-description';
 import { useParams } from 'next/navigation';
 
-async function getReportForPrint(reportId: string): Promise<{ report: SubmittedReport; template: ReportTemplate } | null> {
+async function getReportForPrint(reportId: string): Promise<{ report: SubmittedReport; template: ReportTemplate, companyInfo: CompanyInfo | null } | null> {
   try {
     const reportRef = doc(db, 'submitted-reports', reportId);
     const reportSnap = await getDoc(reportRef);
@@ -40,7 +39,11 @@ async function getReportForPrint(reportId: string): Promise<{ report: SubmittedR
     
     const template = { id: templateSnap.id, ...templateSnap.data() } as ReportTemplate;
     
-    return { report, template };
+    const companyInfoRef = doc(db, 'settings', 'companyInfo');
+    const companyInfoSnap = await getDoc(companyInfoRef);
+    const companyInfo = companyInfoSnap.exists() ? companyInfoSnap.data() as CompanyInfo : null;
+
+    return { report, template, companyInfo };
 
   } catch (error) {
     console.error("Error getting documents for print:", error);
@@ -48,7 +51,7 @@ async function getReportForPrint(reportId: string): Promise<{ report: SubmittedR
   }
 }
 
-function PrintReportContent({ report, template }: { report: SubmittedReport; template: ReportTemplate }) {
+function PrintReportContent({ report, template, companyInfo }: { report: SubmittedReport; template: ReportTemplate; companyInfo: CompanyInfo | null }) {
     React.useEffect(() => {
         setTimeout(() => {
             window.print();
@@ -68,12 +71,18 @@ function PrintReportContent({ report, template }: { report: SubmittedReport; tem
                 <div className="flex-1">
                     <h1 className="text-3xl font-headline font-bold text-primary">{template.name}</h1>
                 </div>
-                <div className="text-right">
-                    <BrandDescription />
-                    <p className="font-semibold text-lg mt-2">Folio Nº: {shortFolio}</p>
+                <div className="text-right text-xs">
+                    <h2 className="font-bold text-base">{companyInfo?.name || 'TechFlow'}</h2>
+                    <p>{companyInfo?.slogan || 'Soluciones Inteligentes'}</p>
+                    <p>{companyInfo?.address || ''}</p>
                 </div>
             </header>
             
+            <div className="flex justify-between items-center mb-4">
+                <p className="font-semibold text-lg">Folio Nº: {shortFolio}</p>
+                <p className="text-sm text-gray-600">Fecha de Emisión: {submittedDate}</p>
+            </div>
+
             <Card className="mb-4 shadow-none border-black">
                 <CardHeader className="p-4">
                     <CardTitle className="text-xl">Información de la Orden de Trabajo</CardTitle>
@@ -163,7 +172,6 @@ function PrintReportContent({ report, template }: { report: SubmittedReport; tem
                         </div>
                     </div>
                 </div>
-                 <p className="text-center text-xs text-gray-500 mt-6">Fecha de Emisión del Informe: {submittedDate}</p>
             </footer>
         </div>
     );
@@ -173,7 +181,7 @@ function PrintReportContent({ report, template }: { report: SubmittedReport; tem
 export default function PrintReportPage() {
     const params = useParams();
     const reportId = params ? params.id as string : '';
-    const [data, setData] = React.useState<{ report: SubmittedReport; template: ReportTemplate } | null>(null);
+    const [data, setData] = React.useState<{ report: SubmittedReport; template: ReportTemplate; companyInfo: CompanyInfo | null } | null>(null);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     
@@ -214,5 +222,5 @@ export default function PrintReportPage() {
         return <div className="p-8 text-center">No hay datos para mostrar.</div>;
     }
 
-    return <PrintReportContent report={data.report} template={data.template} />;
+    return <PrintReportContent report={data.report} template={data.template} companyInfo={data.companyInfo} />;
 }

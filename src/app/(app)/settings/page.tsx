@@ -1,10 +1,16 @@
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { ArrowRight, Info, FileText } from 'lucide-react';
+import { ArrowRight, Info, FileText, Building } from 'lucide-react';
 import packageJson from '@/../package.json';
 
 export default function SettingsPage() {
     const settingsOptions = [
+        {
+            title: 'Datos de la Empresa',
+            description: 'Gestiona el nombre, eslogan y dirección de tu empresa.',
+            href: '/settings/company-details',
+            icon: Building,
+        },
         {
             title: 'Categorías de OT',
             description: 'Gestiona las categorías de las órdenes de trabajo.',

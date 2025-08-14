@@ -34,12 +34,14 @@ import { useSidebar } from '@/components/ui/sidebar';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { useWorkOrders } from '@/context/work-orders-context';
 
 
 export default function AppSidebar() {
   const pathname = usePathname();
   const { state } = useSidebar();
   const { toast } = useToast();
+  const { companyInfo } = useWorkOrders();
 
   const handleLogout = async () => {
     try {
@@ -223,7 +225,7 @@ export default function AppSidebar() {
                 </svg>
             </div>
             <span className="font-headline text-lg font-semibold text-sidebar-foreground">
-              TechFlow
+              {companyInfo?.name || 'TechFlow'}
             </span>
         </div>
       </SidebarHeader>

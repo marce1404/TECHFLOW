@@ -162,6 +162,12 @@ export type SubmittedReport = {
     submittedAt: any; // Using `any` for Firestore Timestamp compatibility
 };
 
+export type CompanyInfo = {
+    name: string;
+    slogan?: string;
+    address?: string;
+};
+
 
 // AI Resource Assignment Types
 export const SuggestOptimalResourceAssignmentInputSchema = z.object({

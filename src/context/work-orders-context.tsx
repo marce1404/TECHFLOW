@@ -3,9 +3,9 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
-import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, query, where, writeBatch, serverTimestamp, orderBy } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, query, where, writeBatch, serverTimestamp, orderBy, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { WorkOrder, OTCategory, Service, Collaborator, Vehicle, GanttChart, SuggestedTask, OTStatus, ReportTemplate, SubmittedReport } from '@/lib/types';
+import type { WorkOrder, OTCategory, Service, Collaborator, Vehicle, GanttChart, SuggestedTask, OTStatus, ReportTemplate, SubmittedReport, CompanyInfo } from '@/lib/types';
 import { Timestamp } from 'firebase/firestore';
 import { initialSuggestedTasks } from '@/lib/placeholder-data';
 import { predefinedReportTemplates } from '@/lib/predefined-templates';
@@ -23,6 +23,7 @@ interface WorkOrdersContextType {
   suggestedTasks: SuggestedTask[];
   reportTemplates: ReportTemplate[];
   submittedReports: SubmittedReport[];
+  companyInfo: CompanyInfo | null;
   loading: boolean;
   fetchData: () => Promise<void>;
   updateOrder: (id: string, updatedOrder: Partial<WorkOrder>) => Promise<void>;
@@ -54,6 +55,7 @@ interface WorkOrdersContextType {
   updateReportTemplate: (id: string, template: Partial<ReportTemplate>) => Promise<void>;
   deleteReportTemplate: (id: string) => Promise<void>;
   addSubmittedReport: (report: Omit<SubmittedReport, 'id' | 'submittedAt'>) => Promise<SubmittedReport>;
+  updateCompanyInfo: (info: CompanyInfo) => Promise<void>;
 }
 
 const WorkOrdersContext = createContext<WorkOrdersContextType | undefined>(undefined);
@@ -70,6 +72,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [suggestedTasks, setSuggestedTasks] = useState<SuggestedTask[]>([]);
   const [reportTemplates, setReportTemplates] = useState<ReportTemplate[]>([]);
   const [submittedReports, setSubmittedReports] = useState<SubmittedReport[]>([]);
+  const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
@@ -87,6 +90,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             suggestedTasksSnapshot,
             reportTemplatesSnapshot,
             submittedReportsSnapshot,
+            companyInfoSnapshot,
         ] = await Promise.all([
             getDocs(query(collection(db, "work-orders"), where("status", "!=", "Cerrada"))),
             getDocs(query(collection(db, "work-orders"), where("status", "==", "Cerrada"))),
@@ -99,6 +103,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             getDocs(collection(db, "suggested-tasks")),
             getDocs(collection(db, "report-templates")),
             getDocs(query(collection(db, "submitted-reports"), orderBy("submittedAt", "desc"))),
+            getDoc(doc(db, "settings", "companyInfo")),
         ]);
 
         setActiveWorkOrders(activeWorkOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[]);
@@ -109,6 +114,15 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         setCollaborators(collaboratorsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Collaborator[]);
         setVehicles(vehiclesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Vehicle[]);
         setSubmittedReports(submittedReportsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SubmittedReport[]);
+        
+        if (companyInfoSnapshot.exists()) {
+            setCompanyInfo(companyInfoSnapshot.data() as CompanyInfo);
+        } else {
+            const defaultInfo = { name: "TechFlow", slogan: "Gestión de Operaciones", address: "" };
+            await setDoc(doc(db, "settings", "companyInfo"), defaultInfo);
+            setCompanyInfo(defaultInfo);
+        }
+
         setGanttCharts(ganttChartsSnapshot.docs.map(doc => {
             const data = doc.data();
             const tasks = (data.tasks || []).map((task: any) => ({
@@ -165,6 +179,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         setSuggestedTasks([]);
         setReportTemplates([]);
         setSubmittedReports([]);
+        setCompanyInfo(null);
     } finally {
         setLoading(false);
     }
@@ -373,6 +388,12 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     return newReport;
   };
 
+  const updateCompanyInfo = async (info: CompanyInfo) => {
+    const docRef = doc(db, 'settings', 'companyInfo');
+    await setDoc(docRef, info, { merge: true });
+    setCompanyInfo(prev => prev ? { ...prev, ...info } : info);
+  };
+
 
   return (
     <WorkOrdersContext.Provider value={{ 
@@ -387,6 +408,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         suggestedTasks,
         reportTemplates,
         submittedReports,
+        companyInfo,
         loading,
         fetchData,
         updateOrder, 
@@ -418,6 +440,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         updateReportTemplate,
         deleteReportTemplate,
         addSubmittedReport,
+        updateCompanyInfo,
     }}>
       {children}
     </WorkOrdersContext.Provider>
