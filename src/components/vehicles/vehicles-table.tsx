@@ -57,12 +57,13 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
         }
     }
     
-    const headers: { key: keyof Vehicle | 'lastMaintenance', label: string }[] = [
+    const headers: { key: keyof Vehicle | 'lastMaintenance' | 'assignmentHistory', label: string }[] = [
         { key: 'model', label: 'Vehículo' },
         { key: 'plate', label: 'Patente' },
         { key: 'status', label: 'Estado' },
         { key: 'assignedTo', label: 'Asignado a' },
-        { key: 'lastMaintenance', label: 'Última Mantención' },
+        { key: 'lastMaintenance', label: 'Mantenciones' },
+        { key: 'assignmentHistory', label: 'Historial OT' },
     ];
     
     const handleStatusChange = (vehicle: Vehicle, status: Vehicle['status']) => {
@@ -71,14 +72,6 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
             updatedVehicle.assignedTo = '';
         }
         updateVehicle(vehicle.id, updatedVehicle);
-    };
-
-    const getLastMaintenanceDate = (vehicle: Vehicle) => {
-        if (!vehicle.maintenanceLog || vehicle.maintenanceLog.length === 0) {
-            return 'N/A';
-        }
-        const sortedLog = [...vehicle.maintenanceLog].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        return format(new Date(sortedLog[0].date.replace(/-/g, '/')), 'dd/MM/yyyy');
     };
 
     return (
@@ -94,7 +87,6 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
                                 </Button>
                             </TableHead>
                         ))}
-                        <TableHead>Historial</TableHead>
                         <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -124,12 +116,19 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
                                 </DropdownMenu>
                             </TableCell>
                             <TableCell>{vehicle.assignedTo || 'N/A'}</TableCell>
-                            <TableCell>{getLastMaintenanceDate(vehicle)}</TableCell>
                             <TableCell>
                                 <Button variant="outline" size="icon" asChild>
                                     <Link href={`/vehicles/${vehicle.id}/edit`}>
                                         <History className="h-4 w-4" />
-                                        <span className="sr-only">Ver Historial</span>
+                                        <span className="sr-only">Ver Mantenciones</span>
+                                    </Link>
+                                </Button>
+                            </TableCell>
+                            <TableCell>
+                                <Button variant="outline" size="icon" asChild>
+                                    <Link href={`/vehicles/${vehicle.id}/edit`}>
+                                        <History className="h-4 w-4" />
+                                        <span className="sr-only">Ver Historial de OTs</span>
                                     </Link>
                                 </Button>
                             </TableCell>
