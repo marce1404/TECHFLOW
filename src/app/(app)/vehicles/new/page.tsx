@@ -13,13 +13,13 @@ export default function NewVehiclePage() {
   const { addVehicle, collaborators } = useWorkOrders();
 
   const handleSave = async (data: VehicleFormValues) => {
-    const newVehicle = await addVehicle(data);
+    await addVehicle(data);
     toast({
       title: 'Vehículo Creado',
       description: `El vehículo "${data.model}" ha sido creado exitosamente.`,
       duration: 1000,
     });
-    setTimeout(() => router.push(`/vehicles/${newVehicle.id}/edit`), 1000);
+    setTimeout(() => router.push('/vehicles'), 1000);
   };
 
   return (
