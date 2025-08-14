@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useRouter, useParams }s from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { useWorkOrders } from '@/context/work-orders-context';
 import ReportTemplateForm from '@/components/settings/report-template-form';
