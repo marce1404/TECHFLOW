@@ -174,7 +174,7 @@ export const SuggestOptimalResourceAssignmentOutputSchema = z.object({
   justification: z
     .string()
     .describe(
-      'A justification for the suggested assignments, considering task requirements and resource availability.'
+      'A justification for the suggested assignments, considering task requirements and resource availability. TODA LA RESPUESTA DEBE ESTAR EN ESPAÑOL.'
     ),
 });
 export type SuggestOptimalResourceAssignmentOutput = z.infer<

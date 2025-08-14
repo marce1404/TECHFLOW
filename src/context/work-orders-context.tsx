@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, query, where, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { WorkOrder, OTCategory, Service, Collaborator, Vehicle, GanttChart, SuggestedTask, OTStatus } from '@/lib/types';
+import type { WorkOrder, OTCategory, Service, Collaborator, Vehicle, GanttChart, SuggestedTask, OTStatus, ReportTemplate } from '@/lib/types';
 import { Timestamp } from 'firebase/firestore';
 import { initialSuggestedTasks } from '@/lib/placeholder-data';
 
@@ -18,6 +18,7 @@ interface WorkOrdersContextType {
   vehicles: Vehicle[];
   ganttCharts: GanttChart[];
   suggestedTasks: SuggestedTask[];
+  reportTemplates: ReportTemplate[];
   loading: boolean;
   fetchData: () => Promise<void>;
   updateOrder: (id: string, updatedOrder: Partial<WorkOrder>) => Promise<void>;
@@ -45,6 +46,7 @@ interface WorkOrdersContextType {
   addSuggestedTask: (task: Omit<SuggestedTask, 'id'>) => Promise<SuggestedTask>;
   updateSuggestedTask: (id: string, task: Partial<SuggestedTask>) => Promise<void>;
   deleteSuggestedTask: (id: string) => Promise<void>;
+  deleteReportTemplate: (id: string) => Promise<void>;
 }
 
 const WorkOrdersContext = createContext<WorkOrdersContextType | undefined>(undefined);
@@ -59,6 +61,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [ganttCharts, setGanttCharts] = useState<GanttChart[]>([]);
   const [suggestedTasks, setSuggestedTasks] = useState<SuggestedTask[]>([]);
+  const [reportTemplates, setReportTemplates] = useState<ReportTemplate[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
@@ -74,6 +77,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             vehiclesSnapshot,
             ganttChartsSnapshot,
             suggestedTasksSnapshot,
+            reportTemplatesSnapshot,
         ] = await Promise.all([
             getDocs(query(collection(db, "work-orders"), where("status", "!=", "Cerrada"))),
             getDocs(query(collection(db, "work-orders"), where("status", "==", "Cerrada"))),
@@ -84,6 +88,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             getDocs(collection(db, "vehicles")),
             getDocs(collection(db, "gantt-charts")),
             getDocs(collection(db, "suggested-tasks")),
+            getDocs(collection(db, "report-templates")),
         ]);
 
         setActiveWorkOrders(activeWorkOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[]);
@@ -101,6 +106,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             }));
             return { id: doc.id, ...data, tasks };
         }) as GanttChart[]);
+        setReportTemplates(reportTemplatesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ReportTemplate[]);
         
         let loadedTasks = suggestedTasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SuggestedTask[];
 
@@ -131,6 +137,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         setVehicles([]);
         setGanttCharts([]);
         setSuggestedTasks([]);
+        setReportTemplates([]);
     } finally {
         setLoading(false);
     }
@@ -309,6 +316,11 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     setSuggestedTasks(prev => prev.filter(t => t.id !== id));
   };
 
+  const deleteReportTemplate = async (id: string) => {
+    await deleteDoc(doc(db, "report-templates", id));
+    setReportTemplates(prev => prev.filter(t => t.id !== id));
+  };
+
   return (
     <WorkOrdersContext.Provider value={{ 
         activeWorkOrders, 
@@ -320,6 +332,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         vehicles,
         ganttCharts,
         suggestedTasks,
+        reportTemplates,
         loading,
         fetchData,
         updateOrder, 
@@ -347,6 +360,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         addSuggestedTask,
         updateSuggestedTask,
         deleteSuggestedTask,
+        deleteReportTemplate,
     }}>
       {children}
     </WorkOrdersContext.Provider>

@@ -57,7 +57,7 @@ export default function ReportTemplatesPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {reportTemplates.length > 0 ? (
+                                {reportTemplates && reportTemplates.length > 0 ? (
                                     reportTemplates.map((template) => (
                                         <TableRow key={template.id}>
                                             <TableCell className="font-medium">{template.name}</TableCell>
