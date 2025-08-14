@@ -23,7 +23,7 @@ import { useRouter } from "next/navigation";
 export default function NewOrderPage() {
     const router = useRouter();
     const { toast } = useToast();
-    const { otCategories, services, addOrder, getNextOtNumber, collaborators, otStatuses } = useWorkOrders();
+    const { otCategories, services, addOrder, getNextOtNumber, collaborators, otStatuses, vehicles } = useWorkOrders();
 
     const [description, setDescription] = React.useState('');
     const [categoryPrefix, setCategoryPrefix] = React.useState('');
@@ -55,11 +55,11 @@ export default function NewOrderPage() {
       .filter(c => c.role === 'Vendedor' && c.status === 'Activo')
       .map(c => ({ value: c.id, label: c.name }));
 
-  const vehicles = [
-    { value: 'hilux', label: 'Toyota Hilux' },
-    { value: 'ranger', label: 'Ford Ranger' },
-    { value: 'navara', label: 'Nissan Navara' },
-  ];
+  const vehicleOptions = vehicles.map(v => ({
+    value: v.plate,
+    label: `${v.model} (${v.plate})`,
+  }));
+
 
   const handleCreateOrder = () => {
     if (!description || !categoryPrefix) {
@@ -247,7 +247,7 @@ export default function NewOrderPage() {
                         <div>
                             <Label>Vehículos Asignados</Label>
                             <MultiSelect
-                                options={vehicles}
+                                options={vehicleOptions}
                                 selected={selectedVehicles}
                                 onChange={setSelectedVehicles}
                                 placeholder="Seleccionar vehículos..."

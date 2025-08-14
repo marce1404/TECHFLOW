@@ -167,30 +167,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const updateOrder = async (id: string, updatedFields: Partial<WorkOrder>) => {
     const orderRef = doc(db, 'work-orders', id);
     await updateDoc(orderRef, updatedFields);
-
-    const originalOrder = getOrder(id);
-    if (!originalOrder) return;
-
-    const newStatus = updatedFields.status;
-    const oldStatus = originalOrder.status;
-
-    if (newStatus && newStatus.toLowerCase() !== oldStatus.toLowerCase()) {
-      const updatedOrder = { ...originalOrder, ...updatedFields };
-
-      if (newStatus.toLowerCase() === 'cerrada') {
-        setActiveWorkOrders(prev => prev.filter(order => order.id !== id));
-        setHistoricalWorkOrders(prev => [updatedOrder, ...prev.filter(order => order.id !== id)]);
-      } else if (oldStatus.toLowerCase() === 'cerrada') {
-        setHistoricalWorkOrders(prev => prev.filter(order => order.id !== id));
-        setActiveWorkOrders(prev => [updatedOrder, ...prev.filter(order => order.id !== id)]);
-      } else {
-        setActiveWorkOrders(prev => prev.map(order => order.id === id ? updatedOrder : order));
-      }
-    } else {
-      // Status didn't change category, just update in place
-      setActiveWorkOrders(prev => prev.map(order => order.id === id ? { ...order, ...updatedFields } : order));
-      setHistoricalWorkOrders(prev => prev.map(order => order.id === id ? { ...order, ...updatedFields } : order));
-    }
+    await fetchData();
   };
   
   const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory> => {

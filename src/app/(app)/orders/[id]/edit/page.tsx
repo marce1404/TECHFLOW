@@ -17,13 +17,13 @@ import Link from 'next/link';
 import { MultiSelect } from "@/components/ui/multi-select";
 import { useToast } from "@/hooks/use-toast";
 import { useParams, useRouter } from "next/navigation";
-import type { WorkOrder, Collaborator } from "@/lib/types";
+import type { WorkOrder, Collaborator, Vehicle } from "@/lib/types";
 import { useWorkOrders } from "@/context/work-orders-context";
 
 export default function EditOrderPage() {
   const params = useParams();
   const router = useRouter();
-  const { getOrder, updateOrder, otCategories, services, collaborators, ganttCharts, otStatuses } = useWorkOrders();
+  const { getOrder, updateOrder, otCategories, services, collaborators, ganttCharts, otStatuses, vehicles } = useWorkOrders();
   const orderId = params.id as string;
   
   const initialOrder = getOrder(orderId);
@@ -48,11 +48,10 @@ export default function EditOrderPage() {
     .filter(c => c.role === 'Vendedor')
     .map(c => ({ value: c.name, label: c.name }));
   
-  const vehicles = [
-    { value: 'hilux', label: 'Toyota Hilux' },
-    { value: 'ranger', label: 'Ford Ranger' },
-    { value: 'navara', label: 'Nissan Navara' },
-  ];
+  const vehicleOptions = vehicles.map(v => ({
+    value: v.plate,
+    label: `${v.model} (${v.plate})`,
+  }));
 
   const handleInputChange = (field: keyof WorkOrder, value: any) => {
     if (order) {
@@ -250,7 +249,7 @@ export default function EditOrderPage() {
                     <div>
                         <Label>Vehículos Asignados</Label>
                          <MultiSelect
-                            options={vehicles}
+                            options={vehicleOptions}
                             selected={order.vehicles || []}
                             onChange={(selected) => handleInputChange('vehicles', selected)}
                             placeholder="Seleccionar vehículos..."
