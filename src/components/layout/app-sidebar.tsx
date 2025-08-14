@@ -68,7 +68,7 @@ export default function AppSidebar() {
       href: '/orders',
       label: 'OTs Activas',
       icon: File,
-      exact: true,
+      exact: false, // This is a parent item
       subItems: [
         { href: '/orders/history', label: 'Historial', icon: History }
       ]
@@ -77,31 +77,37 @@ export default function AppSidebar() {
       href: '/gantt',
       label: 'Cartas Gantt',
       icon: BarChart2,
+      exact: true,
     },
     {
       href: '/reports',
       label: 'Llenar Informe',
       icon: FilePlus2,
+      exact: false, // To catch /reports and /reports/new
     },
     {
       href: '/reports/history',
       label: 'Historial Informes',
       icon: Archive,
+      exact: true,
     },
     {
       href: '/collaborators',
       label: 'Colaboradores',
       icon: Users,
+      exact: true,
     },
     {
       href: '/vehicles',
       label: 'Vehículos',
       icon: Truck,
+      exact: true,
     },
      {
       href: '/ai-tools/resource-assignment',
       label: 'Asistente IA',
       icon: Sparkles,
+      exact: true,
     }
   ];
 
@@ -109,16 +115,20 @@ export default function AppSidebar() {
     href: '/settings',
     label: 'Configuración',
     icon: Settings,
+    exact: true
   };
 
 
-  const isActive = (href: string, exact: boolean = false) => {
-    if (exact) {
-      return pathname === href;
+  const isActive = (href: string, isExact: boolean = true) => {
+    if (isExact) {
+        return pathname === href;
     }
-    // For parent items, we also want them active if a sub-item is active.
-    const parentPath = href.split('/')[1];
-    return pathname.startsWith(`/${parentPath}`);
+    // For parent items, check if the current path starts with the href,
+    // but also check that it's not a more specific different page.
+    if (href === '/reports') {
+        return pathname.startsWith('/reports') && !pathname.startsWith('/reports/history');
+    }
+    return pathname.startsWith(href);
   };
   
   if (state === 'collapsed') {
@@ -164,9 +174,9 @@ export default function AppSidebar() {
                     <SidebarMenuButton 
                         asChild 
                         tooltip="Configuración" 
-                        variant={isActive(settingsMenuItem.href) ? 'default' : 'ghost'}
+                        variant={isActive(settingsMenuItem.href, settingsMenuItem.exact) ? 'default' : 'ghost'}
                         className="h-10 w-10"
-                        isActive={isActive(settingsMenuItem.href)}
+                        isActive={isActive(settingsMenuItem.href, settingsMenuItem.exact)}
                     >
                     <Link href={settingsMenuItem.href}>
                         <Settings />
@@ -231,7 +241,7 @@ export default function AppSidebar() {
                     <span>{item.label}</span>
                   </Link>
                 </SidebarMenuButton>
-                 {item.subItems && isActive(item.href) && (
+                 {item.subItems && isActive(item.href, false) && (
                     <SidebarMenuSub>
                         {item.subItems.map(subItem => (
                             <SidebarMenuSubItem key={subItem.href}>
@@ -254,8 +264,8 @@ export default function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton 
                 asChild 
-                isActive={isActive(settingsMenuItem.href)}
-                variant={isActive(settingsMenuItem.href) ? 'default' : 'ghost'}
+                isActive={isActive(settingsMenuItem.href, settingsMenuItem.exact)}
+                variant={isActive(settingsMenuItem.href, settingsMenuItem.exact) ? 'default' : 'ghost'}
             >
               <Link href={settingsMenuItem.href}>
                 <Settings />
