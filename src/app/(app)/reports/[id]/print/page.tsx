@@ -25,6 +25,11 @@ async function getReportForPrint(reportId: string): Promise<{ report: SubmittedR
 
     const report = { id: reportSnap.id, ...reportSnap.data() } as SubmittedReport;
 
+    if (!report.templateId) {
+        console.error("Report is missing templateId");
+        return null;
+    }
+
     const templateRef = doc(db, 'report-templates', report.templateId);
     const templateSnap = await getDoc(templateRef);
 
@@ -58,8 +63,8 @@ function PrintReportContent({ report, template }: { report: SubmittedReport; tem
     const checkboxFields = template.fields.filter(f => f.type === 'checkbox' && !paymentStatusFields.map(psf => psf.name).includes(f.name));
 
     return (
-        <div className="bg-white text-black p-8 printable-content max-w-4xl mx-auto">
-            <header className="flex justify-between items-start mb-6">
+        <div className="bg-white text-black p-6 printable-content max-w-3xl mx-auto">
+            <header className="flex justify-between items-start mb-4">
                 <div className="flex-1">
                     <h1 className="text-3xl font-headline font-bold text-primary">{template.name}</h1>
                 </div>
@@ -69,12 +74,12 @@ function PrintReportContent({ report, template }: { report: SubmittedReport; tem
                 </div>
             </header>
             
-            <Card className="mb-6 shadow-none border-black">
-                <CardHeader>
+            <Card className="mb-4 shadow-none border-black">
+                <CardHeader className="p-4">
                     <CardTitle className="text-xl">Información de la Orden de Trabajo</CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                <CardContent className="p-4 pt-0">
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
                         <div><strong>Nº OT:</strong> {report.otDetails.ot_number}</div>
                         <div><strong>Cliente:</strong> {report.otDetails.client}</div>
                         <div className="col-span-2"><strong>Descripción:</strong> {report.otDetails.description}</div>
@@ -85,10 +90,10 @@ function PrintReportContent({ report, template }: { report: SubmittedReport; tem
             </Card>
 
             <Card className="shadow-none border-black">
-                <CardHeader>
+                <CardHeader className="p-4">
                     <CardTitle className="text-xl">Detalles del Servicio Realizado</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="p-4 pt-0 space-y-3">
                     {mainFields.filter(f => ['requirement', 'solution'].includes(f.name)).map(field => {
                          const value = report.reportData[field.name];
                          if (value === undefined || value === null || value === '') return null;
@@ -99,7 +104,7 @@ function PrintReportContent({ report, template }: { report: SubmittedReport; tem
                             </div>
                          )
                     })}
-                    <Separator className="my-4 bg-black"/>
+                    <Separator className="my-3 bg-black"/>
                     {mainFields.filter(f => !['requirement', 'solution', 'technician_signature', 'service_date', 'client_name_signature'].includes(f.name)).map(field => {
                          const value = report.reportData[field.name];
                          if (value === undefined || value === null || value === '') return null;
@@ -111,11 +116,11 @@ function PrintReportContent({ report, template }: { report: SubmittedReport; tem
                          )
                     })}
                      {checkboxFields.length > 0 && (
-                        <div className="space-y-2 pt-2">
+                        <div className="space-y-1 pt-2">
                              {checkboxFields.map(field => (
                                 <div key={field.id} className="flex items-center gap-2">
                                     {report.reportData[field.name] ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4" />}
-                                    <span className="font-semibold">{field.label}</span>
+                                    <span className="font-semibold text-sm">{field.label}</span>
                                 </div>
                             ))}
                         </div>
@@ -123,7 +128,7 @@ function PrintReportContent({ report, template }: { report: SubmittedReport; tem
                 </CardContent>
             </Card>
 
-            <div className="mt-6 grid grid-cols-2 gap-8 text-sm">
+            <div className="mt-4 grid grid-cols-2 gap-6 text-sm">
                 <div className="space-y-1">
                     <p className="font-semibold text-base">Estado de Pago:</p>
                     <div className="flex flex-col gap-1">
@@ -141,24 +146,24 @@ function PrintReportContent({ report, template }: { report: SubmittedReport; tem
                 </div>
             </div>
 
-            <footer className="mt-16 pt-6 border-t-2 border-dashed border-gray-400">
+            <footer className="mt-12 pt-4 border-t-2 border-dashed border-gray-400">
                 <div className="grid grid-cols-2 gap-8 text-center text-sm">
-                    <div className="flex flex-col justify-between">
+                     <div className="flex flex-col justify-between">
                          <div>
                             <p className="mb-12 border-b border-black w-full"></p>
                             <p><strong>Firma Cliente</strong></p>
-                            <p>{report.reportData.client_name_signature || 'N/A'}</p>
+                            <p className="capitalize">{report.reportData.client_name_signature || 'N/A'}</p>
                         </div>
                     </div>
                     <div className="flex flex-col justify-between">
                         <div>
                            <p className="mb-12 border-b border-black w-full"></p>
                            <p><strong>Firma Técnico</strong></p>
-                           <p>{report.reportData.technician_signature || 'N/A'}</p>
+                           <p className="capitalize">{report.reportData.technician_signature || 'N/A'}</p>
                         </div>
                     </div>
                 </div>
-                 <p className="text-center text-xs text-gray-500 mt-8">Fecha de Emisión del Informe: {submittedDate}</p>
+                 <p className="text-center text-xs text-gray-500 mt-6">Fecha de Emisión del Informe: {submittedDate}</p>
             </footer>
         </div>
     );
