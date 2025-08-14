@@ -80,12 +80,13 @@ export default function AppSidebar() {
     },
     {
       href: '/reports',
-      label: 'Informes y Guías',
-      icon: ClipboardCheck,
-      subItems: [
-        { href: '/reports/new', label: 'Llenar Informe', icon: FilePlus2 },
-        { href: '/reports/history', label: 'Informes Guardados', icon: Archive }
-      ]
+      label: 'Llenar Informe',
+      icon: FilePlus2,
+    },
+    {
+      href: '/reports/history',
+      label: 'Historial Informes',
+      icon: Archive,
     },
     {
       href: '/collaborators',
