@@ -46,13 +46,13 @@ export default function EditVehiclePage() {
           Editar Vehículo
         </h1>
         <p className="text-muted-foreground">
-          Modifica los detalles del vehículo.
+          Modifica los detalles del vehículo y su historial de mantenimiento.
         </p>
       </div>
       <VehicleForm onSave={handleSave} vehicle={vehicle} collaborators={collaborators} />
 
       <AssignmentHistory
-        title="Historial de Asignaciones"
+        title="Historial de Asignaciones de OT"
         description="Órdenes de trabajo donde se ha utilizado este vehículo."
         filterKey="vehicle"
         filterValue={vehicle.plate}

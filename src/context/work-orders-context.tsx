@@ -237,8 +237,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   };
   
   const addVehicle = async (vehicle: Omit<Vehicle, 'id'>): Promise<Vehicle> => {
-    const docRef = await addDoc(collection(db, "vehicles"), vehicle);
-    const newVehicle = { ...vehicle, id: docRef.id } as Vehicle;
+    const vehicleData = { ...vehicle, maintenanceLog: vehicle.maintenanceLog || [] };
+    const docRef = await addDoc(collection(db, "vehicles"), vehicleData);
+    const newVehicle = { ...vehicleData, id: docRef.id } as Vehicle;
     setVehicles(prev => [...prev, newVehicle]);
     return newVehicle;
   };

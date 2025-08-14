@@ -71,6 +71,14 @@ export type Collaborator = {
 
 export type CollaboratorPrintData = Omit<Collaborator, 'id'>;
 
+export type VehicleMaintenance = {
+  id: string;
+  date: string;
+  description: string;
+  cost: number;
+  mileage: number;
+};
+
 export type Vehicle = {
   id: string;
   model: string;
@@ -78,6 +86,7 @@ export type Vehicle = {
   plate: string;
   status: 'Disponible' | 'Asignado' | 'En Mantenimiento';
   assignedTo?: string;
+  maintenanceLog?: VehicleMaintenance[];
 };
 
 export type GanttTask = {

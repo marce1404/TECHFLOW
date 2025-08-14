@@ -2,6 +2,7 @@
 'use client';
 
 import * as React from 'react';
+import { format } from 'date-fns';
 import {
     Table,
     TableBody,
@@ -56,11 +57,12 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
         }
     }
     
-    const headers: { key: keyof Vehicle, label: string }[] = [
+    const headers: { key: keyof Vehicle | 'lastMaintenance', label: string }[] = [
         { key: 'model', label: 'Vehículo' },
         { key: 'plate', label: 'Patente' },
         { key: 'status', label: 'Estado' },
         { key: 'assignedTo', label: 'Asignado a' },
+        { key: 'lastMaintenance', label: 'Última Mantención' },
     ];
     
     const handleStatusChange = (vehicle: Vehicle, status: Vehicle['status']) => {
@@ -71,6 +73,14 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
         updateVehicle(vehicle.id, updatedVehicle);
     };
 
+    const getLastMaintenanceDate = (vehicle: Vehicle) => {
+        if (!vehicle.maintenanceLog || vehicle.maintenanceLog.length === 0) {
+            return 'N/A';
+        }
+        const sortedLog = [...vehicle.maintenanceLog].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        return format(new Date(sortedLog[0].date.replace(/-/g, '/')), 'dd/MM/yyyy');
+    };
+
     return (
         <div className="rounded-md border">
             <Table>
@@ -78,7 +88,7 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
                     <TableRow>
                          {headers.map((header) => (
                            <TableHead key={header.key}>
-                                <Button variant="ghost" onClick={() => requestSort(header.key)}>
+                                <Button variant="ghost" onClick={() => requestSort(header.key as keyof Vehicle)}>
                                     {header.label}
                                     <ArrowUpDown className="ml-2 h-4 w-4" />
                                 </Button>
@@ -114,6 +124,7 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
                                 </DropdownMenu>
                             </TableCell>
                             <TableCell>{vehicle.assignedTo || 'N/A'}</TableCell>
+                            <TableCell>{getLastMaintenanceDate(vehicle)}</TableCell>
                             <TableCell>
                                 <Button variant="outline" size="icon" asChild>
                                     <Link href={`/vehicles/${vehicle.id}/edit`}>
@@ -165,7 +176,7 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
                         </TableRow>
                     )}) : (
                          <TableRow>
-                            <TableCell colSpan={6} className="h-24 text-center">
+                            <TableCell colSpan={7} className="h-24 text-center">
                                 No hay resultados.
                             </TableCell>
                         </TableRow>
