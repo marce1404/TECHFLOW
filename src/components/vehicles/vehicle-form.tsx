@@ -69,7 +69,11 @@ export default function VehicleForm({ onSave, vehicle, collaborators }: VehicleF
   }, [vehicle, form]);
 
   const onSubmit = (data: VehicleFormValues) => {
-    onSave(data);
+    const dataToSave = {
+      ...data,
+      assignedTo: data.assignedTo === 'none' ? '' : data.assignedTo,
+    };
+    onSave(dataToSave);
   };
 
   return (
@@ -146,14 +150,14 @@ export default function VehicleForm({ onSave, vehicle, collaborators }: VehicleF
                             render={({ field }) => (
                                 <FormItem>
                                 <FormLabel>Asignado A</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value} defaultValue="">
+                                <Select onValueChange={field.onChange} value={field.value || 'none'}>
                                     <FormControl>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Seleccionar colaborador (opcional)" />
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        <SelectItem value="">N/A</SelectItem>
+                                        <SelectItem value="none">N/A</SelectItem>
                                         {collaborators.filter(t => t.status === 'Activo').map(t => (
                                             <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>
                                         ))}
