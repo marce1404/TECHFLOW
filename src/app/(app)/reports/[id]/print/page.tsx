@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CheckSquare, Square } from 'lucide-react';
 import BrandDescription from '@/components/layout/brand-description';
+import { useParams } from 'next/navigation';
 
 async function getReportForPrint(reportId: string): Promise<{ report: SubmittedReport; template: ReportTemplate } | null> {
   try {
@@ -96,7 +97,7 @@ function PrintReportContent({ report, template }: { report: SubmittedReport; tem
                                         <span>{value ? 'Sí' : 'No'}</span>
                                     </div>
                                 ) : (
-                                    <p className="text-gray-700 whitespace-pre-wrap">{value}</p>
+                                    <p className="text-gray-700 whitespace-pre-wrap">{String(value)}</p>
                                 )}
                             </div>
                         )
@@ -146,15 +147,19 @@ function PrintReportContent({ report, template }: { report: SubmittedReport; tem
 }
 
 
-export default function PrintReportPage({ params }: { params: { id: string } }) {
+export default function PrintReportPage() {
+    const params = useParams();
+    const reportId = params.id as string;
     const [data, setData] = React.useState<{ report: SubmittedReport; template: ReportTemplate } | null>(null);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     
     React.useEffect(() => {
+        if (!reportId) return;
+
         async function fetchReport() {
             try {
-                const result = await getReportForPrint(params.id);
+                const result = await getReportForPrint(reportId);
                 if (result) {
                     setData(result);
                 } else {
@@ -167,7 +172,7 @@ export default function PrintReportPage({ params }: { params: { id: string } }) 
             }
         }
         fetchReport();
-    }, [params.id]);
+    }, [reportId]);
 
     if (loading) {
         return <div className="p-8 text-center">Cargando informe para imprimir...</div>;
