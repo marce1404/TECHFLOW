@@ -11,6 +11,7 @@ import CollaboratorForm, { type CollaboratorFormValues } from '@/components/coll
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Printer } from 'lucide-react';
+import AssignmentHistory from '@/components/shared/assignment-history';
 
 function EditCollaboratorComponent() {
   const params = useParams();
@@ -69,6 +70,13 @@ function EditCollaboratorComponent() {
         </Button>
       </div>
       <CollaboratorForm onSave={handleSave} collaborator={collaborator} />
+
+      <AssignmentHistory 
+        title="Historial de Asignaciones"
+        description="Órdenes de trabajo asociadas a este colaborador."
+        filterKey="supervisor" // or 'technician', the component handles both
+        filterValue={collaborator.name}
+      />
     </div>
   );
 }

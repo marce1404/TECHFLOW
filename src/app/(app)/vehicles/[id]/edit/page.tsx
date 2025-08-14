@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useWorkOrders } from '@/context/work-orders-context';
 import type { Vehicle } from '@/lib/types';
 import VehicleForm, { type VehicleFormValues } from '@/components/vehicles/vehicle-form';
+import AssignmentHistory from '@/components/shared/assignment-history';
 
 export default function EditVehiclePage() {
   const params = useParams();
@@ -49,6 +50,13 @@ export default function EditVehiclePage() {
         </p>
       </div>
       <VehicleForm onSave={handleSave} vehicle={vehicle} collaborators={collaborators} />
+
+      <AssignmentHistory
+        title="Historial de Asignaciones"
+        description="Órdenes de trabajo donde se ha utilizado este vehículo."
+        filterKey="vehicle"
+        filterValue={vehicle.plate}
+       />
     </div>
   );
 }
