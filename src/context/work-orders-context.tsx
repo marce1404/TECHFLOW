@@ -112,7 +112,10 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         }) as GanttChart[]);
         
         let loadedTemplates = reportTemplatesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ReportTemplate[];
-        if (reportTemplatesSnapshot.empty && predefinedReportTemplates.length > 0) {
+        
+        const hasPredefinedTemplate = loadedTemplates.some(t => t.name === 'Guía de Atención Técnica');
+
+        if (!hasPredefinedTemplate && predefinedReportTemplates.length > 0) {
             const batch = writeBatch(db);
             const newTemplates: ReportTemplate[] = [];
             for (const template of predefinedReportTemplates) {
@@ -121,7 +124,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
                 newTemplates.push({ ...template, id: docRef.id });
             }
             await batch.commit();
-            loadedTemplates = newTemplates;
+            loadedTemplates.push(...newTemplates);
         }
         setReportTemplates(loadedTemplates);
         
