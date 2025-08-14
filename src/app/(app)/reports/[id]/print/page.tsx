@@ -51,6 +51,8 @@ function PrintReportContent({ report, template }: { report: SubmittedReport; tem
     
     const submittedDate = report.submittedAt?.toDate ? format(report.submittedAt.toDate(), "dd 'de' MMMM, yyyy", { locale: es }) : 'Fecha no disponible';
 
+    const paymentStatusFields = template.fields.filter(f => ['valor_pendiente', 'valor_cancelado', 'en_garantia', 'cargo_automatico'].includes(f.name));
+
     return (
         <div className="bg-white text-black p-8 printable-content">
             <header className="flex justify-between items-start mb-8">
@@ -81,7 +83,7 @@ function PrintReportContent({ report, template }: { report: SubmittedReport; tem
                     <CardTitle className="text-lg">Detalles del Servicio</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {template.fields.filter(f => !['valor_pendiente', 'valor_cancelado', 'en_garantia', 'cargo_automatico'].includes(f.name)).map(field => {
+                    {template.fields.filter(f => !paymentStatusFields.map(psf => psf.name).includes(f.name)).map(field => {
                         const value = report.reportData[field.name];
                         if (value === undefined || value === null || value === '') return null;
 
@@ -103,20 +105,22 @@ function PrintReportContent({ report, template }: { report: SubmittedReport; tem
             </Card>
 
             <div className="mt-8 grid grid-cols-2 gap-8 text-sm">
-                 <div className="space-y-1">
-                    <p className="font-semibold">Estado de Pago:</p>
-                    <div className="flex flex-col gap-1">
-                        {template.fields.filter(f => ['valor_pendiente', 'valor_cancelado', 'en_garantia', 'cargo_automatico'].includes(f.name)).map(field => (
-                             <div key={field.id} className="flex items-center gap-2">
-                                {report.reportData[field.name] ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
-                                <span>{field.label}</span>
-                             </div>
-                        ))}
+                {paymentStatusFields.length > 0 && (
+                    <div className="space-y-1">
+                        <p className="font-semibold">Estado de Pago:</p>
+                        <div className="flex flex-col gap-1">
+                            {paymentStatusFields.map(field => (
+                                <div key={field.id} className="flex items-center gap-2">
+                                    {report.reportData[field.name] ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+                                    <span>{field.label}</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                </div>
+                )}
                  <div className="space-y-1">
                     <p className="font-semibold">Valor Servicio (Neto):</p>
-                    <p>${new Intl.NumberFormat('es-CL').format(report.otDetails.netPrice)}</p>
+                    <p>${new Intl.NumberFormat('es-CL').format(report.otDetails.netPrice || 0)}</p>
                 </div>
             </div>
 
