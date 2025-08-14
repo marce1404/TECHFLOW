@@ -48,6 +48,16 @@ export default function VehicleForm({ onSave, vehicle, collaborators }: VehicleF
     },
   });
 
+  const watchAssignedTo = form.watch('assignedTo');
+
+  React.useEffect(() => {
+    if (watchAssignedTo && watchAssignedTo !== 'none') {
+        form.setValue('status', 'Asignado');
+    } else if (form.getValues('status') === 'Asignado') {
+        form.setValue('status', 'Disponible');
+    }
+  }, [watchAssignedTo, form]);
+
   React.useEffect(() => {
     if (vehicle) {
       form.reset({
@@ -55,7 +65,7 @@ export default function VehicleForm({ onSave, vehicle, collaborators }: VehicleF
         year: vehicle.year,
         plate: vehicle.plate,
         status: vehicle.status,
-        assignedTo: vehicle.assignedTo,
+        assignedTo: vehicle.assignedTo || 'none',
       });
     } else {
         form.reset({
@@ -63,7 +73,7 @@ export default function VehicleForm({ onSave, vehicle, collaborators }: VehicleF
             year: new Date().getFullYear(),
             plate: '',
             status: 'Disponible',
-            assignedTo: '',
+            assignedTo: 'none',
         });
     }
   }, [vehicle, form]);
@@ -75,6 +85,9 @@ export default function VehicleForm({ onSave, vehicle, collaborators }: VehicleF
     };
     onSave(dataToSave);
   };
+  
+  const statusIsOverridden = form.getValues('status') === 'En Mantenimiento';
+
 
   return (
     <Form {...form}>
@@ -122,35 +135,13 @@ export default function VehicleForm({ onSave, vehicle, collaborators }: VehicleF
                                 </FormItem>
                             )}
                         />
-                        <FormField
-                            control={form.control}
-                            name="status"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Estado</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value}>
-                                        <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Seleccionar estado" />
-                                        </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="Disponible">Disponible</SelectItem>
-                                            <SelectItem value="Asignado">Asignado</SelectItem>
-                                            <SelectItem value="En Mantenimiento">En Mantenimiento</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
+                         <FormField
                             control={form.control}
                             name="assignedTo"
                             render={({ field }) => (
                                 <FormItem>
                                 <FormLabel>Asignado A</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value || 'none'}>
+                                <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Seleccionar colaborador (opcional)" />
@@ -164,6 +155,28 @@ export default function VehicleForm({ onSave, vehicle, collaborators }: VehicleF
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="status"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Estado</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value} disabled={!statusIsOverridden && !!watchAssignedTo && watchAssignedTo !== 'none'}>
+                                        <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Seleccionar estado" />
+                                        </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="Disponible">Disponible</SelectItem>
+                                            <SelectItem value="Asignado">Asignado</SelectItem>
+                                            <SelectItem value="En Mantenimiento">En Mantenimiento</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
                                 </FormItem>
                             )}
                         />

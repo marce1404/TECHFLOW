@@ -41,7 +41,7 @@ interface VehiclesTableProps {
 }
 
 export default function VehiclesTable({ vehicles, requestSort, sortConfig }: VehiclesTableProps) {
-    const { deleteVehicle } = useWorkOrders();
+    const { deleteVehicle, updateVehicle } = useWorkOrders();
 
     const getStatusVariant = (status: Vehicle['status']): 'default' | 'secondary' | 'destructive' | 'outline' => {
         switch (status) {
@@ -62,6 +62,14 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
         { key: 'status', label: 'Estado' },
         { key: 'assignedTo', label: 'Asignado a' },
     ];
+    
+    const handleStatusChange = (vehicle: Vehicle, status: Vehicle['status']) => {
+        const updatedVehicle: Partial<Vehicle> = { status };
+        if (status === 'Disponible' || status === 'En Mantenimiento') {
+            updatedVehicle.assignedTo = '';
+        }
+        updateVehicle(vehicle.id, updatedVehicle);
+    };
 
     return (
         <div className="rounded-md border">
@@ -89,9 +97,20 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
                             </TableCell>
                             <TableCell>{vehicle.plate}</TableCell>
                             <TableCell>
-                                <Badge variant={getStatusVariant(vehicle.status)}>
-                                    {vehicle.status}
-                                </Badge>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" className="p-0 h-auto">
+                                            <Badge variant={getStatusVariant(vehicle.status)} className="cursor-pointer">
+                                                {vehicle.status}
+                                            </Badge>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        <DropdownMenuItem onSelect={() => handleStatusChange(vehicle, 'Disponible')}>Disponible</DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => handleStatusChange(vehicle, 'Asignado')} disabled={!vehicle.assignedTo}>Asignado</DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => handleStatusChange(vehicle, 'En Mantenimiento')}>En Mantenimiento</DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </TableCell>
                             <TableCell>{vehicle.assignedTo || 'N/A'}</TableCell>
                             <TableCell className="text-right">
