@@ -26,16 +26,17 @@ const prompt = ai.definePrompt({
   name: 'suggestOptimalResourceAssignmentPrompt',
   input: {schema: SuggestOptimalResourceAssignmentInputSchema},
   output: {schema: SuggestOptimalResourceAssignmentOutputSchema},
-  prompt: `You are an expert in resource allocation for technical service operations.
+  prompt: `Eres un experto en asignación de recursos para operaciones de servicios técnicos.
 
-  Based on the task requirements, available technicians, and available vehicles, suggest the optimal assignments to minimize downtime and maximize efficiency.
+  Basado en los requerimientos de la tarea, los técnicos disponibles y los vehículos disponibles, sugiere las asignaciones óptimas para minimizar el tiempo de inactividad y maximizar la eficiencia.
 
-  Task Requirements: {{{taskRequirements}}}
-  Available Technicians: {{{availableTechnicians}}}
-  Available Vehicles: {{{availableVehicles}}}
+  Requerimientos de la Tarea: {{{taskRequirements}}}
+  Técnicos Disponibles: {{{availableTechnicians}}}
+  Vehículos Disponibles: {{{availableVehicles}}}
 
-  Consider the skills of the technicians, their current workload, and the type of vehicle needed for the task.
-  Provide a clear justification for your suggested assignments.
+  Considera las habilidades de los técnicos, su carga de trabajo actual y el tipo de vehículo necesario para la tarea.
+  Proporciona una justificación clara para tus asignaciones sugeridas.
+  TODA LA RESPUESTA DEBE ESTAR EN ESPAÑOL.
   `,
 });
 
