@@ -23,6 +23,7 @@ import {
   BarChart2,
   Sparkles,
   LogOut,
+  ClipboardCheck,
 } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { signOut } from 'firebase/auth';
@@ -73,6 +74,11 @@ export default function AppSidebar() {
       href: '/gantt',
       label: 'Cartas Gantt',
       icon: BarChart2,
+    },
+    {
+      href: '/reports',
+      label: 'Informes y Guías',
+      icon: ClipboardCheck,
     },
     {
       href: '/collaborators',

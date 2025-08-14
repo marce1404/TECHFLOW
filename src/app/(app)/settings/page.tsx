@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { ArrowRight, Info } from 'lucide-react';
+import { ArrowRight, Info, FileText } from 'lucide-react';
 import packageJson from '@/../package.json';
 
 export default function SettingsPage() {
@@ -25,6 +25,12 @@ export default function SettingsPage() {
             description: 'Gestiona las tareas predefinidas para las Cartas Gantt.',
             href: '/settings/suggested-tasks',
         },
+         {
+            title: 'Plantillas de Informes',
+            description: 'Crea y gestiona los formatos para informes y guías.',
+            href: '/settings/report-templates',
+            icon: FileText
+        },
     ];
 
     const appVersion = packageJson.version;
@@ -37,7 +43,10 @@ export default function SettingsPage() {
                         <Card className="hover:bg-muted/50 transition-colors h-full">
                             <CardHeader className="flex flex-row items-center justify-between">
                                 <div>
-                                    <CardTitle>{option.title}</CardTitle>
+                                    <CardTitle className="flex items-center gap-2">
+                                        {option.icon && <option.icon className="h-5 w-5" />}
+                                        {option.title}
+                                    </CardTitle>
                                     <CardDescription>{option.description}</CardDescription>
                                 </div>
                                 <ArrowRight className="h-5 w-5 text-muted-foreground" />

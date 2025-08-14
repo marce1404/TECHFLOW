@@ -1,4 +1,5 @@
 
+
 import { z } from 'zod';
 import type { ChartConfig } from "@/components/ui/chart"
 
@@ -129,6 +130,21 @@ export type SuggestedTask = {
     name: string;
     category: string; // This will be the lowercase name of the service
 }
+
+export type ReportTemplateField = {
+    id: string;
+    name: string;
+    label: string;
+    type: 'text' | 'textarea' | 'number' | 'checkbox' | 'date';
+    required: boolean;
+}
+export type ReportTemplate = {
+    id: string;
+    name: string;
+    description: string;
+    fields: ReportTemplateField[];
+}
+
 
 // AI Resource Assignment Types
 export const SuggestOptimalResourceAssignmentInputSchema = z.object({
