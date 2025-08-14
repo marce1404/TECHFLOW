@@ -147,6 +147,21 @@ export type ReportTemplate = {
     fields: ReportTemplateField[];
 }
 
+export type SubmittedReport = {
+    id: string;
+    workOrderId: string;
+    templateId: string;
+    reportData: Record<string, any>;
+    otDetails: {
+        ot_number: string;
+        client: string;
+        description: string;
+        netPrice: number;
+    };
+    templateName: string;
+    submittedAt: any; // Using `any` for Firestore Timestamp compatibility
+};
+
 
 // AI Resource Assignment Types
 export const SuggestOptimalResourceAssignmentInputSchema = z.object({

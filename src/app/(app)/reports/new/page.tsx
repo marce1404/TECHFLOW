@@ -11,9 +11,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import type { ReportTemplate } from '@/lib/types';
+import type { ReportTemplate, SubmittedReport } from '@/lib/types';
 import Link from 'next/link';
-import { FileWarning, CheckCircle2, Printer, File, User, Building } from 'lucide-react';
+import { FileWarning, CheckCircle2, Printer, File, User, Building, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 
@@ -21,11 +21,13 @@ export default function NewReportPage() {
   const searchParams = useSearchParams();
   const otNumber = searchParams.get('ot_number');
   
-  const { activeWorkOrders, reportTemplates, collaborators, getOrder } = useWorkOrders();
+  const { activeWorkOrders, reportTemplates, collaborators, getOrder, addSubmittedReport } = useWorkOrders();
   
   const [selectedTemplate, setSelectedTemplate] = React.useState<ReportTemplate | null>(null);
   const [formData, setFormData] = React.useState<Record<string, any>>({});
   const [isSubmitted, setIsSubmitted] = React.useState(false);
+  const [submittedReportId, setSubmittedReportId] = React.useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
 
   const workOrder = React.useMemo(() => {
@@ -41,7 +43,6 @@ export default function NewReportPage() {
     const template = reportTemplates.find(t => t.id === templateId);
     setSelectedTemplate(template || null);
     
-    // Pre-fill form data from work order when a template is selected
     const initialFormData: Record<string, any> = {};
     if (workOrder && template) {
         if(template.fields.some(f => f.name === 'service_date')) {
@@ -58,27 +59,43 @@ export default function NewReportPage() {
     setFormData(prev => ({ ...prev, [fieldName]: value }));
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-      // Here you would typically save the formData to your database,
-      // associated with the workOrder.id
-      console.log({
-          workOrderId: workOrder?.id,
-          templateId: selectedTemplate?.id,
+      if (!workOrder || !selectedTemplate) return;
+      
+      setIsSubmitting(true);
+
+      const reportToSave: Omit<SubmittedReport, 'id' | 'submittedAt'> = {
+          workOrderId: workOrder.id,
+          templateId: selectedTemplate.id,
           reportData: formData,
+          templateName: selectedTemplate.name,
           otDetails: {
-            ot_number: workOrder?.ot_number,
-            client: workOrder?.client,
-            description: workOrder?.description,
-            netPrice: workOrder?.netPrice,
+            ot_number: workOrder.ot_number,
+            client: workOrder.client,
+            description: workOrder.description,
+            netPrice: workOrder.netPrice,
           }
-      });
-      setIsSubmitted(true);
+      };
+
+      try {
+        const savedReport = await addSubmittedReport(reportToSave);
+        setSubmittedReportId(savedReport.id);
+        setIsSubmitted(true);
+      } catch (error) {
+        console.error("Failed to save report: ", error);
+        // Optionally, show a toast error
+      } finally {
+        setIsSubmitting(false);
+      }
   }
   
   const handlePrint = () => {
-    // This will be implemented in a future step.
-    alert("La funcionalidad de impresión se habilitará próximamente.");
+    if (submittedReportId) {
+        window.open(`/reports/${submittedReportId}/print`, '_blank');
+    } else {
+        alert("No se pudo encontrar el ID del informe para imprimir.");
+    }
   }
 
   const serviceGuides = reportTemplates.filter(t => t.type === 'service-guide');
@@ -216,7 +233,7 @@ export default function NewReportPage() {
                     {selectedTemplate.fields.sort((a,b) => (a.id > b.id ? 1 : -1)).map(field => {
                         const isCheckboxGroup = ['valor_pendiente', 'valor_cancelado', 'en_garantia', 'cargo_automatico'].includes(field.name);
 
-                        if (isCheckboxGroup) return null; // We render these separately
+                        if (isCheckboxGroup) return null;
 
                         return (
                         <div key={field.id}>
@@ -282,8 +299,11 @@ export default function NewReportPage() {
                     </div>
 
                     <div className="flex justify-end gap-2 pt-4">
-                        <Button variant="outline" asChild><Link href="/reports">Cancelar</Link></Button>
-                        <Button type="submit">Guardar y Enviar Informe</Button>
+                        <Button variant="outline" type="button" asChild><Link href="/reports">Cancelar</Link></Button>
+                        <Button type="submit" disabled={isSubmitting}>
+                          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Guardar y Enviar Informe
+                        </Button>
                     </div>
                 </CardContent>
             </Card>

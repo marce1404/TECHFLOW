@@ -1,4 +1,5 @@
 
+
 'use client';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import DateTime from './date-time';
@@ -15,6 +16,7 @@ export default function AppHeader() {
     if (pathname.startsWith('/orders/')) return 'Detalle Orden de Trabajo';
     if (pathname.startsWith('/orders')) return 'Órdenes de Trabajo';
     if (pathname.startsWith('/gantt')) return 'Cartas Gantt';
+    if (pathname.startsWith('/reports/history')) return 'Informes Guardados';
     if (pathname.startsWith('/reports')) return 'Informes y Guías';
     if (pathname.startsWith('/collaborators')) return 'Colaboradores';
     if (pathname.startsWith('/vehicles')) return 'Vehículos';

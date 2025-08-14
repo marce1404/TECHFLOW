@@ -12,6 +12,9 @@ import {
   SidebarMenuButton,
   SidebarHeader,
   SidebarFooter,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem
 } from '@/components/ui/sidebar';
 import {
   LayoutGrid,
@@ -24,6 +27,8 @@ import {
   Sparkles,
   LogOut,
   ClipboardCheck,
+  FilePlus2,
+  Archive,
 } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { signOut } from 'firebase/auth';
@@ -64,11 +69,9 @@ export default function AppSidebar() {
       label: 'OTs Activas',
       icon: File,
       exact: true,
-    },
-     {
-      href: '/orders/history',
-      label: 'Historial',
-      icon: History,
+      subItems: [
+        { href: '/orders/history', label: 'Historial', icon: History }
+      ]
     },
     {
       href: '/gantt',
@@ -79,6 +82,10 @@ export default function AppSidebar() {
       href: '/reports',
       label: 'Informes y Guías',
       icon: ClipboardCheck,
+      subItems: [
+        { href: '/reports/new', label: 'Llenar Informe', icon: FilePlus2 },
+        { href: '/reports/history', label: 'Informes Guardados', icon: Archive }
+      ]
     },
     {
       href: '/collaborators',
@@ -108,7 +115,9 @@ export default function AppSidebar() {
     if (exact) {
       return pathname === href;
     }
-    return pathname.startsWith(href);
+    // For parent items, we also want them active if a sub-item is active.
+    const parentPath = href.split('/')[1];
+    return pathname.startsWith(`/${parentPath}`);
   };
   
   if (state === 'collapsed') {
@@ -214,7 +223,6 @@ export default function AppSidebar() {
                 <SidebarMenuButton
                   asChild
                   isActive={isActive(item.href, item.exact)}
-                  tooltip={item.label}
                   variant={isActive(item.href, item.exact) ? 'default' : 'ghost'}
                 >
                   <Link href={item.href}>
@@ -222,6 +230,20 @@ export default function AppSidebar() {
                     <span>{item.label}</span>
                   </Link>
                 </SidebarMenuButton>
+                 {item.subItems && isActive(item.href) && (
+                    <SidebarMenuSub>
+                        {item.subItems.map(subItem => (
+                            <SidebarMenuSubItem key={subItem.href}>
+                                <SidebarMenuSubButton asChild isActive={pathname === subItem.href}>
+                                    <Link href={subItem.href}>
+                                        <subItem.icon />
+                                        <span>{subItem.label}</span>
+                                    </Link>
+                                </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                        ))}
+                    </SidebarMenuSub>
+                )}
               </SidebarMenuItem>
           )}
         </SidebarMenu>
@@ -231,7 +253,6 @@ export default function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton 
                 asChild 
-                tooltip="Configuración"
                 isActive={isActive(settingsMenuItem.href)}
                 variant={isActive(settingsMenuItem.href) ? 'default' : 'ghost'}
             >
@@ -244,7 +265,6 @@ export default function AppSidebar() {
            <SidebarMenuItem>
             <SidebarMenuButton 
                 onClick={handleLogout}
-                tooltip="Cerrar Sesión"
                 variant='ghost'
             >
               <LogOut />
