@@ -7,6 +7,8 @@ import { db } from '@/lib/firebase';
 import type { WorkOrder, OTCategory, Service, Collaborator, Vehicle, GanttChart, SuggestedTask, OTStatus, ReportTemplate } from '@/lib/types';
 import { Timestamp } from 'firebase/firestore';
 import { initialSuggestedTasks } from '@/lib/placeholder-data';
+import { predefinedReportTemplates } from '@/lib/predefined-templates';
+
 
 interface WorkOrdersContextType {
   activeWorkOrders: WorkOrder[];
@@ -108,7 +110,20 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             }));
             return { id: doc.id, ...data, tasks };
         }) as GanttChart[]);
-        setReportTemplates(reportTemplatesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ReportTemplate[]);
+        
+        let loadedTemplates = reportTemplatesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ReportTemplate[];
+        if (reportTemplatesSnapshot.empty && predefinedReportTemplates.length > 0) {
+            const batch = writeBatch(db);
+            const newTemplates: ReportTemplate[] = [];
+            for (const template of predefinedReportTemplates) {
+                const docRef = doc(collection(db, "report-templates"));
+                batch.set(docRef, template);
+                newTemplates.push({ ...template, id: docRef.id });
+            }
+            await batch.commit();
+            loadedTemplates = newTemplates;
+        }
+        setReportTemplates(loadedTemplates);
         
         let loadedTasks = suggestedTasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SuggestedTask[];
 
