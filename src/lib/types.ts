@@ -142,6 +142,7 @@ export type ReportTemplate = {
     id: string;
     name: string;
     description: string;
+    type: 'service-guide' | 'project-delivery';
     fields: ReportTemplateField[];
 }
 

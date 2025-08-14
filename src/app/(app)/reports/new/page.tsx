@@ -4,7 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import * as React from 'react';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,6 +51,9 @@ export default function NewReportPage() {
       });
       setIsSubmitted(true);
   }
+
+  const serviceGuides = reportTemplates.filter(t => t.type === 'service-guide');
+  const projectDeliveries = reportTemplates.filter(t => t.type === 'project-delivery');
 
   if (isSubmitted) {
     return (
@@ -112,11 +115,26 @@ export default function NewReportPage() {
                   <SelectValue placeholder="Elige el formato a completar..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {reportTemplates.map(template => (
-                    <SelectItem key={template.id} value={template.id}>
-                      {template.name}
-                    </SelectItem>
-                  ))}
+                    {serviceGuides.length > 0 && (
+                        <SelectGroup>
+                            <SelectLabel>Guías de Servicio</SelectLabel>
+                            {serviceGuides.map(template => (
+                                <SelectItem key={template.id} value={template.id}>
+                                {template.name}
+                                </SelectItem>
+                            ))}
+                        </SelectGroup>
+                    )}
+                    {projectDeliveries.length > 0 && (
+                         <SelectGroup>
+                            <SelectLabel>Entrega de Proyectos</SelectLabel>
+                            {projectDeliveries.map(template => (
+                                <SelectItem key={template.id} value={template.id}>
+                                {template.name}
+                                </SelectItem>
+                            ))}
+                        </SelectGroup>
+                    )}
                 </SelectContent>
               </Select>
             </div>
