@@ -51,96 +51,114 @@ function PrintReportContent({ report, template }: { report: SubmittedReport; tem
     }, []);
     
     const submittedDate = report.submittedAt?.toDate ? format(report.submittedAt.toDate(), "dd 'de' MMMM, yyyy", { locale: es }) : 'Fecha no disponible';
+    const shortFolio = report.id.substring(report.id.length - 6).toUpperCase();
 
     const paymentStatusFields = template.fields.filter(f => ['valor_pendiente', 'valor_cancelado', 'en_garantia', 'cargo_automatico'].includes(f.name));
+    const mainFields = template.fields.filter(f => !paymentStatusFields.map(psf => psf.name).includes(f.name) && f.type !== 'checkbox');
+    const checkboxFields = template.fields.filter(f => f.type === 'checkbox' && !paymentStatusFields.map(psf => psf.name).includes(f.name));
 
     return (
-        <div className="bg-white text-black p-8 printable-content">
-            <header className="flex justify-between items-start mb-8">
+        <div className="bg-white text-black p-8 printable-content max-w-4xl mx-auto">
+            <header className="flex justify-between items-start mb-6">
                 <div className="flex-1">
-                    <h1 className="text-2xl font-bold font-headline">{template.name}</h1>
-                    <p className="text-sm text-gray-500">Folio: {report.id}</p>
+                    <h1 className="text-3xl font-headline font-bold text-primary">{template.name}</h1>
                 </div>
-                <div className="w-48">
+                <div className="text-right">
                     <BrandDescription />
+                    <p className="font-semibold text-lg mt-2">Folio Nº: {shortFolio}</p>
                 </div>
             </header>
             
-            <Card className="mb-6">
+            <Card className="mb-6 shadow-none border-black">
                 <CardHeader>
-                    <CardTitle className="text-lg">Información de la Orden de Trabajo</CardTitle>
+                    <CardTitle className="text-xl">Información de la Orden de Trabajo</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
                         <div><strong>Nº OT:</strong> {report.otDetails.ot_number}</div>
                         <div><strong>Cliente:</strong> {report.otDetails.client}</div>
                         <div className="col-span-2"><strong>Descripción:</strong> {report.otDetails.description}</div>
+                        <div><strong>Técnico:</strong> {report.reportData.technician_signature || 'N/A'}</div>
+                        <div><strong>Fecha de Servicio:</strong> {report.reportData.service_date ? format(new Date(report.reportData.service_date.replace(/-/g, '/')), 'dd/MM/yyyy') : 'N/A'}</div>
                     </div>
                 </CardContent>
             </Card>
 
-            <Card>
+            <Card className="shadow-none border-black">
                 <CardHeader>
-                    <CardTitle className="text-lg">Detalles del Servicio</CardTitle>
+                    <CardTitle className="text-xl">Detalles del Servicio Realizado</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {template.fields.filter(f => !paymentStatusFields.map(psf => psf.name).includes(f.name)).map(field => {
-                        const value = report.reportData[field.name];
-                        if (value === undefined || value === null || value === '') return null;
-
-                        return (
+                    {mainFields.filter(f => ['requirement', 'solution'].includes(f.name)).map(field => {
+                         const value = report.reportData[field.name];
+                         if (value === undefined || value === null || value === '') return null;
+                         return (
                             <div key={field.id} className="text-sm">
-                                <p className="font-semibold">{field.label}</p>
-                                {field.type === 'checkbox' ? (
-                                    <div className="flex items-center gap-2">
-                                        {value ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
-                                        <span>{value ? 'Sí' : 'No'}</span>
-                                    </div>
-                                ) : (
-                                    <p className="text-gray-700 whitespace-pre-wrap">{String(value)}</p>
-                                )}
+                                <p className="font-bold text-base mb-1">{field.label}:</p>
+                                <p className="text-gray-700 whitespace-pre-wrap pl-1">{String(value)}</p>
                             </div>
-                        )
+                         )
                     })}
-                </CardContent>
-            </Card>
-
-            <div className="mt-8 grid grid-cols-2 gap-8 text-sm">
-                {paymentStatusFields.length > 0 && (
-                    <div className="space-y-1">
-                        <p className="font-semibold">Estado de Pago:</p>
-                        <div className="flex flex-col gap-1">
-                            {paymentStatusFields.map(field => (
+                    <Separator className="my-4 bg-black"/>
+                    {mainFields.filter(f => !['requirement', 'solution', 'technician_signature', 'service_date', 'client_name_signature'].includes(f.name)).map(field => {
+                         const value = report.reportData[field.name];
+                         if (value === undefined || value === null || value === '') return null;
+                         return (
+                            <div key={field.id} className="text-sm">
+                                <p className="font-semibold">{field.label}:</p>
+                                <p className="text-gray-700 whitespace-pre-wrap">{String(value)}</p>
+                            </div>
+                         )
+                    })}
+                     {checkboxFields.length > 0 && (
+                        <div className="space-y-2 pt-2">
+                             {checkboxFields.map(field => (
                                 <div key={field.id} className="flex items-center gap-2">
-                                    {report.reportData[field.name] ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
-                                    <span>{field.label}</span>
+                                    {report.reportData[field.name] ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4" />}
+                                    <span className="font-semibold">{field.label}</span>
                                 </div>
                             ))}
                         </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            <div className="mt-6 grid grid-cols-2 gap-8 text-sm">
+                <div className="space-y-1">
+                    <p className="font-semibold text-base">Estado de Pago:</p>
+                    <div className="flex flex-col gap-1">
+                        {paymentStatusFields.length > 0 ? paymentStatusFields.map(field => (
+                            <div key={field.id} className="flex items-center gap-2">
+                                {report.reportData[field.name] ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4" />}
+                                <span>{field.label}</span>
+                            </div>
+                        )) : <p>No definido.</p>}
                     </div>
-                )}
-                 <div className="space-y-1">
-                    <p className="font-semibold">Valor Servicio (Neto):</p>
-                    <p>${new Intl.NumberFormat('es-CL').format(report.otDetails.netPrice || 0)}</p>
+                </div>
+                 <div className="space-y-1 text-right">
+                    <p className="font-semibold text-base">Valor Servicio (Neto):</p>
+                    <p className="text-lg font-bold">${new Intl.NumberFormat('es-CL').format(report.otDetails.netPrice || 0)}</p>
                 </div>
             </div>
 
-            <footer className="mt-16 pt-8 border-t-2 border-dashed">
+            <footer className="mt-16 pt-6 border-t-2 border-dashed border-gray-400">
                 <div className="grid grid-cols-2 gap-8 text-sm">
                     <div className="flex flex-col justify-between">
                          <div>
-                            <p className="mb-12">..................................................................</p>
-                            <p><strong>Firma Cliente:</strong> {report.reportData.client_name_signature || 'N/A'}</p>
+                            <p className="mb-12 border-b border-black w-full"></p>
+                            <p><strong>Firma Cliente</strong></p>
+                            <p>{report.reportData.client_name_signature || 'N/A'}</p>
                         </div>
-                        <p><strong>Fecha de Emisión:</strong> {submittedDate}</p>
                     </div>
-                    <div className="flex flex-col justify-between">
+                    <div className="flex flex-col justify-between text-right">
                         <div>
-                            <p className="mb-12">..................................................................</p>
-                            <p><strong>Firma Técnico:</strong> {report.reportData.technician_signature || 'N/A'}</p>
+                           <p className="mb-12 border-b border-black w-full"></p>
+                           <p><strong>Firma Técnico</strong></p>
+                           <p>{report.reportData.technician_signature || 'N/A'}</p>
                         </div>
                     </div>
                 </div>
+                 <p className="text-center text-xs text-gray-500 mt-8">Fecha de Emisión del Informe: {submittedDate}</p>
             </footer>
         </div>
     );
@@ -149,13 +167,17 @@ function PrintReportContent({ report, template }: { report: SubmittedReport; tem
 
 export default function PrintReportPage() {
     const params = useParams();
-    const reportId = params.id as string;
+    const reportId = params ? params.id as string : '';
     const [data, setData] = React.useState<{ report: SubmittedReport; template: ReportTemplate } | null>(null);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     
     React.useEffect(() => {
-        if (!reportId) return;
+        if (!reportId) {
+            setError('ID de informe no válido.');
+            setLoading(false);
+            return;
+        };
 
         async function fetchReport() {
             try {
@@ -166,6 +188,7 @@ export default function PrintReportPage() {
                     setError('No se pudo encontrar el informe o su plantilla asociada.');
                 }
             } catch (err) {
+                console.error(err);
                 setError('Ocurrió un error al cargar los datos del informe.');
             } finally {
                 setLoading(false);
