@@ -13,7 +13,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { ReportTemplate } from '@/lib/types';
 import Link from 'next/link';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { FileWarning, CheckCircle2, Printer, File, User, Building } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -48,8 +47,8 @@ export default function NewReportPage() {
         if(template.fields.some(f => f.name === 'service_date')) {
             initialFormData['service_date'] = new Date().toISOString().split('T')[0];
         }
-        if(template.fields.some(f => f.name === 'reported_fault')) {
-            initialFormData['reported_fault'] = workOrder.description;
+        if(template.fields.some(f => f.name === 'requirement')) {
+            initialFormData['requirement'] = workOrder.description;
         }
     }
     setFormData(initialFormData); 
@@ -214,7 +213,12 @@ export default function NewReportPage() {
                     <CardDescription>{selectedTemplate.description}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    {selectedTemplate.fields.sort((a,b) => (a.id > b.id ? 1 : -1)).map(field => (
+                    {selectedTemplate.fields.sort((a,b) => (a.id > b.id ? 1 : -1)).map(field => {
+                        const isCheckboxGroup = ['valor_pendiente', 'valor_cancelado', 'en_garantia', 'cargo_automatico'].includes(field.name);
+
+                        if (isCheckboxGroup) return null; // We render these separately
+
+                        return (
                         <div key={field.id}>
                             <Label htmlFor={field.name}>
                                 {field.label} {field.required && <span className="text-destructive">*</span>}
@@ -258,8 +262,26 @@ export default function NewReportPage() {
                                 </Select>
                             )}
                         </div>
-                    ))}
-                    <div className="flex justify-end gap-2">
+                    )})}
+                    
+                    <Separator />
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {selectedTemplate.fields.filter(f => ['valor_pendiente', 'valor_cancelado', 'en_garantia', 'cargo_automatico'].includes(f.name)).map(field => (
+                            <div key={field.id} className="flex items-center space-x-2">
+                                <Checkbox 
+                                    id={field.name} 
+                                    checked={!!formData[field.name]}
+                                    onCheckedChange={(checked) => handleInputChange(field.name, checked)}
+                                />
+                                <label htmlFor={field.name} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                    {field.label}
+                                </label>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-4">
                         <Button variant="outline" asChild><Link href="/reports">Cancelar</Link></Button>
                         <Button type="submit">Guardar y Enviar Informe</Button>
                     </div>
