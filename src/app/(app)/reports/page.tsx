@@ -20,16 +20,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 export default function ReportsPage() {
-  const { activeWorkOrders, otCategories } = useWorkOrders();
+  const { activeWorkOrders, otCategories, submittedReports } = useWorkOrders();
   const [search, setSearch] = React.useState('');
   const [activeTab, setActiveTab] = React.useState('todos');
 
   const filterOrders = (categoryPrefix: string | null) => {
     setActiveTab(categoryPrefix || 'todos');
   };
+  
+  const submittedOtIds = React.useMemo(() => new Set(submittedReports.map(r => r.workOrderId)), [submittedReports]);
 
   const filteredOrders = React.useMemo(() => {
-    let orders = activeWorkOrders;
+    let orders = activeWorkOrders.filter(order => !submittedOtIds.has(order.id));
+
     if (activeTab !== 'todos') {
         orders = orders.filter(order => order.ot_number.startsWith(activeTab));
     }
@@ -41,7 +44,7 @@ export default function ReportsPage() {
         );
     }
     return orders;
-  }, [activeWorkOrders, activeTab, search]);
+  }, [activeWorkOrders, activeTab, search, submittedOtIds]);
   
   const categories = [
     { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
@@ -115,7 +118,7 @@ export default function ReportsPage() {
                         ) : (
                           <TableRow>
                             <TableCell colSpan={4} className="h-24 text-center">
-                              No hay órdenes de trabajo activas que coincidan con tu búsqueda.
+                              No hay órdenes de trabajo pendientes de informe que coincidan con tu búsqueda.
                             </TableCell>
                           </TableRow>
                         )}
