@@ -142,7 +142,7 @@ function PrintReportContent({ report, template }: { report: SubmittedReport; tem
             </div>
 
             <footer className="mt-16 pt-6 border-t-2 border-dashed border-gray-400">
-                <div className="grid grid-cols-2 gap-8 text-sm">
+                <div className="grid grid-cols-2 gap-8 text-center text-sm">
                     <div className="flex flex-col justify-between">
                          <div>
                             <p className="mb-12 border-b border-black w-full"></p>
@@ -150,7 +150,7 @@ function PrintReportContent({ report, template }: { report: SubmittedReport; tem
                             <p>{report.reportData.client_name_signature || 'N/A'}</p>
                         </div>
                     </div>
-                    <div className="flex flex-col justify-between text-right">
+                    <div className="flex flex-col justify-between">
                         <div>
                            <p className="mb-12 border-b border-black w-full"></p>
                            <p><strong>Firma Técnico</strong></p>
