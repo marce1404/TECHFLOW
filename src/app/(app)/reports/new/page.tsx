@@ -14,13 +14,15 @@ import { Checkbox } from '@/components/ui/checkbox';
 import type { ReportTemplate } from '@/lib/types';
 import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { FileWarning, CheckCircle2 } from 'lucide-react';
+import { FileWarning, CheckCircle2, Printer, File, User, Building } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 
 export default function NewReportPage() {
   const searchParams = useSearchParams();
   const otNumber = searchParams.get('ot_number');
   
-  const { activeWorkOrders, reportTemplates, collaborators } = useWorkOrders();
+  const { activeWorkOrders, reportTemplates, collaborators, getOrder } = useWorkOrders();
   
   const [selectedTemplate, setSelectedTemplate] = React.useState<ReportTemplate | null>(null);
   const [formData, setFormData] = React.useState<Record<string, any>>({});
@@ -28,8 +30,9 @@ export default function NewReportPage() {
 
 
   const workOrder = React.useMemo(() => {
-    return activeWorkOrders.find(o => o.ot_number === otNumber);
-  }, [activeWorkOrders, otNumber]);
+    if (!otNumber) return undefined;
+    return getOrder(activeWorkOrders.find(o => o.ot_number === otNumber)?.id || '');
+  }, [activeWorkOrders, otNumber, getOrder]);
 
   const technicians = React.useMemo(() => {
     return collaborators.filter(c => c.role === 'Técnico' && c.status === 'Activo');
@@ -38,7 +41,18 @@ export default function NewReportPage() {
   const handleTemplateChange = (templateId: string) => {
     const template = reportTemplates.find(t => t.id === templateId);
     setSelectedTemplate(template || null);
-    setFormData({}); // Reset form data when template changes
+    
+    // Pre-fill form data from work order when a template is selected
+    const initialFormData: Record<string, any> = {};
+    if (workOrder && template) {
+        if(template.fields.some(f => f.name === 'service_date')) {
+            initialFormData['service_date'] = new Date().toISOString().split('T')[0];
+        }
+        if(template.fields.some(f => f.name === 'reported_fault')) {
+            initialFormData['reported_fault'] = workOrder.description;
+        }
+    }
+    setFormData(initialFormData); 
   };
   
   const handleInputChange = (fieldName: string, value: any) => {
@@ -53,8 +67,19 @@ export default function NewReportPage() {
           workOrderId: workOrder?.id,
           templateId: selectedTemplate?.id,
           reportData: formData,
+          otDetails: {
+            ot_number: workOrder?.ot_number,
+            client: workOrder?.client,
+            description: workOrder?.description,
+            netPrice: workOrder?.netPrice,
+          }
       });
       setIsSubmitted(true);
+  }
+  
+  const handlePrint = () => {
+    // This will be implemented in a future step.
+    alert("La funcionalidad de impresión se habilitará próximamente.");
   }
 
   const serviceGuides = reportTemplates.filter(t => t.type === 'service-guide');
@@ -71,9 +96,13 @@ export default function NewReportPage() {
                         El informe para la OT <span className="font-bold">{workOrder?.ot_number}</span> ha sido guardado correctamente.
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="flex justify-center">
+                <CardContent className="flex justify-center gap-2">
                      <Button asChild>
-                        <Link href="/reports">Volver a la lista</Link>
+                        <Link href="/reports">Crear Otro Informe</Link>
+                    </Button>
+                    <Button variant="outline" onClick={handlePrint}>
+                        <Printer className="mr-2 h-4 w-4"/>
+                        Imprimir
                     </Button>
                 </CardContent>
             </Card>
@@ -104,48 +133,78 @@ export default function NewReportPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <Card>
-        <CardHeader>
-          <CardTitle>Completar Informe para OT: {workOrder.ot_number}</CardTitle>
-          <CardDescription>
-            {workOrder.description} - {workOrder.client}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="template-select">Seleccionar Plantilla</Label>
-              <Select onValueChange={handleTemplateChange}>
-                <SelectTrigger id="template-select">
-                  <SelectValue placeholder="Elige el formato a completar..." />
-                </SelectTrigger>
-                <SelectContent>
-                    {serviceGuides.length > 0 && (
-                        <SelectGroup>
-                            <SelectLabel>Guías de Servicio</SelectLabel>
-                            {serviceGuides.map(template => (
-                                <SelectItem key={template.id} value={template.id}>
-                                {template.name}
-                                </SelectItem>
-                            ))}
-                        </SelectGroup>
-                    )}
-                    {projectDeliveries.length > 0 && (
-                         <SelectGroup>
-                            <SelectLabel>Entrega de Proyectos</SelectLabel>
-                            {projectDeliveries.map(template => (
-                                <SelectItem key={template.id} value={template.id}>
-                                {template.name}
-                                </SelectItem>
-                            ))}
-                        </SelectGroup>
-                    )}
-                </SelectContent>
-              </Select>
+      <div className="grid md:grid-cols-3 gap-6">
+        <Card className="md:col-span-1">
+            <CardHeader>
+                <CardTitle>Información de OT</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm">
+                <div className="flex items-center gap-2">
+                    <File className="h-4 w-4 text-muted-foreground"/>
+                    <span className="font-semibold">{workOrder.ot_number}</span>
+                </div>
+                 <div className="flex items-start gap-2">
+                    <Building className="h-4 w-4 text-muted-foreground mt-1"/>
+                    <div className="flex flex-col">
+                        <span className="font-semibold">{workOrder.client}</span>
+                        <span className="text-muted-foreground">{workOrder.description}</span>
+                    </div>
+                </div>
+                 <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground"/>
+                    <span className="font-semibold">{workOrder.vendedor}</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between items-center">
+                    <span className="font-semibold">Valor del Servicio (Neto)</span>
+                    <Badge variant="secondary">${new Intl.NumberFormat('es-CL').format(workOrder.netPrice)}</Badge>
+                </div>
+            </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2">
+            <CardHeader>
+            <CardTitle>Seleccionar Plantilla</CardTitle>
+            <CardDescription>
+                Elige el formato de informe que deseas completar para la OT seleccionada.
+            </CardDescription>
+            </CardHeader>
+            <CardContent>
+            <div className="space-y-4">
+                <div>
+                <Label htmlFor="template-select">Seleccionar Plantilla</Label>
+                <Select onValueChange={handleTemplateChange}>
+                    <SelectTrigger id="template-select">
+                    <SelectValue placeholder="Elige el formato a completar..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {serviceGuides.length > 0 && (
+                            <SelectGroup>
+                                <SelectLabel>Guías de Servicio</SelectLabel>
+                                {serviceGuides.map(template => (
+                                    <SelectItem key={template.id} value={template.id}>
+                                    {template.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectGroup>
+                        )}
+                        {projectDeliveries.length > 0 && (
+                            <SelectGroup>
+                                <SelectLabel>Entrega de Proyectos</SelectLabel>
+                                {projectDeliveries.map(template => (
+                                    <SelectItem key={template.id} value={template.id}>
+                                    {template.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectGroup>
+                        )}
+                    </SelectContent>
+                </Select>
+                </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+        </Card>
+      </div>
       
       {selectedTemplate && (
         <form onSubmit={handleSubmit}>
@@ -155,7 +214,7 @@ export default function NewReportPage() {
                     <CardDescription>{selectedTemplate.description}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    {selectedTemplate.fields.sort((a,b) => (a.name > b.name ? 1 : -1)).map(field => (
+                    {selectedTemplate.fields.sort((a,b) => (a.id > b.id ? 1 : -1)).map(field => (
                         <div key={field.id}>
                             <Label htmlFor={field.name}>
                                 {field.label} {field.required && <span className="text-destructive">*</span>}

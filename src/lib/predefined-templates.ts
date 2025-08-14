@@ -7,22 +7,23 @@ export const predefinedReportTemplates: Omit<ReportTemplate, 'id'>[] = [
     description: 'Formato estándar para registrar la atención técnica realizada a un cliente.',
     type: 'service-guide',
     fields: [
-      { id: 'field_1', name: 'authorized_by', label: 'Autoriza Sr(a)', type: 'text', required: false },
-      { id: 'field_2', name: 'central_type', label: 'Tipo de central', type: 'text', required: false },
-      { id: 'field_3', name: 'start_date', label: 'Fecha de inicio', type: 'date', required: true },
-      { id: 'field_4', name: 'end_date', label: 'Fecha de término', type: 'date', required: false },
-      { id: 'field_5', name: 'requirement', label: 'Requerimiento', type: 'textarea', required: true },
-      { id: 'field_6', name: 'solution', label: 'Solución', type: 'textarea', required: true },
-      { id: 'field_7', name: 'technical_visit_cost', label: 'Valor visita técnica', type: 'number', required: false },
-      { id: 'field_8', name: 'equipment_cost', label: 'Valor equipos', type: 'number', required: false },
-      { id: 'field_9', name: 'total_cost', label: 'Total', type: 'number', required: false },
-      { id: 'field_10', name: 'pending_payment', label: 'Valor pendiente', type: 'checkbox', required: false },
-      { id: 'field_11', name: 'paid', label: 'Valor cancelado', type: 'checkbox', required: false },
-      { id: 'field_12', name: 'warranty', label: 'En garantía', type: 'checkbox', required: false },
-      { id: 'field_13', name: 'automatic_charge', label: 'Cargo Automático', type: 'checkbox', required: false },
-      { id: 'field_14', name: 'invoice_number', label: 'Factura N°', type: 'text', required: false },
-      { id: 'field_15', name: 'client_signature', label: 'Firma Cliente', type: 'text', required: false },
-      { id: 'field_16', name: 'tech_signature', label: 'Firma Técnico', type: 'select', required: false, options: 'technicians' },
+      // Section: Diagnóstico y Trabajo Realizado
+      { id: 'field_1', name: 'service_date', label: 'Fecha de Servicio', type: 'date', required: true },
+      { id: 'field_2', name: 'equipment_details', label: 'Equipo/Sistema Intervenido', type: 'text', required: false },
+      { id: 'field_3', name: 'reported_fault', label: 'Falla Reportada por Cliente', type: 'textarea', required: true },
+      { id: 'field_4', name: 'tech_diagnosis', label: 'Diagnóstico del Técnico', type: 'textarea', required: true },
+      { id: 'field_5', name: 'work_done', label: 'Trabajo Realizado', type: 'textarea', required: true },
+      { id: 'field_6', name: 'materials_used', label: 'Materiales y Repuestos Utilizados', type: 'textarea', required: false },
+      { id: 'field_7', name: 'tech_recommendations', label: 'Recomendaciones y Observaciones', type: 'textarea', required: false },
+      { id: 'field_8', name: 'system_operative', label: '¿Sistema queda operativo?', type: 'checkbox', required: false },
+      
+      // Section: Conformidad del Cliente
+      { id: 'field_9', name: 'client_conformity', label: 'Cliente Conforme con el Servicio', type: 'checkbox', required: false },
+      { id: 'field_10', name: 'client_observations', label: 'Observaciones del Cliente', type: 'textarea', required: false },
+      { id: 'field_11', name: 'client_name_signature', label: 'Nombre de quien recibe', type: 'text', required: true },
+
+      // Section: Técnico
+      { id: 'field_12', name: 'technician_signature', label: 'Técnico Responsable', type: 'select', required: true, options: 'technicians' },
     ],
   },
 ];
