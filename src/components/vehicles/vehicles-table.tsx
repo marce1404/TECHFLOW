@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, ArrowUpDown } from 'lucide-react';
+import { MoreHorizontal, ArrowUpDown, History } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -84,6 +84,7 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
                                 </Button>
                             </TableHead>
                         ))}
+                        <TableHead>Historial</TableHead>
                         <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -113,6 +114,14 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
                                 </DropdownMenu>
                             </TableCell>
                             <TableCell>{vehicle.assignedTo || 'N/A'}</TableCell>
+                            <TableCell>
+                                <Button variant="outline" size="icon" asChild>
+                                    <Link href={`/vehicles/${vehicle.id}/edit`}>
+                                        <History className="h-4 w-4" />
+                                        <span className="sr-only">Ver Historial</span>
+                                    </Link>
+                                </Button>
+                            </TableCell>
                             <TableCell className="text-right">
                                 <AlertDialog>
                                     <DropdownMenu>
@@ -156,7 +165,7 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
                         </TableRow>
                     )}) : (
                          <TableRow>
-                            <TableCell colSpan={5} className="h-24 text-center">
+                            <TableCell colSpan={6} className="h-24 text-center">
                                 No hay resultados.
                             </TableCell>
                         </TableRow>
