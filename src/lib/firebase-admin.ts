@@ -1,23 +1,27 @@
 
 'use server';
 import * as admin from 'firebase-admin';
+import type { App } from 'firebase-admin/app';
+
+let app: App;
 
 if (!admin.apps.length) {
     try {
         const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
             ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
             : undefined;
-
-        admin.initializeApp({
+        
+        app = admin.initializeApp({
             credential: serviceAccount
                 ? admin.credential.cert(serviceAccount)
                 : admin.credential.applicationDefault(),
         });
     } catch (error: any) {
-        console.error('Failed to initialize Firebase Admin SDK:', error.message);
-        // We can throw the error to make it more visible during development
+        console.error('Failed to initialize Firebase Admin SDK:', error);
         throw new Error('Failed to initialize Firebase Admin SDK: ' + error.message);
     }
+} else {
+    app = admin.app();
 }
 
 export const adminDb = admin.firestore();
