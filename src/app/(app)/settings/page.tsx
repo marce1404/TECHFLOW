@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { ArrowRight, Info, FileText, Building } from 'lucide-react';
+import { ArrowRight, Info, FileText, Building, Users } from 'lucide-react';
 import packageJson from '@/../package.json';
 
 export default function SettingsPage() {
@@ -10,6 +10,12 @@ export default function SettingsPage() {
             description: 'Gestiona el nombre, eslogan y dirección de tu empresa.',
             href: '/settings/company-details',
             icon: Building,
+        },
+        {
+            title: 'Usuarios y Permisos',
+            description: 'Gestiona los usuarios que pueden acceder al sistema y sus roles.',
+            href: '/settings/users',
+            icon: Users,
         },
         {
             title: 'Categorías de OT',

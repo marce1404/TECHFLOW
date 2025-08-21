@@ -10,6 +10,14 @@ export type StatCardData = {
   description?: string;
 };
 
+export type AppUser = {
+  uid: string;
+  email: string;
+  displayName: string;
+  role: 'Admin' | 'Supervisor' | 'Técnico' | 'Visor';
+  status: 'Activo' | 'Inactivo';
+};
+
 export type WorkOrder = {
   id: string;
   ot_number: string;
