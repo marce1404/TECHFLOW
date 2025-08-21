@@ -20,8 +20,9 @@ export async function initializeAdminApp() {
             console.error('Failed to initialize Firebase Admin SDK:', error);
             throw new Error('Failed to initialize Firebase Admin SDK: ' + error.message);
         }
+    } else {
+        app = admin.app();
     }
-    return app || admin.app();
 }
 
 export const adminDb = () => admin.firestore();
