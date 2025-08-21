@@ -68,8 +68,6 @@ export async function getGanttForPrint(id: string): Promise<GanttChart | null> {
   }
 }
 
-// This action no longer creates the user in Auth, only in Firestore.
-// The Auth user is created on the client-side first.
 export async function createUserProfileAction(user: AppUser): Promise<{success: boolean, message: string}> {
   try {
       await initializeAdminApp();
@@ -82,7 +80,10 @@ export async function createUserProfileAction(user: AppUser): Promise<{success: 
       };
     } catch (error: any) {
       console.error('Error creating user profile:', error);
-      let errorMessage = error.message || 'An unknown error occurred.';
+      let errorMessage = 'Ocurrió un error desconocido.';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
       return {
         success: false,
         message: `Error al crear el perfil de usuario: ${errorMessage}`,
@@ -96,11 +97,9 @@ export async function updateUserAction(input: UpdateUserInput): Promise<UpdateUs
         await initializeAdminApp();
         const { uid, name, role } = input;
         
-        // We can't update the user's name via the admin SDK without triggering a full re-auth
-        // For simplicity, we will only update the role here. The name change will be handled client-side if needed.
         const userRef = adminDb().collection('users').doc(uid);
         await userRef.update({
-            displayName: name, // Let's keep updating the name in Firestore
+            displayName: name,
             role: role,
         });
         
@@ -110,7 +109,7 @@ export async function updateUserAction(input: UpdateUserInput): Promise<UpdateUs
         };
     } catch (error: any) {
         let errorMessage = 'An unknown error occurred.';
-        if (error.message) {
+        if (error instanceof Error) {
             errorMessage = error.message;
         }
         console.error("Error updating user:", error);

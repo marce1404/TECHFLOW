@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { createUserProfileAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -57,12 +57,12 @@ export function UserInviteForm() {
   const onSubmit = async (data: InviteFormValues) => {
     setLoading(true);
     try {
-      // Step 1: Create user with Firebase Auth (Client-side)
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       const user = userCredential.user;
 
       if (user) {
-        // Step 2: Create user profile in Firestore via Server Action
+        await updateProfile(user, { displayName: data.name });
+
         const userProfile: AppUser = {
           uid: user.uid,
           email: data.email,
@@ -79,10 +79,8 @@ export function UserInviteForm() {
                 description: `El usuario ${data.name} ha sido creado y su perfil guardado.`,
             });
             form.reset();
-            await fetchUsers(); // Refresh the users list
+            await fetchUsers();
         } else {
-            // This is a tricky state: Auth user exists but profile failed.
-            // For now, we'll just show the error. A more robust solution might delete the auth user.
             toast({
                 variant: 'destructive',
                 title: 'Error al Crear Perfil',

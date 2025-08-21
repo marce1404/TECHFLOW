@@ -25,5 +25,5 @@ export async function initializeAdminApp() {
     return app || admin.app();
 }
 
-export const adminDb = admin.firestore;
-export const adminAuth = admin.auth;
+export const adminDb = () => admin.firestore();
+export const adminAuth = () => admin.auth();
