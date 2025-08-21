@@ -12,13 +12,13 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { getAuth } from 'firebase-admin/auth';
 import { adminApp, adminDb } from '@/lib/firebase-admin';
-import { generatePassword } from '@/lib/password-generator';
 import type { AppUser } from '@/lib/types';
 
 export const InviteUserInputSchema = z.object({
   email: z.string().email().describe('The email of the user to invite.'),
   name: z.string().min(3).describe("The full name of the user."),
   role: z.enum(['Admin', 'Supervisor', 'Técnico', 'Visor']).describe('The role to assign to the new user.'),
+  password: z.string().min(6).describe("The user's initial password."),
 });
 
 export type InviteUserInput = z.infer<typeof InviteUserInputSchema>;
@@ -26,7 +26,6 @@ export type InviteUserInput = z.infer<typeof InviteUserInputSchema>;
 export const InviteUserOutputSchema = z.object({
   success: z.boolean(),
   message: z.string(),
-  tempPassword: z.string().optional(),
 });
 
 export type InviteUserOutput = z.infer<typeof InviteUserOutputSchema>;
@@ -37,17 +36,15 @@ export const inviteUserFlow = ai.defineFlow(
     inputSchema: InviteUserInputSchema,
     outputSchema: InviteUserOutputSchema,
   },
-  async ({ email, name, role }) => {
+  async ({ email, name, role, password }) => {
     try {
       const auth = getAuth(adminApp);
-      
-      const tempPassword = generatePassword();
       
       // 1. Create user in Firebase Authentication
       const userRecord = await auth.createUser({
         email: email,
-        emailVerified: true, // Assuming admin-created users are verified
-        password: tempPassword,
+        emailVerified: true, 
+        password: password,
         displayName: name,
         disabled: false,
       });
@@ -66,7 +63,6 @@ export const inviteUserFlow = ai.defineFlow(
       return {
         success: true,
         message: `Usuario ${name} creado con éxito.`,
-        tempPassword: tempPassword,
       };
     } catch (error: any) {
       let errorMessage = 'An unknown error occurred.';

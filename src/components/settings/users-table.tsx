@@ -79,7 +79,7 @@ export default function UsersTable() {
     return (
         <div className="rounded-md border">
             <Table>
-                <TableHeader className="bg-muted/50">
+                <TableHeader>
                     <TableRow>
                        <TableHead>Nombre</TableHead>
                        <TableHead>Rol</TableHead>

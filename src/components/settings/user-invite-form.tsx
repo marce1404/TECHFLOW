@@ -21,12 +21,11 @@ import { Loader2, UserPlus } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import type { AppUser } from '@/lib/types';
-import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
-import { Terminal } from 'lucide-react';
 
 const inviteFormSchema = z.object({
   name: z.string().min(3, { message: 'El nombre debe tener al menos 3 caracteres.' }),
   email: z.string().email({ message: 'Por favor, introduce un correo válido.' }),
+  password: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres.' }),
   role: z.enum(['Admin', 'Supervisor', 'Técnico', 'Visor'], { required_error: 'Debe seleccionar un rol.'}),
 });
 
@@ -35,7 +34,6 @@ type InviteFormValues = z.infer<typeof inviteFormSchema>;
 export function UserInviteForm() {
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
-  const [lastPassword, setLastPassword] = React.useState<string | null>(null);
   const { fetchUsers } = useAuth();
 
   const form = useForm<InviteFormValues>({
@@ -43,22 +41,19 @@ export function UserInviteForm() {
     defaultValues: {
       name: '',
       email: '',
+      password: '',
       role: 'Visor',
     },
   });
 
   const onSubmit = async (data: InviteFormValues) => {
     setLoading(true);
-    setLastPassword(null);
     const result = await inviteUserAction(data);
     if (result.success) {
       toast({
         title: 'Usuario Creado',
         description: result.message,
       });
-      if (result.tempPassword) {
-        setLastPassword(result.tempPassword);
-      }
       form.reset();
       await fetchUsers();
     } else {
@@ -78,13 +73,13 @@ export function UserInviteForm() {
       <CardHeader>
         <CardTitle>Crear Nuevo Usuario</CardTitle>
         <CardDescription>
-          Completa los datos para crear un nuevo acceso al sistema. Se generará una contraseña temporal.
+          Completa los datos para crear un nuevo acceso al sistema.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                 control={form.control}
                 name="name"
@@ -106,6 +101,19 @@ export function UserInviteForm() {
                     <FormLabel>Correo Electrónico</FormLabel>
                     <FormControl>
                         <Input type="email" placeholder="ejemplo@correo.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Contraseña</FormLabel>
+                    <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -134,16 +142,6 @@ export function UserInviteForm() {
                     )}
                 />
             </div>
-            
-            {lastPassword && (
-                <Alert>
-                    <Terminal className="h-4 w-4" />
-                    <AlertTitle>¡Usuario Creado!</AlertTitle>
-                    <AlertDescription>
-                        Copia y comparte esta contraseña temporal con el nuevo usuario: <strong className="font-mono">{lastPassword}</strong>
-                    </AlertDescription>
-                </Alert>
-            )}
 
             <div className="flex justify-end">
                 <Button type="submit" disabled={loading}>
