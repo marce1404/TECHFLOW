@@ -15,11 +15,9 @@ if (!admin.apps.length) {
         });
     } catch (error: any) {
         console.error('Failed to initialize Firebase Admin SDK:', error.message);
-        // We can choose to throw the error or handle it gracefully.
-        // For now, logging should make the issue clear if credentials are the problem.
     }
 }
 
 
-export const adminApp = admin.apps[0]!;
 export const adminDb = admin.firestore();
+export const adminAuth = admin.auth();

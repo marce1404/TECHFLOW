@@ -7,8 +7,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { getAuth } from 'firebase-admin/auth';
-import { adminApp, adminDb } from '@/lib/firebase-admin';
+import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { UpdateUserInputSchema, UpdateUserOutputSchema, type UpdateUserInput, type UpdateUserOutput } from '@/lib/types';
 
 
@@ -20,10 +19,8 @@ export const updateUserFlow = ai.defineFlow(
   },
   async ({ uid, name, role }) => {
     try {
-      const auth = getAuth(adminApp);
-      
       // 1. Update user in Firebase Authentication
-      await auth.updateUser(uid, {
+      await adminAuth.updateUser(uid, {
         displayName: name,
       });
 

@@ -10,8 +10,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { getAuth } from 'firebase-admin/auth';
-import { adminApp, adminDb } from '@/lib/firebase-admin';
+import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import type { AppUser } from '@/lib/types';
 
 export const InviteUserInputSchema = z.object({
@@ -38,10 +37,8 @@ export const inviteUserFlow = ai.defineFlow(
   },
   async ({ email, name, role, password }) => {
     try {
-      const auth = getAuth(adminApp);
-      
       // 1. Create user in Firebase Authentication
-      const userRecord = await auth.createUser({
+      const userRecord = await adminAuth.createUser({
         email: email,
         emailVerified: true, 
         password: password,
