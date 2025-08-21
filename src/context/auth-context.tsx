@@ -5,7 +5,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import type { AppUser } from '@/lib/types';
 
 
@@ -13,6 +13,8 @@ interface AuthContextType {
   user: User | null;
   userProfile: AppUser | null;
   loading: boolean;
+  users: AppUser[];
+  fetchUsers: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,25 +23,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<AppUser[]>([]);
+
+  const fetchUsers = async () => {
+    // This will be implemented later
+  }
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (user) {
-        // User is signed in, see docs for a list of available properties
-        // https://firebase.google.com/docs/reference/js/firebase.User
         const userDocRef = doc(db, 'users', user.uid);
         const userDocSnap = await getDoc(userDocRef);
+        
         if (userDocSnap.exists()) {
           setUserProfile(userDocSnap.data() as AppUser);
         } else {
-          // TODO: Handle case where user exists in Auth but not in Firestore
-          // This could be a new user, or an error condition.
-          // For now, we'll set profile to null.
-          setUserProfile(null);
+          // If the user is authenticated but doesn't have a profile in Firestore,
+          // create a default one. This might happen for the first-ever user.
+          const newProfile: AppUser = {
+            uid: user.uid,
+            email: user.email!,
+            displayName: user.displayName || user.email!.split('@')[0],
+            role: 'Admin', // First user is an Admin
+            status: 'Activo',
+          };
+          await setDoc(userDocRef, newProfile);
+          setUserProfile(newProfile);
         }
       } else {
-        // User is signed out
         setUserProfile(null);
       }
       setLoading(false);
@@ -78,7 +90,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading }}>
+    <AuthContext.Provider value={{ user, userProfile, loading, users, fetchUsers }}>
       {children}
     </AuthContext.Provider>
   );

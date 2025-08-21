@@ -2,12 +2,14 @@
 'use server';
 
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
+import { inviteUser } from '@/ai/flows/invite-user-flow';
 import { db } from '@/lib/firebase';
 import type { 
   CollaboratorPrintData, 
   GanttChart,
   SuggestOptimalResourceAssignmentInput, 
-  SuggestOptimalResourceAssignmentOutputWithError 
+  SuggestOptimalResourceAssignmentOutputWithError,
+  InviteUserOutput
 } from '@/lib/types';
 import { doc, getDoc } from 'firebase/firestore';
 import { Timestamp } from 'firebase/firestore';
@@ -61,5 +63,15 @@ export async function getGanttForPrint(id: string): Promise<GanttChart | null> {
   } catch (error) {
     console.error("Error getting document:", error);
     return null;
+  }
+}
+
+export async function inviteUserAction(email: string, name: string): Promise<InviteUserOutput> {
+  try {
+    const result = await inviteUser({ email, name });
+    return result;
+  } catch (error: any) {
+    console.error('Error inviting user:', error);
+    return { success: false, message: error.message || 'An unexpected error occurred.' };
   }
 }
