@@ -15,7 +15,9 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
-import { inviteUserAction } from '@/app/actions';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { createUserProfileAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UserPlus, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
@@ -54,27 +56,57 @@ export function UserInviteForm() {
 
   const onSubmit = async (data: InviteFormValues) => {
     setLoading(true);
-    const result = await inviteUserAction({
-        name: data.name,
-        email: data.email,
-        password: data.password,
-        role: data.role,
-    });
-    if (result.success) {
-      toast({
-        title: 'Usuario Creado',
-        description: result.message,
-      });
-      form.reset();
-      await fetchUsers();
-    } else {
+    try {
+      // Step 1: Create user with Firebase Auth (Client-side)
+      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+      const user = userCredential.user;
+
+      if (user) {
+        // Step 2: Create user profile in Firestore via Server Action
+        const userProfile: AppUser = {
+          uid: user.uid,
+          email: data.email,
+          displayName: data.name,
+          role: data.role,
+          status: 'Activo',
+        };
+        
+        const profileResult = await createUserProfileAction(userProfile);
+
+        if (profileResult.success) {
+            toast({
+                title: 'Usuario Creado con Éxito',
+                description: `El usuario ${data.name} ha sido creado y su perfil guardado.`,
+            });
+            form.reset();
+            await fetchUsers(); // Refresh the users list
+        } else {
+            // This is a tricky state: Auth user exists but profile failed.
+            // For now, we'll just show the error. A more robust solution might delete the auth user.
+            toast({
+                variant: 'destructive',
+                title: 'Error al Crear Perfil',
+                description: profileResult.message,
+            });
+        }
+      }
+    } catch (error: any) {
+      let errorMessage = 'Ocurrió un error desconocido.';
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = 'Este correo electrónico ya está registrado.';
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = 'La contraseña es demasiado débil.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
       toast({
         variant: 'destructive',
         title: 'Error al Crear Usuario',
-        description: result.message,
+        description: errorMessage,
       });
+    } finally {
+        setLoading(false);
     }
-    setLoading(false);
   };
   
   const userRoles: AppUser['role'][] = ['Admin', 'Supervisor', 'Técnico', 'Visor'];

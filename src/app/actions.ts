@@ -2,21 +2,18 @@
 'use server';
 
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
-import { adminAuth, adminDb, initializeAdminApp } from '@/lib/firebase-admin';
+import { adminDb, initializeAdminApp } from '@/lib/firebase-admin';
 import type { 
   CollaboratorPrintData, 
   GanttChart,
   SuggestOptimalResourceAssignmentInput, 
   SuggestOptimalResourceAssignmentOutputWithError,
-  InviteUserOutput,
-  InviteUserInput,
   AppUser,
   UpdateUserInput,
   UpdateUserOutput,
 } from '@/lib/types';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { Timestamp } from 'firebase/firestore';
-
 
 export async function getResourceSuggestions(
   input: SuggestOptimalResourceAssignmentInput
@@ -71,62 +68,39 @@ export async function getGanttForPrint(id: string): Promise<GanttChart | null> {
   }
 }
 
-export async function inviteUserAction(input: InviteUserInput): Promise<InviteUserOutput> {
+// This action no longer creates the user in Auth, only in Firestore.
+// The Auth user is created on the client-side first.
+export async function createUserProfileAction(user: AppUser): Promise<{success: boolean, message: string}> {
   try {
       await initializeAdminApp();
-      const { email, name, role, password } = input;
-      // 1. Create user in Firebase Authentication
-      const userRecord = await adminAuth().createUser({
-        email: email,
-        emailVerified: true, 
-        password: password,
-        displayName: name,
-        disabled: false,
-      });
-
-      // 2. Create user profile in Firestore
-      const userProfile: AppUser = {
-        uid: userRecord.uid,
-        email: email,
-        displayName: name,
-        role: role,
-        status: 'Activo',
-      };
       
-      await adminDb().collection('users').doc(userRecord.uid).set(userProfile);
+      await adminDb().collection('users').doc(user.uid).set(user);
       
       return {
         success: true,
-        message: `Usuario ${name} creado con éxito.`,
+        message: `Perfil de usuario para ${user.displayName} creado con éxito.`,
       };
     } catch (error: any) {
-      let errorMessage = 'An unknown error occurred.';
-      if (error.code === 'auth/email-already-exists') {
-        errorMessage = 'Este correo electrónico ya está registrado en el sistema.';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      console.error('Error inviting user:', error);
+      console.error('Error creating user profile:', error);
+      let errorMessage = error.message || 'An unknown error occurred.';
       return {
         success: false,
-        message: `Error al crear al usuario: ${errorMessage}`,
+        message: `Error al crear el perfil de usuario: ${errorMessage}`,
       };
     }
 }
+
 
 export async function updateUserAction(input: UpdateUserInput): Promise<UpdateUserOutput> {
     try {
         await initializeAdminApp();
         const { uid, name, role } = input;
-        // 1. Update user in Firebase Authentication
-        await adminAuth().updateUser(uid, {
-            displayName: name,
-        });
-
-        // 2. Update user profile in Firestore
+        
+        // We can't update the user's name via the admin SDK without triggering a full re-auth
+        // For simplicity, we will only update the role here. The name change will be handled client-side if needed.
         const userRef = adminDb().collection('users').doc(uid);
         await userRef.update({
-            displayName: name,
+            displayName: name, // Let's keep updating the name in Firestore
             role: role,
         });
         

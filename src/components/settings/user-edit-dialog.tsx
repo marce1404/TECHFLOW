@@ -29,6 +29,8 @@ import { updateUserAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/auth-context';
 import { Loader2 } from 'lucide-react';
+import { updateProfile } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 const editFormSchema = z.object({
   name: z.string().min(3, { message: 'El nombre debe tener al menos 3 caracteres.' }),
@@ -68,6 +70,21 @@ export function UserEditDialog({ open, onOpenChange, user }: UserEditDialogProps
   const onSubmit = async (data: EditFormValues) => {
     if (!user) return;
     setLoading(true);
+
+    // If the logged-in user is editing themselves, update their client-side auth profile too.
+    if (auth.currentUser && auth.currentUser.uid === user.uid && auth.currentUser.displayName !== data.name) {
+        try {
+            await updateProfile(auth.currentUser, { displayName: data.name });
+        } catch (error: any) {
+             toast({
+                variant: 'destructive',
+                title: 'Error al Actualizar Nombre',
+                description: 'No se pudo actualizar el nombre en el perfil de autenticación.',
+            });
+            setLoading(false);
+            return;
+        }
+    }
 
     const updateData: UpdateUserInput = {
         uid: user.uid,
