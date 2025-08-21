@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { inviteUserAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserPlus } from 'lucide-react';
+import { Loader2, UserPlus, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import type { AppUser } from '@/lib/types';
@@ -26,7 +26,11 @@ const inviteFormSchema = z.object({
   name: z.string().min(3, { message: 'El nombre debe tener al menos 3 caracteres.' }),
   email: z.string().email({ message: 'Por favor, introduce un correo válido.' }),
   password: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres.' }),
+  confirmPassword: z.string().min(6, { message: 'La confirmación de contraseña debe tener al menos 6 caracteres.' }),
   role: z.enum(['Admin', 'Supervisor', 'Técnico', 'Visor'], { required_error: 'Debe seleccionar un rol.'}),
+}).refine(data => data.password === data.confirmPassword, {
+    message: "Las contraseñas no coinciden.",
+    path: ["confirmPassword"],
 });
 
 type InviteFormValues = z.infer<typeof inviteFormSchema>;
@@ -34,6 +38,7 @@ type InviteFormValues = z.infer<typeof inviteFormSchema>;
 export function UserInviteForm() {
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
+  const [showPassword, setShowPassword] = React.useState(false);
   const { fetchUsers } = useAuth();
 
   const form = useForm<InviteFormValues>({
@@ -42,13 +47,19 @@ export function UserInviteForm() {
       name: '',
       email: '',
       password: '',
+      confirmPassword: '',
       role: 'Visor',
     },
   });
 
   const onSubmit = async (data: InviteFormValues) => {
     setLoading(true);
-    const result = await inviteUserAction(data);
+    const result = await inviteUserAction({
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        role: data.role,
+    });
     if (result.success) {
       toast({
         title: 'Usuario Creado',
@@ -112,9 +123,32 @@ export function UserInviteForm() {
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Contraseña</FormLabel>
-                    <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
+                    <div className="relative">
+                        <FormControl>
+                            <Input type={showPassword ? 'text' : 'password'} placeholder="••••••••" {...field} />
+                        </FormControl>
+                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground">
+                            {showPassword ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
+                        </button>
+                    </div>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                 <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Confirmar Contraseña</FormLabel>
+                     <div className="relative">
+                        <FormControl>
+                            <Input type={showPassword ? 'text' : 'password'} placeholder="••••••••" {...field} />
+                        </FormControl>
+                         <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground">
+                            {showPassword ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
+                        </button>
+                    </div>
                     <FormMessage />
                     </FormItem>
                 )}
