@@ -2,7 +2,7 @@
 'use server';
 
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { adminAuth, adminDb, initializeAdminApp } from '@/lib/firebase-admin';
 import type { 
   CollaboratorPrintData, 
   GanttChart,
@@ -32,7 +32,8 @@ export async function getResourceSuggestions(
 
 export async function getCollaboratorForPrint(id: string): Promise<CollaboratorPrintData | null> {
   try {
-    const docRef = doc(adminDb, 'collaborators', id);
+    await initializeAdminApp();
+    const docRef = doc(adminDb(), 'collaborators', id);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
@@ -49,7 +50,8 @@ export async function getCollaboratorForPrint(id: string): Promise<CollaboratorP
 
 export async function getGanttForPrint(id: string): Promise<GanttChart | null> {
   try {
-    const docRef = doc(adminDb, 'gantt-charts', id);
+    await initializeAdminApp();
+    const docRef = doc(adminDb(), 'gantt-charts', id);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
@@ -71,9 +73,10 @@ export async function getGanttForPrint(id: string): Promise<GanttChart | null> {
 
 export async function inviteUserAction(input: InviteUserInput): Promise<InviteUserOutput> {
   try {
+      await initializeAdminApp();
       const { email, name, role, password } = input;
       // 1. Create user in Firebase Authentication
-      const userRecord = await adminAuth.createUser({
+      const userRecord = await adminAuth().createUser({
         email: email,
         emailVerified: true, 
         password: password,
@@ -90,7 +93,7 @@ export async function inviteUserAction(input: InviteUserInput): Promise<InviteUs
         status: 'Activo',
       };
       
-      await adminDb.collection('users').doc(userRecord.uid).set(userProfile);
+      await adminDb().collection('users').doc(userRecord.uid).set(userProfile);
       
       return {
         success: true,
@@ -113,14 +116,15 @@ export async function inviteUserAction(input: InviteUserInput): Promise<InviteUs
 
 export async function updateUserAction(input: UpdateUserInput): Promise<UpdateUserOutput> {
     try {
+        await initializeAdminApp();
         const { uid, name, role } = input;
         // 1. Update user in Firebase Authentication
-        await adminAuth.updateUser(uid, {
+        await adminAuth().updateUser(uid, {
             displayName: name,
         });
 
         // 2. Update user profile in Firestore
-        const userRef = adminDb.collection('users').doc(uid);
+        const userRef = adminDb().collection('users').doc(uid);
         await userRef.update({
             displayName: name,
             role: role,
@@ -145,7 +149,8 @@ export async function updateUserAction(input: UpdateUserInput): Promise<UpdateUs
 
 export async function updateUserRoleAction(uid: string, role: AppUser['role']): Promise<{success: boolean, message: string}> {
     try {
-        const userRef = adminDb.collection('users').doc(uid);
+        await initializeAdminApp();
+        const userRef = adminDb().collection('users').doc(uid);
         await userRef.update({ role });
         return { success: true, message: 'Rol de usuario actualizado correctamente.' };
     } catch (error: any) {
