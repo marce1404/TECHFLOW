@@ -2,11 +2,8 @@
 'use client';
 
 import * as React from 'react';
-import { Button } from "@/components/ui/button";
-import { PlusCircle, MoreHorizontal } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import UsersTable from '@/components/settings/users-table';
-import { useWorkOrders } from '@/context/work-orders-context';
 import { useAuth } from '@/context/auth-context';
 import { UserInviteForm } from '@/components/settings/user-invite-form';
 
@@ -34,6 +31,7 @@ export default function UsersPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Usuarios Existentes</CardTitle>
+                    <CardDescription>Gestiona los usuarios y sus roles de acceso al sistema.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <UsersTable />
