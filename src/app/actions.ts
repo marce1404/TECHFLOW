@@ -9,9 +9,11 @@ import type {
   GanttChart,
   SuggestOptimalResourceAssignmentInput, 
   SuggestOptimalResourceAssignmentOutputWithError,
-  InviteUserOutput
+  InviteUserOutput,
+  InviteUserInput,
+  AppUser,
 } from '@/lib/types';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { Timestamp } from 'firebase/firestore';
 
 
@@ -66,12 +68,23 @@ export async function getGanttForPrint(id: string): Promise<GanttChart | null> {
   }
 }
 
-export async function inviteUserAction(email: string, name: string): Promise<InviteUserOutput> {
+export async function inviteUserAction(input: InviteUserInput): Promise<InviteUserOutput> {
   try {
-    const result = await inviteUser({ email, name });
+    const result = await inviteUser(input);
     return result;
   } catch (error: any) {
     console.error('Error inviting user:', error);
     return { success: false, message: error.message || 'An unexpected error occurred.' };
   }
+}
+
+export async function updateUserRoleAction(uid: string, role: AppUser['role']): Promise<{success: boolean, message: string}> {
+    try {
+        const userRef = doc(db, 'users', uid);
+        await updateDoc(userRef, { role });
+        return { success: true, message: 'Rol de usuario actualizado correctamente.' };
+    } catch (error: any) {
+        console.error('Error updating user role:', error);
+        return { success: false, message: 'No se pudo actualizar el rol del usuario.' };
+    }
 }

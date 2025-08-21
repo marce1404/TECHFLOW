@@ -12,32 +12,26 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, ArrowUpDown } from 'lucide-react';
+import { MoreHorizontal } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal,
+  DropdownMenuSubContent
 } from '@/components/ui/dropdown-menu';
 import type { AppUser } from '@/lib/types';
 import { useAuth } from '@/context/auth-context';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { Skeleton } from '../ui/skeleton';
+import { updateUserRoleAction } from '@/app/actions';
+import { useToast } from '@/hooks/use-toast';
 
 export default function UsersTable() {
-    const [users, setUsers] = React.useState<AppUser[]>([]);
-    const [loading, setLoading] = React.useState(true);
-
-    React.useEffect(() => {
-        const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
-            const usersData = snapshot.docs.map(doc => doc.data() as AppUser);
-            setUsers(usersData);
-            setLoading(false);
-        });
-
-        return () => unsubscribe();
-    }, []);
+    const { users, loading, fetchUsers } = useAuth();
+    const { toast } = useToast();
 
     if (loading) {
         return (
@@ -68,6 +62,18 @@ export default function UsersTable() {
             default: return 'outline';
         }
     }
+    
+    const userRoles: AppUser['role'][] = ['Admin', 'Supervisor', 'Técnico', 'Visor'];
+
+    const handleRoleChange = async (uid: string, role: AppUser['role']) => {
+        const result = await updateUserRoleAction(uid, role);
+        if (result.success) {
+            toast({ title: 'Éxito', description: result.message });
+            fetchUsers();
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: result.message });
+        }
+    };
 
 
     return (
@@ -103,7 +109,18 @@ export default function UsersTable() {
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                        <DropdownMenuItem>Editar Rol</DropdownMenuItem>
+                                        <DropdownMenuSub>
+                                            <DropdownMenuSubTrigger>Cambiar Rol</DropdownMenuSubTrigger>
+                                            <DropdownMenuPortal>
+                                                <DropdownMenuSubContent>
+                                                    {userRoles.map(role => (
+                                                        <DropdownMenuItem key={role} onSelect={() => handleRoleChange(user.uid, role)}>
+                                                            {role}
+                                                        </DropdownMenuItem>
+                                                    ))}
+                                                </DropdownMenuSubContent>
+                                            </DropdownMenuPortal>
+                                        </DropdownMenuSub>
                                         <DropdownMenuItem>
                                             {user.status === 'Activo' ? 'Desactivar' : 'Activar'}
                                         </DropdownMenuItem>

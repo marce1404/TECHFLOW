@@ -1,11 +1,11 @@
 
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
 import type { AppUser } from '@/lib/types';
 
 
@@ -25,14 +25,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<AppUser[]>([]);
 
-  const fetchUsers = async () => {
-    // This will be implemented later
-  }
+  const fetchUsers = useCallback(async () => {
+    const usersCollection = collection(db, 'users');
+    const usersSnapshot = await getDocs(usersCollection);
+    const usersList = usersSnapshot.docs.map(doc => doc.data() as AppUser);
+    setUsers(usersList);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (user) {
+        // Fetch all users for the admin panel
+        await fetchUsers();
+        
+        // Get the specific profile for the logged-in user
         const userDocRef = doc(db, 'users', user.uid);
         const userDocSnap = await getDoc(userDocRef);
         
@@ -50,15 +57,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           };
           await setDoc(userDocRef, newProfile);
           setUserProfile(newProfile);
+          // Add the new admin to the local users list
+          setUsers(prev => [...prev, newProfile]);
         }
       } else {
         setUserProfile(null);
+        setUsers([]);
       }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [fetchUsers]);
 
   if (loading) {
     return (
