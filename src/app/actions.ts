@@ -3,6 +3,7 @@
 
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
 import { inviteUser } from '@/ai/flows/invite-user-flow';
+import { updateUser } from '@/ai/flows/update-user-flow';
 import { db } from '@/lib/firebase';
 import type { 
   CollaboratorPrintData, 
@@ -12,6 +13,8 @@ import type {
   InviteUserOutput,
   InviteUserInput,
   AppUser,
+  UpdateUserInput,
+  UpdateUserOutput,
 } from '@/lib/types';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { Timestamp } from 'firebase/firestore';
@@ -76,6 +79,16 @@ export async function inviteUserAction(input: InviteUserInput): Promise<InviteUs
     console.error('Error inviting user:', error);
     return { success: false, message: error.message || 'An unexpected error occurred.' };
   }
+}
+
+export async function updateUserAction(input: UpdateUserInput): Promise<UpdateUserOutput> {
+    try {
+        const result = await updateUser(input);
+        return result;
+    } catch (error: any) {
+        console.error('Error updating user:', error);
+        return { success: false, message: error.message || 'An unexpected error occurred.' };
+    }
 }
 
 export async function updateUserRoleAction(uid: string, role: AppUser['role']): Promise<{success: boolean, message: string}> {
