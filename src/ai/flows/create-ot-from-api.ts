@@ -11,7 +11,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit/zod';
+import { z } from 'zod';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
