@@ -2,7 +2,7 @@
 'use server';
 
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
-import { adminDb, initializeAdminApp } from '@/lib/firebase-admin';
+import { adminDb, adminAuth, initializeAdminApp } from '@/lib/firebase-admin';
 import type { 
   CollaboratorPrintData, 
   GanttChart,

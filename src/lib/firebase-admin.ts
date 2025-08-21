@@ -1,4 +1,6 @@
 
+'use server';
+
 import * as admin from 'firebase-admin';
 import type { App } from 'firebase-admin/app';
 
