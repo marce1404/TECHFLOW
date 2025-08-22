@@ -2,6 +2,7 @@
 import * as admin from 'firebase-admin';
 import type { App } from 'firebase-admin/app';
 import 'dotenv/config';
+import { firebaseConfig } from './firebase';
 
 let app: App;
 
@@ -12,10 +13,13 @@ export async function initializeAdminApp() {
                 ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
                 : undefined;
             
+            const credential = serviceAccount 
+                ? admin.credential.cert(serviceAccount) 
+                : admin.credential.applicationDefault();
+
             app = admin.initializeApp({
-                credential: serviceAccount
-                    ? admin.credential.cert(serviceAccount)
-                    : admin.credential.applicationDefault(),
+                credential,
+                projectId: firebaseConfig.projectId, // Explicitly set the project ID
             });
         } catch (error: any) {
             console.error('Failed to initialize Firebase Admin SDK:', error);

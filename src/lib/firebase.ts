@@ -2,7 +2,7 @@ import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from "firebase/auth";
 
-const firebaseConfig = {
+export const firebaseConfig = {
   projectId: 'techflow-operations-manager',
   appId: '1:680065190644:web:8ac04a3990094f82696ca1',
   storageBucket: 'techflow-operations-manager.firebasestorage.app',
