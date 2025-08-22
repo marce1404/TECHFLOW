@@ -47,7 +47,7 @@ interface UserEditDialogProps {
 
 export function UserEditDialog({ open, onOpenChange, user }: UserEditDialogProps) {
   const { toast } = useToast();
-  const { fetchUsers } = useAuth();
+  const { fetchUsers, user: currentUser } = useAuth();
   const [loading, setLoading] = React.useState(false);
 
   const form = useForm<EditFormValues>({
@@ -71,27 +71,26 @@ export function UserEditDialog({ open, onOpenChange, user }: UserEditDialogProps
     if (!user) return;
     setLoading(true);
 
-    // If the logged-in user is editing themselves, update their client-side auth profile too.
-    if (auth.currentUser && auth.currentUser.uid === user.uid && auth.currentUser.displayName !== data.name) {
-        try {
-            await updateProfile(auth.currentUser, { displayName: data.name });
-        } catch (error: any) {
-             toast({
-                variant: 'destructive',
-                title: 'Error al Actualizar Nombre',
-                description: 'No se pudo actualizar el nombre en el perfil de autenticación.',
-            });
-            setLoading(false);
-            return;
-        }
-    }
-
     const updateData: UpdateUserInput = {
         uid: user.uid,
         name: data.name,
         role: data.role,
     };
-
+    
+    // If the logged-in user is editing themselves and the name changed,
+    // update their client-side auth profile displayName.
+    if (currentUser && currentUser.uid === user.uid && currentUser.displayName !== data.name) {
+        try {
+            await updateProfile(currentUser, { displayName: data.name });
+        } catch (error: any) {
+             toast({
+                variant: 'destructive',
+                title: 'Error al Actualizar Nombre',
+                description: 'No se pudo actualizar el nombre en el perfil de autenticación local.',
+            });
+        }
+    }
+    
     const result = await updateUserAction(updateData);
 
     if (result.success) {
@@ -99,7 +98,7 @@ export function UserEditDialog({ open, onOpenChange, user }: UserEditDialogProps
         title: 'Usuario Actualizado',
         description: result.message,
       });
-      await fetchUsers();
+      await fetchUsers(); // Re-fetch users to update the UI
       onOpenChange(false);
     } else {
       toast({

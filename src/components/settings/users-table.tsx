@@ -18,17 +18,13 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuPortal,
-  DropdownMenuSubContent
 } from '@/components/ui/dropdown-menu';
 import type { AppUser } from '@/lib/types';
 import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '../ui/skeleton';
-import { updateUserRoleAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { UserEditDialog } from './user-edit-dialog';
+import { updateUserAction } from '@/app/actions';
 
 export default function UsersTable() {
     const { users, loading, fetchUsers } = useAuth();
@@ -65,18 +61,6 @@ export default function UsersTable() {
             default: return 'outline';
         }
     }
-    
-    const userRoles: AppUser['role'][] = ['Admin', 'Supervisor', 'Técnico', 'Visor'];
-
-    const handleRoleChange = async (uid: string, role: AppUser['role']) => {
-        const result = await updateUserRoleAction(uid, role);
-        if (result.success) {
-            toast({ title: 'Éxito', description: result.message });
-            fetchUsers();
-        } else {
-            toast({ variant: 'destructive', title: 'Error', description: result.message });
-        }
-    };
     
     const handleEditClick = (user: AppUser) => {
         setSelectedUser(user);
@@ -121,18 +105,6 @@ export default function UsersTable() {
                                              <DropdownMenuItem onSelect={() => handleEditClick(user)}>
                                                 Editar Usuario
                                             </DropdownMenuItem>
-                                            <DropdownMenuSub>
-                                                <DropdownMenuSubTrigger>Cambiar Rol</DropdownMenuSubTrigger>
-                                                <DropdownMenuPortal>
-                                                    <DropdownMenuSubContent>
-                                                        {userRoles.map(role => (
-                                                            <DropdownMenuItem key={role} onSelect={() => handleRoleChange(user.uid, role)}>
-                                                                {role}
-                                                            </DropdownMenuItem>
-                                                        ))}
-                                                    </DropdownMenuSubContent>
-                                                </DropdownMenuPortal>
-                                            </DropdownMenuSub>
                                             <DropdownMenuItem>
                                                 {user.status === 'Activo' ? 'Desactivar' : 'Activar'}
                                             </DropdownMenuItem>
