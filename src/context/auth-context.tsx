@@ -46,8 +46,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const userDocRef = doc(db, 'users', user.uid);
         const userDocSnap = await getDoc(userDocRef);
         
+        let profileData: AppUser | null = null;
+
         if (userDocSnap.exists()) {
-          setUserProfile(userDocSnap.data() as AppUser);
+          profileData = userDocSnap.data() as AppUser;
         } else {
           // If the user is authenticated but doesn't have a profile in Firestore,
           // create a default one. This is crucial for users created manually in Firebase Auth.
@@ -62,14 +64,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           };
           try {
             await setDoc(userDocRef, newProfile);
-            setUserProfile(newProfile);
+            profileData = newProfile;
             // Add the new profile to the local users list
             setUsers(prev => [...prev.filter(p => p.uid !== newProfile.uid), newProfile]);
           } catch (error) {
              console.error("Error creating Firestore user profile:", error);
-             setUserProfile(null);
+             profileData = null;
           }
         }
+        
+        // Hard-coded override for the main admin user
+        if (profileData && profileData.email === 'msepulveda@osesa.cl') {
+            profileData.role = 'Admin';
+        }
+        
+        setUserProfile(profileData);
+
       } else {
         setUserProfile(null);
         setUsers([]);
