@@ -16,11 +16,15 @@ import { getFirestore } from 'firebase-admin/firestore';
 const initializeFirebaseAdmin = () => {
     if (!admin.apps.length) {
         try {
+            const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+            if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !privateKey) {
+                throw new Error("Firebase service account key not found in environment variables.");
+            }
             admin.initializeApp({
                 credential: admin.credential.cert({
-                    project_id: process.env.FIREBASE_PROJECT_ID,
-                    client_email: process.env.FIREBASE_CLIENT_EMAIL,
-                    private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+                    projectId: process.env.FIREBASE_PROJECT_ID,
+                    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                    privateKey: privateKey,
                 }),
             });
         } catch (error: any) {
@@ -62,15 +66,15 @@ export async function deleteUserAction(uid: string): Promise<{ success: boolean;
   }
 }
 
-export async function resetUserPasswordAction(email: string): Promise<{ success: boolean; message: string }> {
+export async function changeUserPasswordAction(uid: string, newPassword: string): Promise<{ success: boolean; message: string }> {
   try {
     initializeFirebaseAdmin();
     const auth = getAuth();
-    await auth.generatePasswordResetLink(email);
-    return { success: true, message: `Correo para restablecer contraseña enviado a ${email}.` };
+    await auth.updateUser(uid, { password: newPassword });
+    return { success: true, message: `Contraseña actualizada correctamente.` };
   } catch (error: any) {
-    console.error('Error resetting password:', error);
-    return { success: false, message: error.message || 'Error al restablecer la contraseña.' };
+    console.error('Error changing password:', error);
+    return { success: false, message: error.message || 'Error al cambiar la contraseña.' };
   }
 }
 

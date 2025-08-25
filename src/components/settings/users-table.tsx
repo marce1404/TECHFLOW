@@ -35,24 +35,31 @@ import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '../ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { UserEditDialog } from './user-edit-dialog';
-import { deleteUserAction, resetUserPasswordAction, toggleUserStatusAction } from '@/app/actions';
+import { deleteUserAction, toggleUserStatusAction } from '@/app/actions';
+import { UserChangePasswordDialog } from './user-change-password-dialog';
 
 export default function UsersTable() {
     const { user: currentUser, users, loading, fetchUsers } = useAuth();
     const { toast } = useToast();
     const [selectedUser, setSelectedUser] = React.useState<AppUser | null>(null);
-    const [dialogOpen, setDialogOpen] = React.useState(false);
+    const [editDialogOpen, setEditDialogOpen] = React.useState(false);
+    const [passwordDialogOpen, setPasswordDialogOpen] = React.useState(false);
     const [deleteAlertOpen, setDeleteAlertOpen] = React.useState(false);
 
 
     const handleEditClick = (user: AppUser) => {
         setSelectedUser(user);
-        setDialogOpen(true);
+        setEditDialogOpen(true);
     }
     
     const handleDeleteClick = (user: AppUser) => {
         setSelectedUser(user);
         setDeleteAlertOpen(true);
+    }
+    
+    const handleChangePasswordClick = (user: AppUser) => {
+        setSelectedUser(user);
+        setPasswordDialogOpen(true);
     }
 
     const confirmDelete = async () => {
@@ -66,15 +73,6 @@ export default function UsersTable() {
         }
         setDeleteAlertOpen(false);
         setSelectedUser(null);
-    }
-    
-    const handleResetPassword = async (email: string) => {
-        const result = await resetUserPasswordAction(email);
-        if (result.success) {
-            toast({ title: 'Éxito', description: result.message });
-        } else {
-            toast({ variant: 'destructive', title: 'Error', description: result.message });
-        }
     }
 
     const handleToggleStatus = async (user: AppUser) => {
@@ -154,8 +152,8 @@ export default function UsersTable() {
                                              <DropdownMenuItem onSelect={() => handleEditClick(user)}>
                                                 Editar Usuario
                                             </DropdownMenuItem>
-                                             <DropdownMenuItem onSelect={() => handleResetPassword(user.email)}>
-                                                Restablecer Contraseña
+                                             <DropdownMenuItem onSelect={() => handleChangePasswordClick(user)}>
+                                                Cambiar Contraseña
                                             </DropdownMenuItem>
                                             <DropdownMenuItem onSelect={() => handleToggleStatus(user)}>
                                                 {user.status === 'Activo' ? 'Desactivar' : 'Activar'}
@@ -201,8 +199,13 @@ export default function UsersTable() {
                 </AlertDialogContent>
             </AlertDialog>
             <UserEditDialog
-                open={dialogOpen}
-                onOpenChange={setDialogOpen}
+                open={editDialogOpen}
+                onOpenChange={setEditDialogOpen}
+                user={selectedUser}
+            />
+            <UserChangePasswordDialog
+                open={passwordDialogOpen}
+                onOpenChange={setPasswordDialogOpen}
                 user={selectedUser}
             />
         </>
