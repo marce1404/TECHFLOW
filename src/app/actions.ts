@@ -12,6 +12,15 @@ import {
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
 import { revalidatePath } from 'next/cache';
 
+const getBaseUrl = () => {
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  // Provide a fallback for local development
+  return 'http://localhost:9002';
+};
+
+
 export async function getResourceSuggestions(
   input: SuggestOptimalResourceAssignmentInput
 ): Promise<SuggestOptimalResourceAssignmentOutputWithError> {
@@ -28,7 +37,8 @@ export async function createUserProfileAction(
   userProfile: AppUser
 ): Promise<{ success: boolean; message: string }> {
   try {
-    const response = await fetch('/api/users', {
+    const baseUrl = getBaseUrl();
+    const response = await fetch(`${baseUrl}/api/users`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -60,7 +70,8 @@ export async function updateUserAction(
   input: UpdateUserInput
 ): Promise<UpdateUserOutput> {
   try {
-     const response = await fetch('/api/users', {
+     const baseUrl = getBaseUrl();
+     const response = await fetch(`${baseUrl}/api/users`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
