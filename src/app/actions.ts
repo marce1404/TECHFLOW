@@ -1,6 +1,7 @@
 
 'use server';
 
+import 'dotenv/config';
 import {
   SuggestOptimalResourceAssignmentInput,
   SuggestOptimalResourceAssignmentOutputWithError,
@@ -11,15 +12,32 @@ import {
 
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
 import { revalidatePath } from 'next/cache';
+import * as admin from 'firebase-admin';
+import { firebaseConfig } from '@/lib/firebase';
 
-const getBaseUrl = () => {
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
+// --- Firebase Admin SDK Initialization (Self-contained) ---
+
+function initializeAdminApp() {
+  if (admin.apps.length > 0) {
+    return admin.app();
   }
-  // Provide a fallback for local development
-  return 'http://localhost:9002';
-};
 
+  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
+    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
+    : undefined;
+
+  if (!serviceAccount) {
+    throw new Error('Firebase service account key not found in environment variables.');
+  }
+
+  return admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    projectId: firebaseConfig.projectId,
+  });
+}
+
+
+// --- Server Actions ---
 
 export async function getResourceSuggestions(
   input: SuggestOptimalResourceAssignmentInput
@@ -37,28 +55,17 @@ export async function createUserProfileAction(
   userProfile: AppUser
 ): Promise<{ success: boolean; message: string }> {
   try {
-    const baseUrl = getBaseUrl();
-    const response = await fetch(`${baseUrl}/api/users`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ ...userProfile }),
-    });
+    const adminApp = initializeAdminApp();
+    const db = adminApp.firestore();
+    await db.collection('users').doc(userProfile.uid).set(userProfile);
 
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.message || 'Error en la API al crear el perfil de usuario.');
-    }
-    
     revalidatePath('/settings/users');
     return {
       success: true,
       message: `Perfil de usuario para ${userProfile.displayName} creado con éxito.`,
     };
   } catch (error: any) {
-    console.error('Error creating user profile:', error);
+    console.error('Error creating user profile in action:', error);
     return {
       success: false,
       message: `Error al crear el perfil de usuario: ${error.message}`,
@@ -70,20 +77,23 @@ export async function updateUserAction(
   input: UpdateUserInput
 ): Promise<UpdateUserOutput> {
   try {
-     const baseUrl = getBaseUrl();
-     const response = await fetch(`${baseUrl}/api/users`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(input),
+    const adminApp = initializeAdminApp();
+    const db = adminApp.firestore();
+    const auth = adminApp.auth();
+    
+    const { uid, name, role } = input;
+
+    // Update Firestore document
+    const userRef = db.collection('users').doc(uid);
+    await userRef.update({
+      displayName: name,
+      role: role,
     });
 
-    const result = await response.json();
-    
-    if (!response.ok) {
-        throw new Error(result.message || 'Error en la API al actualizar el usuario');
-    }
+    // Update Firebase Auth display name
+    await auth.updateUser(uid, {
+        displayName: name
+    });
 
     revalidatePath('/settings/users');
     return {

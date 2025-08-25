@@ -26,20 +26,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [users, setUsers] = useState<AppUser[]>([]);
 
   const fetchUsers = useCallback(async () => {
-    const usersCollection = collection(db, 'users');
-    const usersSnapshot = await getDocs(usersCollection);
-    const usersList = usersSnapshot.docs.map(doc => doc.data() as AppUser);
-    setUsers(usersList);
+    try {
+        const usersCollection = collection(db, 'users');
+        const usersSnapshot = await getDocs(usersCollection);
+        const usersList = usersSnapshot.docs.map(doc => doc.data() as AppUser);
+        setUsers(usersList);
+    } catch (error) {
+        console.error("Error fetching users:", error);
+        setUsers([]);
+    }
   }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (user) {
-        // Fetch all users for the admin panel
         await fetchUsers();
         
-        // Get the specific profile for the logged-in user
         const userDocRef = doc(db, 'users', user.uid);
         const userDocSnap = await getDoc(userDocRef);
         
@@ -47,18 +50,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUserProfile(userDocSnap.data() as AppUser);
         } else {
           // If the user is authenticated but doesn't have a profile in Firestore,
-          // create a default one. This might happen for the first-ever user.
+          // create a default one. This is crucial for users created manually in Firebase Auth.
+          console.log(`No profile found for UID ${user.uid}, creating one.`);
           const newProfile: AppUser = {
             uid: user.uid,
             email: user.email!,
             displayName: user.displayName || user.email!.split('@')[0],
-            role: 'Admin', // First user is an Admin
+            // Default to 'Visor' role for safety. First user should be made Admin manually or via setup script.
+            role: 'Visor', 
             status: 'Activo',
           };
-          await setDoc(userDocRef, newProfile);
-          setUserProfile(newProfile);
-          // Add the new admin to the local users list
-          setUsers(prev => [...prev, newProfile]);
+          try {
+            await setDoc(userDocRef, newProfile);
+            setUserProfile(newProfile);
+            // Add the new profile to the local users list
+            setUsers(prev => [...prev.filter(p => p.uid !== newProfile.uid), newProfile]);
+          } catch (error) {
+             console.error("Error creating Firestore user profile:", error);
+             setUserProfile(null);
+          }
         }
       } else {
         setUserProfile(null);
