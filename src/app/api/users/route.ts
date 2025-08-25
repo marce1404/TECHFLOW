@@ -1,4 +1,5 @@
 
+import 'dotenv/config'; // Load environment variables
 import { NextResponse } from 'next/server';
 import * as admin from 'firebase-admin';
 import { type AppUser } from '@/lib/types';
