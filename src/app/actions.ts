@@ -5,16 +5,12 @@ import 'dotenv/config';
 import {
   SuggestOptimalResourceAssignmentInput,
   SuggestOptimalResourceAssignmentOutputWithError,
-  UpdateUserInput,
-  UpdateUserOutput,
 } from '@/lib/types';
 
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
 import * as admin from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
-import { doc, setDoc } from 'firebase/firestore';
-import { db } from './lib/firebase';
 
 // This function ensures Firebase Admin is initialized, but only once.
 const initializeFirebaseAdmin = () => {
@@ -28,7 +24,9 @@ const initializeFirebaseAdmin = () => {
                 }),
             });
         } catch (error: any) {
-            console.error('Firebase Admin initialization error', error);
+            console.error('Firebase Admin initialization error', error.message);
+            // Throw an error to make it clear that initialization failed
+            throw new Error('Failed to initialize Firebase Admin SDK: ' + error.message);
         }
     }
 };
@@ -49,8 +47,8 @@ export async function getResourceSuggestions(
 }
 
 export async function deleteUserAction(uid: string): Promise<{ success: boolean; message: string }> {
-  initializeFirebaseAdmin();
   try {
+    initializeFirebaseAdmin();
     const auth = getAuth();
     const firestore = getFirestore();
 
@@ -65,8 +63,8 @@ export async function deleteUserAction(uid: string): Promise<{ success: boolean;
 }
 
 export async function resetUserPasswordAction(email: string): Promise<{ success: boolean; message: string }> {
-  initializeFirebaseAdmin();
   try {
+    initializeFirebaseAdmin();
     const auth = getAuth();
     await auth.generatePasswordResetLink(email);
     return { success: true, message: `Correo para restablecer contraseña enviado a ${email}.` };
@@ -78,8 +76,8 @@ export async function resetUserPasswordAction(email: string): Promise<{ success:
 
 
 export async function toggleUserStatusAction(uid: string, currentStatus: 'Activo' | 'Inactivo'): Promise<{ success: boolean; message: string }> {
-  initializeFirebaseAdmin();
   try {
+    initializeFirebaseAdmin();
     const newStatus = currentStatus === 'Activo' ? 'Inactivo' : 'Activo';
     const auth = getAuth();
     const firestore = getFirestore();
