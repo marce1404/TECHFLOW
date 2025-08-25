@@ -17,20 +17,75 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { AppUser } from '@/lib/types';
 import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '../ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { UserEditDialog } from './user-edit-dialog';
-import { updateUserAction } from '@/app/actions';
+import { deleteUserAction, resetUserPasswordAction, toggleUserStatusAction } from '@/app/actions';
 
 export default function UsersTable() {
-    const { users, loading, fetchUsers } = useAuth();
+    const { user: currentUser, users, loading, fetchUsers } = useAuth();
     const { toast } = useToast();
     const [selectedUser, setSelectedUser] = React.useState<AppUser | null>(null);
     const [dialogOpen, setDialogOpen] = React.useState(false);
+    const [deleteAlertOpen, setDeleteAlertOpen] = React.useState(false);
+
+
+    const handleEditClick = (user: AppUser) => {
+        setSelectedUser(user);
+        setDialogOpen(true);
+    }
+    
+    const handleDeleteClick = (user: AppUser) => {
+        setSelectedUser(user);
+        setDeleteAlertOpen(true);
+    }
+
+    const confirmDelete = async () => {
+        if (!selectedUser) return;
+        const result = await deleteUserAction(selectedUser.uid);
+        if (result.success) {
+            toast({ title: 'Éxito', description: result.message });
+            await fetchUsers();
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: result.message });
+        }
+        setDeleteAlertOpen(false);
+        setSelectedUser(null);
+    }
+    
+    const handleResetPassword = async (email: string) => {
+        const result = await resetUserPasswordAction(email);
+        if (result.success) {
+            toast({ title: 'Éxito', description: result.message });
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: result.message });
+        }
+    }
+
+    const handleToggleStatus = async (user: AppUser) => {
+        const result = await toggleUserStatusAction(user.uid, user.status);
+        if (result.success) {
+            toast({ title: 'Éxito', description: result.message });
+            await fetchUsers();
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: result.message });
+        }
+    }
 
     if (loading) {
         return (
@@ -61,12 +116,6 @@ export default function UsersTable() {
             default: return 'outline';
         }
     }
-    
-    const handleEditClick = (user: AppUser) => {
-        setSelectedUser(user);
-        setDialogOpen(true);
-    }
-
 
     return (
         <>
@@ -96,7 +145,7 @@ export default function UsersTable() {
                                 <TableCell className="text-right">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                            <Button variant="ghost" className="h-8 w-8 p-0" disabled={user.uid === currentUser?.uid}>
                                                 <span className="sr-only">Abrir menú</span>
                                                 <MoreHorizontal className="h-4 w-4" />
                                             </Button>
@@ -105,8 +154,18 @@ export default function UsersTable() {
                                              <DropdownMenuItem onSelect={() => handleEditClick(user)}>
                                                 Editar Usuario
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem>
+                                             <DropdownMenuItem onSelect={() => handleResetPassword(user.email)}>
+                                                Restablecer Contraseña
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleToggleStatus(user)}>
                                                 {user.status === 'Activo' ? 'Desactivar' : 'Activar'}
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem 
+                                                className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                                                onSelect={() => handleDeleteClick(user)}
+                                            >
+                                                Eliminar
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -122,6 +181,25 @@ export default function UsersTable() {
                     </TableBody>
                 </Table>
             </div>
+             <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Esta acción no se puede deshacer. Se eliminará permanentemente al usuario <span className="font-bold">{selectedUser?.displayName}</span> de la autenticación de Firebase y de la base de datos.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setSelectedUser(null)}>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                        className="bg-destructive hover:bg-destructive/90"
+                        onClick={confirmDelete}
+                    >
+                        Sí, eliminar usuario
+                    </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
             <UserEditDialog
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
