@@ -25,11 +25,15 @@ import {
 import { Input } from '@/components/ui/input';
 import type { AppUser } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { changeUserPasswordAction } from '@/app/actions';
 
 const passwordFormSchema = z.object({
   newPassword: z.string().min(6, { message: 'La nueva contraseña debe tener al menos 6 caracteres.' }),
+  confirmPassword: z.string().min(6, { message: 'La confirmación debe tener al menos 6 caracteres.' }),
+}).refine(data => data.newPassword === data.confirmPassword, {
+    message: "Las contraseñas no coinciden.",
+    path: ["confirmPassword"],
 });
 
 type PasswordFormValues = z.infer<typeof passwordFormSchema>;
@@ -43,17 +47,21 @@ interface UserChangePasswordDialogProps {
 export function UserChangePasswordDialog({ open, onOpenChange, user }: UserChangePasswordDialogProps) {
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
+  const [showPassword, setShowPassword] = React.useState(false);
+
 
   const form = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordFormSchema),
     defaultValues: {
       newPassword: '',
+      confirmPassword: '',
     },
   });
 
   React.useEffect(() => {
     if (!open) {
       form.reset();
+      setShowPassword(false);
     }
   }, [open, form]);
 
@@ -97,9 +105,32 @@ export function UserChangePasswordDialog({ open, onOpenChange, user }: UserChang
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Nueva Contraseña</FormLabel>
-                  <FormControl>
-                    <Input type="password" {...field} />
-                  </FormControl>
+                   <div className="relative">
+                        <FormControl>
+                            <Input type={showPassword ? 'text' : 'password'} placeholder="••••••••" {...field} />
+                        </FormControl>
+                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground">
+                            {showPassword ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
+                        </button>
+                    </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="confirmPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Confirmar Nueva Contraseña</FormLabel>
+                  <div className="relative">
+                        <FormControl>
+                            <Input type={showPassword ? 'text' : 'password'} placeholder="••••••••" {...field} />
+                        </FormControl>
+                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground">
+                            {showPassword ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
+                        </button>
+                    </div>
                   <FormMessage />
                 </FormItem>
               )}
