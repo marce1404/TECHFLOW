@@ -9,6 +9,7 @@ import type { WorkOrder, OTCategory, Service, Collaborator, Vehicle, GanttChart,
 import { Timestamp } from 'firebase/firestore';
 import { initialSuggestedTasks } from '@/lib/placeholder-data';
 import { predefinedReportTemplates } from '@/lib/predefined-templates';
+import { useAuth } from './auth-context';
 
 
 interface WorkOrdersContextType {
@@ -75,6 +76,8 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [submittedReports, setSubmittedReports] = useState<SubmittedReport[]>([]);
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const { fetchUsers } = useAuth();
+
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -398,6 +401,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const updateUserProfile = async (uid: string, data: Partial<Pick<AppUser, 'displayName' | 'role'>>) => {
     const userRef = doc(db, 'users', uid);
     await updateDoc(userRef, data);
+    await fetchUsers(); // Re-fetch all users to update the UI
   };
 
 

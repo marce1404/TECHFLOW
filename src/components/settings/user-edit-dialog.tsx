@@ -45,7 +45,6 @@ interface UserEditDialogProps {
 
 export function UserEditDialog({ open, onOpenChange, user }: UserEditDialogProps) {
   const { toast } = useToast();
-  const { fetchUsers } = useAuth();
   const { updateUserProfile } = useWorkOrders();
   const [loading, setLoading] = React.useState(false);
 
@@ -76,7 +75,6 @@ export function UserEditDialog({ open, onOpenChange, user }: UserEditDialogProps
         title: 'Usuario Actualizado',
         description: `El perfil de ${data.displayName} ha sido actualizado.`,
       });
-      await fetchUsers(); // Re-fetch users to update the UI
       onOpenChange(false);
     } catch (error: any) {
       toast({
