@@ -6,8 +6,6 @@ import {
   SuggestOptimalResourceAssignmentOutputWithError,
   UpdateUserOutput,
   type AppUser,
-  type CollaboratorPrintData,
-  type GanttChart,
   type UpdateUserInput,
 } from '@/lib/types';
 
@@ -26,57 +24,11 @@ export async function getResourceSuggestions(
   }
 }
 
-// These functions still need firebase-admin, but let's see if we can get the user management working first.
-// I will temporarily comment them out to avoid build errors.
-/*
-export async function getCollaboratorForPrint(id: string): Promise<CollaboratorPrintData | null> {
-  try {
-    await initializeAdminApp();
-    const docRef = doc(adminDb(), 'collaborators', id);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-      return docSnap.data() as CollaboratorPrintData;
-    } else {
-      console.log("No such document!");
-      return null;
-    }
-  } catch (error) {
-    console.error("Error getting document:", error);
-    return null;
-  }
-}
-
-export async function getGanttForPrint(id: string): Promise<GanttChart | null> {
-  try {
-    await initializeAdminApp();
-    const docRef = doc(adminDb(), 'gantt-charts', id);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-       const data = docSnap.data();
-       const tasks = (data.tasks || []).map((task: any) => ({
-           ...task,
-           startDate: task.startDate instanceof Timestamp ? task.startDate.toDate() : new Date(task.startDate),
-       }));
-       return { ...data, id: docSnap.id, tasks } as GanttChart;
-    } else {
-      console.log("No such document!");
-      return null;
-    }
-  } catch (error) {
-    console.error("Error getting document:", error);
-    return null;
-  }
-}
-*/
-
 export async function createUserProfileAction(
   userProfile: AppUser
 ): Promise<{ success: boolean; message: string }> {
   try {
-    // We now call our API route to handle user creation securely.
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/users`, {
+    const response = await fetch('/api/users', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -108,7 +60,7 @@ export async function updateUserAction(
   input: UpdateUserInput
 ): Promise<UpdateUserOutput> {
   try {
-     const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/users`, {
+     const response = await fetch('/api/users', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
