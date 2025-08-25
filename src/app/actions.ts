@@ -16,23 +16,22 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from './lib/firebase';
 
-// --- Initialize Firebase Admin SDK ---
-// This is a robust way to initialize the Admin SDK in a serverless environment like Vercel.
-// It checks if the app is already initialized to prevent errors.
-
-if (!admin.apps.length) {
-    try {
-        admin.initializeApp({
-            credential: admin.credential.cert({
-                projectId: process.env.FIREBASE_PROJECT_ID,
-                clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-                privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-            }),
-        });
-    } catch (error: any) {
-        console.error('Firebase Admin initialization error', error);
+// This function ensures Firebase Admin is initialized, but only once.
+const initializeFirebaseAdmin = () => {
+    if (!admin.apps.length) {
+        try {
+            admin.initializeApp({
+                credential: admin.credential.cert({
+                    projectId: process.env.FIREBASE_PROJECT_ID,
+                    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+                }),
+            });
+        } catch (error: any) {
+            console.error('Firebase Admin initialization error', error);
+        }
     }
-}
+};
 
 
 // --- Server Actions ---
@@ -50,6 +49,7 @@ export async function getResourceSuggestions(
 }
 
 export async function deleteUserAction(uid: string): Promise<{ success: boolean; message: string }> {
+  initializeFirebaseAdmin();
   try {
     const auth = getAuth();
     const firestore = getFirestore();
@@ -65,6 +65,7 @@ export async function deleteUserAction(uid: string): Promise<{ success: boolean;
 }
 
 export async function resetUserPasswordAction(email: string): Promise<{ success: boolean; message: string }> {
+  initializeFirebaseAdmin();
   try {
     const auth = getAuth();
     await auth.generatePasswordResetLink(email);
@@ -77,6 +78,7 @@ export async function resetUserPasswordAction(email: string): Promise<{ success:
 
 
 export async function toggleUserStatusAction(uid: string, currentStatus: 'Activo' | 'Inactivo'): Promise<{ success: boolean; message: string }> {
+  initializeFirebaseAdmin();
   try {
     const newStatus = currentStatus === 'Activo' ? 'Inactivo' : 'Activo';
     const auth = getAuth();
