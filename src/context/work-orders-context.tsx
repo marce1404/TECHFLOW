@@ -5,7 +5,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, query, where, writeBatch, serverTimestamp, orderBy, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { WorkOrder, OTCategory, Service, Collaborator, Vehicle, GanttChart, SuggestedTask, OTStatus, ReportTemplate, SubmittedReport, CompanyInfo } from '@/lib/types';
+import type { WorkOrder, OTCategory, Service, Collaborator, Vehicle, GanttChart, SuggestedTask, OTStatus, ReportTemplate, SubmittedReport, CompanyInfo, AppUser } from '@/lib/types';
 import { Timestamp } from 'firebase/firestore';
 import { initialSuggestedTasks } from '@/lib/placeholder-data';
 import { predefinedReportTemplates } from '@/lib/predefined-templates';
@@ -56,6 +56,7 @@ interface WorkOrdersContextType {
   deleteReportTemplate: (id: string) => Promise<void>;
   addSubmittedReport: (report: Omit<SubmittedReport, 'id' | 'submittedAt'>) => Promise<SubmittedReport>;
   updateCompanyInfo: (info: CompanyInfo) => Promise<void>;
+  updateUserProfile: (uid: string, data: Partial<Pick<AppUser, 'displayName' | 'role'>>) => Promise<void>;
 }
 
 const WorkOrdersContext = createContext<WorkOrdersContextType | undefined>(undefined);
@@ -393,6 +394,11 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     await setDoc(docRef, info, { merge: true });
     setCompanyInfo(prev => prev ? { ...prev, ...info } : info);
   };
+  
+  const updateUserProfile = async (uid: string, data: Partial<Pick<AppUser, 'displayName' | 'role'>>) => {
+    const userRef = doc(db, 'users', uid);
+    await updateDoc(userRef, data);
+  };
 
 
   return (
@@ -441,6 +447,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         deleteReportTemplate,
         addSubmittedReport,
         updateCompanyInfo,
+        updateUserProfile,
     }}>
       {children}
     </WorkOrdersContext.Provider>

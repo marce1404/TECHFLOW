@@ -23,17 +23,15 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import type { AppUser, UpdateUserInput } from '@/lib/types';
+import type { AppUser } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { updateUserAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/auth-context';
 import { Loader2 } from 'lucide-react';
-import { updateProfile } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { useWorkOrders } from '@/context/work-orders-context';
 
 const editFormSchema = z.object({
-  name: z.string().min(3, { message: 'El nombre debe tener al menos 3 caracteres.' }),
+  displayName: z.string().min(3, { message: 'El nombre debe tener al menos 3 caracteres.' }),
   role: z.enum(['Admin', 'Supervisor', 'Técnico', 'Visor']),
 });
 
@@ -47,13 +45,14 @@ interface UserEditDialogProps {
 
 export function UserEditDialog({ open, onOpenChange, user }: UserEditDialogProps) {
   const { toast } = useToast();
-  const { fetchUsers, user: currentUser } = useAuth();
+  const { fetchUsers } = useAuth();
+  const { updateUserProfile } = useWorkOrders();
   const [loading, setLoading] = React.useState(false);
 
   const form = useForm<EditFormValues>({
     resolver: zodResolver(editFormSchema),
     defaultValues: {
-      name: '',
+      displayName: '',
       role: 'Visor',
     },
   });
@@ -61,7 +60,7 @@ export function UserEditDialog({ open, onOpenChange, user }: UserEditDialogProps
   React.useEffect(() => {
     if (user) {
       form.reset({
-        name: user.displayName,
+        displayName: user.displayName,
         role: user.role,
       });
     }
@@ -71,43 +70,23 @@ export function UserEditDialog({ open, onOpenChange, user }: UserEditDialogProps
     if (!user) return;
     setLoading(true);
 
-    const updateData: UpdateUserInput = {
-        uid: user.uid,
-        name: data.name,
-        role: data.role,
-    };
-    
-    // If the logged-in user is editing themselves and the name changed,
-    // update their client-side auth profile displayName.
-    if (currentUser && currentUser.uid === user.uid && currentUser.displayName !== data.name) {
-        try {
-            await updateProfile(currentUser, { displayName: data.name });
-        } catch (error: any) {
-             toast({
-                variant: 'destructive',
-                title: 'Error al Actualizar Nombre',
-                description: 'No se pudo actualizar el nombre en el perfil de autenticación local.',
-            });
-        }
-    }
-    
-    const result = await updateUserAction(updateData);
-
-    if (result.success) {
+    try {
+      await updateUserProfile(user.uid, data);
       toast({
         title: 'Usuario Actualizado',
-        description: result.message,
+        description: `El perfil de ${data.displayName} ha sido actualizado.`,
       });
       await fetchUsers(); // Re-fetch users to update the UI
       onOpenChange(false);
-    } else {
+    } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Error al Actualizar',
-        description: result.message,
+        description: error.message || 'Ocurrió un error inesperado.',
       });
+    } finally {
+        setLoading(false);
     }
-    setLoading(false);
   };
   
   const userRoles: AppUser['role'][] = ['Admin', 'Supervisor', 'Técnico', 'Visor'];
@@ -125,7 +104,7 @@ export function UserEditDialog({ open, onOpenChange, user }: UserEditDialogProps
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
             <FormField
               control={form.control}
-              name="name"
+              name="displayName"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Nombre Completo</FormLabel>

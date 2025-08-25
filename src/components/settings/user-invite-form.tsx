@@ -16,13 +16,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { createUserProfileAction } from '@/app/actions';
+import { auth, db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UserPlus, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import type { AppUser } from '@/lib/types';
+import { doc, setDoc } from 'firebase/firestore';
 
 const inviteFormSchema = z.object({
   name: z.string().min(3, { message: 'El nombre debe tener al menos 3 caracteres.' }),
@@ -56,38 +56,31 @@ export function UserInviteForm() {
 
   const onSubmit = async (data: InviteFormValues) => {
     setLoading(true);
+    let newUserUID = '';
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       const user = userCredential.user;
+      newUserUID = user.uid;
 
-      if (user) {
-        await updateProfile(user, { displayName: data.name });
+      await updateProfile(user, { displayName: data.name });
 
-        const userProfile: AppUser = {
-          uid: user.uid,
-          email: data.email,
-          displayName: data.name,
-          role: data.role,
-          status: 'Activo',
-        };
+      const userProfile: AppUser = {
+        uid: user.uid,
+        email: data.email,
+        displayName: data.name,
+        role: data.role,
+        status: 'Activo',
+      };
+      
+      await setDoc(doc(db, "users", user.uid), userProfile);
+      
+      toast({
+        title: 'Usuario Creado con Éxito',
+        description: `El usuario ${data.name} ha sido creado y su perfil guardado.`,
+      });
+      form.reset();
+      await fetchUsers();
         
-        const profileResult = await createUserProfileAction(userProfile);
-
-        if (profileResult.success) {
-            toast({
-                title: 'Usuario Creado con Éxito',
-                description: `El usuario ${data.name} ha sido creado y su perfil guardado.`,
-            });
-            form.reset();
-            await fetchUsers();
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Error al Crear Perfil',
-                description: profileResult.message,
-            });
-        }
-      }
     } catch (error: any) {
       let errorMessage = 'Ocurrió un error desconocido.';
       if (error.code === 'auth/email-already-in-use') {
