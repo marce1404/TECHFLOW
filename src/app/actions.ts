@@ -12,26 +12,29 @@ import * as admin from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 
+
 // This function ensures Firebase Admin is initialized, but only once.
 const initializeFirebaseAdmin = () => {
-    if (!admin.apps.length) {
-        try {
-            const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-            if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !privateKey) {
-                throw new Error("Firebase service account key not found in environment variables.");
-            }
-            admin.initializeApp({
-                credential: admin.credential.cert({
-                    projectId: process.env.FIREBASE_PROJECT_ID,
-                    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-                    privateKey: privateKey,
-                }),
-            });
-        } catch (error: any) {
-            console.error('Firebase Admin initialization error', error.message);
-            // Throw an error to make it clear that initialization failed
-            throw new Error('Failed to initialize Firebase Admin SDK: ' + error.message);
+    if (admin.apps.length > 0) {
+        return;
+    }
+
+    try {
+        const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+        if (!serviceAccountBase64) {
+            throw new Error("Firebase service account JSON not found in environment variables.");
         }
+        
+        const serviceAccountString = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
+        const serviceAccount = JSON.parse(serviceAccountString);
+
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount),
+        });
+
+    } catch (error: any) {
+        console.error('Firebase Admin initialization error', error.message);
+        throw new Error('Failed to initialize Firebase Admin SDK: ' + error.message);
     }
 };
 
