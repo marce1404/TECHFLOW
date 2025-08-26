@@ -30,7 +30,7 @@ const SettingsLink = ({ href, icon: Icon, title, description }: SettingsLinkProp
     <Card className="hover:bg-muted/50 transition-colors group">
       <CardHeader className="flex flex-row items-center gap-4">
         <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary transition-colors">
-            <Icon className="h-6 w-6 text-primary" />
+            <Icon className="h-6 w-6 text-primary group-hover:text-primary-foreground" />
         </div>
         <div className="flex-1">
           <CardTitle className="text-lg">{title}</CardTitle>
