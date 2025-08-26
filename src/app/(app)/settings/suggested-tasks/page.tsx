@@ -87,13 +87,13 @@ export default function SuggestedTasksPage() {
                             <TabsContent key={category.id} value={categoryKey} className="m-0">
                                 <CardContent className="space-y-4 pt-0">
                                     {orderedPhases.length > 0 ? (
-                                        orderedPhases.map((phase) => {
+                                        orderedPhases.map((phase, index) => {
                                             const tasksForPhase = tasksForCategory.filter(t => t.phase === phase);
                                             
                                             if (tasksForPhase.length === 0) return null;
 
                                             return (
-                                                <div key={phase}>
+                                                <div key={`${phase}-${index}`}>
                                                     <h3 className="font-semibold text-lg mb-2 text-primary">{phase}</h3>
                                                     <div className="rounded-md border">
                                                         <Table>
