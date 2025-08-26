@@ -22,7 +22,7 @@ const initializeFirebaseAdmin = () => {
     try {
         const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
         if (!serviceAccountBase64) {
-            throw new Error("Firebase service account JSON not found in environment variables.");
+            throw new Error("Firebase service account JSON not found in environment variables. Please set FIREBASE_SERVICE_ACCOUNT_JSON.");
         }
         
         const serviceAccountString = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
