@@ -76,29 +76,31 @@ export default function SuggestedTasksPage() {
                     {availableCategories.map(category => {
                         const categoryKey = category.name.toLowerCase();
                         
-                        const groupedTasks = suggestedTasks
+                        const tasksForCategory = suggestedTasks
                             .filter(t => t.category === categoryKey)
-                            .sort((a, b) => (a.order || 0) - (b.order || 0))
-                            .reduce((acc, task) => {
-                                const phase = task.phase || 'Sin Fase';
-                                if (!acc[phase]) {
-                                    acc[phase] = [];
-                                }
-                                acc[phase].push(task);
-                                return acc;
-                            }, {} as GroupedTasks);
+                            .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-                        const phases = Object.keys(groupedTasks).sort((a, b) => {
-                           const firstTaskA = groupedTasks[a][0];
-                           const firstTaskB = groupedTasks[b][0];
-                           return (firstTaskA?.order || 0) - (firstTaskB?.order || 0);
+                        const groupedTasks = tasksForCategory.reduce((acc, task) => {
+                            const phase = task.phase || 'Sin Fase';
+                            if (!acc[phase]) {
+                                acc[phase] = [];
+                            }
+                            acc[phase].push(task);
+                            return acc;
+                        }, {} as GroupedTasks);
+
+                        const sortedPhases = Object.keys(groupedTasks).sort((a, b) => {
+                            const firstTaskOrderA = groupedTasks[a][0]?.order || 0;
+                            const firstTaskOrderB = groupedTasks[b][0]?.order || 0;
+                            return firstTaskOrderA - firstTaskOrderB;
                         });
+
 
                         return (
                             <TabsContent key={category.id} value={categoryKey} className="m-0">
                                 <CardContent className="space-y-4 pt-0">
-                                    {phases.length > 0 ? (
-                                        phases.map((phase) => (
+                                    {sortedPhases.length > 0 ? (
+                                        sortedPhases.map((phase) => (
                                             <div key={phase}>
                                                 <h3 className="font-semibold text-lg mb-2 text-primary">{phase}</h3>
                                                 <div className="rounded-md border">
@@ -183,5 +185,3 @@ export default function SuggestedTasksPage() {
         </div>
     );
 }
-
-    
