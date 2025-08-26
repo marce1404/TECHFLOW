@@ -190,7 +190,7 @@ export const initialSuggestedTasks: Omit<SuggestedTask, 'id'>[] = [
     { name: 'Capacitación a Administradores y Usuarios', category: 'ccaa', phase: 'Fase 5: Cierre y Entrega', order: 502 },
     { name: 'Entrega de Documentación y Planos As-Built', category: 'ccaa', phase: 'Fase 5: Cierre y Entrega', order: 503 },
     
-    // Detección de Incendios
+    // INCENDIO
     { name: 'Análisis de Riesgos y Diseño según Normativa (NFPA)', category: 'incendio', phase: 'Fase 1: Ingeniería y Diseño', order: 101 },
     { name: 'Elaboración de Planos y Memoria de Cálculo', category: 'incendio', phase: 'Fase 1: Ingeniería y Diseño', order: 102 },
     { name: 'Aprobación de Planos por Autoridad Competente', category: 'incendio', phase: 'Fase 1: Ingeniería y Diseño', order: 103 },
@@ -208,22 +208,16 @@ export const initialSuggestedTasks: Omit<SuggestedTask, 'id'>[] = [
     { name: 'Certificación del Sistema (SEC/NFPA)', category: 'incendio', phase: 'Fase 5: Certificación y Entrega', order: 501 },
     { name: 'Capacitación a Personal de Emergencia', category: 'incendio', phase: 'Fase 5: Certificación y Entrega', order: 502 },
     { name: 'Entrega de Dossier de Calidad y Planos As-Built', category: 'incendio', phase: 'Fase 5: Certificación y Entrega', order: 503 },
+
+    // ABLOY
+    { name: 'Evaluación de Seguridad de Puertas y Accesos', category: 'abloy', phase: 'Fase 1: Planificación y Diseño', order: 101 },
+    { name: 'Diseño de Sistema de Amaestramiento', category: 'abloy', phase: 'Fase 1: Planificación y Diseño', order: 102 },
+    { name: 'Adquisición de Cilindros, Candados y Llaves', category: 'abloy', phase: 'Fase 2: Adquisición y Logística', order: 201 },
+    { name: 'Instalación de Cilindros en Puertas', category: 'abloy', phase: 'Fase 3: Instalación y Montaje', order: 301 },
+    { name: 'Pruebas de Funcionamiento de Llaves y Cilindros', category: 'abloy', phase: 'Fase 4: Configuración y Pruebas', order: 401 },
+    { name: 'Entrega de Llaves y Protocolo de Seguridad', category: 'abloy', phase: 'Fase 5: Cierre y Entrega', order: 501 },
     
-    // Extinción de Incendios
-    { name: 'Ingeniería de Detalle y Cálculo Hidráulico', category: 'extinción', phase: 'Fase 1: Ingeniería y Diseño', order: 101 },
-    { name: 'Selección de Agente Extintor (Agua, gas, etc.)', category: 'extinción', phase: 'Fase 1: Ingeniería y Diseño', order: 102 },
-    { name: 'Adquisición de Rociadores, Válvulas y Tuberías', category: 'extinción', phase: 'Fase 2: Adquisición y Logística', order: 201 },
-    { name: 'Montaje de Red de Tuberías (Fitting)', category: 'extinción', phase: 'Fase 3: Instalación y Montaje', order: 301 },
-    { name: 'Instalación de Rociadores (Sprinklers)', category: 'extinción', phase: 'Fase 3: Instalación y Montaje', order: 302 },
-    { name: 'Instalación de Sala de Bombas y Estanque', category: 'extinción', phase: 'Fase 3: Instalación y Montaje', order: 303 },
-    { name: 'Conexión a la Red de Agua o Fuente', category: 'extinción', phase: 'Fase 3: Instalación y Montaje', order: 304 },
-    { name: 'Pruebas de Presión y Estanqueidad (Prueba Hidrostática)', category: 'extinción', phase: 'Fase 4: Pruebas y Puesta en Marcha', order: 401 },
-    { name: 'Puesta en Marcha del Sistema de Bombeo', category: 'extinción', phase: 'Fase 4: Pruebas y Puesta en Marcha', order: 402 },
-    { name: 'Pruebas de Flujo y Descarga de Rociadores', category: 'extinción', phase: 'Fase 4: Pruebas y Puesta en Marcha', order: 403 },
-    { name: 'Certificación de la Instalación', category: 'extinción', phase: 'Fase 5: Certificación y Entrega', order: 501 },
-    { name: 'Entrega de Planos y Dossier de Calidad', category: 'extinción', phase: 'Fase 5: Certificación y Entrega', order: 502 },
-    
-    // Alarma
+    // ALARMA
     { name: 'Evaluación de Seguridad y Puntos Vulnerables', category: 'alarma', phase: 'Fase 1: Planificación y Diseño', order: 101 },
     { name: 'Diseño del Sistema de Alarma y Zonificación', category: 'alarma', phase: 'Fase 1: Planificación y Diseño', order: 102 },
     { name: 'Adquisición de Panel, Sensores, Teclados y Sirena', category: 'alarma', phase: 'Fase 2: Adquisición y Logística', order: 201 },
@@ -239,3 +233,5 @@ export const initialSuggestedTasks: Omit<SuggestedTask, 'id'>[] = [
     { name: 'Capacitación al Usuario sobre Uso, Códigos y Procedimientos', category: 'alarma', phase: 'Fase 5: Cierre y Entrega', order: 501 },
     { name: 'Entrega de Manuales y Contactos de Emergencia', category: 'alarma', phase: 'Fase 5: Cierre y Entrega', order: 502 },
 ];
+
+    
