@@ -2,53 +2,76 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Users can only read and update their own profile.
-    // Creation is handled by server-side logic (Firebase Auth triggers or admin actions).
-    // Deletion is handled by server-side logic.
+    
+    // Reglas para la colección 'users'
     match /users/{userId} {
+      // Cualquiera puede crear su propio perfil de usuario al registrarse
+      allow create: if request.auth != null;
+      // Solo el propio usuario puede leer y actualizar sus datos
       allow read, update: if request.auth != null && request.auth.uid == userId;
-      allow create, delete: if false; // Prevent client-side creation/deletion
+      // Nadie puede eliminar perfiles de usuario directamente desde el cliente
+      allow delete: if false; 
     }
 
-    // Allow any authenticated user to read and write to these collections.
-    // This is a permissive rule for simplicity in the internal tool.
-    // For higher security, you could restrict writes to specific roles (e.g., 'Admin', 'Supervisor').
-    match /work-orders/{docId} {
-      allow read, write: if request.auth != null;
+    // Reglas para colecciones de configuración como 'ot-categories', 'services', etc.
+    // Generalmente, estas son de solo lectura para los clientes.
+    match /ot-categories/{categoryId} {
+      allow read: if request.auth != null;
+      allow write: if false; // La escritura se gestiona desde el backend con credenciales de admin
     }
-    match /ot-categories/{docId} {
-      allow read, write: if request.auth != null;
-    }
-     match /ot-statuses/{docId} {
-      allow read, write: if request.auth != null;
-    }
-    match /services/{docId} {
-      allow read, write: if request.auth != null;
-    }
-    match /collaborators/{docId} {
-      allow read, write: if request.auth != null;
-    }
-    match /vehicles/{docId} {
-      allow read, write: if request.auth != null;
-    }
-    match /gantt-charts/{docId} {
-      allow read, write: if request.auth != null;
-    }
-    match /suggested-tasks/{docId} {
-      allow read, write: if request.auth != null;
-    }
-    match /report-templates/{docId} {
-      allow read, write: if request.auth != null;
-    }
-     match /submitted-reports/{docId} {
-      allow read, write: if request.auth != null;
+    
+    match /ot-statuses/{statusId} {
+      allow read: if request.auth != null;
+      allow write: if false;
     }
 
-    // Company info can be read by anyone authenticated, but only written by an Admin role.
+    match /services/{serviceId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    match /suggested-tasks/{taskId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+    
+    match /report-templates/{templateId} {
+      allow read: if request.auth != null;
+      allow write: if false; 
+    }
+
+    // Los informes enviados pueden ser creados por cualquier usuario autenticado,
+    // pero solo leídos por roles autorizados (se asume que la lógica de la app lo controla).
+    match /submitted-reports/{reportId} {
+        allow create, read: if request.auth != null;
+        allow update, delete: if false; // La edición/eliminación debería ser restringida
+    }
+
+    // Colecciones principales de datos
+    match /work-orders/{orderId} {
+      allow read, create, update: if request.auth != null;
+      allow delete: if false; // Proteger contra borrados accidentales
+    }
+
+    match /collaborators/{collaboratorId} {
+      allow read, create, update: if request.auth != null;
+      allow delete: if request.auth != null; // O restringir a roles específicos
+    }
+
+    match /vehicles/{vehicleId} {
+      allow read, create, update: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+
+    match /gantt-charts/{chartId} {
+       allow read, create, update: if request.auth != null;
+       allow delete: if request.auth != null;
+    }
+    
+    // Acceso a la configuración de la empresa
     match /settings/companyInfo {
-       allow read: if request.auth != null;
-       allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+      allow read: if request.auth != null;
+      allow write: if false; // Solo se modifica desde el backend
     }
   }
 }
