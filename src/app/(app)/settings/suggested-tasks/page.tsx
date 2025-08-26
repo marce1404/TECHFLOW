@@ -43,10 +43,16 @@ export default function SuggestedTasksPage() {
         setDialogOpen(true);
     };
 
-    const groupedTasks = suggestedTasks.reduce((acc, task) => {
-        (acc[task.category] = acc[task.category] || []).push(task);
-        return acc;
-    }, {} as Record<string, SuggestedTask[]>);
+    const groupedTasks = React.useMemo(() => {
+        return suggestedTasks.reduce((acc, task) => {
+            if (!acc[task.category]) {
+                acc[task.category] = [];
+            }
+            acc[task.category].push(task);
+            return acc;
+        }, {} as Record<string, SuggestedTask[]>);
+    }, [suggestedTasks]);
+
 
     const availableCategories = services.filter(s => s.status === 'Activa');
 
@@ -60,7 +66,7 @@ export default function SuggestedTasksPage() {
             </div>
             
             <div className="space-y-6">
-                {Object.keys(groupedTasks).map(category => (
+                {Object.keys(groupedTasks).sort().map(category => (
                     <Card key={category}>
                         <CardHeader>
                             <CardTitle>{services.find(s => s.name.toLowerCase() === category)?.name || category}</CardTitle>
