@@ -59,7 +59,7 @@ interface GanttFormProps {
 }
 
 export default function GanttForm({ onSave, services, ganttChart }: GanttFormProps) {
-  const { suggestedTasks, activeWorkOrders } = useWorkOrders();
+  const { suggestedTasks } = useWorkOrders();
   const [customTaskName, setCustomTaskName] = React.useState('');
   const router = useRouter();
   const params = useParams();
@@ -193,7 +193,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
   const onSubmitForm = (data: GanttFormValues) => {
     const dataToSave = {
         ...data,
-        assignedOT: data.assignedOT === 'none' ? '' : data.assignedOT,
+        assignedOT: '',
     };
     onSave(dataToSave);
   };
@@ -229,33 +229,6 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                         )}
                         />
                 </div>
-                <div className="flex-1">
-                    <FormField
-                        control={form.control}
-                        name="assignedOT"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Asignar a OT (Opcional)</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Seleccionar OT..." />
-                                </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    <SelectItem value="none">Ninguna</SelectItem>
-                                    {activeWorkOrders.map((ot: WorkOrder) => (
-                                        <SelectItem key={ot.id} value={ot.ot_number}>
-                                            {ot.ot_number} - {ot.description}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-                </div>
                 <div className="space-y-2">
                     <FormLabel>Días Laborales</FormLabel>
                     <div className="flex items-center gap-4 pt-2">
@@ -286,20 +259,26 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                     </div>
                 </div>
             </div>
-            
-            <div>
-              <FormLabel>Cargar Tareas Sugeridas (Opcional)</FormLabel>
-              <Select onValueChange={handleSuggestedTasks}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar una categoría de servicio..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {services.filter(s => s.status === 'Activa').map(service => (
-                    <SelectItem key={service.id} value={service.name.toLowerCase()}>{service.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Cargar Tareas Sugeridas</CardTitle>
+            <CardDescription>Selecciona una categoría para cargar una lista de tareas predefinidas y agilizar la creación de tu cronograma.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <FormLabel>Cargar Tareas Sugeridas (Opcional)</FormLabel>
+            <Select onValueChange={handleSuggestedTasks}>
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccionar una categoría de servicio..." />
+              </SelectTrigger>
+              <SelectContent>
+                {services.filter(s => s.status === 'Activa').map(service => (
+                  <SelectItem key={service.id} value={service.name.toLowerCase()}>{service.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </CardContent>
         </Card>
 
