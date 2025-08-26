@@ -59,7 +59,7 @@ export default function SuggestedTasksPage() {
             }
             result[categoryKey][task.phase].push(task);
         }
-        // Sort tasks within each phase
+        // Sort tasks within each phase by the 'order' field
         for (const category in result) {
             for (const phase in result[category]) {
                 result[category][phase].sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -104,8 +104,8 @@ export default function SuggestedTasksPage() {
                                 </TabsContent>
                             );
                         }
-
-                        // Get unique phases and sort them based on the minimum order number within that phase
+                        
+                        // Get unique phases and sort them based on the minimum order number of tasks within that phase
                         const sortedPhases = Object.keys(tasksForCategory).sort((a, b) => {
                             const minOrderA = Math.min(...tasksForCategory[a].map(t => t.order || 0));
                             const minOrderB = Math.min(...tasksForCategory[b].map(t => t.order || 0));
