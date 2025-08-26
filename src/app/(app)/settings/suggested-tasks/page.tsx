@@ -78,9 +78,9 @@ export default function SuggestedTasksPage() {
 
                         const orderedPhases = [...new Set(tasksForCategory.map(t => t.phase))]
                             .sort((a, b) => {
-                                const firstTaskA = tasksForCategory.find(t => t.phase === a);
-                                const firstTaskB = tasksForCategory.find(t => t.phase === b);
-                                return (firstTaskA?.order || 0) - (firstTaskB?.order || 0);
+                                const firstTaskOrderA = tasksForCategory.find(t => t.phase === a)?.order || 0;
+                                const firstTaskOrderB = tasksForCategory.find(t => t.phase === b)?.order || 0;
+                                return firstTaskOrderA - firstTaskOrderB;
                             });
 
                         return (
