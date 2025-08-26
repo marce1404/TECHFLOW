@@ -44,7 +44,7 @@ export default function SuggestedTasksPage() {
         setDialogOpen(true);
     };
 
-    const availableCategories = services.filter(s => s.status === 'Activa');
+    const availableCategories = services.filter(s => s.status === 'Activa' && ['CCTV', 'CCAA', 'INCENDIO', 'ALARMA', 'ABLOY'].includes(s.name.toUpperCase()));
 
     return (
         <div className="flex flex-col gap-8">
@@ -77,10 +77,10 @@ export default function SuggestedTasksPage() {
                             .sort((a, b) => (a.order || 0) - (b.order || 0));
 
                         const orderedPhases = Array.from(new Set(tasksForCategory.map(t => t.phase)))
-                             .sort((a, b) => {
-                                const firstTaskOrderA = tasksForCategory.find(t => t.phase === a)?.order || 0;
-                                const firstTaskOrderB = tasksForCategory.find(t => t.phase === b)?.order || 0;
-                                return firstTaskOrderA - firstTaskOrderB;
+                            .sort((a, b) => {
+                                const firstTaskA = tasksForCategory.find(t => t.phase === a);
+                                const firstTaskB = tasksForCategory.find(t => t.phase === b);
+                                return (firstTaskA?.order || 0) - (firstTaskB?.order || 0);
                             });
 
                         return (

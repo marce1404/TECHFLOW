@@ -236,5 +236,5 @@ export const initialSuggestedTasks: Omit<SuggestedTask, 'id'>[] = [
     { name: 'Pruebas de Funcionamiento de Llaves y Cilindros', category: 'abloy', phase: 'Fase 4: Configuración y Pruebas', order: 401 },
     { name: 'Verificación de Plan de Amaestramiento', category: 'abloy', phase: 'Fase 4: Configuración y Pruebas', order: 402 },
     { name: 'Entrega de Llaves y Protocolo de Seguridad', category: 'abloy', phase: 'Fase 5: Cierre y Entrega', order: 501 },
-    { name: 'Entrega de Tarjeta de Propiedad y Planos de llaves', category: 'abloy', phase: 'Fase 5: Cierre y Entrega', order: 502 },
+    { name: 'Entrega de Tarjeta de Propiedad y Planos de llaves', category: 'abloy', phase: 'Fase 5: Cierre y Entrega', order: 502 }
 ];
