@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
     Table,
@@ -16,7 +16,6 @@ import {
 import { useWorkOrders } from '@/context/work-orders-context';
 import type { SuggestedTask, Service } from '@/lib/types';
 import { SuggestedTaskFormDialog } from '@/components/settings/suggested-task-form-dialog';
-import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -48,13 +47,16 @@ export default function SuggestedTasksPage() {
     const availableCategories = services.filter(s => s.status === 'Activa');
 
     const getPhasesForCategory = (categoryKey: string) => {
-        const tasksForCategory = suggestedTasks.filter(t => t.category === categoryKey);
-        if (tasksForCategory.length === 0) return [];
+        const tasksForCategory = suggestedTasks
+            .filter(t => t.category === categoryKey && t.phase)
+            .sort((a, b) => (a.order || 0) - (b.order || 0));
         
-        const phasesInOrder = tasksForCategory
-            .sort((a, b) => (a.order || 0) - (b.order || 0))
-            .map(t => t.phase)
-            .filter((value, index, self) => self.indexOf(value) === index && value); // Filter out undefined/null/empty phases
+        const phasesInOrder: string[] = [];
+        tasksForCategory.forEach(task => {
+            if (task.phase && !phasesInOrder.includes(task.phase)) {
+                phasesInOrder.push(task.phase);
+            }
+        });
         
         return phasesInOrder;
     };
