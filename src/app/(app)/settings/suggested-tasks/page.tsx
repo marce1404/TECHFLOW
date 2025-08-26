@@ -48,17 +48,24 @@ export default function SuggestedTasksPage() {
     const availableCategories = services.filter(s => s.status === 'Activa');
 
     const groupedTasks = React.useMemo(() => {
-        return suggestedTasks.reduce((acc, task) => {
+        const result: Record<string, Record<string, SuggestedTask[]>> = {};
+        for (const task of suggestedTasks) {
             const categoryKey = task.category.toLowerCase();
-            if (!acc[categoryKey]) {
-                acc[categoryKey] = {};
+            if (!result[categoryKey]) {
+                result[categoryKey] = {};
             }
-            if (!acc[categoryKey][task.phase]) {
-                acc[categoryKey][task.phase] = [];
+            if (!result[categoryKey][task.phase]) {
+                result[categoryKey][task.phase] = [];
             }
-            acc[categoryKey][task.phase].push(task);
-            return acc;
-        }, {} as Record<string, Record<string, SuggestedTask[]>>);
+            result[categoryKey][task.phase].push(task);
+        }
+        // Sort tasks within each phase
+        for (const category in result) {
+            for (const phase in result[category]) {
+                result[category][phase].sort((a, b) => (a.order || 0) - (b.order || 0));
+            }
+        }
+        return result;
     }, [suggestedTasks]);
 
     return (
@@ -109,7 +116,7 @@ export default function SuggestedTasksPage() {
                             <TabsContent key={category.id} value={categoryKey} className="m-0">
                                 <CardContent className="space-y-4 pt-0">
                                     {sortedPhases.map(phase => {
-                                        const tasks = [...tasksForCategory[phase]].sort((a, b) => (a.order || 0) - (b.order || 0));
+                                        const tasks = tasksForCategory[phase];
                                         return (
                                             <div key={phase}>
                                                 <h3 className="font-semibold text-lg mb-2 text-primary">{phase}</h3>
