@@ -76,13 +76,18 @@ export default function SuggestedTasksPage() {
                             .filter(t => t.category === categoryKey)
                             .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-                        const phases = [...new Set(tasksForCategory.map(t => t.phase))];
+                        const orderedPhases = [...new Set(tasksForCategory.map(t => t.phase))]
+                            .sort((a, b) => {
+                                const firstTaskA = tasksForCategory.find(t => t.phase === a);
+                                const firstTaskB = tasksForCategory.find(t => t.phase === b);
+                                return (firstTaskA?.order || 0) - (firstTaskB?.order || 0);
+                            });
 
                         return (
                             <TabsContent key={category.id} value={categoryKey} className="m-0">
                                 <CardContent className="space-y-4 pt-0">
-                                    {phases.length > 0 ? (
-                                        phases.map((phase, index) => {
+                                    {orderedPhases.length > 0 ? (
+                                        orderedPhases.map((phase, index) => {
                                             const tasksForPhase = tasksForCategory.filter(t => t.phase === phase);
                                             
                                             if (tasksForPhase.length === 0) return null;
