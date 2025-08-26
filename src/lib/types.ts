@@ -137,6 +137,7 @@ export type SuggestedTask = {
     id: string;
     name: string;
     category: string; // This will be the lowercase name of the service
+    order: number;
 }
 
 export type ReportTemplateField = {

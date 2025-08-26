@@ -29,7 +29,9 @@ export default function SuggestedTasksPage() {
         if ('id' in task) {
             updateSuggestedTask(task.id, task);
         } else {
-            addSuggestedTask(task);
+            // Assign a high order number to new tasks to place them at the end
+            const newOrder = Math.max(...suggestedTasks.map(t => t.order || 0), 0) + 1;
+            addSuggestedTask({ ...task, order: newOrder });
         }
     };
 
@@ -49,6 +51,8 @@ export default function SuggestedTasksPage() {
                 acc[task.category] = [];
             }
             acc[task.category].push(task);
+            // Sort tasks within the category by the 'order' field
+            acc[task.category].sort((a, b) => (a.order || 0) - (b.order || 0));
             return acc;
         }, {} as Record<string, SuggestedTask[]>);
     }, [suggestedTasks]);
