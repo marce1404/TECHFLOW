@@ -46,16 +46,6 @@ export default function SuggestedTasksPage() {
 
     const availableCategories = services.filter(s => s.status === 'Activa');
 
-    const getPhasesForCategory = (categoryKey: string) => {
-        const tasksForCategory = suggestedTasks.filter(t => t.category === categoryKey);
-        const phasesInOrder = tasksForCategory
-            .sort((a, b) => (a.order || 0) - (b.order || 0))
-            .map(t => t.phase)
-            .filter((value, index, self) => self.indexOf(value) === index);
-        return phasesInOrder;
-    };
-
-
     return (
         <div className="flex flex-col gap-8">
             <div className="flex items-center justify-between">
@@ -81,21 +71,26 @@ export default function SuggestedTasksPage() {
                     
                     {availableCategories.map(category => {
                         const categoryKey = category.name.toLowerCase();
-                        const phases = getPhasesForCategory(categoryKey);
+                        const tasksForCategory = suggestedTasks.filter(t => t.category === categoryKey);
+                        const phases = [...new Set(tasksForCategory.map(t => t.phase))].sort((a, b) => {
+                            const orderA = tasksForCategory.find(t => t.phase === a)?.order || 0;
+                            const orderB = tasksForCategory.find(t => t.phase === b)?.order || 0;
+                            return orderA - orderB;
+                        });
 
                         return (
                             <TabsContent key={category.id} value={categoryKey} className="m-0">
                                 <CardContent className="space-y-4 pt-0">
                                     {phases.length > 0 ? (
-                                        phases.map((phase) => {
-                                            const tasksForPhase = suggestedTasks
-                                                .filter(t => t.category === categoryKey && t.phase === phase)
+                                        phases.map((phase, index) => {
+                                            const tasksForPhase = tasksForCategory
+                                                .filter(t => t.phase === phase)
                                                 .sort((a, b) => (a.order || 0) - (b.order || 0));
                                             
                                             if (tasksForPhase.length === 0) return null;
 
                                             return (
-                                                <div key={phase}>
+                                                <div key={`${phase}-${index}`}>
                                                     <h3 className="font-semibold text-lg mb-2 text-primary">{phase}</h3>
                                                     <div className="rounded-md border">
                                                         <Table>
