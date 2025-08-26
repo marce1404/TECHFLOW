@@ -48,18 +48,20 @@ export default function SuggestedTasksPage() {
     const availableCategories = services.filter(s => s.status === 'Activa');
 
     const getPhasesForCategory = (categoryKey: string) => {
-        const tasksForCategory = suggestedTasks.filter(t => t.category === categoryKey);
+        const tasksForCategory = suggestedTasks
+            .filter(t => t.category === categoryKey)
+            .sort((a, b) => (a.order || 0) - (b.order || 0));
+
         if (tasksForCategory.length === 0) return [];
         
-        // Get unique phases
-        const uniquePhases = [...new Set(tasksForCategory.map(t => t.phase))];
-        
-        // Sort phases based on the minimum order number of tasks within that phase
-        return uniquePhases.sort((a, b) => {
-            const minOrderA = Math.min(...tasksForCategory.filter(t => t.phase === a).map(t => t.order || 0));
-            const minOrderB = Math.min(...tasksForCategory.filter(t => t.phase === b).map(t => t.order || 0));
-            return minOrderA - minOrderB;
+        const uniquePhases: string[] = [];
+        tasksForCategory.forEach(task => {
+            if (task.phase && !uniquePhases.includes(task.phase)) {
+                uniquePhases.push(task.phase);
+            }
         });
+        
+        return uniquePhases;
     };
 
     return (
@@ -93,13 +95,15 @@ export default function SuggestedTasksPage() {
                             <TabsContent key={category.id} value={categoryKey} className="m-0">
                                 <CardContent className="space-y-4 pt-0">
                                     {phases.length > 0 ? (
-                                        phases.map(phase => {
+                                        phases.map((phase, index) => {
                                             const tasksForPhase = suggestedTasks
                                                 .filter(t => t.category === categoryKey && t.phase === phase)
                                                 .sort((a, b) => (a.order || 0) - (b.order || 0));
                                             
+                                            if (!phase) return null;
+
                                             return (
-                                                <div key={phase}>
+                                                <div key={`${phase}-${index}`}>
                                                     <h3 className="font-semibold text-lg mb-2 text-primary">{phase}</h3>
                                                     <div className="rounded-md border">
                                                         <Table>
@@ -184,5 +188,3 @@ export default function SuggestedTasksPage() {
         </div>
     );
 }
-
-    
