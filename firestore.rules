@@ -1,65 +1,52 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Default deny all reads/writes unless a specific rule allows it
-    match /{document=**} {
-      allow read, write: if false;
+  
+    // Regla general para la mayoría de las colecciones:
+    // Permite leer y escribir a cualquier usuario que haya iniciado sesión.
+    match /ot-categories/{id} {
+      allow read, write: if request.auth != null;
+    }
+    match /ot-statuses/{id} {
+      allow read, write: if request.auth != null;
+    }
+    match /services/{id} {
+      allow read, write: if request.auth != null;
+    }
+    match /collaborators/{id} {
+      allow read, write: if request.auth != null;
+    }
+    match /vehicles/{id} {
+      allow read, write: if request.auth != null;
+    }
+    match /gantt-charts/{id} {
+      allow read, write: if request.auth != null;
+    }
+    match /suggested-tasks/{id} {
+      allow read, write: if request.auth != null;
+    }
+    match /report-templates/{id} {
+      allow read, write: if request.auth != null;
+    }
+    match /submitted-reports/{id} {
+      allow read, write: if request.auth != null;
+    }
+    match /work-orders/{id} {
+      allow read, write: if request.auth != null;
     }
 
-    // Allow authenticated users to manage their own user profile.
-    // Also allows admins (or server-side code with full access) to manage all users.
+    // Regla para la información de la empresa
+    match /settings/companyInfo {
+        allow read, write: if request.auth != null;
+    }
+    
+    // Regla para la colección de usuarios
     match /users/{userId} {
-      allow read, update: if request.auth != null && request.auth.uid == userId;
-      // Creation is handled by server-side functions (actions.ts)
-      allow create: if request.auth != null; 
-    }
-    
-    // For all other app-related collections, allow any authenticated user
-    // to perform read and write operations. This is a common setup for development.
-    // For production, you might want to restrict these rules further based on user roles.
-    match /work-orders/{orderId} {
-      allow read, write: if request.auth != null;
-    }
-    
-    match /collaborators/{collaboratorId} {
-      allow read, write: if request.auth != null;
-    }
-
-    match /vehicles/{vehicleId} {
-      allow read, write: if request.auth != null;
-    }
-
-    match /gantt-charts/{chartId} {
-      allow read, write: if request.auth != null;
-    }
-        
-    match /ot-categories/{categoryId} {
-      allow read, write: if request.auth != null;
-    }
-
-    match /ot-statuses/{statusId} {
-      allow read, write: if request.auth != null;
-    }
-        
-    match /services/{serviceId} {
-      allow read, write: if request.auth != null;
-    }
-
-    match /suggested-tasks/{taskId} {
-      allow read, write: if request.auth != null;
-    }
-
-    match /report-templates/{templateId} {
-      allow read, write: if request.auth != null;
-    }
-
-    match /submitted-reports/{reportId} {
-      allow read, write: if request.auth != null;
-    }
-
-    match /settings/{settingId} {
-      allow read, write: if request.auth != null;
+      // Cualquier usuario autenticado puede leer la lista de usuarios
+      allow read: if request.auth != null;
+      // Solo el propio usuario o un Admin pueden actualizar/borrar su perfil
+      allow write: if request.auth.uid == userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
     }
   }
 }
