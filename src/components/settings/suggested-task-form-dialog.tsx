@@ -29,6 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 const suggestedTaskFormSchema = z.object({
   name: z.string().min(3, { message: 'El nombre debe tener al menos 3 caracteres.' }),
   category: z.string().min(1, { message: 'Debes seleccionar una categoría.' }),
+  phase: z.string().min(3, { message: 'El nombre de la fase es requerido.' }),
 });
 
 type SuggestedTaskFormValues = z.infer<typeof suggestedTaskFormSchema>;
@@ -47,6 +48,7 @@ export function SuggestedTaskFormDialog({ open, onOpenChange, onSave, task, cate
     defaultValues: {
       name: '',
       category: '',
+      phase: '',
     },
   });
 
@@ -55,11 +57,13 @@ export function SuggestedTaskFormDialog({ open, onOpenChange, onSave, task, cate
       form.reset({
         name: task.name,
         category: task.category,
+        phase: task.phase,
       });
     } else {
       form.reset({
         name: '',
         category: '',
+        phase: '',
       });
     }
   }, [task, open, form]);
@@ -115,6 +119,19 @@ export function SuggestedTaskFormDialog({ open, onOpenChange, onSave, task, cate
                             ))}
                         </SelectContent>
                     </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="phase"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Fase del Proyecto</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ej: Fase 3: Instalación y Montaje" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
