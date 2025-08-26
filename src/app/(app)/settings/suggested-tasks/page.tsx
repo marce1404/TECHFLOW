@@ -47,17 +47,11 @@ export default function SuggestedTasksPage() {
     const availableCategories = services.filter(s => s.status === 'Activa');
 
     const getPhasesForCategory = (categoryKey: string) => {
-        const tasksForCategory = suggestedTasks
-            .filter(t => t.category === categoryKey && t.phase)
-            .sort((a, b) => (a.order || 0) - (b.order || 0));
-        
-        const phasesInOrder: string[] = [];
-        tasksForCategory.forEach(task => {
-            if (task.phase && !phasesInOrder.includes(task.phase)) {
-                phasesInOrder.push(task.phase);
-            }
-        });
-        
+        const tasksForCategory = suggestedTasks.filter(t => t.category === categoryKey);
+        const phasesInOrder = tasksForCategory
+            .sort((a, b) => (a.order || 0) - (b.order || 0))
+            .map(t => t.phase)
+            .filter((value, index, self) => self.indexOf(value) === index);
         return phasesInOrder;
     };
 
@@ -93,7 +87,7 @@ export default function SuggestedTasksPage() {
                             <TabsContent key={category.id} value={categoryKey} className="m-0">
                                 <CardContent className="space-y-4 pt-0">
                                     {phases.length > 0 ? (
-                                        phases.map((phase, index) => {
+                                        phases.map((phase) => {
                                             const tasksForPhase = suggestedTasks
                                                 .filter(t => t.category === categoryKey && t.phase === phase)
                                                 .sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -101,7 +95,7 @@ export default function SuggestedTasksPage() {
                                             if (tasksForPhase.length === 0) return null;
 
                                             return (
-                                                <div key={`${phase}-${index}`}>
+                                                <div key={phase}>
                                                     <h3 className="font-semibold text-lg mb-2 text-primary">{phase}</h3>
                                                     <div className="rounded-md border">
                                                         <Table>
