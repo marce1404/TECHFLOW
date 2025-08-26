@@ -1,7 +1,7 @@
 
 import Link from 'next/link';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { ChevronRight, Info, FileText, Building, Users, Settings, BarChart2, Tag, ListChecks, ClipboardPenLine, GitBranch } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { ChevronRight, Building, Users, Settings, BarChart2, Tag, ListChecks, ClipboardPenLine, GitBranch } from 'lucide-react';
 import packageJson from '@/../package.json';
 
 interface SettingsGroupProps {
