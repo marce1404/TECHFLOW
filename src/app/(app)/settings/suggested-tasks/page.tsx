@@ -48,21 +48,17 @@ export default function SuggestedTasksPage() {
     const availableCategories = services.filter(s => s.status === 'Activa');
 
     const getPhasesForCategory = (categoryKey: string) => {
-        const tasksForCategory = suggestedTasks
-            .filter(t => t.category === categoryKey)
-            .sort((a, b) => (a.order || 0) - (b.order || 0));
-
+        const tasksForCategory = suggestedTasks.filter(t => t.category === categoryKey);
         if (tasksForCategory.length === 0) return [];
         
-        const uniquePhases: string[] = [];
-        tasksForCategory.forEach(task => {
-            if (task.phase && !uniquePhases.includes(task.phase)) {
-                uniquePhases.push(task.phase);
-            }
-        });
+        const phasesInOrder = tasksForCategory
+            .sort((a, b) => (a.order || 0) - (b.order || 0))
+            .map(t => t.phase)
+            .filter((value, index, self) => self.indexOf(value) === index && value); // Filter out undefined/null/empty phases
         
-        return uniquePhases;
+        return phasesInOrder;
     };
+
 
     return (
         <div className="flex flex-col gap-8">
@@ -100,7 +96,7 @@ export default function SuggestedTasksPage() {
                                                 .filter(t => t.category === categoryKey && t.phase === phase)
                                                 .sort((a, b) => (a.order || 0) - (b.order || 0));
                                             
-                                            if (!phase) return null;
+                                            if (tasksForPhase.length === 0) return null;
 
                                             return (
                                                 <div key={`${phase}-${index}`}>
