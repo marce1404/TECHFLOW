@@ -175,7 +175,9 @@ export const initialSuggestedTasks: Omit<SuggestedTask, 'id'>[] = [
     // CCAA (Control de Acceso)
     { name: 'Levantamiento y Definición de Puntos de Control', category: 'ccaa', phase: 'Fase 1: Planificación y Diseño', order: 101 },
     { name: 'Diseño de Topología del Sistema y Ubicación de Equipos', category: 'ccaa', phase: 'Fase 1: Planificación y Diseño', order: 102 },
+    { name: 'Aprobación de Diseño por Cliente', category: 'ccaa', phase: 'Fase 1: Planificación y Diseño', order: 103 },
     { name: 'Adquisición de Equipos (Controladoras, Lectoras, Cerraduras)', category: 'ccaa', phase: 'Fase 2: Adquisición y Logística', order: 201 },
+    { name: 'Recepción y Verificación de Equipos', category: 'ccaa', phase: 'Fase 2: Adquisición y Logística', order: 202 },
     { name: 'Instalación de Canalizaciones y Tuberías', category: 'ccaa', phase: 'Fase 3: Instalación y Montaje', order: 301 },
     { name: 'Cableado de Puntos de Control a Controladora', category: 'ccaa', phase: 'Fase 3: Instalación y Montaje', order: 302 },
     { name: 'Instalación de Cerraduras Electromagnéticas / Pestillos Eléctricos', category: 'ccaa', phase: 'Fase 3: Instalación y Montaje', order: 303 },
@@ -209,14 +211,6 @@ export const initialSuggestedTasks: Omit<SuggestedTask, 'id'>[] = [
     { name: 'Capacitación a Personal de Emergencia', category: 'incendio', phase: 'Fase 5: Certificación y Entrega', order: 502 },
     { name: 'Entrega de Dossier de Calidad y Planos As-Built', category: 'incendio', phase: 'Fase 5: Certificación y Entrega', order: 503 },
 
-    // ABLOY
-    { name: 'Evaluación de Seguridad de Puertas y Accesos', category: 'abloy', phase: 'Fase 1: Planificación y Diseño', order: 101 },
-    { name: 'Diseño de Sistema de Amaestramiento', category: 'abloy', phase: 'Fase 1: Planificación y Diseño', order: 102 },
-    { name: 'Adquisición de Cilindros, Candados y Llaves', category: 'abloy', phase: 'Fase 2: Adquisición y Logística', order: 201 },
-    { name: 'Instalación de Cilindros en Puertas', category: 'abloy', phase: 'Fase 3: Instalación y Montaje', order: 301 },
-    { name: 'Pruebas de Funcionamiento de Llaves y Cilindros', category: 'abloy', phase: 'Fase 4: Configuración y Pruebas', order: 401 },
-    { name: 'Entrega de Llaves y Protocolo de Seguridad', category: 'abloy', phase: 'Fase 5: Cierre y Entrega', order: 501 },
-    
     // ALARMA
     { name: 'Evaluación de Seguridad y Puntos Vulnerables', category: 'alarma', phase: 'Fase 1: Planificación y Diseño', order: 101 },
     { name: 'Diseño del Sistema de Alarma y Zonificación', category: 'alarma', phase: 'Fase 1: Planificación y Diseño', order: 102 },
@@ -232,6 +226,15 @@ export const initialSuggestedTasks: Omit<SuggestedTask, 'id'>[] = [
     { name: 'Pruebas de Comunicación con Central de Monitoreo', category: 'alarma', phase: 'Fase 4: Configuración y Pruebas', order: 404 },
     { name: 'Capacitación al Usuario sobre Uso, Códigos y Procedimientos', category: 'alarma', phase: 'Fase 5: Cierre y Entrega', order: 501 },
     { name: 'Entrega de Manuales y Contactos de Emergencia', category: 'alarma', phase: 'Fase 5: Cierre y Entrega', order: 502 },
-];
 
-    
+    // ABLOY
+    { name: 'Evaluación de Seguridad de Puertas y Accesos', category: 'abloy', phase: 'Fase 1: Planificación y Diseño', order: 101 },
+    { name: 'Diseño de Sistema de Amaestramiento', category: 'abloy', phase: 'Fase 1: Planificación y Diseño', order: 102 },
+    { name: 'Adquisición de Cilindros, Candados y Llaves', category: 'abloy', phase: 'Fase 2: Adquisición y Logística', order: 201 },
+    { name: 'Instalación de Cilindros en Puertas', category: 'abloy', phase: 'Fase 3: Instalación y Montaje', order: 301 },
+    { name: 'Instalación de Candados en Puntos Definidos', category: 'abloy', phase: 'Fase 3: Instalación y Montaje', order: 302 },
+    { name: 'Pruebas de Funcionamiento de Llaves y Cilindros', category: 'abloy', phase: 'Fase 4: Configuración y Pruebas', order: 401 },
+    { name: 'Verificación de Plan de Amaestramiento', category: 'abloy', phase: 'Fase 4: Configuración y Pruebas', order: 402 },
+    { name: 'Entrega de Llaves y Protocolo de Seguridad', category: 'abloy', phase: 'Fase 5: Cierre y Entrega', order: 501 },
+    { name: 'Entrega de Tarjeta de Propiedad y Planos de llaves', category: 'abloy', phase: 'Fase 5: Cierre y Entrega', order: 502 },
+];
