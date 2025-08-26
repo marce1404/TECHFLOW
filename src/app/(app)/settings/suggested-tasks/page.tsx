@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
     Table,
     TableBody,
@@ -49,15 +49,14 @@ export default function SuggestedTasksPage() {
 
     const groupedTasks = React.useMemo(() => {
         return suggestedTasks.reduce((acc, task) => {
-            if (!acc[task.category]) {
-                acc[task.category] = {};
+            const categoryKey = task.category.toLowerCase();
+            if (!acc[categoryKey]) {
+                acc[categoryKey] = {};
             }
-            if (!acc[task.category][task.phase]) {
-                acc[task.category][task.phase] = [];
+            if (!acc[categoryKey][task.phase]) {
+                acc[categoryKey][task.phase] = [];
             }
-            acc[task.category][task.phase].push(task);
-            // Sort tasks within phase
-            acc[task.category][task.phase].sort((a, b) => (a.order || 0) - (b.order || 0));
+            acc[categoryKey][task.phase].push(task);
             return acc;
         }, {} as Record<string, Record<string, SuggestedTask[]>>);
     }, [suggestedTasks]);
@@ -85,80 +84,99 @@ export default function SuggestedTasksPage() {
                         ))}
                     </TabsList>
                     
-                    {availableCategories.map(category => (
-                        <TabsContent key={category.id} value={category.name.toLowerCase()} className="m-0">
-                            <CardContent className="space-y-4 pt-0">
-                                {groupedTasks[category.name.toLowerCase()] ? (
-                                    Object.entries(groupedTasks[category.name.toLowerCase()]).map(([phase, tasks]) => (
-                                        <div key={phase}>
-                                            <h3 className="font-semibold text-lg mb-2 text-primary">{phase}</h3>
-                                            <div className="rounded-md border">
-                                                <Table>
-                                                    <TableHeader>
-                                                        <TableRow>
-                                                            <TableHead>Nombre de la Tarea</TableHead>
-                                                            <TableHead className="w-[100px] text-right">Acciones</TableHead>
-                                                        </TableRow>
-                                                    </TableHeader>
-                                                    <TableBody>
-                                                        {tasks.map((task) => (
-                                                            <TableRow key={task.id}>
-                                                                <TableCell>{task.name}</TableCell>
-                                                                <TableCell className="text-right">
-                                                                    <AlertDialog>
-                                                                        <DropdownMenu>
-                                                                            <DropdownMenuTrigger asChild>
-                                                                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                                                                    <span className="sr-only">Abrir menú</span>
-                                                                                    <MoreHorizontal className="h-4 w-4" />
-                                                                                </Button>
-                                                                            </DropdownMenuTrigger>
-                                                                            <DropdownMenuContent align="end">
-                                                                                <DropdownMenuItem onClick={() => handleEdit(task)}>
-                                                                                    <Pencil className="mr-2 h-4 w-4" /> Editar
-                                                                                </DropdownMenuItem>
-                                                                                <AlertDialogTrigger asChild>
-                                                                                    <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                                                                        <Trash2 className="mr-2 h-4 w-4" /> Eliminar
-                                                                                    </DropdownMenuItem>
-                                                                                </AlertDialogTrigger>
-                                                                            </DropdownMenuContent>
-                                                                        </DropdownMenu>
-                                                                        <AlertDialogContent>
-                                                                            <AlertDialogHeader>
-                                                                            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                                                                            <AlertDialogDescription>
-                                                                                Esta acción no se puede deshacer. Esto eliminará permanentemente la tarea
-                                                                                <span className="font-bold"> {task.name}</span>.
-                                                                            </AlertDialogDescription>
-                                                                            </AlertDialogHeader>
-                                                                            <AlertDialogFooter>
-                                                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                                            <AlertDialogAction
-                                                                                className="bg-destructive hover:bg-destructive/90"
-                                                                                onClick={() => deleteSuggestedTask(task.id)}
-                                                                            >
-                                                                                Eliminar
-                                                                            </AlertDialogAction>
-                                                                            </AlertDialogFooter>
-                                                                        </AlertDialogContent>
-                                                                    </AlertDialog>
-                                                                </TableCell>
-                                                            </TableRow>
-                                                        ))}
-                                                    </TableBody>
-                                                </Table>
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                     <div className="text-center text-muted-foreground p-8 border rounded-lg">
+                    {availableCategories.map(category => {
+                        const categoryKey = category.name.toLowerCase();
+                        const tasksForCategory = groupedTasks[categoryKey];
+
+                        if (!tasksForCategory) {
+                             return (
+                                <TabsContent key={category.id} value={categoryKey}>
+                                    <div className="text-center text-muted-foreground p-8 border rounded-lg m-4">
                                         No hay tareas sugeridas para esta categoría.
                                     </div>
-                                )}
-                            </CardContent>
-                        </TabsContent>
-                    ))}
+                                </TabsContent>
+                            );
+                        }
+
+                        // Get unique phases and sort them based on the minimum order number within that phase
+                        const sortedPhases = Object.keys(tasksForCategory).sort((a, b) => {
+                            const minOrderA = Math.min(...tasksForCategory[a].map(t => t.order || 0));
+                            const minOrderB = Math.min(...tasksForCategory[b].map(t => t.order || 0));
+                            return minOrderA - minOrderB;
+                        });
+
+                        return (
+                            <TabsContent key={category.id} value={categoryKey} className="m-0">
+                                <CardContent className="space-y-4 pt-0">
+                                    {sortedPhases.map(phase => {
+                                        const tasks = [...tasksForCategory[phase]].sort((a, b) => (a.order || 0) - (b.order || 0));
+                                        return (
+                                            <div key={phase}>
+                                                <h3 className="font-semibold text-lg mb-2 text-primary">{phase}</h3>
+                                                <div className="rounded-md border">
+                                                    <Table>
+                                                        <TableHeader>
+                                                            <TableRow>
+                                                                <TableHead>Nombre de la Tarea</TableHead>
+                                                                <TableHead className="w-[100px] text-right">Acciones</TableHead>
+                                                            </TableRow>
+                                                        </TableHeader>
+                                                        <TableBody>
+                                                            {tasks.map((task) => (
+                                                                <TableRow key={task.id}>
+                                                                    <TableCell>{task.name}</TableCell>
+                                                                    <TableCell className="text-right">
+                                                                        <AlertDialog>
+                                                                            <DropdownMenu>
+                                                                                <DropdownMenuTrigger asChild>
+                                                                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                                                                        <span className="sr-only">Abrir menú</span>
+                                                                                        <MoreHorizontal className="h-4 w-4" />
+                                                                                    </Button>
+                                                                                </DropdownMenuTrigger>
+                                                                                <DropdownMenuContent align="end">
+                                                                                    <DropdownMenuItem onClick={() => handleEdit(task)}>
+                                                                                        <Pencil className="mr-2 h-4 w-4" /> Editar
+                                                                                    </DropdownMenuItem>
+                                                                                    <AlertDialogTrigger asChild>
+                                                                                        <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                                                                            <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                                                                                        </DropdownMenuItem>
+                                                                                    </AlertDialogTrigger>
+                                                                                </DropdownMenuContent>
+                                                                            </DropdownMenu>
+                                                                            <AlertDialogContent>
+                                                                                <AlertDialogHeader>
+                                                                                <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                                                                <AlertDialogDescription>
+                                                                                    Esta acción no se puede deshacer. Esto eliminará permanentemente la tarea
+                                                                                    <span className="font-bold"> {task.name}</span>.
+                                                                                </AlertDialogDescription>
+                                                                                </AlertDialogHeader>
+                                                                                <AlertDialogFooter>
+                                                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                                <AlertDialogAction
+                                                                                    className="bg-destructive hover:bg-destructive/90"
+                                                                                    onClick={() => deleteSuggestedTask(task.id)}
+                                                                                >
+                                                                                    Eliminar
+                                                                                </AlertDialogAction>
+                                                                                </AlertDialogFooter>
+                                                                            </AlertDialogContent>
+                                                                        </AlertDialog>
+                                                                    </TableCell>
+                                                                </TableRow>
+                                                            ))}
+                                                        </TableBody>
+                                                    </Table>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </CardContent>
+                            </TabsContent>
+                        )
+                    })}
                 </Tabs>
             </Card>
 
