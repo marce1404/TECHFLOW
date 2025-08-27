@@ -105,6 +105,9 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
   const handleSuggestedTasks = (category: string) => {
     const tasksForCategory = suggestedTasks.filter(t => t.category === category);
     
+    // Clear existing tasks before adding new ones
+    replace([]);
+
     if (tasksForCategory.length > 0) {
         const grouped = tasksForCategory.reduce((acc, task) => {
             const phase = task.phase || 'Sin Fase';
@@ -115,7 +118,6 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
             return acc;
         }, {} as Record<string, SuggestedTask[]>);
 
-        // Sort phases based on the first task's order in each phase
         const sortedPhases = Object.keys(grouped).sort((a, b) => {
             const firstTaskOrderA = grouped[a][0]?.order || 0;
             const firstTaskOrderB = grouped[b][0]?.order || 0;
@@ -144,7 +146,8 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                 });
             });
         });
-
+        
+        // Use replace to ensure the form array is completely overwritten
         replace(newTasks);
     }
   }

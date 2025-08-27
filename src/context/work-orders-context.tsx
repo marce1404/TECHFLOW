@@ -62,8 +62,7 @@ interface WorkOrdersContextType {
 
 const WorkOrdersContext = createContext<WorkOrdersContextType | undefined>(undefined);
 
-const FAILED_SEED_FLAG_KEY = 'suggested_tasks_seed_completed_v3';
-
+const SEED_FLAG_KEY = 'suggested_tasks_seeded_v4';
 
 export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [activeWorkOrders, setActiveWorkOrders] = useState<WorkOrder[]>([]);
@@ -86,12 +85,10 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
         const fetchAndSetSuggestedTasks = async () => {
-            const seedCompleted = localStorage.getItem(FAILED_SEED_FLAG_KEY);
-
-            if (seedCompleted === 'true') {
+            const seedCompleted = localStorage.getItem(SEED_FLAG_KEY);
+            if (seedCompleted) {
                  const tasksSnapshot = await getDocs(query(collection(db, "suggested-tasks"), orderBy("order")));
-                 const tasks = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SuggestedTask[];
-                 setSuggestedTasks(tasks);
+                 setSuggestedTasks(tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SuggestedTask[]);
                  return;
             }
 
@@ -116,10 +113,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             console.log("Seeding of new suggested tasks complete.");
 
             const tasksSnapshot = await getDocs(query(collection(db, "suggested-tasks"), orderBy("order")));
-            const tasks = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SuggestedTask[];
-            setSuggestedTasks(tasks);
+            setSuggestedTasks(tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SuggestedTask[]);
             
-            localStorage.setItem(FAILED_SEED_FLAG_KEY, 'true');
+            localStorage.setItem(SEED_FLAG_KEY, 'true');
         };
         
         const [
