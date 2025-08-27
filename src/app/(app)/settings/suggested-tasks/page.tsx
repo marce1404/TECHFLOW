@@ -88,7 +88,7 @@ export default function SuggestedTasksPage() {
                             acc[phase].push(task);
                             return acc;
                         }, {} as GroupedTasks);
-
+                        
                         const sortedPhases = Object.keys(groupedTasks).sort((a, b) => {
                             const firstTaskOrderA = groupedTasks[a][0]?.order || 0;
                             const firstTaskOrderB = groupedTasks[b][0]?.order || 0;
