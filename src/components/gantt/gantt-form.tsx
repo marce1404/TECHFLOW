@@ -42,6 +42,7 @@ const taskSchema = z.object({
   duration: z.coerce.number().min(0, { message: 'La duración debe ser al menos 0.' }), // Allow 0 for phases
   progress: z.coerce.number().min(0).max(100).optional().default(0),
   isPhase: z.boolean().optional().default(false),
+  phase: z.string().optional(), // Added to associate tasks with a phase
 });
 
 const ganttFormSchema = z.object({
@@ -72,17 +73,63 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
   const form = useForm<GanttFormValues>({
     resolver: zodResolver(ganttFormSchema),
     defaultValues: {
-      name: ganttChart?.name || '',
-      assignedOT: ganttChart?.assignedOT || '',
-      workOnSaturdays: ganttChart?.workOnSaturdays ?? true,
-      workOnSundays: ganttChart?.workOnSundays ?? false,
-      tasks: ganttChart?.tasks.map(t => ({
-          ...t,
-          progress: t.progress || 0,
-          startDate: t.startDate ? new Date(t.startDate.toString().replace(/-/g, '/')) : new Date(),
-      })) || [],
+      name: '',
+      assignedOT: '',
+      workOnSaturdays: true,
+      workOnSundays: false,
+      tasks: [],
     },
   });
+  
+  React.useEffect(() => {
+    if (ganttChart) {
+      const reconstructedTasks: GanttFormValues['tasks'] = [];
+      const phases = new Map<string, boolean>();
+
+      // Group saved tasks by their phase
+      const tasksWithPhase = ganttChart.tasks.map(task => {
+        const suggested = suggestedTasks.find(st => st.name === task.name);
+        return { ...task, phase: suggested?.phase || 'Tareas Generales' };
+      });
+
+      const groupedByPhase = tasksWithPhase.reduce((acc, task) => {
+          const phase = task.phase;
+          if (!acc[phase]) {
+            acc[phase] = [];
+          }
+          acc[phase].push(task);
+          return acc;
+      }, {} as Record<string, typeof tasksWithPhase>);
+
+      // Reconstruct the list with phases as headers
+      for (const phaseName in groupedByPhase) {
+         reconstructedTasks.push({
+            id: crypto.randomUUID(),
+            name: phaseName,
+            isPhase: true,
+            startDate: new Date(),
+            duration: 0,
+            progress: 0,
+         });
+         groupedByPhase[phaseName].forEach(task => {
+            reconstructedTasks.push({
+              ...task,
+              progress: task.progress || 0,
+              startDate: task.startDate ? new Date(task.startDate.toString().replace(/-/g, '/')) : new Date(),
+            });
+         });
+      }
+
+
+      form.reset({
+        name: ganttChart.name || '',
+        assignedOT: ganttChart.assignedOT || '',
+        workOnSaturdays: ganttChart.workOnSaturdays ?? true,
+        workOnSundays: ganttChart.workOnSundays ?? false,
+        tasks: reconstructedTasks,
+      });
+    }
+  }, [ganttChart, form, suggestedTasks]);
 
   const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
@@ -98,6 +145,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
         duration: 1,
         progress: 0,
         isPhase: false,
+        phase: 'Tareas Personalizadas'
       });
       setCustomTaskName('');
     }
@@ -106,7 +154,6 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
   const handleSuggestedTasks = (category: string) => {
     const tasksForCategory = suggestedTasks.filter(t => t.category === category);
     
-    // Use a Set to track unique task names to prevent duplicates from bad data
     const seen = new Set();
     const uniqueTasksForCategory = tasksForCategory.filter(t => {
         if (seen.has(t.name)) {
@@ -117,7 +164,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
         }
     });
 
-    const newTasks: z.infer<typeof taskSchema>[] = [];
+    const newTasks: GanttFormValues['tasks'] = [];
     
     if (uniqueTasksForCategory.length > 0) {
         const grouped = uniqueTasksForCategory.reduce((acc, task) => {
@@ -143,6 +190,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                 startDate: new Date(),
                 duration: 0,
                 progress: 0,
+                phase: phase,
             });
             const sortedTasksInPhase = grouped[phase].sort((a, b) => (a.order || 0) - (b.order || 0));
             sortedTasksInPhase.forEach(task => {
@@ -153,11 +201,11 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                     startDate: new Date(),
                     duration: 1,
                     progress: 0,
+                    phase: phase,
                 });
             });
         });
     }
-    // This is the key change: `replace` clears the array and adds new items.
     replace(newTasks);
   }
 
@@ -238,7 +286,12 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
   const onSubmitForm = (data: GanttFormValues) => {
     const dataToSave = {
         ...data,
-        tasks: data.tasks.filter(t => !t.isPhase)
+        tasks: data.tasks
+          .filter(t => !t.isPhase)
+          .map(t => {
+            const { isPhase, ...taskToSave } = t;
+            return taskToSave;
+          })
     };
     onSave(dataToSave as any);
   };
