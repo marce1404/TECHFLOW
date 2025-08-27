@@ -83,38 +83,37 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
   
   React.useEffect(() => {
     if (ganttChart) {
-      // Group saved tasks by their phase
-      const tasksWithPhase = ganttChart.tasks.map(task => {
+      const savedTasksWithPhase = ganttChart.tasks.map(task => {
         const suggested = suggestedTasks.find(st => st.name === task.name);
-        return { ...task, phase: suggested?.phase || 'Tareas Personalizadas' }; // Default phase
+        return { 
+            ...task, 
+            startDate: new Date(task.startDate.toString().replace(/-/g, '/')),
+            phase: suggested?.phase || 'Tareas Personalizadas' 
+        };
       });
 
-      const groupedByPhase = tasksWithPhase.reduce((acc, task) => {
+      const groupedByPhase = savedTasksWithPhase.reduce((acc, task) => {
           const phase = task.phase;
           if (!acc[phase]) {
             acc[phase] = [];
           }
           acc[phase].push(task);
           return acc;
-      }, {} as Record<string, typeof tasksWithPhase>);
-
-      const reconstructedTasks: GanttFormValues['tasks'] = [];
+      }, {} as Record<string, typeof savedTasksWithPhase>);
+      
       const phaseOrder = suggestedTasks.reduce((acc, task) => {
-        if (!acc.has(task.phase)) {
+        if (task.phase && !acc.has(task.phase)) {
           acc.set(task.phase, task.order);
         }
         return acc;
       }, new Map<string, number>());
-      
-      // Add a large number for custom tasks to appear last
       phaseOrder.set('Tareas Personalizadas', 9999);
-
 
       const sortedPhases = Object.keys(groupedByPhase).sort((a, b) => {
           return (phaseOrder.get(a) || 9999) - (phaseOrder.get(b) || 9999);
       });
-
-      // Reconstruct the list with phases as headers
+      
+      const reconstructedTasks: GanttFormValues['tasks'] = [];
       sortedPhases.forEach(phaseName => {
          reconstructedTasks.push({
             id: crypto.randomUUID(),
@@ -126,11 +125,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
             phase: phaseName,
          });
          groupedByPhase[phaseName].forEach(task => {
-            reconstructedTasks.push({
-              ...task,
-              progress: task.progress || 0,
-              startDate: task.startDate ? new Date(task.startDate.toString().replace(/-/g, '/')) : new Date(),
-            });
+            reconstructedTasks.push({ ...task });
          });
       });
 
@@ -325,7 +320,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
           .filter(t => !t.isPhase)
           .map(t => {
             const { isPhase, ...taskToSave } = t;
-            return { ...taskToSave, startDate: format(new Date(taskToSave.startDate), 'yyyy-MM-dd')};
+            return { ...taskToSave, startDate: t.startDate };
           })
     };
     onSave(dataToSave as any);
