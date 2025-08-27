@@ -62,7 +62,7 @@ interface WorkOrdersContextType {
 
 const WorkOrdersContext = createContext<WorkOrdersContextType | undefined>(undefined);
 
-const FAILED_SEED_FLAG_KEY = 'suggested_tasks_seed_completed_v2';
+const FAILED_SEED_FLAG_KEY = 'suggested_tasks_seed_completed_v3';
 
 
 export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
@@ -353,10 +353,13 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const docRef = doc(db, "gantt-charts", id);
     const dataToSave: Partial<{ [key in keyof GanttChart]: any }> = { ...ganttChart };
     if (ganttChart.tasks) {
-        dataToSave.tasks = ganttChart.tasks.map(task => ({
-            ...task,
-            startDate: Timestamp.fromDate(task.startDate),
-        }));
+        dataToSave.tasks = ganttChart.tasks.map(task => {
+            const { isPhase, ...restOfTask } = task;
+            return {
+                ...restOfTask,
+                startDate: Timestamp.fromDate(task.startDate),
+            };
+        });
     }
     await updateDoc(docRef, dataToSave);
     setGanttCharts(prev => prev.map(chart => (chart.id === id ? { ...chart, ...ganttChart } as GanttChart : chart)));
@@ -488,6 +491,8 @@ export const useWorkOrders = () => {
   }
   return context;
 };
+
+    
 
     
 

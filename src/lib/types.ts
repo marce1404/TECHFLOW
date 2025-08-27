@@ -104,6 +104,7 @@ export type GanttTask = {
     startDate: Date;
     duration: number;
     progress: number;
+    isPhase?: boolean;
 }
 
 export type GanttChart = {
@@ -250,3 +251,5 @@ export const UpdateUserOutputSchema = z.object({
 });
 
 export type UpdateUserOutput = z.infer<typeof UpdateUserOutputSchema>;
+
+    

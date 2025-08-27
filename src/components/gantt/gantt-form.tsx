@@ -28,7 +28,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format, addDays, differenceInCalendarDays, eachDayOfInterval, isPast, isToday } from 'date-fns';
-import type { GanttChart, Service, WorkOrder } from '@/lib/types';
+import type { GanttChart, Service, WorkOrder, SuggestedTask } from '@/lib/types';
 import Link from 'next/link';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { useParams, useRouter } from 'next/navigation';
@@ -38,8 +38,9 @@ const taskSchema = z.object({
   id: z.string(),
   name: z.string().min(1, { message: 'El nombre de la tarea es requerido.' }),
   startDate: z.date({ required_error: 'La fecha de inicio es requerida.' }),
-  duration: z.coerce.number().min(1, { message: 'La duración debe ser al menos 1.' }),
+  duration: z.coerce.number().min(0, { message: 'La duración debe ser al menos 0.' }), // Allow 0 for phases
   progress: z.coerce.number().min(0).max(100).optional().default(0),
+  isPhase: z.boolean().optional().default(false),
 });
 
 const ganttFormSchema = z.object({
@@ -77,7 +78,6 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
       tasks: ganttChart?.tasks.map(t => ({
           ...t,
           progress: t.progress || 0,
-          // Ensure startDate is a Date object, converting from string or Firestore Timestamp
           startDate: t.startDate ? new Date(t.startDate.toString().replace(/-/g, '/')) : new Date(),
       })) || [],
     },
@@ -96,31 +96,63 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
         startDate: new Date(),
         duration: 1,
         progress: 0,
+        isPhase: false,
       });
       setCustomTaskName('');
     }
   };
 
   const handleSuggestedTasks = (category: string) => {
-    const tasksToLoad = suggestedTasks.filter(t => t.category === category);
-    if (tasksToLoad.length > 0) {
-        const newTasks = tasksToLoad.map(task => ({
-            id: crypto.randomUUID(),
-            name: task.name,
-            startDate: new Date(),
-            duration: 1,
-            progress: 0,
-        }));
+    const tasksForCategory = suggestedTasks.filter(t => t.category === category);
+    
+    if (tasksForCategory.length > 0) {
+        const grouped = tasksForCategory.reduce((acc, task) => {
+            const phase = task.phase || 'Sin Fase';
+            if (!acc[phase]) {
+                acc[phase] = [];
+            }
+            acc[phase].push(task);
+            return acc;
+        }, {} as Record<string, SuggestedTask[]>);
+
+        // Sort phases based on the first task's order in each phase
+        const sortedPhases = Object.keys(grouped).sort((a, b) => {
+            const firstTaskOrderA = grouped[a][0]?.order || 0;
+            const firstTaskOrderB = grouped[b][0]?.order || 0;
+            return firstTaskOrderA - firstTaskOrderB;
+        });
+
+        const newTasks: z.infer<typeof taskSchema>[] = [];
+        sortedPhases.forEach(phase => {
+            newTasks.push({
+                id: crypto.randomUUID(),
+                name: phase,
+                isPhase: true,
+                startDate: new Date(),
+                duration: 0,
+                progress: 0,
+            });
+            const sortedTasksInPhase = grouped[phase].sort((a, b) => (a.order || 0) - (b.order || 0));
+            sortedTasksInPhase.forEach(task => {
+                newTasks.push({
+                    id: crypto.randomUUID(),
+                    name: task.name,
+                    isPhase: false,
+                    startDate: new Date(),
+                    duration: 1,
+                    progress: 0,
+                });
+            });
+        });
+
         replace(newTasks);
     }
   }
 
+
   const handlePrint = () => {
     if (ganttId) {
       window.open(`/gantt/${ganttId}/print`, '_blank');
-    } else {
-        // Maybe show a toast notification that the gantt chart needs to be saved first.
-        // For now, we just disable the button if there is no ganttId
     }
   };
 
@@ -138,6 +170,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
   };
   
   const calculateEndDate = (startDate: Date, duration: number, workOnSaturdays: boolean, workOnSundays: boolean) => {
+    if (duration === 0) return startDate;
     let remainingDays = duration;
     let currentDate = new Date(startDate);
     currentDate.setDate(currentDate.getDate() - 1); 
@@ -193,11 +226,10 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
   const onSubmitForm = (data: GanttFormValues) => {
     const dataToSave = {
         ...data,
-        assignedOT: '',
+        tasks: data.tasks.filter(t => !t.isPhase), // Don't save phases to DB
     };
     onSave(dataToSave);
   };
-
 
   return (
     <Form {...form}>
@@ -297,6 +329,17 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                         <div></div>
                     </div>
                     {fields.map((field, index) => {
+                        if (field.isPhase) {
+                          return (
+                              <div key={field.id} className="flex items-center pt-4">
+                                <h3 className="font-semibold text-base text-primary flex-1">{field.name}</h3>
+                                 <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                          );
+                        }
+
                         const task = watchedTasks[index];
                         const startDate = task.startDate ? new Date(task.startDate) : new Date();
                         const duration = task.duration || 1;
@@ -384,6 +427,14 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
 
                            {/* Task Rows */}
                            {watchedTasks.map((task, index) => {
+                                if (task.isPhase) {
+                                  return (
+                                     <React.Fragment key={task.id || index}>
+                                        <div className="sticky left-0 bg-card z-10 text-sm font-semibold text-primary truncate pr-2 py-1 border-t flex items-center">{task.name}</div>
+                                        <div className="relative border-t col-span-full h-8" style={{ gridColumnStart: 2, gridRowStart: index + 3}}></div>
+                                    </React.Fragment>
+                                  )
+                                }
                                 if (!task.startDate || !task.duration || !ganttChartData.earliestDate) {
                                     return <div key={task.id || index}></div>;
                                 }
@@ -392,7 +443,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                                 const offset = differenceInCalendarDays(startDate, ganttChartData.earliestDate);
                                 
                                 const totalWorkingDays = calculateWorkingDays(startDate, endDate, watchedWorkdays[0], watchedWorkdays[1]);
-                                if (totalWorkingDays === 0) return null;
+                                if (totalWorkingDays <= 0) return null;
 
                                 let progressColor = 'bg-primary';
                                 if (isPast(endDate) && (task.progress || 0) < 100) {
@@ -418,7 +469,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                                         <div className="relative border-t col-span-full h-8" style={{ gridColumnStart: 2, gridRowStart: index + 3}}>
                                             <div
                                                 className="absolute bg-secondary h-6 top-1 rounded"
-                                                style={{ left: `${offset * 2}rem`, width: `${totalWorkingDays * 2}rem` }}
+                                                style={{ left: `${offset * 2}rem`, width: `${(differenceInCalendarDays(endDate, startDate) + 1) * 2}rem` }}
                                                 title={`${task.name} - ${format(startDate, 'dd/MM')} a ${format(endDate, 'dd/MM')}`}
                                             >
                                                 <div className={cn("h-full rounded", progressColor)} style={{ width: `${task.progress || 0}%`}}></div>
