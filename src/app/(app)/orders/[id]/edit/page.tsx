@@ -112,7 +112,6 @@ export default function EditOrderPage() {
   const currentPrefix = order.ot_number.split('-')[0];
   
   const assignedGantt = ganttCharts.find(g => g.assignedOT === order.ot_number);
-  const isClosed = order.status === 'Cerrada';
 
   return (
     <div className="flex flex-col gap-8">
@@ -213,16 +212,16 @@ export default function EditOrderPage() {
                             </Popover>
                         </div>
                         <div>
-                            <Label htmlFor="end-date">{isClosed ? 'Fecha de Cierre' : 'Fecha T. Posible'}</Label>
+                            <Label htmlFor="end-date">{order.status === 'Cerrada' ? 'Fecha de Cierre' : 'Fecha T. Posible'}</Label>
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <Button
                                         variant={"outline"}
-                                        disabled={isClosed}
+                                        disabled={order.status === 'Cerrada'}
                                         className={cn(
                                             "w-full justify-start text-left font-normal",
                                             !endDate && "text-muted-foreground",
-                                            isClosed && "bg-muted"
+                                            order.status === 'Cerrada' && "bg-muted"
                                         )}
                                     >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
@@ -418,5 +417,3 @@ export default function EditOrderPage() {
     </div>
   );
 }
-
-    
