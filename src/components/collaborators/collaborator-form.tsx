@@ -1,11 +1,11 @@
 
-
 'use client';
 import * as React from 'react';
 import { z } from 'zod';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format, addYears } from "date-fns";
+import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -204,7 +204,7 @@ export default function CollaboratorForm({ onSave, collaborator }: CollaboratorF
             className={cn("w-[180px] justify-start text-left font-normal", !field.value && "text-muted-foreground")}
             >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {field.value ? format(new Date(field.value.replace(/-/g, '/')), "PPP") : <span>Elegir fecha</span>}
+            {field.value ? format(new Date(field.value.replace(/-/g, '/')), "PPP", { locale: es }) : <span>Elegir fecha</span>}
             </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0">
@@ -219,6 +219,7 @@ export default function CollaboratorForm({ onSave, collaborator }: CollaboratorF
                     }
                 }}
                 initialFocus
+                locale={es}
             />
         </PopoverContent>
     </Popover>

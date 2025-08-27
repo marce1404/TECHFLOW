@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from "date-fns";
+import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -240,10 +241,10 @@ export default function VehicleForm({ onSave, vehicle, collaborators }: VehicleF
                                                     <PopoverTrigger asChild>
                                                         <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}>
                                                             <CalendarIcon className="mr-2 h-4 w-4" />
-                                                            {field.value ? format(new Date(field.value.replace(/-/g, '/')), "dd/MM/yy") : <span>Elegir</span>}
+                                                            {field.value ? format(new Date(field.value.replace(/-/g, '/')), "dd/MM/yy", { locale: es }) : <span>Elegir</span>}
                                                         </Button>
                                                     </PopoverTrigger>
-                                                    <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={new Date(field.value.replace(/-/g, '/'))} onSelect={(d) => field.onChange(d ? format(d, 'yyyy-MM-dd') : '')} initialFocus /></PopoverContent>
+                                                    <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={new Date(field.value.replace(/-/g, '/'))} onSelect={(d) => field.onChange(d ? format(d, 'yyyy-MM-dd') : '')} initialFocus locale={es} /></PopoverContent>
                                                 </Popover>
                                             )} 
                                         />

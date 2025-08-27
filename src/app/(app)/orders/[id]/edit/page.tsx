@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarIcon, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { es } from 'date-fns/locale';
 import * as React from "react";
 import Link from 'next/link';
 import { MultiSelect } from "@/components/ui/multi-select";
@@ -196,7 +197,7 @@ export default function EditOrderPage() {
                                     )}
                                     >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {startDate ? format(startDate, "PPP",) : <span>Elegir fecha</span>}
+                                    {startDate ? format(startDate, "PPP", { locale: es }) : <span>Elegir fecha</span>}
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0">
@@ -205,6 +206,7 @@ export default function EditOrderPage() {
                                     selected={startDate}
                                     onSelect={(date) => handleDateChange('date', date)}
                                     initialFocus
+                                    locale={es}
                                     />
                                 </PopoverContent>
                             </Popover>
@@ -221,7 +223,7 @@ export default function EditOrderPage() {
                                     )}
                                     >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {endDate ? format(endDate, "PPP") : <span>Elegir fecha</span>}
+                                    {endDate ? format(endDate, "PPP", { locale: es }) : <span>Elegir fecha</span>}
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0">
@@ -230,6 +232,7 @@ export default function EditOrderPage() {
                                     selected={endDate}
                                     onSelect={(date) => handleDateChange('endDate', date)}
                                     initialFocus
+                                    locale={es}
                                     />
                                 </PopoverContent>
                             </Popover>

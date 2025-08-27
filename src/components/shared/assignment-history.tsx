@@ -142,7 +142,7 @@ export default function AssignmentHistory({ title, description, filterKey, filte
                                     </Link>
                                 </TableCell>
                                 <TableCell>{order.description}</TableCell>
-                                <TableCell>{format(new Date(order.date.replace(/-/g, '/')), 'dd/MM/yyyy')}</TableCell>
+                                <TableCell>{format(new Date(order.date.replace(/-/g, '/')), 'dd/MM/yyyy', { locale: es })}</TableCell>
                                 <TableCell>
                                     <Badge 
                                         variant={getStatusVariant(order.status)}

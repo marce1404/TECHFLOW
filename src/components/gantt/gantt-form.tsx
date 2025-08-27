@@ -28,6 +28,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format, addDays, differenceInCalendarDays, eachDayOfInterval, isPast, isToday } from 'date-fns';
+import { es } from 'date-fns/locale';
 import type { GanttChart, Service, SuggestedTask, GanttTask } from '@/lib/types';
 import Link from 'next/link';
 import { useWorkOrders } from '@/context/work-orders-context';
@@ -81,65 +82,43 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
   
   React.useEffect(() => {
     if (ganttChart) {
-      const tasksWithDates = (ganttChart.tasks || []).map(task => ({
-        ...task,
-        startDate: task.startDate ? new Date(task.startDate) : new Date(),
-        isPhase: false,
-        phase: task.phase || 'Tareas Personalizadas'
-      }));
+        const tasksWithDates = (ganttChart.tasks || []).map(task => ({
+            ...task,
+            startDate: task.startDate ? new Date(task.startDate) : new Date(),
+        }));
 
-      const phases = new Set<string>();
-      const tasksWithPhases: GanttFormValues['tasks'] = [];
-      
-      const groupedTasks: Record<string, typeof tasksWithDates> = {};
+        const tasksWithPhases: GanttFormValues['tasks'] = [];
+        const phases = new Set<string>();
 
-      tasksWithDates.forEach(task => {
-        const phaseName = task.phase || 'Tareas Personalizadas';
-        if (!groupedTasks[phaseName]) {
-          groupedTasks[phaseName] = [];
-        }
-        groupedTasks[phaseName].push(task);
-      });
-      
-      const sortedPhases = Object.keys(groupedTasks).sort((a, b) => {
-        const firstTaskA = suggestedTasks.find(st => st.phase === a);
-        const firstTaskB = suggestedTasks.find(st => st.phase === b);
-        if (a === 'Tareas Personalizadas') return 1;
-        if (b === 'Tareas Personalizadas') return -1;
-        return (firstTaskA?.order || 0) - (firstTaskB?.order || 0);
-      });
-
-      sortedPhases.forEach(phase => {
-        tasksWithPhases.push({
-          id: crypto.randomUUID(),
-          name: phase,
-          isPhase: true,
-          startDate: new Date(),
-          duration: 0,
-          progress: 0,
-          phase: phase,
+        tasksWithDates.forEach(task => {
+            const phaseName = task.phase || 'Tareas Personalizadas';
+            if (!phases.has(phaseName)) {
+                phases.add(phaseName);
+                tasksWithPhases.push({
+                    id: crypto.randomUUID(),
+                    name: phaseName,
+                    isPhase: true,
+                    startDate: new Date(), 
+                    duration: 0,
+                    progress: 0,
+                    phase: phaseName,
+                });
+            }
+            tasksWithPhases.push({
+                ...task,
+                isPhase: false,
+            });
         });
-
-        const sortedTasksInPhase = groupedTasks[phase].sort((a, b) => {
-            const taskA = suggestedTasks.find(st => st.name === a.name);
-            const taskB = suggestedTasks.find(st => st.name === b.name);
-            return (taskA?.order || Infinity) - (taskB?.order || Infinity);
+        
+        form.reset({
+            name: ganttChart.name || '',
+            assignedOT: ganttChart.assignedOT || '',
+            workOnSaturdays: ganttChart.workOnSaturdays ?? true,
+            workOnSundays: ganttChart.workOnSundays ?? false,
+            tasks: tasksWithDates.map(t => ({...t, isPhase: false})),
         });
-
-        sortedTasksInPhase.forEach(task => {
-            tasksWithPhases.push(task);
-        });
-      });
-
-      form.reset({
-        name: ganttChart.name || '',
-        assignedOT: ganttChart.assignedOT || '',
-        workOnSaturdays: ganttChart.workOnSaturdays ?? true,
-        workOnSundays: ganttChart.workOnSundays ?? false,
-        tasks: tasksWithPhases,
-      });
     }
-  }, [ganttChart, form, suggestedTasks]);
+  }, [ganttChart, form]);
 
 
   const { fields, append, remove, replace } = useFieldArray({
@@ -302,7 +281,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
     const days = eachDayOfInterval({ start: earliestDate, end: latestDate });
 
     const months = days.reduce((acc, day) => {
-      const month = format(day, 'MMMM yyyy');
+      const month = format(day, 'MMMM yyyy', { locale: es });
       if (!acc[month]) {
         acc[month] = 0;
       }
@@ -486,10 +465,10 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                                             <PopoverTrigger asChild>
                                                 <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !field.value && 'text-muted-foreground')}>
                                                     <CalendarIcon className="mr-2 h-4 w-4" />
-                                                    {field.value ? format(new Date(field.value), 'dd/MM/yy') : <span>Elegir</span>}
+                                                    {field.value ? format(new Date(field.value), 'dd/MM/yy', { locale: es }) : <span>Elegir</span>}
                                                 </Button>
                                             </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent>
+                                            <PopoverContent className="w-auto p-0"><Calendar locale={es} mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent>
                                         </Popover>
                                     )}
                                 />
@@ -503,7 +482,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                                     name={`tasks.${index}.progress`}
                                     render={({ field }) => <Input type="number" className="w-full text-center" {...field} disabled={!isPastOrToday} />}
                                 />
-                                <Input value={endDate ? format(endDate, 'dd/MM/yy') : 'N/A'} readOnly className="bg-muted w-full text-center" />
+                                <Input value={endDate ? format(endDate, 'dd/MM/yy', { locale: es }) : 'N/A'} readOnly className="bg-muted w-full text-center" />
                                 <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
                                     <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
@@ -547,7 +526,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                            <div className="sticky left-0 bg-card z-10"></div>
                             {ganttChartData.days.map((day) => (
                                 <div key={day.toString()} className="text-center text-xs text-muted-foreground border-r border-dashed h-6 flex items-center justify-center">
-                                    {format(day, 'd')}
+                                    {format(day, 'd', { locale: es })}
                                 </div>
                             ))}
 
@@ -596,7 +575,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                                             <div
                                                 className="absolute bg-secondary h-6 top-1 rounded"
                                                 style={{ left: `${offset * 2}rem`, width: `${(differenceInCalendarDays(endDate, startDate) + 1) * 2}rem` }}
-                                                title={`${task.name} - ${format(startDate, 'dd/MM')} a ${format(endDate, 'dd/MM')}`}
+                                                title={`${task.name} - ${format(startDate, 'dd/MM', { locale: es })} a ${format(endDate, 'dd/MM', { locale: es })}`}
                                             >
                                                 <div className={cn("h-full rounded", progressColor)} style={{ width: `${task.progress || 0}%`}}></div>
                                             </div>
