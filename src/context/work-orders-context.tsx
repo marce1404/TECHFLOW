@@ -6,7 +6,7 @@ import React, { createContext, useContext, useState, ReactNode, useEffect, useCa
 import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, query, where, writeBatch, serverTimestamp, orderBy, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { WorkOrder, OTCategory, Service, Collaborator, Vehicle, GanttChart, SuggestedTask, OTStatus, ReportTemplate, SubmittedReport, CompanyInfo, AppUser } from '@/lib/types';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp, runTransaction } from 'firebase/firestore';
 import { initialSuggestedTasks } from '@/lib/placeholder-data';
 import { predefinedReportTemplates } from '@/lib/predefined-templates';
 import { useAuth } from './auth-context';
@@ -240,24 +240,26 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const orderRef = doc(db, 'work-orders', id);
     await updateDoc(orderRef, updatedData);
 
-    const wasActive = activeWorkOrders.some(order => order.id === id);
-    const isNowClosed = updatedData.status === 'Cerrada';
-
+    // After successful DB update, update the local state
     const fullUpdatedOrder = { ...getOrder(id), ...updatedData } as WorkOrder;
 
-    if (isNowClosed) {
-      // Move from active to historical
+    if (fullUpdatedOrder.status === 'Cerrada') {
       setActiveWorkOrders(prev => prev.filter(order => order.id !== id));
-      setHistoricalWorkOrders(prev => [...prev, fullUpdatedOrder]);
+      setHistoricalWorkOrders(prev => {
+        // Avoid duplicates
+        if (prev.some(o => o.id === id)) {
+          return prev.map(o => o.id === id ? fullUpdatedOrder : o);
+        }
+        return [...prev, fullUpdatedOrder];
+      });
     } else {
-      if (wasActive) {
-        // Just update in active list
-        setActiveWorkOrders(prev => prev.map(order => order.id === id ? fullUpdatedOrder : order));
-      } else {
-        // It was in historical and is now not closed, so move to active
-        setHistoricalWorkOrders(prev => prev.filter(order => order.id !== id));
-        setActiveWorkOrders(prev => [...prev, fullUpdatedOrder]);
-      }
+       setHistoricalWorkOrders(prev => prev.filter(order => order.id !== id));
+       setActiveWorkOrders(prev => {
+        if (prev.some(o => o.id === id)) {
+           return prev.map(o => o.id === id ? fullUpdatedOrder : o);
+        }
+        return [...prev, fullUpdatedOrder];
+      });
     }
   };
   
