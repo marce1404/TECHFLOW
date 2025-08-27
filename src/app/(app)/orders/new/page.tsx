@@ -126,7 +126,7 @@ export default function NewOrderPage() {
   return (
     <div className="flex flex-col gap-8">
       <h1 className="text-2xl font-headline font-bold tracking-tight">
-          Crear Nueva Orden de Trabajo HOLA
+          Crear Nueva Orden de Trabajo
       </h1>
 
       <Card>

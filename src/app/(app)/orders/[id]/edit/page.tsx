@@ -71,7 +71,7 @@ export default function EditOrderPage() {
   };
 
   const formatNumber = (num: number): string => {
-    return isNaN(num) ? '0' : num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return isNaN(num) ? '0' : new Intl.NumberFormat('es-CL').format(num);
   };
 
   const handleNetPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
