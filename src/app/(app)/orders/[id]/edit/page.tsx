@@ -394,7 +394,7 @@ export default function EditOrderPage() {
                             </div>
                         </div>
                     )}
-
+                    
                     {order.status === 'Cerrada' && order.endDate && (
                       <div>
                         <Label>Fecha de Cierre</Label>

@@ -240,24 +240,20 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const updateOrder = async (id: string, updatedData: Partial<WorkOrder>) => {
     const orderRef = doc(db, 'work-orders', id);
     const currentOrder = getOrder(id);
-    if (!currentOrder) {
-      console.error("Order not found for updating");
-      return;
-    }
+    if (!currentOrder) return;
+    
+    const dataToSave = { ...currentOrder, ...updatedData };
 
-    const dataToSave: WorkOrder = { ...currentOrder, ...updatedData };
-    const isClosing = updatedData.status === 'Cerrada';
-
-    if (isClosing && !dataToSave.endDate) {
+    if (updatedData.status === 'Cerrada' && !updatedData.endDate) {
       dataToSave.endDate = format(new Date(), 'yyyy-MM-dd');
     }
 
     await updateDoc(orderRef, dataToSave);
 
-    const allOrders = [...activeWorkOrders, ...historicalWorkOrders].map(o => 
-      o.id === id ? dataToSave : o
-    );
-
+    const allOrders = [...activeWorkOrders, ...historicalWorkOrders]
+        .filter(o => o.id !== id)
+        .concat(dataToSave);
+    
     setActiveWorkOrders(allOrders.filter(o => o.status !== 'Cerrada'));
     setHistoricalWorkOrders(allOrders.filter(o => o.status === 'Cerrada'));
   };
