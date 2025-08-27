@@ -120,8 +120,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         };
         
         const [
-            activeWorkOrdersSnapshot,
-            historicalWorkOrdersSnapshot,
+            workOrdersSnapshot,
             categoriesSnapshot,
             statusesSnapshot,
             servicesSnapshot,
@@ -132,8 +131,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             submittedReportsSnapshot,
             companyInfoSnapshot,
         ] = await Promise.all([
-            getDocs(query(collection(db, "work-orders"), where("status", "!=", "Cerrada"))),
-            getDocs(query(collection(db, "work-orders"), where("status", "==", "Cerrada"))),
+            getDocs(query(collection(db, "work-orders"), orderBy("date", "desc"))),
             getDocs(collection(db, "ot-categories")),
             getDocs(collection(db, "ot-statuses")),
             getDocs(collection(db, "services")),
@@ -146,9 +144,11 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         ]);
         
         await fetchAndSetSuggestedTasks();
+        
+        const allOrders = workOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[];
+        setActiveWorkOrders(allOrders.filter(o => o.status !== 'Cerrada'));
+        setHistoricalWorkOrders(allOrders.filter(o => o.status === 'Cerrada'));
 
-        setActiveWorkOrders(activeWorkOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[]);
-        setHistoricalWorkOrders(historicalWorkOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[]);
         setOtCategories(categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as OTCategory[]);
         setOtStatuses(statusesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as OTStatus[]);
         setServices(servicesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Service[]);
@@ -245,7 +245,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    const dataToSave = { ...currentOrder, ...updatedData };
+    const dataToSave: WorkOrder = { ...currentOrder, ...updatedData };
     const isClosing = updatedData.status === 'Cerrada';
 
     if (isClosing && !dataToSave.endDate) {
@@ -254,23 +254,12 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
     await updateDoc(orderRef, dataToSave);
 
-    if (isClosing) {
-      setActiveWorkOrders(prev => prev.filter(o => o.id !== id));
-      setHistoricalWorkOrders(prev => {
-        if (!prev.some(o => o.id === id)) {
-          return [...prev, dataToSave];
-        }
-        return prev.map(o => o.id === id ? dataToSave : o);
-      });
-    } else {
-      setHistoricalWorkOrders(prev => prev.filter(o => o.id !== id));
-      setActiveWorkOrders(prev => {
-        if (!prev.some(o => o.id === id)) {
-          return [...prev, dataToSave];
-        }
-        return prev.map(o => o.id === id ? dataToSave : o);
-      });
-    }
+    const allOrders = [...activeWorkOrders, ...historicalWorkOrders].map(o => 
+      o.id === id ? dataToSave : o
+    );
+
+    setActiveWorkOrders(allOrders.filter(o => o.status !== 'Cerrada'));
+    setHistoricalWorkOrders(allOrders.filter(o => o.status === 'Cerrada'));
   };
   
   const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory> => {

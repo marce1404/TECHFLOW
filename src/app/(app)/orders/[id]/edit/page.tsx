@@ -394,6 +394,13 @@ export default function EditOrderPage() {
                             </div>
                         </div>
                     )}
+
+                    {order.status === 'Cerrada' && order.endDate && (
+                      <div>
+                        <Label>Fecha de Cierre</Label>
+                        <Input value={format(new Date(order.endDate.replace(/-/g, '/')), "PPP", { locale: es })} readOnly className="bg-muted"/>
+                      </div>
+                    )}
                 </div>
             </div>
             </div>
