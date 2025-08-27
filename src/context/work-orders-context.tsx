@@ -10,6 +10,7 @@ import { Timestamp } from 'firebase/firestore';
 import { initialSuggestedTasks } from '@/lib/placeholder-data';
 import { predefinedReportTemplates } from '@/lib/predefined-templates';
 import { useAuth } from './auth-context';
+import { format } from 'date-fns';
 
 
 interface WorkOrdersContextType {
@@ -238,15 +239,21 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
   const updateOrder = async (id: string, updatedFields: Partial<WorkOrder>) => {
     const orderRef = doc(db, 'work-orders', id);
-    await updateDoc(orderRef, updatedFields);
+    
+    const dataToUpdate = { ...updatedFields };
+    if (dataToUpdate.status === 'Cerrada') {
+        dataToUpdate.endDate = format(new Date(), 'yyyy-MM-dd');
+    }
+
+    await updateDoc(orderRef, dataToUpdate);
   
     // Determine the original and new status
     const originalOrder = getOrder(id);
-    const newStatus = updatedFields.status;
+    const newStatus = dataToUpdate.status;
   
     // Optimistic UI update
     if (originalOrder && newStatus) {
-      const updatedOrder = { ...originalOrder, ...updatedFields } as WorkOrder;
+      const updatedOrder = { ...originalOrder, ...dataToUpdate } as WorkOrder;
       
       const wasActive = originalOrder.status !== 'Cerrada';
       const isNowClosed = newStatus === 'Cerrada';
@@ -254,11 +261,11 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
       if (wasActive && isNowClosed) {
         // Move from active to historical
         setActiveWorkOrders(prev => prev.filter(o => o.id !== id));
-        setHistoricalWorkOrders(prev => [updatedOrder, ...prev]);
+        setHistoricalWorkOrders(prev => [updatedOrder, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
       } else if (!wasActive && !isNowClosed) {
         // Move from historical to active
         setHistoricalWorkOrders(prev => prev.filter(o => o.id !== id));
-        setActiveWorkOrders(prev => [updatedOrder, ...prev]);
+        setActiveWorkOrders(prev => [updatedOrder, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
       } else if (wasActive) {
         // Just update in active list
         setActiveWorkOrders(prev => prev.map(o => o.id === id ? updatedOrder : o));
