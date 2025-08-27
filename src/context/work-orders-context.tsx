@@ -242,20 +242,17 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const currentOrder = getOrder(id);
     if (!currentOrder) return;
     
-    const dataToSave = { ...currentOrder, ...updatedData };
-
-    if (updatedData.status === 'Cerrada' && !updatedData.endDate) {
-      dataToSave.endDate = format(new Date(), 'yyyy-MM-dd');
-    }
-
+    // Ensure we have the full object to save.
+    const dataToSave: WorkOrder = { ...currentOrder, ...updatedData };
+  
     await updateDoc(orderRef, dataToSave);
-
-    const allOrders = [...activeWorkOrders, ...historicalWorkOrders]
-        .filter(o => o.id !== id)
-        .concat(dataToSave);
-    
-    setActiveWorkOrders(allOrders.filter(o => o.status !== 'Cerrada'));
-    setHistoricalWorkOrders(allOrders.filter(o => o.status === 'Cerrada'));
+  
+    // After successful save, update the local state correctly.
+    const otherOrders = [...activeWorkOrders, ...historicalWorkOrders].filter(o => o.id !== id);
+    const updatedOrders = [...otherOrders, dataToSave];
+  
+    setActiveWorkOrders(updatedOrders.filter(o => o.status !== 'Cerrada'));
+    setHistoricalWorkOrders(updatedOrders.filter(o => o.status === 'Cerrada'));
   };
   
   const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory> => {
@@ -352,10 +349,11 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
                 startDate: Timestamp.fromDate(new Date(task.startDate)),
             }))
         };
-        const docRef = await addDoc(collection(db, "gantt-charts"), dataToSave);
-        const newGanttChart = { ...ganttChart, id: docRef.id };
-        setGanttCharts(prev => [...prev, newGanttChart]);
-        return newGanttChart;
+        await addDoc(collection(db, "gantt-charts"), dataToSave);
+        await fetchData(); // Re-fetch to ensure consistency, including the new ID
+        // Find and return the newly added chart from the fresh data
+        const newChart = ganttCharts.find(c => c.name === ganttChart.name && c.assignedOT === dataToSave.assignedOT);
+        return newChart || { ...ganttChart, id: 'temp-id' }; // Fallback
     };
   
   const getGanttChart = (id: string) => {
@@ -379,7 +377,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         }
         
         await updateDoc(docRef, dataToSave);
-        setGanttCharts(prev => prev.map(chart => (chart.id === id ? { ...chart, ...ganttChart } as GanttChart : chart)));
+        await fetchData();
     };
 
   const deleteGanttChart = async (id: string) => {
@@ -508,3 +506,6 @@ export const useWorkOrders = () => {
   }
   return context;
 };
+
+
+    
