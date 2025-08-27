@@ -239,7 +239,37 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const updateOrder = async (id: string, updatedFields: Partial<WorkOrder>) => {
     const orderRef = doc(db, 'work-orders', id);
     await updateDoc(orderRef, updatedFields);
-    await fetchData();
+  
+    // Determine the original and new status
+    const originalOrder = getOrder(id);
+    const newStatus = updatedFields.status;
+  
+    // Optimistic UI update
+    if (originalOrder && newStatus) {
+      const updatedOrder = { ...originalOrder, ...updatedFields } as WorkOrder;
+      
+      const wasActive = originalOrder.status !== 'Cerrada';
+      const isNowClosed = newStatus === 'Cerrada';
+  
+      if (wasActive && isNowClosed) {
+        // Move from active to historical
+        setActiveWorkOrders(prev => prev.filter(o => o.id !== id));
+        setHistoricalWorkOrders(prev => [updatedOrder, ...prev]);
+      } else if (!wasActive && !isNowClosed) {
+        // Move from historical to active
+        setHistoricalWorkOrders(prev => prev.filter(o => o.id !== id));
+        setActiveWorkOrders(prev => [updatedOrder, ...prev]);
+      } else if (wasActive) {
+        // Just update in active list
+        setActiveWorkOrders(prev => prev.map(o => o.id === id ? updatedOrder : o));
+      } else {
+        // Just update in historical list
+        setHistoricalWorkOrders(prev => prev.map(o => o.id === id ? updatedOrder : o));
+      }
+    } else {
+        // If we can't do an optimistic update, just refetch
+        await fetchData();
+    }
   };
   
   const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory> => {
