@@ -241,15 +241,14 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const orderRef = doc(db, 'work-orders', id);
     const currentOrder = getOrder(id);
     if (!currentOrder) return;
-    
-    // Ensure we have the full object to save.
-    const dataToSave: WorkOrder = { ...currentOrder, ...updatedData };
+  
+    const dataToSave = { ...currentOrder, ...updatedData };
   
     await updateDoc(orderRef, dataToSave);
   
     // After successful save, update the local state correctly.
-    const otherOrders = [...activeWorkOrders, ...historicalWorkOrders].filter(o => o.id !== id);
-    const updatedOrders = [...otherOrders, dataToSave];
+    const allOtherOrders = [...activeWorkOrders, ...historicalWorkOrders].filter(o => o.id !== id);
+    const updatedOrders = [...allOtherOrders, dataToSave];
   
     setActiveWorkOrders(updatedOrders.filter(o => o.status !== 'Cerrada'));
     setHistoricalWorkOrders(updatedOrders.filter(o => o.status === 'Cerrada'));
@@ -349,11 +348,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
                 startDate: Timestamp.fromDate(new Date(task.startDate)),
             }))
         };
-        await addDoc(collection(db, "gantt-charts"), dataToSave);
-        await fetchData(); // Re-fetch to ensure consistency, including the new ID
-        // Find and return the newly added chart from the fresh data
-        const newChart = ganttCharts.find(c => c.name === ganttChart.name && c.assignedOT === dataToSave.assignedOT);
-        return newChart || { ...ganttChart, id: 'temp-id' }; // Fallback
+        const docRef = await addDoc(collection(db, "gantt-charts"), dataToSave);
+        await fetchData(); // Re-fetch to ensure consistency and get the ID
+        return { ...ganttChart, id: docRef.id };
     };
   
   const getGanttChart = (id: string) => {
