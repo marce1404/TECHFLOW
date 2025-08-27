@@ -63,7 +63,7 @@ export async function getGanttForPrint(ganttId: string): Promise<GanttChart | nu
             let convertedDate: Date | null = null;
             if (startDate && startDate instanceof Timestamp) {
                 convertedDate = startDate.toDate();
-            } else if (startDate) {
+            } else if (startDate && typeof startDate === 'string') {
                 // Fallback for string dates, though Timestamps are expected
                 convertedDate = new Date(startDate);
             }
@@ -146,3 +146,4 @@ export async function toggleUserStatusAction(uid: string, currentStatus: 'Activo
     return { success: false, message: error.message || 'Error al cambiar el estado del usuario.' };
   }
 }
+

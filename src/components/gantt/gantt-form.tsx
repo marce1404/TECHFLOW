@@ -81,22 +81,26 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
   
   React.useEffect(() => {
     if (ganttChart) {
-      const tasksWithPhases: GanttFormValues['tasks'] = [];
+      const tasksWithDates = (ganttChart.tasks || []).map(task => ({
+        ...task,
+        startDate: task.startDate ? new Date(task.startDate) : new Date(),
+        isPhase: false,
+        phase: task.phase || 'Tareas Personalizadas'
+      }));
+
       const phases = new Set<string>();
+      const tasksWithPhases: GanttFormValues['tasks'] = [];
+      
+      const groupedTasks: Record<string, typeof tasksWithDates> = {};
 
-      const groupedTasks: Record<string, GanttTask[]> = {};
-
-      // Group tasks by phase
-      (ganttChart.tasks || []).forEach(task => {
-        const suggested = suggestedTasks.find(st => st.name === task.name);
-        const phaseName = suggested?.phase || 'Tareas Personalizadas';
+      tasksWithDates.forEach(task => {
+        const phaseName = task.phase || 'Tareas Personalizadas';
         if (!groupedTasks[phaseName]) {
           groupedTasks[phaseName] = [];
         }
         groupedTasks[phaseName].push(task);
       });
-
-      // Sort phases based on the order of suggested tasks
+      
       const sortedPhases = Object.keys(groupedTasks).sort((a, b) => {
         const firstTaskA = suggestedTasks.find(st => st.phase === a);
         const firstTaskB = suggestedTasks.find(st => st.phase === b);
@@ -105,7 +109,6 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
         return (firstTaskA?.order || 0) - (firstTaskB?.order || 0);
       });
 
-      // Build the final task list for the form
       sortedPhases.forEach(phase => {
         tasksWithPhases.push({
           id: crypto.randomUUID(),
@@ -124,15 +127,9 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
         });
 
         sortedTasksInPhase.forEach(task => {
-            tasksWithPhases.push({
-                ...task,
-                startDate: new Date(task.startDate),
-                isPhase: false,
-                phase: phase,
-            });
+            tasksWithPhases.push(task);
         });
       });
-
 
       form.reset({
         name: ganttChart.name || '',
