@@ -1,5 +1,4 @@
 
-
 'use client';
 import * as React from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
@@ -32,7 +31,7 @@ import { format, addDays, differenceInCalendarDays, eachDayOfInterval, isPast, i
 import type { GanttChart, Service, SuggestedTask, GanttTask } from '@/lib/types';
 import Link from 'next/link';
 import { useWorkOrders } from '@/context/work-orders-context';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 
 
 const taskSchema = z.object({
@@ -64,7 +63,6 @@ interface GanttFormProps {
 export default function GanttForm({ onSave, services, ganttChart }: GanttFormProps) {
   const { suggestedTasks, activeWorkOrders, ganttCharts } = useWorkOrders();
   const [customTaskName, setCustomTaskName] = React.useState('');
-  const router = useRouter();
   const params = useParams();
   const ganttId = params.id as string;
   const today = new Date();
@@ -83,52 +81,52 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
   
   React.useEffect(() => {
     if (ganttChart) {
-        const savedTasks = (ganttChart.tasks || []).map(task => ({
-            ...task,
-            startDate: new Date(task.startDate),
-        }));
+      const tasksWithPhases: GanttFormValues['tasks'] = [];
+      const phases = new Set<string>();
 
-        const phaseTasksMap: Record<string, GanttTask[]> = {};
-        const phaseOrderMap = new Map<string, number>();
+      // Ensure tasks are sorted based on suggested task order
+      const sortedSavedTasks = (ganttChart.tasks || []).sort((a, b) => {
+        const taskA = suggestedTasks.find(st => st.name === a.name);
+        const taskB = suggestedTasks.find(st => st.name === b.name);
+        const orderA = taskA?.order ?? Infinity;
+        const orderB = taskB?.order ?? Infinity;
+        return orderA - orderB;
+      });
 
-        suggestedTasks.forEach(st => {
-            if(st.phase && !phaseOrderMap.has(st.phase)) {
-                phaseOrderMap.set(st.phase, st.order);
-            }
+      sortedSavedTasks.forEach(task => {
+        const suggested = suggestedTasks.find(st => st.name === task.name);
+        const phaseName = suggested?.phase || 'Tareas Personalizadas';
+
+        if (!phases.has(phaseName)) {
+          phases.add(phaseName);
+          tasksWithPhases.push({
+            id: crypto.randomUUID(),
+            name: phaseName,
+            isPhase: true,
+            startDate: new Date(), // Placeholder, not used for rendering phase rows
+            duration: 0,
+            progress: 0,
+            phase: phaseName,
+          });
+        }
+        
+        tasksWithPhases.push({
+          ...task,
+          startDate: new Date(task.startDate), // Ensure it's a Date object
+          isPhase: false,
+          phase: phaseName,
         });
+      });
 
-        savedTasks.forEach(task => {
-            const suggested = suggestedTasks.find(st => st.name === task.name);
-            const phase = suggested?.phase || 'Tareas Personalizadas';
-            if (!phaseTasksMap[phase]) phaseTasksMap[phase] = [];
-            phaseTasksMap[phase].push({ ...task, isPhase: false, phase });
-        });
-
-        const sortedPhases = Object.keys(phaseTasksMap).sort((a, b) => {
-            if (a === 'Tareas Personalizadas') return 1;
-            if (b === 'Tareas Personalizadas') return -1;
-            return (phaseOrderMap.get(a) || 999) - (phaseOrderMap.get(b) || 999);
-        });
-
-        const reconstructedTasks: GanttFormValues['tasks'] = [];
-        sortedPhases.forEach(phaseName => {
-            reconstructedTasks.push({
-                id: crypto.randomUUID(), name: phaseName, isPhase: true,
-                startDate: new Date(), duration: 0, progress: 0, phase: phaseName,
-            });
-            const tasksInPhase = phaseTasksMap[phaseName] || [];
-            tasksInPhase.forEach(task => reconstructedTasks.push({ ...task, startDate: new Date(task.startDate) }));
-        });
-
-        form.reset({
-            name: ganttChart.name || '',
-            assignedOT: ganttChart.assignedOT || '',
-            workOnSaturdays: ganttChart.workOnSaturdays ?? true,
-            workOnSundays: ganttChart.workOnSundays ?? false,
-            tasks: reconstructedTasks,
-        });
+      form.reset({
+        name: ganttChart.name || '',
+        assignedOT: ganttChart.assignedOT || '',
+        workOnSaturdays: ganttChart.workOnSaturdays ?? true,
+        workOnSundays: ganttChart.workOnSundays ?? false,
+        tasks: tasksWithPhases,
+      });
     }
-}, [ganttChart, form, suggestedTasks]);
+  }, [ganttChart, form, suggestedTasks]);
 
 
   const { fields, append, remove, replace } = useFieldArray({
@@ -138,7 +136,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
 
   const handleAddTask = () => {
     if (customTaskName.trim()) {
-      let tasks = form.getValues('tasks');
+      const tasks = form.getValues('tasks');
       const customPhaseName = 'Tareas Personalizadas';
 
       // Check if the "Tareas Personalizadas" phase already exists
@@ -172,8 +170,6 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
   };
 
   const handleSuggestedTasks = (category: string) => {
-    replace([]); // Clear existing tasks before adding new ones
-    
     const tasksForCategory = suggestedTasks.filter(t => t.category === category);
     
     const seen = new Set();
