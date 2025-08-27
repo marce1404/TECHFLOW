@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { PlusCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
     Table,
     TableBody,
@@ -19,10 +19,6 @@ import { SuggestedTaskFormDialog } from '@/components/settings/suggested-task-fo
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-interface GroupedTasks {
-    [phase: string]: SuggestedTask[];
-}
 
 export default function SuggestedTasksPage() {
     const { services, suggestedTasks, addSuggestedTask, updateSuggestedTask, deleteSuggestedTask } = useWorkOrders();
@@ -80,21 +76,20 @@ export default function SuggestedTasksPage() {
                             .filter(t => t.category === categoryKey)
                             .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-                        const groupedTasks = tasksForCategory.reduce((acc, task) => {
+                        const phases = tasksForCategory.reduce((acc, task) => {
                             const phase = task.phase || 'Sin Fase';
                             if (!acc[phase]) {
                                 acc[phase] = [];
                             }
                             acc[phase].push(task);
                             return acc;
-                        }, {} as GroupedTasks);
+                        }, {} as Record<string, SuggestedTask[]>);
                         
-                        const sortedPhases = Object.keys(groupedTasks).sort((a, b) => {
-                            const firstTaskOrderA = groupedTasks[a][0]?.order || 0;
-                            const firstTaskOrderB = groupedTasks[b][0]?.order || 0;
+                        const sortedPhases = Object.keys(phases).sort((a, b) => {
+                            const firstTaskOrderA = phases[a][0]?.order || 0;
+                            const firstTaskOrderB = phases[b][0]?.order || 0;
                             return firstTaskOrderA - firstTaskOrderB;
                         });
-
 
                         return (
                             <TabsContent key={category.id} value={categoryKey} className="m-0">
@@ -112,7 +107,7 @@ export default function SuggestedTasksPage() {
                                                             </TableRow>
                                                         </TableHeader>
                                                         <TableBody>
-                                                            {groupedTasks[phase].map((task) => (
+                                                            {phases[phase].map((task) => (
                                                                 <TableRow key={task.id}>
                                                                     <TableCell>{task.name}</TableCell>
                                                                     <TableCell className="text-right">
