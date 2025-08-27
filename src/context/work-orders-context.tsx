@@ -239,40 +239,32 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
   const updateOrder = async (id: string, updatedFields: Partial<WorkOrder>) => {
     const orderRef = doc(db, 'work-orders', id);
-    
-    // Create a mutable copy to potentially add endDate
     const dataToUpdate = { ...updatedFields };
 
-    // If the status is being changed to "Cerrada", set the endDate to today
-    if (dataToUpdate.status === 'Cerrada') {
+    if (dataToUpdate.status === 'Cerrada' && !dataToUpdate.endDate) {
         dataToUpdate.endDate = format(new Date(), 'yyyy-MM-dd');
     }
 
     await updateDoc(orderRef, dataToUpdate);
 
-    // After successful DB update, update local state
     const originalOrder = getOrder(id);
     if (!originalOrder) return;
-
-    const wasActive = originalOrder.status !== 'Cerrada';
-    const isNowClosed = dataToUpdate.status === 'Cerrada';
     
     const finalUpdatedOrder = { ...originalOrder, ...dataToUpdate } as WorkOrder;
 
+    const wasActive = originalOrder.status !== 'Cerrada';
+    const isNowClosed = finalUpdatedOrder.status === 'Cerrada';
+
     if (wasActive && isNowClosed) {
-        // Move from active to historical
         setActiveWorkOrders(prev => prev.filter(o => o.id !== id));
         setHistoricalWorkOrders(prev => [finalUpdatedOrder, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     } else if (!wasActive && !isNowClosed) {
-        // Move from historical to active
         setHistoricalWorkOrders(prev => prev.filter(o => o.id !== id));
         setActiveWorkOrders(prev => [finalUpdatedOrder, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     } else if (wasActive) {
-        // Just update in active list
-        setActiveWorkOrders(prev => prev.map(o => o.id === id ? finalUpdatedOrder : o));
+        setActiveWorkOrders(prev => prev.map(o => (o.id === id ? finalUpdatedOrder : o)));
     } else {
-        // Just update in historical list
-        setHistoricalWorkOrders(prev => prev.map(o => o.id === id ? finalUpdatedOrder : o));
+        setHistoricalWorkOrders(prev => prev.map(o => (o.id === id ? finalUpdatedOrder : o)));
     }
   };
   

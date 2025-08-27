@@ -212,16 +212,14 @@ export default function EditOrderPage() {
                             </Popover>
                         </div>
                         <div>
-                            <Label htmlFor="end-date">{order.status === 'Cerrada' ? 'Fecha de Cierre' : 'Fecha T. Posible'}</Label>
+                            <Label htmlFor="end-date">Fecha T. Posible</Label>
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <Button
                                         variant={"outline"}
-                                        disabled={order.status === 'Cerrada'}
                                         className={cn(
                                             "w-full justify-start text-left font-normal",
-                                            !endDate && "text-muted-foreground",
-                                            order.status === 'Cerrada' && "bg-muted"
+                                            !endDate && "text-muted-foreground"
                                         )}
                                     >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
@@ -390,6 +388,12 @@ export default function EditOrderPage() {
                         </Select>
                     </div>
 
+                    {order.status === 'Cerrada' && order.endDate && (
+                        <div>
+                            <Label>Fecha de Cierre</Label>
+                            <Input value={format(new Date(order.endDate.replace(/-/g, '/')), "PPP", { locale: es })} readOnly className="bg-muted"/>
+                        </div>
+                    )}
                      {assignedGantt && (
                         <div>
                             <Label>Carta Gantt Asignada</Label>
