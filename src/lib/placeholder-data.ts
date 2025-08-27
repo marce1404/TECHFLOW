@@ -200,7 +200,7 @@ export const initialSuggestedTasks: Omit<SuggestedTask, 'id'>[] = [
   { order: 41, phase: "Fase 3: Configuración y Pruebas", category: "alarma", name: "Configuración de Comunicación con Central de Monitoreo" },
   { order: 42, phase: "Fase 4: Entrega", category: "alarma", name: "Pruebas de Intrusión y Pánico" },
   { order: 43, phase: "Fase 4: Entrega", category: "alarma", name: "Capacitación al Usuario sobre Armado/Desarmado" },
-  // Deteccion
+  // Detección
   { order: 44, phase: "Fase 1: Ingeniería y Diseño", category: "detección", name: "Diseño de Detección y Alarma según Normativa" },
   { order: 45, phase: "Fase 2: Instalación de Detección", category: "detección", name: "Instalación de Panel de Incendio" },
   { order: 46, phase: "Fase 2: Instalación de Detección", category: "detección", name: "Instalación de Detectores de Humo y Temperatura" },
@@ -221,4 +221,6 @@ export const initialSuggestedTasks: Omit<SuggestedTask, 'id'>[] = [
   { order: 60, phase: "Fase 4: Pruebas y Puesta en Marcha", category: "extinción", name: "Pruebas de Flujo" },
   { order: 61, phase: "Fase 5: Entrega", category: "extinción", name: "Entrega y Certificación del Sistema" },
 ];
+    
+
     

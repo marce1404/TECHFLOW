@@ -62,7 +62,7 @@ interface WorkOrdersContextType {
 
 const WorkOrdersContext = createContext<WorkOrdersContextType | undefined>(undefined);
 
-const FAILED_SEED_FLAG = 'suggested_tasks_seed_failed_2';
+const FAILED_SEED_FLAG_KEY = 'suggested_tasks_seed_completed_v2';
 
 
 export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
@@ -86,42 +86,40 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
         const fetchAndSetSuggestedTasks = async () => {
-            // Check if we need to run the seed process
-            if (localStorage.getItem(FAILED_SEED_FLAG)) {
-                console.log("Attempting to re-seed suggested tasks...");
-                
-                // 1. Delete all existing tasks
-                const tasksCollectionRef = collection(db, "suggested-tasks");
-                const existingTasksSnapshot = await getDocs(tasksCollectionRef);
+            const seedCompleted = localStorage.getItem(FAILED_SEED_FLAG_KEY);
+
+            if (seedCompleted === 'true') {
+                 const tasksSnapshot = await getDocs(query(collection(db, "suggested-tasks"), orderBy("order")));
+                 const tasks = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SuggestedTask[];
+                 setSuggestedTasks(tasks);
+                 return;
+            }
+
+            console.log("Seeding suggested tasks...");
+            
+            const tasksCollectionRef = collection(db, "suggested-tasks");
+            const existingTasksSnapshot = await getDocs(tasksCollectionRef);
+            
+            if (!existingTasksSnapshot.empty) {
                 const deleteBatch = writeBatch(db);
                 existingTasksSnapshot.forEach(doc => deleteBatch.delete(doc.ref));
                 await deleteBatch.commit();
                 console.log("All existing suggested tasks deleted.");
-
-                // 2. Add all tasks from placeholder data
-                const addBatch = writeBatch(db);
-                initialSuggestedTasks.forEach(task => {
-                    const docRef = doc(collection(db, "suggested-tasks"));
-                    addBatch.set(docRef, task);
-                });
-                await addBatch.commit();
-                console.log("Seeding of new suggested tasks complete.");
-
-                // 3. Clear the flag
-                localStorage.removeItem(FAILED_SEED_FLAG);
             }
 
-            // Fetch and set tasks from Firestore
+            const addBatch = writeBatch(db);
+            initialSuggestedTasks.forEach(task => {
+                const docRef = doc(collection(db, "suggested-tasks"));
+                addBatch.set(docRef, task);
+            });
+            await addBatch.commit();
+            console.log("Seeding of new suggested tasks complete.");
+
             const tasksSnapshot = await getDocs(query(collection(db, "suggested-tasks"), orderBy("order")));
             const tasks = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SuggestedTask[];
-            
-            // This is the crucial check. If the number of tasks in DB doesn't match the code, re-seed.
-            if (tasks.length !== initialSuggestedTasks.length) {
-                console.warn("Mismatch in suggested tasks count. Flagging for re-seed on next load.");
-                localStorage.setItem(FAILED_SEED_FLAG, 'true');
-            }
-
             setSuggestedTasks(tasks);
+            
+            localStorage.setItem(FAILED_SEED_FLAG_KEY, 'true');
         };
         
         const [
@@ -490,5 +488,7 @@ export const useWorkOrders = () => {
   }
   return context;
 };
+
+    
 
     
