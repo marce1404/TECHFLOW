@@ -62,6 +62,9 @@ interface WorkOrdersContextType {
 
 const WorkOrdersContext = createContext<WorkOrdersContextType | undefined>(undefined);
 
+const FAILED_SEED_FLAG = 'suggested_tasks_seed_failed_2';
+
+
 export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [activeWorkOrders, setActiveWorkOrders] = useState<WorkOrder[]>([]);
   const [historicalWorkOrders, setHistoricalWorkOrders] = useState<WorkOrder[]>([]);
@@ -82,29 +85,45 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-        const cleanAndSeedData = async () => {
-            console.log("Starting data seeding process...");
-            
-            const tasksCollection = collection(db, "suggested-tasks");
-            const tasksSnapshot = await getDocs(tasksCollection);
-            const deleteTasksBatch = writeBatch(db);
-            tasksSnapshot.docs.forEach(doc => deleteTasksBatch.delete(doc.ref));
-            await deleteTasksBatch.commit();
-            console.log("All existing suggested tasks have been deleted.");
+        const fetchAndSetSuggestedTasks = async () => {
+            // Check if we need to run the seed process
+            if (localStorage.getItem(FAILED_SEED_FLAG)) {
+                console.log("Attempting to re-seed suggested tasks...");
+                
+                // 1. Delete all existing tasks
+                const tasksCollectionRef = collection(db, "suggested-tasks");
+                const existingTasksSnapshot = await getDocs(tasksCollectionRef);
+                const deleteBatch = writeBatch(db);
+                existingTasksSnapshot.forEach(doc => deleteBatch.delete(doc.ref));
+                await deleteBatch.commit();
+                console.log("All existing suggested tasks deleted.");
 
-            const addTasksBatch = writeBatch(db);
-            const newTasks: SuggestedTask[] = [];
-            initialSuggestedTasks.forEach(task => {
-                const docRef = doc(collection(db, "suggested-tasks"));
-                addTasksBatch.set(docRef, task);
-                newTasks.push({ ...task, id: docRef.id });
-            });
-            await addTasksBatch.commit();
-            console.log(`${newTasks.length} new suggested tasks have been seeded.`);
+                // 2. Add all tasks from placeholder data
+                const addBatch = writeBatch(db);
+                initialSuggestedTasks.forEach(task => {
+                    const docRef = doc(collection(db, "suggested-tasks"));
+                    addBatch.set(docRef, task);
+                });
+                await addBatch.commit();
+                console.log("Seeding of new suggested tasks complete.");
+
+                // 3. Clear the flag
+                localStorage.removeItem(FAILED_SEED_FLAG);
+            }
+
+            // Fetch and set tasks from Firestore
+            const tasksSnapshot = await getDocs(query(collection(db, "suggested-tasks"), orderBy("order")));
+            const tasks = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SuggestedTask[];
             
-            return newTasks;
+            // This is the crucial check. If the number of tasks in DB doesn't match the code, re-seed.
+            if (tasks.length !== initialSuggestedTasks.length) {
+                console.warn("Mismatch in suggested tasks count. Flagging for re-seed on next load.");
+                localStorage.setItem(FAILED_SEED_FLAG, 'true');
+            }
+
+            setSuggestedTasks(tasks);
         };
-
+        
         const [
             activeWorkOrdersSnapshot,
             historicalWorkOrdersSnapshot,
@@ -117,7 +136,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             reportTemplatesSnapshot,
             submittedReportsSnapshot,
             companyInfoSnapshot,
-            seededTasks,
         ] = await Promise.all([
             getDocs(query(collection(db, "work-orders"), where("status", "!=", "Cerrada"))),
             getDocs(query(collection(db, "work-orders"), where("status", "==", "Cerrada"))),
@@ -130,8 +148,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             getDocs(collection(db, "report-templates")),
             getDocs(query(collection(db, "submitted-reports"), orderBy("submittedAt", "desc"))),
             getDoc(doc(db, "settings", "companyInfo")),
-            cleanAndSeedData(),
         ]);
+        
+        await fetchAndSetSuggestedTasks();
 
         setActiveWorkOrders(activeWorkOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[]);
         setHistoricalWorkOrders(historicalWorkOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[]);
@@ -141,7 +160,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         setCollaborators(collaboratorsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Collaborator[]);
         setVehicles(vehiclesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Vehicle[]);
         setSubmittedReports(submittedReportsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SubmittedReport[]);
-        setSuggestedTasks(seededTasks);
         
         if (companyInfoSnapshot.exists()) {
             setCompanyInfo(companyInfoSnapshot.data() as CompanyInfo);
@@ -472,3 +490,5 @@ export const useWorkOrders = () => {
   }
   return context;
 };
+
+    
