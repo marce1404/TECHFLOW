@@ -221,5 +221,4 @@ export const initialSuggestedTasks: Omit<SuggestedTask, 'id'>[] = [
   { order: 60, phase: "Fase 4: Pruebas y Puesta en Marcha", category: "extinción", name: "Pruebas de Flujo" },
   { order: 61, phase: "Fase 5: Entrega", category: "extinción", name: "Entrega y Certificación del Sistema" },
 ];
-
     
