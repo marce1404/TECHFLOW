@@ -46,6 +46,32 @@ export default function SuggestedTasksPage() {
 
     const availableCategories = services.filter(s => s.status === 'Activa' && ['CCTV', 'CCAA', 'INCENDIO', 'ALARMA', 'ABLOY'].includes(s.name.toUpperCase()));
 
+    const groupedAndSortedTasks = React.useCallback((categoryKey: string) => {
+        const tasksForCategory = suggestedTasks
+            .filter(t => t.category === categoryKey)
+            .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+        const grouped = tasksForCategory.reduce((acc, task) => {
+            const phase = task.phase || 'Sin Fase';
+            if (!acc[phase]) {
+                acc[phase] = { tasks: [], order: task.order };
+            }
+            acc[phase].tasks.push(task);
+            if(task.order < acc[phase].order) {
+                acc[phase].order = task.order;
+            }
+            return acc;
+        }, {} as Record<string, { tasks: SuggestedTask[], order: number }>);
+        
+        const sortedPhases = Object.keys(grouped).sort((a, b) => {
+            return grouped[a].order - grouped[b].order;
+        });
+
+        return { grouped, sortedPhases };
+
+    }, [suggestedTasks]);
+
+
     return (
         <div className="flex flex-col gap-8">
             <div className="flex items-center justify-between">
@@ -74,28 +100,7 @@ export default function SuggestedTasksPage() {
                     <CardContent className="space-y-4">
                         {availableCategories.map(category => {
                             const categoryKey = category.name.toLowerCase();
-                            
-                            // 1. Filter tasks for the current category and sort them by order
-                            const tasksForCategory = suggestedTasks
-                                .filter(t => t.category === categoryKey)
-                                .sort((a, b) => (a.order || 0) - (b.order || 0));
-
-                            // 2. Group sorted tasks by phase
-                            const groupedByPhase = tasksForCategory.reduce((acc, task) => {
-                                const phase = task.phase || 'Sin Fase';
-                                if (!acc[phase]) {
-                                    acc[phase] = [];
-                                }
-                                acc[phase].push(task);
-                                return acc;
-                            }, {} as Record<string, SuggestedTask[]>);
-                            
-                            // 3. Get sorted phases based on the first task's order in each phase
-                            const sortedPhases = Object.keys(groupedByPhase).sort((a, b) => {
-                                const firstTaskA = groupedByPhase[a][0];
-                                const firstTaskB = groupedByPhase[b][0];
-                                return (firstTaskA?.order || 0) - (firstTaskB?.order || 0);
-                            });
+                            const { grouped, sortedPhases } = groupedAndSortedTasks(categoryKey);
 
                             return (
                                 <TabsContent key={category.id} value={categoryKey}>
@@ -112,7 +117,7 @@ export default function SuggestedTasksPage() {
                                                             </TableRow>
                                                         </TableHeader>
                                                         <TableBody>
-                                                            {groupedByPhase[phase].map((task) => (
+                                                            {grouped[phase].tasks.map((task) => (
                                                                 <TableRow key={task.id}>
                                                                     <TableCell>{task.name}</TableCell>
                                                                     <TableCell className="text-right">

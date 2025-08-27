@@ -152,4 +152,61 @@ export const availableVehiclesString = `1. Camioneta Ford Ranger: Capacidad medi
 3. Camioneta Toyota Hilux: Capacidad grande, herramientas generales, ubicada en bodega norte, disponible.`;
 
 
-export const initialSuggestedTasks: Omit<SuggestedTask, 'id'>[] = [];
+export const initialSuggestedTasks: Omit<SuggestedTask, 'id'>[] = [
+  // CCTV
+  { order: 1, phase: "Fase 1: Planificación y Diseño", category: "cctv", name: "Levantamiento y Evaluación de Requisitos del Cliente" },
+  { order: 2, phase: "Fase 1: Planificación y Diseño", category: "cctv", name: "Diseño del Sistema de CCTV y Ubicación de Cámaras" },
+  { order: 3, phase: "Fase 1: Planificación y Diseño", category: "cctv", name: "Selección de Equipos (Cámaras, NVR/DVR, Cableado)" },
+  { order: 4, phase: "Fase 2: Adquisición y Preparación", category: "cctv", name: "Compra y Recepción de Equipos y Materiales" },
+  { order: 5, phase: "Fase 2: Adquisición y Preparación", category: "cctv", name: "Preparación de Herramientas y Equipos de Instalación" },
+  { order: 6, phase: "Fase 3: Instalación y Montaje", category: "cctv", name: "Canalización y Cableado Estructurado" },
+  { order: 7, phase: "Fase 3: Instalación y Montaje", category: "cctv", name: "Montaje y Fijación de Cámaras" },
+  { order: 8, phase: "Fase 3: Instalación y Montaje", category: "cctv", name: "Instalación de NVR/DVR y Conexión de Alimentación" },
+  { order: 9, phase: "Fase 4: Configuración y Puesta en Marcha", category: "cctv", name: "Conexión y Configuración de Red" },
+  { order: 10, phase: "Fase 4: Configuración y Puesta en Marcha", category: "cctv", name: "Configuración del Software de Gestión de Video (VMS)" },
+  { order: 11, phase: "Fase 4: Configuración y Puesta en Marcha", category: "cctv", name: "Ajuste de Cámaras (Enfoque, Ángulo, IR)" },
+  { order: 12, phase: "Fase 5: Pruebas y Entrega", category: "cctv", name: "Pruebas de Grabación y Acceso Remoto" },
+  { order: 13, phase: "Fase 5: Pruebas y Entrega", category: "cctv", name: "Capacitación a Usuario Final" },
+  { order: 14, phase: "Fase 5: Pruebas y Entrega", category: "cctv", name: "Elaboración de Documentación y Planos As-Built" },
+  { order: 15, phase: "Fase 5: Pruebas y Entrega", category: "cctv", name: "Entrega y Recepción Conforme del Proyecto" },
+  // CCAA
+  { order: 16, phase: "Fase 1: Diseño y Planificación", category: "ccaa", name: "Evaluación de Puntos de Acceso y Niveles de Seguridad" },
+  { order: 17, phase: "Fase 1: Diseño y Planificación", category: "ccaa", name: "Diseño del Sistema (Controladores, Lectoras, Cerraduras)" },
+  { order: 18, phase: "Fase 2: Instalación Física", category: "ccaa", name: "Instalación de Controladores y Fuentes de Poder" },
+  { order: 19, phase: "Fase 2: Instalación Física", category: "ccaa", name: "Instalación de Lectoras de Tarjetas/Biométricas" },
+  { order: 20, phase: "Fase 2: Instalación Física", category: "ccaa", name: "Instalación de Cerraduras Electromagnéticas/Pestillos" },
+  { order: 21, phase: "Fase 2: Instalación Física", category: "ccaa", name: "Instalación de Botones de Salida y Sensores de Puerta" },
+  { order: 22, phase: "Fase 3: Cableado y Conexión", category: "ccaa", name: "Tendido de Cableado para Lectoras y Dispositivos" },
+  { order: 23, phase: "Fase 3: Cableado y Conexión", category: "ccaa", name: "Conexión de Dispositivos al Controlador" },
+  { order: 24, phase: "Fase 4: Configuración y Puesta en Marcha", category: "ccaa", name: "Configuración del Software de Control de Acceso" },
+  { order: 25, phase: "Fase 4: Configuración y Puesta en Marcha", category: "ccaa", name: "Registro de Usuarios y Asignación de Permisos" },
+  { order: 26, phase: "Fase 5: Pruebas y Entrega", category: "ccaa", name: "Pruebas de Funcionamiento por Puerta" },
+  { order: 27, phase: "Fase 5: Pruebas y Entrega", category: "ccaa", name: "Capacitación a Administradores del Sistema" },
+  { order: 28, phase: "Fase 5: Pruebas y Entrega", category: "ccaa", name: "Entrega de Proyecto y Documentación" },
+  // ABLOY
+  { order: 29, phase: "Fase 1: Asesoría y Planificación", category: "abloy", name: "Levantamiento de Necesidades y Plan de Amaestramiento" },
+  { order: 30, phase: "Fase 1: Asesoría y Planificación", category: "abloy", name: "Especificación de Cilindros y Llaves" },
+  { order: 31, phase: "Fase 2: Instalación y Montaje", category: "abloy", name: "Instalación de Cilindros en Puertas" },
+  { order: 32, phase: "Fase 2: Instalación y Montaje", category: "abloy", name: "Montaje de Candados y Cajas de Bloqueo" },
+  { order: 33, phase: "Fase 3: Entrega y Capacitación", category: "abloy", name: "Entrega de Llaves y Tarjetas de Propiedad" },
+  { order: 34, phase: "Fase 3: Entrega y Capacitación", category: "abloy", name: "Capacitación sobre Uso y Gestión del Sistema" },
+  // Alarma
+  { order: 35, phase: "Fase 1: Diseño de Seguridad", category: "alarma", name: "Análisis de Vulnerabilidades y Diseño de Cobertura" },
+  { order: 36, phase: "Fase 2: Instalación de Componentes", category: "alarma", name: "Instalación de Panel Central y Teclado" },
+  { order: 37, phase: "Fase 2: Instalación de Componentes", category: "alarma", name: "Instalación de Sensores de Movimiento (PIR)" },
+  { order: 38, phase: "Fase 2: Instalación de Componentes", category: "alarma", name: "Instalación de Contactos Magnéticos en Puertas/Ventanas" },
+  { order: 39, phase: "Fase 2: Instalación de Componentes", category: "alarma", name: "Instalación de Sirena Interior y Exterior" },
+  { order: 40, phase: "Fase 3: Configuración y Pruebas", category: "alarma", name: "Programación de Zonas y Tiempos de Retardo" },
+  { order: 41, phase: "Fase 3: Configuración y Pruebas", category: "alarma", name: "Configuración de Comunicación con Central de Monitoreo" },
+  { order: 42, phase: "Fase 4: Entrega", category: "alarma", name: "Pruebas de Intrusión y Pánico" },
+  { order: 43, phase: "Fase 4: Entrega", category: "alarma", name: "Capacitación al Usuario sobre Armado/Desarmado" },
+  // Incendio
+  { order: 44, phase: "Fase 1: Ingeniería y Diseño", category: "incendio", name: "Diseño de Detección y Alarma según Normativa" },
+  { order: 45, phase: "Fase 2: Instalación de Detección", category: "incendio", name: "Instalación de Panel de Incendio" },
+  { order: 46, phase: "Fase 2: Instalación de Detección", category: "incendio", name: "Instalación de Detectores de Humo y Temperatura" },
+  { order: 47, phase: "Fase 2: Instalación de Detección", category: "incendio", name: "Instalación de Palancas de Alarma Manual" },
+  { order: 48, phase: "Fase 3: Instalación de Notificación", category: "incendio", name: "Instalación de Sirenas con Estroboscopio" },
+  { order: 49, phase: "Fase 3: Instalación de Notificación", category: "incendio", name: "Cableado de Circuitos de Notificación (NAC)" },
+  { order: 50, phase: "Fase 4: Pruebas y Certificación", category: "incendio", name: "Pruebas de Lazo y Dispositivos" },
+  { order: 51, phase: "Fase 4: Pruebas y Certificación", category: "incendio", name: "Elaboración de Informe para Certificación" },
+];

@@ -82,6 +82,29 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
+        // Clear old suggested tasks from Firestore and re-seed from placeholder
+        const cleanAndSeedSuggestedTasks = async () => {
+            const suggestedTasksCollection = collection(db, "suggested-tasks");
+            const snapshot = await getDocs(suggestedTasksCollection);
+
+            // Delete all existing documents
+            const deleteBatch = writeBatch(db);
+            snapshot.docs.forEach(doc => deleteBatch.delete(doc.ref));
+            await deleteBatch.commit();
+            
+            // Add new documents from placeholder data
+            const addBatch = writeBatch(db);
+            const newTasks: SuggestedTask[] = [];
+            initialSuggestedTasks.forEach(task => {
+                const docRef = doc(collection(db, "suggested-tasks"));
+                addBatch.set(docRef, task);
+                newTasks.push({ ...task, id: docRef.id });
+            });
+            await addBatch.commit();
+            
+            return newTasks;
+        };
+
         const [
             activeWorkOrdersSnapshot,
             historicalWorkOrdersSnapshot,
@@ -91,10 +114,10 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             collaboratorsSnapshot,
             vehiclesSnapshot,
             ganttChartsSnapshot,
-            suggestedTasksSnapshot,
             reportTemplatesSnapshot,
             submittedReportsSnapshot,
             companyInfoSnapshot,
+            seededTasks,
         ] = await Promise.all([
             getDocs(query(collection(db, "work-orders"), where("status", "!=", "Cerrada"))),
             getDocs(query(collection(db, "work-orders"), where("status", "==", "Cerrada"))),
@@ -104,10 +127,10 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             getDocs(collection(db, "collaborators")),
             getDocs(collection(db, "vehicles")),
             getDocs(collection(db, "gantt-charts")),
-            getDocs(collection(db, "suggested-tasks")),
             getDocs(collection(db, "report-templates")),
             getDocs(query(collection(db, "submitted-reports"), orderBy("submittedAt", "desc"))),
             getDoc(doc(db, "settings", "companyInfo")),
+            cleanAndSeedSuggestedTasks(),
         ]);
 
         setActiveWorkOrders(activeWorkOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[]);
@@ -118,6 +141,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         setCollaborators(collaboratorsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Collaborator[]);
         setVehicles(vehiclesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Vehicle[]);
         setSubmittedReports(submittedReportsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SubmittedReport[]);
+        setSuggestedTasks(seededTasks);
         
         if (companyInfoSnapshot.exists()) {
             setCompanyInfo(companyInfoSnapshot.data() as CompanyInfo);
@@ -152,23 +176,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             setReportTemplates(loadedTemplates);
         }
         
-        let loadedTasks = suggestedTasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SuggestedTask[];
-
-        if (suggestedTasksSnapshot.empty && initialSuggestedTasks.length > 0) {
-            const batch = writeBatch(db);
-            const newTasks: SuggestedTask[] = [];
-            initialSuggestedTasks.forEach(task => {
-                const docRef = doc(collection(db, "suggested-tasks"));
-                batch.set(docRef, task);
-                newTasks.push({ ...task, id: docRef.id });
-            });
-            await batch.commit();
-            loadedTasks = newTasks;
-        }
-
-        setSuggestedTasks(loadedTasks);
-
-
     } catch (error) {
         console.error("Error fetching data from Firestore: ", error);
         // Fallback to empty arrays on error
@@ -347,14 +354,14 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const addSuggestedTask = async (task: Omit<SuggestedTask, 'id'>): Promise<SuggestedTask> => {
     const docRef = await addDoc(collection(db, "suggested-tasks"), task);
     const newTask = { id: docRef.id, ...task } as SuggestedTask;
-    setSuggestedTasks(prev => [...prev, newTask]);
+    setSuggestedTasks(prev => [...prev, newTask].sort((a,b) => (a.order || 0) - (b.order || 0)));
     return newTask;
   };
 
   const updateSuggestedTask = async (id: string, updatedTask: Partial<SuggestedTask>) => {
     const docRef = doc(db, "suggested-tasks", id);
     await updateDoc(docRef, updatedTask);
-    setSuggestedTasks(prev => prev.map(t => (t.id === id ? { ...t, ...updatedTask } as SuggestedTask : t)));
+    setSuggestedTasks(prev => prev.map(t => (t.id === id ? { ...t, ...updatedTask } as SuggestedTask : t)).sort((a,b) => (a.order || 0) - (b.order || 0)));
   };
 
   const deleteSuggestedTask = async (id: string) => {
