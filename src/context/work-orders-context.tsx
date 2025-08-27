@@ -224,12 +224,8 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
   const addOrder = async (order: Omit<WorkOrder, 'id'>): Promise<WorkOrder> => {
     const docRef = await addDoc(collection(db, "work-orders"), order);
+    await fetchData(); // Re-fetch all data to ensure consistency
     const newOrder = { id: docRef.id, ...order } as WorkOrder;
-    if (newOrder.status.toLowerCase() === 'cerrada') {
-      setHistoricalWorkOrders(prev => [newOrder, ...prev]);
-    } else {
-      setActiveWorkOrders(prev => [newOrder, ...prev]);
-    }
     return newOrder;
   };
   
@@ -239,70 +235,61 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
   const updateOrder = async (id: string, updatedData: Partial<WorkOrder>) => {
     const orderRef = doc(db, 'work-orders', id);
-    const currentOrder = getOrder(id);
-    if (!currentOrder) return;
-  
-    const dataToSave = { ...currentOrder, ...updatedData };
-  
-    await updateDoc(orderRef, dataToSave);
-  
-    // After successful save, update the local state correctly.
-    const allOtherOrders = [...activeWorkOrders, ...historicalWorkOrders].filter(o => o.id !== id);
-    const updatedOrders = [...allOtherOrders, dataToSave];
-  
-    setActiveWorkOrders(updatedOrders.filter(o => o.status !== 'Cerrada'));
-    setHistoricalWorkOrders(updatedOrders.filter(o => o.status === 'Cerrada'));
+    const dataToUpdate = { ...updatedData };
+
+    if (dataToUpdate.status === 'Cerrada' && !dataToUpdate.endDate) {
+        dataToUpdate.endDate = format(new Date(), 'yyyy-MM-dd');
+    }
+
+    await updateDoc(orderRef, dataToUpdate);
+    await fetchData(); // Re-fetch all data to ensure UI is in sync with DB
   };
   
   const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory> => {
     const docRef = await addDoc(collection(db, "ot-categories"), category);
-    const newCategory = { id: docRef.id, ...category } as OTCategory;
-    setOtCategories(prev => [...prev, newCategory]);
-    return newCategory;
+    await fetchData();
+    return { id: docRef.id, ...category } as OTCategory;
   };
 
   const updateCategory = async (id: string, updatedCategory: Partial<OTCategory>) => {
     const docRef = doc(db, "ot-categories", id);
     await updateDoc(docRef, updatedCategory);
-    setOtCategories(prev => prev.map(cat => (cat.id === id ? { ...cat, ...updatedCategory } : cat)));
+    await fetchData();
   };
 
   const addStatus = async (status: Omit<OTStatus, 'id'>): Promise<OTStatus> => {
     const docRef = await addDoc(collection(db, "ot-statuses"), status);
-    const newStatus = { id: docRef.id, ...status } as OTStatus;
-    setOtStatuses(prev => [...prev, newStatus]);
-    return newStatus;
+    await fetchData();
+    return { id: docRef.id, ...status } as OTStatus;
   };
 
   const updateStatus = async (id: string, updatedStatus: Partial<OTStatus>) => {
     const docRef = doc(db, "ot-statuses", id);
     await updateDoc(docRef, updatedStatus);
-    setOtStatuses(prev => prev.map(s => (s.id === id ? { ...s, ...updatedStatus } : s)));
+    await fetchData();
   };
 
   const addService = async (service: Omit<Service, 'id'>): Promise<Service> => {
     const docRef = await addDoc(collection(db, "services"), service);
-    const newService = { id: docRef.id, ...service } as Service;
-    setServices(prev => [...prev, newService]);
-    return newService;
+    await fetchData();
+    return { id: docRef.id, ...service } as Service;
   };
 
   const updateService = async (id: string, updatedService: Partial<Service>) => {
     const docRef = doc(db, "services", id);
     await updateDoc(docRef, updatedService);
-    setServices(prev => prev.map(s => (s.id === id ? { ...s, ...updatedService } : s)));
+    await fetchData();
   };
   
   const deleteService = async (id: string) => {
     await deleteDoc(doc(db, "services", id));
-    setServices(prev => prev.filter(s => s.id !== id));
+    await fetchData();
   };
   
   const addCollaborator = async (collaborator: Omit<Collaborator, 'id'>): Promise<Collaborator> => {
     const docRef = await addDoc(collection(db, "collaborators"), collaborator);
-    const newCollaborator = { ...collaborator, id: docRef.id } as Collaborator;
-    setCollaborators(prev => [...prev, newCollaborator]);
-    return newCollaborator;
+    await fetchData();
+    return { ...collaborator, id: docRef.id } as Collaborator;
   };
   
   const getCollaborator = (id: string) => {
@@ -312,31 +299,30 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const updateCollaborator = async (id: string, updatedCollaborator: Partial<Omit<Collaborator, 'id'>>) => {
     const docRef = doc(db, "collaborators", id);
     await updateDoc(docRef, updatedCollaborator);
-    setCollaborators(prev => prev.map(t => (t.id === id ? { ...t, ...updatedCollaborator} as Collaborator : t)));
+    await fetchData();
   };
 
   const deleteCollaborator = async (id: string) => {
     await deleteDoc(doc(db, "collaborators", id));
-    setCollaborators(prev => prev.filter(t => t.id !== id));
+    await fetchData();
   };
   
   const addVehicle = async (vehicle: Omit<Vehicle, 'id'>): Promise<Vehicle> => {
     const vehicleData = { ...vehicle, maintenanceLog: vehicle.maintenanceLog || [] };
     const docRef = await addDoc(collection(db, "vehicles"), vehicleData);
-    const newVehicle = { ...vehicleData, id: docRef.id } as Vehicle;
-    setVehicles(prev => [...prev, newVehicle]);
-    return newVehicle;
+    await fetchData();
+    return { ...vehicleData, id: docRef.id } as Vehicle;
   };
 
   const updateVehicle = async (id: string, updatedVehicle: Partial<Omit<Vehicle, 'id'>>) => {
     const docRef = doc(db, "vehicles", id);
     await updateDoc(docRef, updatedVehicle);
-    setVehicles(prev => prev.map(v => (v.id === id ? { ...v, ...updatedVehicle} as Vehicle : v)));
+    await fetchData();
   };
 
   const deleteVehicle = async (id: string) => {
     await deleteDoc(doc(db, "vehicles", id));
-    setVehicles(prev => prev.filter(v => v.id !== id));
+    await fetchData();
   };
 
     const addGanttChart = async (ganttChart: Omit<GanttChart, 'id'>): Promise<GanttChart> => {
@@ -379,44 +365,42 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
   const deleteGanttChart = async (id: string) => {
     await deleteDoc(doc(db, "gantt-charts", id));
-    setGanttCharts(prev => prev.filter(chart => chart.id !== id));
+    await fetchData();
   };
   
   const addSuggestedTask = async (task: Omit<SuggestedTask, 'id'>): Promise<SuggestedTask> => {
     const docRef = await addDoc(collection(db, "suggested-tasks"), task);
-    const newTask = { id: docRef.id, ...task } as SuggestedTask;
-    setSuggestedTasks(prev => [...prev, newTask].sort((a,b) => (a.order || 0) - (b.order || 0)));
-    return newTask;
+    await fetchData();
+    return { id: docRef.id, ...task } as SuggestedTask;
   };
 
   const updateSuggestedTask = async (id: string, updatedTask: Partial<SuggestedTask>) => {
     const docRef = doc(db, "suggested-tasks", id);
     await updateDoc(docRef, updatedTask);
-    setSuggestedTasks(prev => prev.map(t => (t.id === id ? { ...t, ...updatedTask } as SuggestedTask : t)).sort((a,b) => (a.order || 0) - (b.order || 0)));
+    await fetchData();
   };
 
   const deleteSuggestedTask = async (id: string) => {
     await deleteDoc(doc(db, "suggested-tasks", id));
-    setSuggestedTasks(prev => prev.filter(t => t.id !== id));
+    await fetchData();
   };
   
   const addReportTemplate = async (template: Omit<ReportTemplate, 'id'>): Promise<ReportTemplate> => {
     const docRef = await addDoc(collection(db, "report-templates"), template);
-    const newTemplate = { id: docRef.id, ...template } as ReportTemplate;
-    setReportTemplates(prev => [...prev, newTemplate]);
-    return newTemplate;
+    await fetchData();
+    return { id: docRef.id, ...template } as ReportTemplate;
   };
 
   const updateReportTemplate = async (id: string, updatedTemplate: Partial<ReportTemplate>) => {
     const docRef = doc(db, "report-templates", id);
     await updateDoc(docRef, updatedTemplate);
-    setReportTemplates(prev => prev.map(t => (t.id === id ? { ...t, ...updatedTemplate } as ReportTemplate : t)));
+    await fetchData();
   };
 
 
   const deleteReportTemplate = async (id: string) => {
     await deleteDoc(doc(db, "report-templates", id));
-    setReportTemplates(prev => prev.filter(t => t.id !== id));
+    await fetchData();
   };
 
   const addSubmittedReport = async (report: Omit<SubmittedReport, 'id' | 'submittedAt'>): Promise<SubmittedReport> => {
@@ -425,15 +409,14 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         submittedAt: serverTimestamp(),
     };
     const docRef = await addDoc(collection(db, "submitted-reports"), reportData);
-    const newReport = { ...report, id: docRef.id, submittedAt: new Date() } as SubmittedReport; // Simulate timestamp for immediate UI update
-    setSubmittedReports(prev => [newReport, ...prev]);
-    return newReport;
+    await fetchData();
+    return { ...report, id: docRef.id, submittedAt: new Date() } as SubmittedReport; // Simulate timestamp for immediate UI update
   };
 
   const updateCompanyInfo = async (info: CompanyInfo) => {
     const docRef = doc(db, 'settings', 'companyInfo');
     await setDoc(docRef, info, { merge: true });
-    setCompanyInfo(prev => prev ? { ...prev, ...info } : info);
+    await fetchData();
   };
   
   const updateUserProfile = async (uid: string, data: Partial<Pick<AppUser, 'displayName' | 'role'>>) => {
