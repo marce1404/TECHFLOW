@@ -237,32 +237,45 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     return [...activeWorkOrders, ...historicalWorkOrders].find(order => order.id === id);
   };
 
-  const updateOrder = async (id: string, updatedData: Partial<WorkOrder>) => {
+  const updateOrder = async (id: string, updatedData: Partial<WorkOrder>): Promise<void> => {
     const orderRef = doc(db, 'work-orders', id);
     const originalOrder = getOrder(id);
-
+    
     if (!originalOrder) {
         console.error("Order not found for update:", id);
         return;
     }
-    
+
     const dataToUpdate = { ...updatedData };
-    
-    const isClosing = dataToUpdate.status === 'Cerrada' && originalOrder.status !== 'Cerrada';
-    if (isClosing) {
+    const isNowClosing = dataToUpdate.status === 'Cerrada' && originalOrder.status !== 'Cerrada';
+
+    if (isNowClosing) {
         dataToUpdate.endDate = format(new Date(), 'yyyy-MM-dd');
     }
-    
-    try {
-        await updateDoc(orderRef, dataToUpdate);
-        
-        // After successful DB update, refetch all data to ensure consistency.
-        // This is the most robust way to handle state changes.
-        await fetchData();
 
-    } catch (error) {
-        console.error("Error updating order in Firestore:", error);
+    await updateDoc(orderRef, dataToUpdate);
+
+    // After DB update, update local state correctly.
+    const finalUpdatedOrder = { ...originalOrder, ...dataToUpdate } as WorkOrder;
+
+    if (isNowClosing) {
+        // Remove from active and add to historical
+        setActiveWorkOrders(prev => prev.filter(order => order.id !== id));
+        setHistoricalWorkOrders(prev => [finalUpdatedOrder, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    } else if (dataToUpdate.status !== 'Cerrada' && originalOrder.status === 'Cerrada') {
+         // It was closed, now it's not. Move from historical to active.
+        setHistoricalWorkOrders(prev => prev.filter(order => order.id !== id));
+        setActiveWorkOrders(prev => [finalUpdatedOrder, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    } else {
+        // Just a regular update, stay in the same list
+        if (finalUpdatedOrder.status === 'Cerrada') {
+            setHistoricalWorkOrders(prev => prev.map(order => order.id === id ? finalUpdatedOrder : order));
+        } else {
+            setActiveWorkOrders(prev => prev.map(order => order.id === id ? finalUpdatedOrder : order));
+        }
     }
+    
+    return Promise.resolve();
   };
   
   const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory> => {
@@ -514,3 +527,5 @@ export const useWorkOrders = () => {
   }
   return context;
 };
+
+    

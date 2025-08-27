@@ -89,21 +89,21 @@ export default function EditOrderPage() {
 
   const handleUpdateOrder = async () => {
     if (!order) return;
-    await updateOrder(order.id, order); // Pass the current state of 'order'
+
+    await updateOrder(order.id, order);
+
     toast({
       title: "Orden de Trabajo Actualizada",
       description: `La OT "${order.description}" ha sido actualizada.`,
       duration: 2000,
     });
     
-    // Give a bit of time for state to propagate before navigating
-    setTimeout(() => {
-        if (order.status === 'Cerrada') {
-            router.push(`/orders/history`);
-        } else {
-            router.push(`/orders`);
-        }
-    }, 500);
+    // The navigation logic is now safe because we awaited the update.
+    if (order.status === 'Cerrada') {
+      router.push(`/orders/history`);
+    } else {
+      router.push(`/orders`);
+    }
   };
 
   if (!order) {
@@ -427,3 +427,5 @@ export default function EditOrderPage() {
     </div>
   );
 }
+
+    
