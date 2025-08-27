@@ -62,7 +62,7 @@ interface GanttFormProps {
 }
 
 export default function GanttForm({ onSave, services, ganttChart }: GanttFormProps) {
-  const { suggestedTasks } = useWorkOrders();
+  const { suggestedTasks, activeWorkOrders } = useWorkOrders();
   const [customTaskName, setCustomTaskName] = React.useState('');
   const router = useRouter();
   const params = useParams();
@@ -83,51 +83,52 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
   
   React.useEffect(() => {
     if (ganttChart) {
-      const savedTasksWithPhase = ganttChart.tasks.map(task => {
-        const suggested = suggestedTasks.find(st => st.name === task.name);
-        return { 
-            ...task, 
-            startDate: new Date(task.startDate.toString().replace(/-/g, '/')),
-            phase: suggested?.phase || 'Tareas Personalizadas' 
-        };
-      });
+      const savedTasks = (ganttChart.tasks || []).map(task => ({
+        ...task,
+        startDate: new Date(task.startDate), // Ensure it's a Date object
+      }));
 
-      const groupedByPhase = savedTasksWithPhase.reduce((acc, task) => {
-          const phase = task.phase;
-          if (!acc[phase]) {
-            acc[phase] = [];
+      const phaseTasksMap: Record<string, any[]> = {};
+      const customTasks: any[] = [];
+      const phaseOrderMap = new Map<string, number>();
+      
+      suggestedTasks.forEach(st => {
+          if(st.phase && !phaseOrderMap.has(st.phase)) {
+              phaseOrderMap.set(st.phase, st.order);
           }
-          acc[phase].push(task);
-          return acc;
-      }, {} as Record<string, typeof savedTasksWithPhase>);
-      
-      const phaseOrder = suggestedTasks.reduce((acc, task) => {
-        if (task.phase && !acc.has(task.phase)) {
-          acc.set(task.phase, task.order);
-        }
-        return acc;
-      }, new Map<string, number>());
-      phaseOrder.set('Tareas Personalizadas', 9999);
-
-      const sortedPhases = Object.keys(groupedByPhase).sort((a, b) => {
-          return (phaseOrder.get(a) || 9999) - (phaseOrder.get(b) || 9999);
       });
-      
+
+      savedTasks.forEach(task => {
+        const suggested = suggestedTasks.find(st => st.name === task.name);
+        const phase = suggested?.phase;
+        if (phase) {
+          if (!phaseTasksMap[phase]) phaseTasksMap[phase] = [];
+          phaseTasksMap[phase].push({ ...task, isPhase: false, phase });
+        } else {
+          customTasks.push({ ...task, isPhase: false, phase: 'Tareas Personalizadas' });
+        }
+      });
+
+      const sortedPhases = Object.keys(phaseTasksMap).sort((a, b) => {
+        return (phaseOrderMap.get(a) || 999) - (phaseOrderMap.get(b) || 999);
+      });
+
       const reconstructedTasks: GanttFormValues['tasks'] = [];
       sortedPhases.forEach(phaseName => {
-         reconstructedTasks.push({
-            id: crypto.randomUUID(),
-            name: phaseName,
-            isPhase: true,
-            startDate: new Date(),
-            duration: 0,
-            progress: 0,
-            phase: phaseName,
-         });
-         groupedByPhase[phaseName].forEach(task => {
-            reconstructedTasks.push({ ...task });
-         });
+        reconstructedTasks.push({
+          id: crypto.randomUUID(), name: phaseName, isPhase: true,
+          startDate: new Date(), duration: 0, progress: 0, phase: phaseName,
+        });
+        phaseTasksMap[phaseName].forEach(task => reconstructedTasks.push(task));
       });
+
+      if (customTasks.length > 0) {
+        reconstructedTasks.push({
+          id: crypto.randomUUID(), name: 'Tareas Personalizadas', isPhase: true,
+          startDate: new Date(), duration: 0, progress: 0, phase: 'Tareas Personalizadas',
+        });
+        customTasks.forEach(task => reconstructedTasks.push(task));
+      }
 
       form.reset({
         name: ganttChart.name || '',
@@ -138,6 +139,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
       });
     }
   }, [ganttChart, form, suggestedTasks]);
+
 
   const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
@@ -325,6 +327,9 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
     };
     onSave(dataToSave as any);
   };
+  
+  const availableOTs = activeWorkOrders.filter(ot => !ganttCharts.some(g => g.assignedOT === ot.ot_number && g.id !== ganttId) || (ganttChart && ganttChart.assignedOT === ot.ot_number));
+
 
   return (
     <Form {...form}>
@@ -351,6 +356,31 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                             <FormControl>
                                 <Input placeholder="Ej: Instalación CCTV Cliente X" {...field} />
                             </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                </div>
+                 <div className="flex-1">
+                    <FormField
+                        control={form.control}
+                        name="assignedOT"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Asociar a Orden de Trabajo</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Seleccionar OT (Opcional)" />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="none">Sin asociar</SelectItem>
+                                    {availableOTs.map(ot => (
+                                        <SelectItem key={ot.id} value={ot.ot_number}>{ot.ot_number} - {ot.description}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                             <FormMessage />
                             </FormItem>
                         )}

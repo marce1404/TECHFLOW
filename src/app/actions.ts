@@ -5,12 +5,13 @@ import 'dotenv/config';
 import {
   SuggestOptimalResourceAssignmentInput,
   SuggestOptimalResourceAssignmentOutputWithError,
+  type GanttChart,
 } from '@/lib/types';
 
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
 import * as admin from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 
 
 // This function ensures Firebase Admin is initialized, but only once.
@@ -40,6 +41,47 @@ const initializeFirebaseAdmin = () => {
 
 
 // --- Server Actions ---
+
+export async function getGanttForPrint(ganttId: string): Promise<GanttChart | null> {
+    initializeFirebaseAdmin();
+    const db = getFirestore();
+    try {
+        const ganttRef = db.collection('gantt-charts').doc(ganttId);
+        const ganttSnap = await ganttRef.get();
+
+        if (!ganttSnap.exists) {
+            console.log("No such Gantt Chart document!");
+            return null;
+        }
+
+        const data = ganttSnap.data();
+        if (!data) return null;
+
+        const tasks = (data.tasks || []).map((task: any) => {
+            const startDate = task.startDate instanceof Timestamp 
+                ? task.startDate.toDate() 
+                : new Date(task.startDate);
+            return {
+                ...task,
+                startDate,
+            };
+        });
+
+        return {
+            id: ganttSnap.id,
+            name: data.name,
+            assignedOT: data.assignedOT,
+            workOnSaturdays: data.workOnSaturdays,
+            workOnSundays: data.workOnSundays,
+            tasks: tasks,
+        } as GanttChart;
+
+    } catch (error) {
+        console.error("Error getting Gantt chart for print:", error);
+        return null;
+    }
+}
+
 
 export async function getResourceSuggestions(
   input: SuggestOptimalResourceAssignmentInput

@@ -330,6 +330,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const addGanttChart = async (ganttChart: Omit<GanttChart, 'id'>): Promise<GanttChart> => {
     const dataToSave = {
         ...ganttChart,
+        assignedOT: ganttChart.assignedOT === 'none' ? '' : ganttChart.assignedOT,
         tasks: ganttChart.tasks.map(task => ({
             ...task,
             startDate: Timestamp.fromDate(new Date(task.startDate)),
@@ -356,6 +357,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
                 startDate: Timestamp.fromDate(new Date(task.startDate)),
             };
         });
+    }
+    if (ganttChart.assignedOT === 'none') {
+        dataToSave.assignedOT = '';
     }
     await updateDoc(docRef, dataToSave);
     setGanttCharts(prev => prev.map(chart => (chart.id === id ? { ...chart, ...ganttChart } as GanttChart : chart)));
