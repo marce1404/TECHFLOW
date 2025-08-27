@@ -89,15 +89,22 @@ export default function EditOrderPage() {
 
   const handleUpdateOrder = () => {
     if (!order) return;
-    updateOrder(orderId, order);
+    updateOrder(order.id, order);
     toast({
       title: "Orden de Trabajo Actualizada",
       description: `La OT "${order.description}" ha sido actualizada.`,
       duration: 1000,
     });
-    setTimeout(() => {
-        router.push(`/orders`);
-    }, 1000);
+    
+    if (order.status === 'Cerrada') {
+        setTimeout(() => {
+            router.push(`/orders/history`);
+        }, 1000);
+    } else {
+        setTimeout(() => {
+            router.push(`/orders`);
+        }, 1000);
+    }
   };
 
   if (!order) {
@@ -421,3 +428,5 @@ export default function EditOrderPage() {
     </div>
   );
 }
+
+    

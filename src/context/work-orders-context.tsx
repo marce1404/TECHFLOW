@@ -241,14 +241,15 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const orderRef = doc(db, 'work-orders', id);
     const dataToUpdate = { ...updatedFields };
 
-    if (dataToUpdate.status === 'Cerrada' && !dataToUpdate.endDate) {
+    const originalOrder = getOrder(id);
+    if (!originalOrder) return;
+    
+    const isNowClosing = dataToUpdate.status === 'Cerrada' && originalOrder.status !== 'Cerrada';
+    if (isNowClosing) {
         dataToUpdate.endDate = format(new Date(), 'yyyy-MM-dd');
     }
 
     await updateDoc(orderRef, dataToUpdate);
-
-    const originalOrder = getOrder(id);
-    if (!originalOrder) return;
     
     const finalUpdatedOrder = { ...originalOrder, ...dataToUpdate } as WorkOrder;
 
@@ -517,3 +518,5 @@ export const useWorkOrders = () => {
   }
   return context;
 };
+
+    
