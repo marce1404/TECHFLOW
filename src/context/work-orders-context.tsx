@@ -238,11 +238,22 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
   const updateOrder = async (id: string, updatedData: Partial<WorkOrder>) => {
     const orderRef = doc(db, 'work-orders', id);
-    await updateDoc(orderRef, updatedData);
+    const dataToSave = { ...updatedData };
+    const isClosing = updatedData.status === 'Cerrada';
 
-    const fullUpdatedOrder = { ...getOrder(id), ...updatedData } as WorkOrder;
+    // If the order is being closed and doesn't have an end date, set it to now.
+    if (isClosing && !dataToSave.endDate) {
+        dataToSave.endDate = format(new Date(), 'yyyy-MM-dd');
+    }
+    
+    // Step 1: Save the changes to Firestore.
+    await updateDoc(orderRef, dataToSave);
 
-    if (fullUpdatedOrder.status === 'Cerrada') {
+    // Step 2: Once saved, update the local state to reflect the change.
+    const fullUpdatedOrder = { ...getOrder(id), ...dataToSave } as WorkOrder;
+
+    if (isClosing) {
+        // Move from active to historical
         setActiveWorkOrders(prevOrders => prevOrders.filter(order => order.id !== id));
         setHistoricalWorkOrders(prevOrders => {
             if (prevOrders.some(order => order.id === id)) {
@@ -251,11 +262,13 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             return [...prevOrders, fullUpdatedOrder];
         });
     } else {
+        // It might be a move from historical to active
         setHistoricalWorkOrders(prevOrders => prevOrders.filter(order => order.id !== id));
         setActiveWorkOrders(prevOrders => {
             if (prevOrders.some(order => order.id === id)) {
                 return prevOrders.map(order => order.id === id ? fullUpdatedOrder : order);
             }
+            // If it wasn't in the active list before (i.e., it was in historical), add it.
             return [...prevOrders, fullUpdatedOrder];
         });
     }
@@ -346,43 +359,44 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     setVehicles(prev => prev.filter(v => v.id !== id));
   };
 
-  const addGanttChart = async (ganttChart: Omit<GanttChart, 'id'>): Promise<GanttChart> => {
-    const dataToSave = {
-        ...ganttChart,
-        assignedOT: ganttChart.assignedOT === 'none' ? '' : ganttChart.assignedOT,
-        tasks: ganttChart.tasks.map(task => ({
-            ...task,
-            startDate: Timestamp.fromDate(new Date(task.startDate)),
-        }))
+    const addGanttChart = async (ganttChart: Omit<GanttChart, 'id'>): Promise<GanttChart> => {
+        const dataToSave = {
+            ...ganttChart,
+            assignedOT: ganttChart.assignedOT === 'none' ? '' : ganttChart.assignedOT,
+            tasks: ganttChart.tasks.map(task => ({
+                ...task,
+                startDate: Timestamp.fromDate(new Date(task.startDate)),
+            }))
+        };
+        const docRef = await addDoc(collection(db, "gantt-charts"), dataToSave);
+        const newGanttChart = { ...ganttChart, id: docRef.id };
+        setGanttCharts(prev => [...prev, newGanttChart]);
+        return newGanttChart;
     };
-    const docRef = await addDoc(collection(db, "gantt-charts"), dataToSave);
-    const newGanttChart = { ...ganttChart, id: docRef.id } as GanttChart;
-    setGanttCharts(prev => [...prev, newGanttChart]);
-    return newGanttChart;
-  };
   
   const getGanttChart = (id: string) => {
     return ganttCharts.find(chart => chart.id === id);
   };
 
-  const updateGanttChart = async (id: string, ganttChart: Partial<Omit<GanttChart, 'id'>>) => {
-    const docRef = doc(db, "gantt-charts", id);
-    const dataToSave: Partial<{ [key in keyof GanttChart]: any }> = { ...ganttChart };
-    if (ganttChart.tasks) {
-        dataToSave.tasks = ganttChart.tasks.map(task => {
-            const { isPhase, ...restOfTask } = task;
-            return {
-                ...restOfTask,
-                startDate: Timestamp.fromDate(new Date(task.startDate)),
-            };
-        });
-    }
-    if (ganttChart.assignedOT === 'none') {
-        dataToSave.assignedOT = '';
-    }
-    await updateDoc(docRef, dataToSave);
-    setGanttCharts(prev => prev.map(chart => (chart.id === id ? { ...chart, ...ganttChart } as GanttChart : chart)));
-  };
+    const updateGanttChart = async (id: string, ganttChart: Partial<Omit<GanttChart, 'id'>>) => {
+        const docRef = doc(db, "gantt-charts", id);
+        const dataToSave: Partial<{ [key in keyof GanttChart]: any }> = { ...ganttChart };
+        if (ganttChart.tasks) {
+            dataToSave.tasks = ganttChart.tasks.map(task => {
+                const { isPhase, ...restOfTask } = task;
+                return {
+                    ...restOfTask,
+                    startDate: Timestamp.fromDate(new Date(task.startDate)),
+                };
+            });
+        }
+        if (ganttChart.assignedOT === 'none') {
+            dataToSave.assignedOT = '';
+        }
+        
+        await updateDoc(docRef, dataToSave);
+        setGanttCharts(prev => prev.map(chart => (chart.id === id ? { ...chart, ...ganttChart } as GanttChart : chart)));
+    };
 
   const deleteGanttChart = async (id: string) => {
     await deleteDoc(doc(db, "gantt-charts", id));
@@ -510,5 +524,3 @@ export const useWorkOrders = () => {
   }
   return context;
 };
-
-    

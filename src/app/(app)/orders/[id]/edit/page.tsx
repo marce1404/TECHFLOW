@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,7 @@ import Link from 'next/link';
 import { MultiSelect } from "@/components/ui/multi-select";
 import { useToast } from "@/hooks/use-toast";
 import { useParams, useRouter } from "next/navigation";
-import type { WorkOrder, Collaborator, Vehicle } from "@/lib/types";
+import type { WorkOrder } from "@/lib/types";
 import { useWorkOrders } from "@/context/work-orders-context";
 
 export default function EditOrderPage() {
@@ -98,7 +99,6 @@ export default function EditOrderPage() {
       duration: 2000,
     });
     
-    // The navigation logic is now safe because we awaited the update.
     if (order.status === 'Cerrada') {
       router.push(`/orders/history`);
     } else {
@@ -279,10 +279,6 @@ export default function EditOrderPage() {
 
                 {/* Right Column */}
                 <div className="space-y-4">
-                    <div>
-                        <Label htmlFor="rented-vehicle">Vehículo Arrendado (Opcional)</Label>
-                        <Input id="rented-vehicle" placeholder="Ej: Hertz, PPU..." />
-                    </div>
                     
                     <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -341,15 +337,7 @@ export default function EditOrderPage() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
-                        <div>
-                            <Label htmlFor="sale-number">Nº Venta</Label>
-                            <Input id="sale-number" />
-                        </div>
-                        <div>
-                            <Label htmlFor="hes-em-migo">HES / EM / MIGO</Label>
-                            <Input id="hes-em-migo" />
-                        </div>
+                    <div className="grid grid-cols-2 gap-4">
                          <div>
                             <Label htmlFor="oc-number">OC</Label>
                             <Input 
@@ -358,15 +346,14 @@ export default function EditOrderPage() {
                                 onChange={(e) => handleInputChange('ocNumber', e.target.value)}
                             />
                         </div>
-                    </div>
-
-                     <div>
-                        <Label htmlFor="invoice-number">Nº Factura</Label>
-                        <Input 
-                            id="invoice-number" 
-                            value={order.invoiceNumber || ''}
-                            onChange={(e) => handleInputChange('invoiceNumber', e.target.value)}
-                        />
+                         <div>
+                            <Label htmlFor="invoice-number">Nº Factura</Label>
+                            <Input 
+                                id="invoice-number" 
+                                value={order.invoiceNumber || ''}
+                                onChange={(e) => handleInputChange('invoiceNumber', e.target.value)}
+                            />
+                        </div>
                     </div>
 
                     <div>

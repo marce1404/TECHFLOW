@@ -1,4 +1,5 @@
 
+
 'use client';
 import * as React from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
@@ -86,29 +87,6 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
             ...task,
             startDate: task.startDate ? new Date(task.startDate) : new Date(),
         }));
-
-        const tasksWithPhases: GanttFormValues['tasks'] = [];
-        const phases = new Set<string>();
-
-        tasksWithDates.forEach(task => {
-            const phaseName = task.phase || 'Tareas Personalizadas';
-            if (!phases.has(phaseName)) {
-                phases.add(phaseName);
-                tasksWithPhases.push({
-                    id: crypto.randomUUID(),
-                    name: phaseName,
-                    isPhase: true,
-                    startDate: new Date(), 
-                    duration: 0,
-                    progress: 0,
-                    phase: phaseName,
-                });
-            }
-            tasksWithPhases.push({
-                ...task,
-                isPhase: false,
-            });
-        });
         
         form.reset({
             name: ganttChart.name || '',
@@ -434,17 +412,6 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                         <div></div>
                     </div>
                     {fields.map((field, index) => {
-                        if (field.isPhase) {
-                          return (
-                              <div key={field.id} className="flex items-center pt-4">
-                                <h3 className="font-semibold text-base text-primary flex-1">{field.name}</h3>
-                                 <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                              </div>
-                          );
-                        }
-
                         const task = watchedTasks[index];
                         const startDate = task.startDate ? new Date(task.startDate) : new Date();
                         const duration = task.duration || 1;
@@ -532,14 +499,6 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
 
                            {/* Task Rows */}
                            {watchedTasks.map((task, index) => {
-                                if (task.isPhase) {
-                                  return (
-                                     <React.Fragment key={task.id || index}>
-                                        <div className="sticky left-0 bg-card z-10 text-sm font-semibold text-primary truncate pr-2 py-1 border-t flex items-center">{task.name}</div>
-                                        <div className="relative border-t col-span-full h-8" style={{ gridColumnStart: 2, gridRowStart: index + 3}}></div>
-                                    </React.Fragment>
-                                  )
-                                }
                                 if (!task.startDate || !task.duration || !ganttChartData.earliestDate) {
                                     return <div key={task.id || index}></div>;
                                 }
