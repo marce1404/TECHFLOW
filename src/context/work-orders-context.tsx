@@ -62,7 +62,7 @@ interface WorkOrdersContextType {
 
 const WorkOrdersContext = createContext<WorkOrdersContextType | undefined>(undefined);
 
-const SEED_FLAG_KEY = 'suggested_tasks_seeded_v5';
+const SEED_FLAG_KEY = 'suggested_tasks_seeded_v6';
 
 export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [activeWorkOrders, setActiveWorkOrders] = useState<WorkOrder[]>([]);
@@ -92,7 +92,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
                  return;
             }
 
-            console.log("Seeding suggested tasks v5...");
+            console.log("Seeding suggested tasks v6...");
             
             const tasksCollectionRef = collection(db, "suggested-tasks");
             const existingTasksSnapshot = await getDocs(tasksCollectionRef);
