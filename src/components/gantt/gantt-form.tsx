@@ -238,7 +238,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
   const onSubmitForm = (data: GanttFormValues) => {
     const dataToSave = {
         ...data,
-        tasks: data.tasks.filter(t => !t.isPhase).map(t => ({...t, startDate: format(t.startDate, 'yyyy-MM-dd') as any })),
+        tasks: data.tasks.filter(t => !t.isPhase)
     };
     onSave(dataToSave as any);
   };

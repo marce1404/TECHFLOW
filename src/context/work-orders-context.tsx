@@ -332,7 +332,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         ...ganttChart,
         tasks: ganttChart.tasks.map(task => ({
             ...task,
-            startDate: Timestamp.fromDate(task.startDate),
+            startDate: Timestamp.fromDate(new Date(task.startDate)),
         }))
     };
     const docRef = await addDoc(collection(db, "gantt-charts"), dataToSave);
