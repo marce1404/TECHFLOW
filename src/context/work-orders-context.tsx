@@ -10,7 +10,6 @@ import { Timestamp } from 'firebase/firestore';
 import { initialSuggestedTasks } from '@/lib/placeholder-data';
 import { predefinedReportTemplates } from '@/lib/predefined-templates';
 import { useAuth } from './auth-context';
-import { format } from 'date-fns';
 
 
 interface WorkOrdersContextType {
@@ -239,43 +238,27 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
   const updateOrder = async (id: string, updatedData: Partial<WorkOrder>): Promise<void> => {
     const orderRef = doc(db, 'work-orders', id);
-    const originalOrder = getOrder(id);
-    
-    if (!originalOrder) {
-        console.error("Order not found for update:", id);
-        return;
-    }
+    await updateDoc(orderRef, updatedData);
 
-    const dataToUpdate = { ...updatedData };
-    const isNowClosing = dataToUpdate.status === 'Cerrada' && originalOrder.status !== 'Cerrada';
+    const wasActive = activeWorkOrders.some(order => order.id === id);
+    const isNowClosed = updatedData.status === 'Cerrada';
 
-    if (isNowClosing) {
-        dataToUpdate.endDate = format(new Date(), 'yyyy-MM-dd');
-    }
+    const fullUpdatedOrder = { ...getOrder(id), ...updatedData } as WorkOrder;
 
-    await updateDoc(orderRef, dataToUpdate);
-
-    // After DB update, update local state correctly.
-    const finalUpdatedOrder = { ...originalOrder, ...dataToUpdate } as WorkOrder;
-
-    if (isNowClosing) {
-        // Remove from active and add to historical
-        setActiveWorkOrders(prev => prev.filter(order => order.id !== id));
-        setHistoricalWorkOrders(prev => [finalUpdatedOrder, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-    } else if (dataToUpdate.status !== 'Cerrada' && originalOrder.status === 'Cerrada') {
-         // It was closed, now it's not. Move from historical to active.
-        setHistoricalWorkOrders(prev => prev.filter(order => order.id !== id));
-        setActiveWorkOrders(prev => [finalUpdatedOrder, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    if (isNowClosed) {
+      // Move from active to historical
+      setActiveWorkOrders(prev => prev.filter(order => order.id !== id));
+      setHistoricalWorkOrders(prev => [...prev, fullUpdatedOrder]);
     } else {
-        // Just a regular update, stay in the same list
-        if (finalUpdatedOrder.status === 'Cerrada') {
-            setHistoricalWorkOrders(prev => prev.map(order => order.id === id ? finalUpdatedOrder : order));
-        } else {
-            setActiveWorkOrders(prev => prev.map(order => order.id === id ? finalUpdatedOrder : order));
-        }
+      if (wasActive) {
+        // Just update in active list
+        setActiveWorkOrders(prev => prev.map(order => order.id === id ? fullUpdatedOrder : order));
+      } else {
+        // It was in historical and is now not closed, so move to active
+        setHistoricalWorkOrders(prev => prev.filter(order => order.id !== id));
+        setActiveWorkOrders(prev => [...prev, fullUpdatedOrder]);
+      }
     }
-    
-    return Promise.resolve();
   };
   
   const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory> => {
@@ -527,5 +510,3 @@ export const useWorkOrders = () => {
   }
   return context;
 };
-
-    

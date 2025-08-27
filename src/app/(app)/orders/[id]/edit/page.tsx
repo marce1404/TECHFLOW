@@ -65,8 +65,8 @@ export default function EditOrderPage() {
   };
 
   const handleDateChange = (field: keyof WorkOrder, value: Date | undefined) => {
-    if (order && value) {
-      handleInputChange(field, format(value, 'yyyy-MM-dd'));
+    if (order) {
+        handleInputChange(field, value ? format(value, 'yyyy-MM-dd') : undefined);
     }
   };
 
@@ -394,12 +394,6 @@ export default function EditOrderPage() {
                         </Select>
                     </div>
 
-                    {order.status === 'Cerrada' && order.endDate && (
-                        <div>
-                            <Label>Fecha de Cierre</Label>
-                            <Input value={format(new Date(order.endDate.replace(/-/g, '/')), "PPP", { locale: es })} readOnly className="bg-muted"/>
-                        </div>
-                    )}
                      {assignedGantt && (
                         <div>
                             <Label>Carta Gantt Asignada</Label>
@@ -427,5 +421,3 @@ export default function EditOrderPage() {
     </div>
   );
 }
-
-    
