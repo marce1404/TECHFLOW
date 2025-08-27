@@ -60,43 +60,48 @@ export default function SuggestedTasksPage() {
             </div>
             
             <Card>
-                <Tabs defaultValue={availableCategories[0]?.name.toLowerCase() || ''}>
-                    <TabsList className="m-4">
-                        {availableCategories.map(category => (
-                            <TabsTrigger key={category.id} value={category.name.toLowerCase()}>
-                                {category.name}
-                            </TabsTrigger>
-                        ))}
-                    </TabsList>
+                <Tabs defaultValue={availableCategories[0]?.name.toLowerCase() || ''} className="w-full">
+                    <CardHeader>
+                        <TabsList>
+                            {availableCategories.map(category => (
+                                <TabsTrigger key={category.id} value={category.name.toLowerCase()}>
+                                    {category.name}
+                                </TabsTrigger>
+                            ))}
+                        </TabsList>
+                    </CardHeader>
                     
-                    {availableCategories.map(category => {
-                        const categoryKey = category.name.toLowerCase();
-                        
-                        const tasksForCategory = suggestedTasks
-                            .filter(t => t.category === categoryKey)
-                            .sort((a, b) => (a.order || 0) - (b.order || 0));
+                    <CardContent className="space-y-4">
+                        {availableCategories.map(category => {
+                            const categoryKey = category.name.toLowerCase();
+                            
+                            // 1. Filter tasks for the current category and sort them by order
+                            const tasksForCategory = suggestedTasks
+                                .filter(t => t.category === categoryKey)
+                                .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-                        const phases = tasksForCategory.reduce((acc, task) => {
-                            const phase = task.phase || 'Sin Fase';
-                            if (!acc[phase]) {
-                                acc[phase] = [];
-                            }
-                            acc[phase].push(task);
-                            return acc;
-                        }, {} as Record<string, SuggestedTask[]>);
-                        
-                        const sortedPhases = Object.keys(phases).sort((a, b) => {
-                            const firstTaskOrderA = phases[a][0]?.order || 0;
-                            const firstTaskOrderB = phases[b][0]?.order || 0;
-                            return firstTaskOrderA - firstTaskOrderB;
-                        });
+                            // 2. Group sorted tasks by phase
+                            const groupedByPhase = tasksForCategory.reduce((acc, task) => {
+                                const phase = task.phase || 'Sin Fase';
+                                if (!acc[phase]) {
+                                    acc[phase] = [];
+                                }
+                                acc[phase].push(task);
+                                return acc;
+                            }, {} as Record<string, SuggestedTask[]>);
+                            
+                            // 3. Get sorted phases based on the first task's order in each phase
+                            const sortedPhases = Object.keys(groupedByPhase).sort((a, b) => {
+                                const firstTaskA = groupedByPhase[a][0];
+                                const firstTaskB = groupedByPhase[b][0];
+                                return (firstTaskA?.order || 0) - (firstTaskB?.order || 0);
+                            });
 
-                        return (
-                            <TabsContent key={category.id} value={categoryKey} className="m-0">
-                                <CardContent className="space-y-4 pt-0">
+                            return (
+                                <TabsContent key={category.id} value={categoryKey}>
                                     {sortedPhases.length > 0 ? (
                                         sortedPhases.map((phase) => (
-                                            <div key={phase}>
+                                            <div key={phase} className="mb-6">
                                                 <h3 className="font-semibold text-lg mb-2 text-primary">{phase}</h3>
                                                 <div className="rounded-md border">
                                                     <Table>
@@ -107,7 +112,7 @@ export default function SuggestedTasksPage() {
                                                             </TableRow>
                                                         </TableHeader>
                                                         <TableBody>
-                                                            {phases[phase].map((task) => (
+                                                            {groupedByPhase[phase].map((task) => (
                                                                 <TableRow key={task.id}>
                                                                     <TableCell>{task.name}</TableCell>
                                                                     <TableCell className="text-right">
@@ -158,17 +163,16 @@ export default function SuggestedTasksPage() {
                                             </div>
                                         ))
                                     ) : (
-                                        <div className="text-center text-muted-foreground p-8 border rounded-lg m-4">
+                                        <div className="text-center text-muted-foreground p-8 border rounded-lg">
                                             No hay tareas sugeridas para esta categoría.
                                         </div>
                                     )}
-                                </CardContent>
-                            </TabsContent>
-                        )
-                    })}
+                                </TabsContent>
+                            )
+                        })}
+                    </CardContent>
                 </Tabs>
             </Card>
-
 
             <SuggestedTaskFormDialog
                 open={dialogOpen}
