@@ -200,13 +200,26 @@ export const initialSuggestedTasks: Omit<SuggestedTask, 'id'>[] = [
   { order: 41, phase: "Fase 3: Configuración y Pruebas", category: "alarma", name: "Configuración de Comunicación con Central de Monitoreo" },
   { order: 42, phase: "Fase 4: Entrega", category: "alarma", name: "Pruebas de Intrusión y Pánico" },
   { order: 43, phase: "Fase 4: Entrega", category: "alarma", name: "Capacitación al Usuario sobre Armado/Desarmado" },
-  // Incendio
-  { order: 44, phase: "Fase 1: Ingeniería y Diseño", category: "incendio", name: "Diseño de Detección y Alarma según Normativa" },
-  { order: 45, phase: "Fase 2: Instalación de Detección", category: "incendio", name: "Instalación de Panel de Incendio" },
-  { order: 46, phase: "Fase 2: Instalación de Detección", category: "incendio", name: "Instalación de Detectores de Humo y Temperatura" },
-  { order: 47, phase: "Fase 2: Instalación de Detección", category: "incendio", name: "Instalación de Palancas de Alarma Manual" },
-  { order: 48, phase: "Fase 3: Instalación de Notificación", category: "incendio", name: "Instalación de Sirenas con Estroboscopio" },
-  { order: 49, phase: "Fase 3: Instalación de Notificación", category: "incendio", name: "Cableado de Circuitos de Notificación (NAC)" },
-  { order: 50, phase: "Fase 4: Pruebas y Certificación", category: "incendio", name: "Pruebas de Lazo y Dispositivos" },
-  { order: 51, phase: "Fase 4: Pruebas y Certificación", category: "incendio", name: "Elaboración de Informe para Certificación" },
+  // Deteccion
+  { order: 44, phase: "Fase 1: Ingeniería y Diseño", category: "detección", name: "Diseño de Detección y Alarma según Normativa" },
+  { order: 45, phase: "Fase 2: Instalación de Detección", category: "detección", name: "Instalación de Panel de Incendio" },
+  { order: 46, phase: "Fase 2: Instalación de Detección", category: "detección", name: "Instalación de Detectores de Humo y Temperatura" },
+  { order: 47, phase: "Fase 2: Instalación de Detección", category: "detección", name: "Instalación de Palancas de Alarma Manual" },
+  { order: 48, phase: "Fase 3: Instalación de Notificación", category: "detección", name: "Instalación de Sirenas con Estroboscopio" },
+  { order: 49, phase: "Fase 3: Instalación de Notificación", category: "detección", name: "Cableado de Circuitos de Notificación (NAC)" },
+  { order: 50, phase: "Fase 4: Pruebas y Certificación", category: "detección", name: "Pruebas de Lazo y Dispositivos" },
+  { order: 51, phase: "Fase 4: Pruebas y Certificación", category: "detección", name: "Elaboración de Informe para Certificación" },
+  // Extinción
+  { order: 52, phase: "Fase 1: Diseño y Planificación", category: "extinción", name: "Levantamiento y Cálculo Hidráulico" },
+  { order: 53, phase: "Fase 1: Diseño y Planificación", category: "extinción", name: "Diseño de Red de Rociadores (Sprinklers)" },
+  { order: 54, phase: "Fase 2: Montaje de Tuberías", category: "extinción", name: "Prefabricado y Montaje de Tuberías (Piping)" },
+  { order: 55, phase: "Fase 2: Montaje de Tuberías", category: "extinción", name: "Instalación de Soportes y Anclajes" },
+  { order: 56, phase: "Fase 3: Instalación de Componentes", category: "extinción", name: "Instalación de Rociadores (Sprinklers)" },
+  { order: 57, phase: "Fase 3: Instalación de Componentes", category: "extinción", name: "Instalación de Válvulas y Sala de Bombas" },
+  { order: 58, phase: "Fase 4: Pruebas y Puesta en Marcha", category: "extinción", name: "Prueba de Presión y Estanqueidad (Hidrostática)" },
+  { order: 59, phase: "Fase 4: Pruebas y Puesta en Marcha", category: "extinción", name: "Puesta en Marcha del Sistema de Bombeo" },
+  { order: 60, phase: "Fase 4: Pruebas y Puesta en Marcha", category: "extinción", name: "Pruebas de Flujo" },
+  { order: 61, phase: "Fase 5: Entrega", category: "extinción", name: "Entrega y Certificación del Sistema" },
 ];
+
+    

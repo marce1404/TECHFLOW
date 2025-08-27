@@ -44,27 +44,30 @@ export default function SuggestedTasksPage() {
         setDialogOpen(true);
     };
 
-    const availableCategories = services.filter(s => s.status === 'Activa' && ['CCTV', 'CCAA', 'INCENDIO', 'ALARMA', 'ABLOY'].includes(s.name.toUpperCase()));
+    const availableCategories = services.filter(s => s.status === 'Activa');
 
     const groupedAndSortedTasks = React.useCallback((categoryKey: string) => {
-        const tasksForCategory = suggestedTasks
-            .filter(t => t.category === categoryKey)
-            .sort((a, b) => (a.order || 0) - (b.order || 0));
+        const tasksForCategory = suggestedTasks.filter(t => t.category === categoryKey);
 
         const grouped = tasksForCategory.reduce((acc, task) => {
             const phase = task.phase || 'Sin Fase';
             if (!acc[phase]) {
-                acc[phase] = { tasks: [], order: task.order };
+                acc[phase] = [];
             }
-            acc[phase].tasks.push(task);
-            if(task.order < acc[phase].order) {
-                acc[phase].order = task.order;
-            }
+            acc[phase].push(task);
             return acc;
-        }, {} as Record<string, { tasks: SuggestedTask[], order: number }>);
-        
+        }, {} as Record<string, SuggestedTask[]>);
+
+        // Sort tasks within each phase
+        for (const phase in grouped) {
+            grouped[phase].sort((a, b) => (a.order || 0) - (b.order || 0));
+        }
+
+        // Sort phases based on the first task's order in each phase
         const sortedPhases = Object.keys(grouped).sort((a, b) => {
-            return grouped[a].order - grouped[b].order;
+            const firstTaskOrderA = grouped[a][0]?.order || 0;
+            const firstTaskOrderB = grouped[b][0]?.order || 0;
+            return firstTaskOrderA - firstTaskOrderB;
         });
 
         return { grouped, sortedPhases };
@@ -117,7 +120,7 @@ export default function SuggestedTasksPage() {
                                                             </TableRow>
                                                         </TableHeader>
                                                         <TableBody>
-                                                            {grouped[phase].tasks.map((task) => (
+                                                            {grouped[phase].map((task) => (
                                                                 <TableRow key={task.id}>
                                                                     <TableCell>{task.name}</TableCell>
                                                                     <TableCell className="text-right">
@@ -189,3 +192,5 @@ export default function SuggestedTasksPage() {
         </div>
     );
 }
+
+    
