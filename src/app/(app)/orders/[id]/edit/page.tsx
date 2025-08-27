@@ -101,7 +101,7 @@ export default function EditOrderPage() {
   };
 
   if (!order) {
-      return <div>Orden de trabajo no encontrada.</div>
+      return <div>Cargando orden de trabajo...</div>
   }
 
   // By replacing hyphens with slashes, we ensure the date is parsed in the local time zone,
