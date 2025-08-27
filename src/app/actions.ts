@@ -56,14 +56,20 @@ export async function getGanttForPrint(ganttId: string): Promise<GanttChart | nu
 
         const data = ganttSnap.data();
         if (!data) return null;
-
+        
+        // Correctly handle date conversion from Firestore Timestamp
         const tasks = (data.tasks || []).map((task: any) => {
-            const startDate = task.startDate instanceof Timestamp 
-                ? task.startDate.toDate() 
-                : new Date(task.startDate);
+            const { startDate, ...rest } = task;
+            let convertedDate: Date | null = null;
+            if (startDate && startDate instanceof Timestamp) {
+                convertedDate = startDate.toDate();
+            } else if (startDate) {
+                // Fallback for string dates, though Timestamps are expected
+                convertedDate = new Date(startDate);
+            }
             return {
-                ...task,
-                startDate,
+                ...rest,
+                startDate: convertedDate,
             };
         });
 
