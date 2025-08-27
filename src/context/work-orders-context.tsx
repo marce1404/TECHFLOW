@@ -82,25 +82,25 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-        // Clear old suggested tasks from Firestore and re-seed from placeholder
-        const cleanAndSeedSuggestedTasks = async () => {
-            const suggestedTasksCollection = collection(db, "suggested-tasks");
-            const snapshot = await getDocs(suggestedTasksCollection);
-
-            // Delete all existing documents
-            const deleteBatch = writeBatch(db);
-            snapshot.docs.forEach(doc => deleteBatch.delete(doc.ref));
-            await deleteBatch.commit();
+        const cleanAndSeedData = async () => {
+            console.log("Starting data seeding process...");
             
-            // Add new documents from placeholder data
-            const addBatch = writeBatch(db);
+            const tasksCollection = collection(db, "suggested-tasks");
+            const tasksSnapshot = await getDocs(tasksCollection);
+            const deleteTasksBatch = writeBatch(db);
+            tasksSnapshot.docs.forEach(doc => deleteTasksBatch.delete(doc.ref));
+            await deleteTasksBatch.commit();
+            console.log("All existing suggested tasks have been deleted.");
+
+            const addTasksBatch = writeBatch(db);
             const newTasks: SuggestedTask[] = [];
             initialSuggestedTasks.forEach(task => {
                 const docRef = doc(collection(db, "suggested-tasks"));
-                addBatch.set(docRef, task);
+                addTasksBatch.set(docRef, task);
                 newTasks.push({ ...task, id: docRef.id });
             });
-            await addBatch.commit();
+            await addTasksBatch.commit();
+            console.log(`${newTasks.length} new suggested tasks have been seeded.`);
             
             return newTasks;
         };
@@ -130,7 +130,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             getDocs(collection(db, "report-templates")),
             getDocs(query(collection(db, "submitted-reports"), orderBy("submittedAt", "desc"))),
             getDoc(doc(db, "settings", "companyInfo")),
-            cleanAndSeedSuggestedTasks(),
+            cleanAndSeedData(),
         ]);
 
         setActiveWorkOrders(activeWorkOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[]);
