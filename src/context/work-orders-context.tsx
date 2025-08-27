@@ -246,40 +246,19 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         return;
     }
     
-    // Create a copy to avoid mutating the original object directly
     const dataToUpdate = { ...updatedData };
     
-    // Determine if the order is being closed in this update
-    const isNowClosing = dataToUpdate.status === 'Cerrada' && originalOrder.status !== 'Cerrada';
-    if (isNowClosing) {
+    const isClosing = dataToUpdate.status === 'Cerrada' && originalOrder.status !== 'Cerrada';
+    if (isClosing) {
         dataToUpdate.endDate = format(new Date(), 'yyyy-MM-dd');
     }
     
     try {
-        // Step 1: Update the document in Firestore
         await updateDoc(orderRef, dataToUpdate);
         
-        // Step 2: After successful DB update, update local state
-        const finalUpdatedOrder = { ...originalOrder, ...dataToUpdate } as WorkOrder;
-        
-        const wasActive = originalOrder.status !== 'Cerrada';
-        const isNowClosed = finalUpdatedOrder.status === 'Cerrada';
-
-        if (wasActive && isNowClosed) {
-            // Move from active to historical
-            setActiveWorkOrders(prev => prev.filter(o => o.id !== id));
-            setHistoricalWorkOrders(prev => [finalUpdatedOrder, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-        } else if (!wasActive && !isNowClosed) {
-            // Move from historical to active
-            setHistoricalWorkOrders(prev => prev.filter(o => o.id !== id));
-            setActiveWorkOrders(prev => [finalUpdatedOrder, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-        } else if (isNowClosed) {
-            // Update within historical
-            setHistoricalWorkOrders(prev => prev.map(o => o.id === id ? finalUpdatedOrder : o));
-        } else {
-            // Update within active
-            setActiveWorkOrders(prev => prev.map(o => o.id === id ? finalUpdatedOrder : o));
-        }
+        // After successful DB update, refetch all data to ensure consistency.
+        // This is the most robust way to handle state changes.
+        await fetchData();
 
     } catch (error) {
         console.error("Error updating order in Firestore:", error);
@@ -535,5 +514,3 @@ export const useWorkOrders = () => {
   }
   return context;
 };
-
-    

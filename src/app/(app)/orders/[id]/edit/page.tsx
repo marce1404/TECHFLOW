@@ -71,7 +71,7 @@ export default function EditOrderPage() {
   };
 
   const formatNumber = (num: number): string => {
-    return isNaN(num) ? '0' : new Intl.NumberFormat('es-CL').format(num);
+    return isNaN(num) ? '' : new Intl.NumberFormat('es-CL').format(num);
   };
 
   const handleNetPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,22 +89,21 @@ export default function EditOrderPage() {
 
   const handleUpdateOrder = async () => {
     if (!order) return;
-    await updateOrder(order.id, order);
+    await updateOrder(order.id, order); // Pass the current state of 'order'
     toast({
       title: "Orden de Trabajo Actualizada",
       description: `La OT "${order.description}" ha sido actualizada.`,
-      duration: 1000,
+      duration: 2000,
     });
     
-    if (order.status === 'Cerrada') {
-        setTimeout(() => {
+    // Give a bit of time for state to propagate before navigating
+    setTimeout(() => {
+        if (order.status === 'Cerrada') {
             router.push(`/orders/history`);
-        }, 1000);
-    } else {
-        setTimeout(() => {
+        } else {
             router.push(`/orders`);
-        }, 1000);
-    }
+        }
+    }, 500);
   };
 
   if (!order) {
@@ -428,5 +427,3 @@ export default function EditOrderPage() {
     </div>
   );
 }
-
-    
