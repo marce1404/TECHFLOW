@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import type { GanttChart } from '@/lib/types';
 import { addDays, differenceInCalendarDays, eachDayOfInterval, format, isPast, isToday } from 'date-fns';
 import * as React from 'react';
+import { useParams } from 'next/navigation';
 
 function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
     const today = new Date();
@@ -181,15 +182,23 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
 }
 
 
-export default function PrintGanttPage({ params }: { params: { id: string } }) {
+export default function PrintGanttPage() {
+    const params = useParams();
+    const ganttId = params.id as string;
     const [ganttChart, setGanttChart] = React.useState<GanttChart | null>(null);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     
     React.useEffect(() => {
+        if (!ganttId) {
+            setError('ID de Gantt no válido.');
+            setLoading(false);
+            return;
+        }
+        
         async function fetchGantt() {
             try {
-                const chart = await getGanttForPrint(params.id);
+                const chart = await getGanttForPrint(ganttId);
                 if (chart) {
                     setGanttChart(chart);
                 } else {
@@ -202,7 +211,7 @@ export default function PrintGanttPage({ params }: { params: { id: string } }) {
             }
         }
         fetchGantt();
-    }, [params.id]);
+    }, [ganttId]);
 
     if (loading) {
         return <div className="p-8 text-center">Cargando para imprimir...</div>;

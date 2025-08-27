@@ -84,39 +84,55 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
       const tasksWithPhases: GanttFormValues['tasks'] = [];
       const phases = new Set<string>();
 
-      // Ensure tasks are sorted based on suggested task order
-      const sortedSavedTasks = (ganttChart.tasks || []).sort((a, b) => {
-        const taskA = suggestedTasks.find(st => st.name === a.name);
-        const taskB = suggestedTasks.find(st => st.name === b.name);
-        const orderA = taskA?.order ?? Infinity;
-        const orderB = taskB?.order ?? Infinity;
-        return orderA - orderB;
-      });
+      const groupedTasks: Record<string, GanttTask[]> = {};
 
-      sortedSavedTasks.forEach(task => {
+      // Group tasks by phase
+      (ganttChart.tasks || []).forEach(task => {
         const suggested = suggestedTasks.find(st => st.name === task.name);
         const phaseName = suggested?.phase || 'Tareas Personalizadas';
-
-        if (!phases.has(phaseName)) {
-          phases.add(phaseName);
-          tasksWithPhases.push({
-            id: crypto.randomUUID(),
-            name: phaseName,
-            isPhase: true,
-            startDate: new Date(), // Placeholder, not used for rendering phase rows
-            duration: 0,
-            progress: 0,
-            phase: phaseName,
-          });
+        if (!groupedTasks[phaseName]) {
+          groupedTasks[phaseName] = [];
         }
-        
+        groupedTasks[phaseName].push(task);
+      });
+
+      // Sort phases based on the order of suggested tasks
+      const sortedPhases = Object.keys(groupedTasks).sort((a, b) => {
+        const firstTaskA = suggestedTasks.find(st => st.phase === a);
+        const firstTaskB = suggestedTasks.find(st => st.phase === b);
+        if (a === 'Tareas Personalizadas') return 1;
+        if (b === 'Tareas Personalizadas') return -1;
+        return (firstTaskA?.order || 0) - (firstTaskB?.order || 0);
+      });
+
+      // Build the final task list for the form
+      sortedPhases.forEach(phase => {
         tasksWithPhases.push({
-          ...task,
-          startDate: new Date(task.startDate), // Ensure it's a Date object
-          isPhase: false,
-          phase: phaseName,
+          id: crypto.randomUUID(),
+          name: phase,
+          isPhase: true,
+          startDate: new Date(),
+          duration: 0,
+          progress: 0,
+          phase: phase,
+        });
+
+        const sortedTasksInPhase = groupedTasks[phase].sort((a, b) => {
+            const taskA = suggestedTasks.find(st => st.name === a.name);
+            const taskB = suggestedTasks.find(st => st.name === b.name);
+            return (taskA?.order || Infinity) - (taskB?.order || Infinity);
+        });
+
+        sortedTasksInPhase.forEach(task => {
+            tasksWithPhases.push({
+                ...task,
+                startDate: new Date(task.startDate),
+                isPhase: false,
+                phase: phase,
+            });
         });
       });
+
 
       form.reset({
         name: ganttChart.name || '',
@@ -405,25 +421,27 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader>
-            <CardTitle>Cargar Tareas Sugeridas</CardTitle>
-            <CardDescription>Selecciona una categoría para cargar una lista de tareas predefinidas y agilizar la creación de tu cronograma.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <FormLabel>Cargar Tareas Sugeridas (Opcional)</FormLabel>
-            <Select onValueChange={handleSuggestedTasks}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar una categoría de servicio..." />
-              </SelectTrigger>
-              <SelectContent>
-                {services.filter(s => s.status === 'Activa').map(service => (
-                  <SelectItem key={service.id} value={service.name.toLowerCase()}>{service.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
+        {!ganttChart && (
+            <Card>
+            <CardHeader>
+                <CardTitle>Cargar Tareas Sugeridas</CardTitle>
+                <CardDescription>Selecciona una categoría para cargar una lista de tareas predefinidas y agilizar la creación de tu cronograma.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <FormLabel>Cargar Tareas Sugeridas (Opcional)</FormLabel>
+                <Select onValueChange={handleSuggestedTasks}>
+                <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar una categoría de servicio..." />
+                </SelectTrigger>
+                <SelectContent>
+                    {services.filter(s => s.status === 'Activa').map(service => (
+                    <SelectItem key={service.id} value={service.name.toLowerCase()}>{service.name}</SelectItem>
+                    ))}
+                </SelectContent>
+                </Select>
+            </CardContent>
+            </Card>
+        )}
 
         <Card>
             <CardHeader>
