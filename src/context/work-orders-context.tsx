@@ -62,7 +62,7 @@ interface WorkOrdersContextType {
 
 const WorkOrdersContext = createContext<WorkOrdersContextType | undefined>(undefined);
 
-const SEED_FLAG_KEY = 'suggested_tasks_seeded_v4';
+const SEED_FLAG_KEY = 'suggested_tasks_seeded_v5';
 
 export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [activeWorkOrders, setActiveWorkOrders] = useState<WorkOrder[]>([]);
@@ -86,13 +86,13 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     try {
         const fetchAndSetSuggestedTasks = async () => {
             const seedCompleted = localStorage.getItem(SEED_FLAG_KEY);
-            if (seedCompleted) {
+            if (seedCompleted === 'true') {
                  const tasksSnapshot = await getDocs(query(collection(db, "suggested-tasks"), orderBy("order")));
                  setSuggestedTasks(tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SuggestedTask[]);
                  return;
             }
 
-            console.log("Seeding suggested tasks...");
+            console.log("Seeding suggested tasks v5...");
             
             const tasksCollectionRef = collection(db, "suggested-tasks");
             const existingTasksSnapshot = await getDocs(tasksCollectionRef);

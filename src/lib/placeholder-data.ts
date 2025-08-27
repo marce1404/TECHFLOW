@@ -1,4 +1,5 @@
 
+
 import type { WorkOrder, Collaborator, Vehicle, GanttChart, OTCategory, Service, SuggestedTask } from './types';
 
 export const overviewStats = {
@@ -182,7 +183,7 @@ export const initialSuggestedTasks: Omit<SuggestedTask, 'id'>[] = [
   { order: 25, phase: "Fase 4: Configuración y Puesta en Marcha", category: "ccaa", name: "Registro de Usuarios y Asignación de Permisos" },
   { order: 26, phase: "Fase 5: Pruebas y Entrega", category: "ccaa", name: "Pruebas de Funcionamiento por Puerta" },
   { order: 27, phase: "Fase 5: Pruebas y Entrega", category: "ccaa", name: "Capacitación a Administradores del Sistema" },
-  { order: 28, phase: "Fase 5: Pruebas y Entrega", category: "ccaa", name: "Entrega de Proyecto y Documentación" },
+  { order: 28, phase: "Fase 5: Entrega", category: "ccaa", name: "Entrega de Proyecto y Documentación" },
   // ABLOY
   { order: 29, phase: "Fase 1: Asesoría y Planificación", category: "abloy", name: "Levantamiento de Necesidades y Plan de Amaestramiento" },
   { order: 30, phase: "Fase 1: Asesoría y Planificación", category: "abloy", name: "Especificación de Cilindros y Llaves" },
@@ -200,15 +201,15 @@ export const initialSuggestedTasks: Omit<SuggestedTask, 'id'>[] = [
   { order: 41, phase: "Fase 3: Configuración y Pruebas", category: "alarma", name: "Configuración de Comunicación con Central de Monitoreo" },
   { order: 42, phase: "Fase 4: Entrega", category: "alarma", name: "Pruebas de Intrusión y Pánico" },
   { order: 43, phase: "Fase 4: Entrega", category: "alarma", name: "Capacitación al Usuario sobre Armado/Desarmado" },
-  // Detección
-  { order: 44, phase: "Fase 1: Ingeniería y Diseño", category: "detección", name: "Diseño de Detección y Alarma según Normativa" },
-  { order: 45, phase: "Fase 2: Instalación de Detección", category: "detección", name: "Instalación de Panel de Incendio" },
-  { order: 46, phase: "Fase 2: Instalación de Detección", category: "detección", name: "Instalación de Detectores de Humo y Temperatura" },
-  { order: 47, phase: "Fase 2: Instalación de Detección", category: "detección", name: "Instalación de Palancas de Alarma Manual" },
-  { order: 48, phase: "Fase 3: Instalación de Notificación", category: "detección", name: "Instalación de Sirenas con Estroboscopio" },
-  { order: 49, phase: "Fase 3: Instalación de Notificación", category: "detección", name: "Cableado de Circuitos de Notificación (NAC)" },
-  { order: 50, phase: "Fase 4: Pruebas y Certificación", category: "detección", name: "Pruebas de Lazo y Dispositivos" },
-  { order: 51, phase: "Fase 4: Pruebas y Certificación", category: "detección", name: "Elaboración de Informe para Certificación" },
+  // INCENDIO (Alias Detección)
+  { order: 44, phase: "Fase 1: Ingeniería y Diseño", category: "incendio", name: "Diseño de Detección y Alarma según Normativa" },
+  { order: 45, phase: "Fase 2: Instalación de Detección", category: "incendio", name: "Instalación de Panel de Incendio" },
+  { order: 46, phase: "Fase 2: Instalación de Detección", category: "incendio", name: "Instalación de Detectores de Humo y Temperatura" },
+  { order: 47, phase: "Fase 2: Instalación de Detección", category: "incendio", name: "Instalación de Palancas de Alarma Manual" },
+  { order: 48, phase: "Fase 3: Instalación de Notificación", category: "incendio", name: "Instalación de Sirenas con Estroboscopio" },
+  { order: 49, phase: "Fase 3: Instalación de Notificación", category: "incendio", name: "Cableado de Circuitos de Notificación (NAC)" },
+  { order: 50, phase: "Fase 4: Pruebas y Certificación", category: "incendio", name: "Pruebas de Lazo y Dispositivos" },
+  { order: 51, phase: "Fase 4: Pruebas y Certificación", category: "incendio", name: "Elaboración de Informe para Certificación" },
   // Extinción
   { order: 52, phase: "Fase 1: Diseño y Planificación", category: "extinción", name: "Levantamiento y Cálculo Hidráulico" },
   { order: 53, phase: "Fase 1: Diseño y Planificación", category: "extinción", name: "Diseño de Red de Rociadores (Sprinklers)" },

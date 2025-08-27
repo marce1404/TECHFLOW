@@ -1,4 +1,5 @@
 
+
 'use client';
 import * as React from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
@@ -104,10 +105,8 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
 
   const handleSuggestedTasks = (category: string) => {
     const tasksForCategory = suggestedTasks.filter(t => t.category === category);
+    const newTasks: z.infer<typeof taskSchema>[] = [];
     
-    // Clear existing tasks before adding new ones
-    replace([]);
-
     if (tasksForCategory.length > 0) {
         const grouped = tasksForCategory.reduce((acc, task) => {
             const phase = task.phase || 'Sin Fase';
@@ -124,7 +123,6 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
             return firstTaskOrderA - firstTaskOrderB;
         });
 
-        const newTasks: z.infer<typeof taskSchema>[] = [];
         sortedPhases.forEach(phase => {
             newTasks.push({
                 id: crypto.randomUUID(),
@@ -146,10 +144,9 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                 });
             });
         });
-        
-        // Use replace to ensure the form array is completely overwritten
-        replace(newTasks);
     }
+    // Use replace to ensure the form array is completely overwritten
+    replace(newTasks);
   }
 
 
