@@ -105,10 +105,22 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
 
   const handleSuggestedTasks = (category: string) => {
     const tasksForCategory = suggestedTasks.filter(t => t.category === category);
+    
+    // Use a Set to track unique task names to prevent duplicates from bad data
+    const seen = new Set();
+    const uniqueTasksForCategory = tasksForCategory.filter(t => {
+        if (seen.has(t.name)) {
+            return false;
+        } else {
+            seen.add(t.name);
+            return true;
+        }
+    });
+
     const newTasks: z.infer<typeof taskSchema>[] = [];
     
-    if (tasksForCategory.length > 0) {
-        const grouped = tasksForCategory.reduce((acc, task) => {
+    if (uniqueTasksForCategory.length > 0) {
+        const grouped = uniqueTasksForCategory.reduce((acc, task) => {
             const phase = task.phase || 'Sin Fase';
             if (!acc[phase]) {
                 acc[phase] = [];
@@ -145,6 +157,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
             });
         });
     }
+    // This is the key change: `replace` clears the array and adds new items.
     replace(newTasks);
   }
 
@@ -225,9 +238,9 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
   const onSubmitForm = (data: GanttFormValues) => {
     const dataToSave = {
         ...data,
-        tasks: data.tasks.filter(t => !t.isPhase), // Don't save phases to DB
+        tasks: data.tasks.filter(t => !t.isPhase).map(t => ({...t, startDate: format(t.startDate, 'yyyy-MM-dd') as any })),
     };
-    onSave(dataToSave);
+    onSave(dataToSave as any);
   };
 
   return (

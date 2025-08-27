@@ -20,6 +20,7 @@ import { SuggestedTaskFormDialog } from '@/components/settings/suggested-task-fo
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 export default function SuggestedTasksPage() {
     const { services, suggestedTasks, addSuggestedTask, updateSuggestedTask, deleteSuggestedTask } = useWorkOrders();
@@ -48,10 +49,11 @@ export default function SuggestedTasksPage() {
     const availableCategories = services.filter(s => s.status === 'Activa');
 
     const groupedAndSortedTasks = React.useCallback((categoryKey: string) => {
-        // Filter tasks and remove duplicates by name within the category
+        const tasksForCategory = suggestedTasks.filter(t => t.category === categoryKey);
+        
+        // Use a Set to track unique task names to prevent duplicates from bad data
         const seen = new Set();
-        const uniqueTasksForCategory = suggestedTasks.filter(t => {
-            if (t.category !== categoryKey) return false;
+        const uniqueTasksForCategory = tasksForCategory.filter(t => {
             if (seen.has(t.name)) {
                 return false;
             } else {
@@ -101,13 +103,16 @@ export default function SuggestedTasksPage() {
             <Card>
                 <Tabs defaultValue={availableCategories[0]?.name.toLowerCase() || ''} className="w-full">
                     <CardHeader>
-                        <TabsList>
-                            {availableCategories.map(category => (
-                                <TabsTrigger key={category.id} value={category.name.toLowerCase()}>
-                                    {category.name}
-                                </TabsTrigger>
-                            ))}
-                        </TabsList>
+                        <ScrollArea>
+                            <TabsList>
+                                {availableCategories.map(category => (
+                                    <TabsTrigger key={category.id} value={category.name.toLowerCase()}>
+                                        {category.name}
+                                    </TabsTrigger>
+                                ))}
+                            </TabsList>
+                            <ScrollBar orientation="horizontal" />
+                        </ScrollArea>
                     </CardHeader>
                     
                     <CardContent className="space-y-4">
@@ -202,7 +207,3 @@ export default function SuggestedTasksPage() {
         </div>
     );
 }
-
-    
-
-    

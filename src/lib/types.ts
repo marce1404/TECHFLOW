@@ -251,5 +251,3 @@ export const UpdateUserOutputSchema = z.object({
 });
 
 export type UpdateUserOutput = z.infer<typeof UpdateUserOutputSchema>;
-
-    

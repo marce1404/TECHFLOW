@@ -353,7 +353,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             const { isPhase, ...restOfTask } = task;
             return {
                 ...restOfTask,
-                startDate: Timestamp.fromDate(task.startDate),
+                startDate: Timestamp.fromDate(new Date(task.startDate)),
             };
         });
     }
@@ -487,12 +487,3 @@ export const useWorkOrders = () => {
   }
   return context;
 };
-
-    
-
-    
-
-    
-
-
-
