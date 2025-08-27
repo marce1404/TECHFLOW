@@ -29,7 +29,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format, addDays, differenceInCalendarDays, eachDayOfInterval, isPast, isToday } from 'date-fns';
-import type { GanttChart, Service, WorkOrder, SuggestedTask } from '@/lib/types';
+import type { GanttChart, Service, SuggestedTask, GanttTask } from '@/lib/types';
 import Link from 'next/link';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { useParams, useRouter } from 'next/navigation';
@@ -89,29 +89,24 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
         }));
 
         const phaseTasksMap: Record<string, GanttTask[]> = {};
-        const customTasks: GanttTask[] = [];
         const phaseOrderMap = new Map<string, number>();
 
-        // Pre-populate phase order from suggested tasks
         suggestedTasks.forEach(st => {
             if(st.phase && !phaseOrderMap.has(st.phase)) {
                 phaseOrderMap.set(st.phase, st.order);
             }
         });
 
-        // Group saved tasks
         savedTasks.forEach(task => {
             const suggested = suggestedTasks.find(st => st.name === task.name);
-            const phase = suggested?.phase;
-            if (phase) {
-                if (!phaseTasksMap[phase]) phaseTasksMap[phase] = [];
-                phaseTasksMap[phase].push({ ...task, isPhase: false, phase });
-            } else {
-                customTasks.push({ ...task, isPhase: false, phase: 'Tareas Personalizadas' });
-            }
+            const phase = suggested?.phase || 'Tareas Personalizadas';
+            if (!phaseTasksMap[phase]) phaseTasksMap[phase] = [];
+            phaseTasksMap[phase].push({ ...task, isPhase: false, phase });
         });
 
         const sortedPhases = Object.keys(phaseTasksMap).sort((a, b) => {
+            if (a === 'Tareas Personalizadas') return 1;
+            if (b === 'Tareas Personalizadas') return -1;
             return (phaseOrderMap.get(a) || 999) - (phaseOrderMap.get(b) || 999);
         });
 
@@ -121,17 +116,9 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                 id: crypto.randomUUID(), name: phaseName, isPhase: true,
                 startDate: new Date(), duration: 0, progress: 0, phase: phaseName,
             });
-            phaseTasksMap[phaseName].forEach(task => reconstructedTasks.push({ ...task, startDate: new Date(task.startDate) }));
+            const tasksInPhase = phaseTasksMap[phaseName] || [];
+            tasksInPhase.forEach(task => reconstructedTasks.push({ ...task, startDate: new Date(task.startDate) }));
         });
-
-        // Add custom tasks under their own phase
-        if (customTasks.length > 0) {
-            reconstructedTasks.push({
-                id: crypto.randomUUID(), name: 'Tareas Personalizadas', isPhase: true,
-                startDate: new Date(), duration: 0, progress: 0, phase: 'Tareas Personalizadas',
-            });
-            customTasks.forEach(task => reconstructedTasks.push({ ...task, startDate: new Date(task.startDate) }));
-        }
 
         form.reset({
             name: ganttChart.name || '',
