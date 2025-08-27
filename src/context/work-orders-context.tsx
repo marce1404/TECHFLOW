@@ -237,41 +237,46 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     return [...activeWorkOrders, ...historicalWorkOrders].find(order => order.id === id);
   };
 
-  const updateOrder = async (id: string, updatedFields: Partial<WorkOrder>) => {
+  const updateOrder = async (id: string, updatedData: Partial<WorkOrder>) => {
     const orderRef = doc(db, 'work-orders', id);
     const originalOrder = getOrder(id);
 
     if (!originalOrder) {
-        console.error("Order not found for update");
+        console.error("Order not found for update:", id);
         return;
     }
 
-    const dataToUpdate = { ...updatedFields };
-
-    const isClosing = updatedFields.status === 'Cerrada' && originalOrder.status !== 'Cerrada';
-    if (isClosing) {
+    const dataToUpdate = { ...updatedData };
+    const isNowClosing = updatedData.status === 'Cerrada' && originalOrder.status !== 'Cerrada';
+    
+    if (isNowClosing) {
         dataToUpdate.endDate = format(new Date(), 'yyyy-MM-dd');
     }
 
-    // First, update the document in Firestore
-    await updateDoc(orderRef, dataToUpdate);
+    try {
+        // Step 1: Update the document in Firestore
+        await updateDoc(orderRef, dataToUpdate);
 
-    // After successful DB update, update local state
-    const finalUpdatedOrder = { ...originalOrder, ...dataToUpdate } as WorkOrder;
-    
-    const wasActive = originalOrder.status !== 'Cerrada';
-    const isNowClosed = finalUpdatedOrder.status === 'Cerrada';
+        // Step 2: After successful DB update, update local state
+        const finalUpdatedOrder = { ...originalOrder, ...dataToUpdate } as WorkOrder;
+        
+        const wasActive = originalOrder.status !== 'Cerrada';
+        const isNowClosed = finalUpdatedOrder.status === 'Cerrada';
 
-    if (wasActive && isNowClosed) {
-        setActiveWorkOrders(prev => prev.filter(o => o.id !== id));
-        setHistoricalWorkOrders(prev => [finalUpdatedOrder, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-    } else if (!wasActive && !isNowClosed) {
-        setHistoricalWorkOrders(prev => prev.filter(o => o.id !== id));
-        setActiveWorkOrders(prev => [finalUpdatedOrder, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-    } else if (isNowClosed) {
-        setHistoricalWorkOrders(prev => prev.map(o => o.id === id ? finalUpdatedOrder : o));
-    } else {
-        setActiveWorkOrders(prev => prev.map(o => o.id === id ? finalUpdatedOrder : o));
+        if (wasActive && isNowClosed) {
+            setActiveWorkOrders(prev => prev.filter(o => o.id !== id));
+            setHistoricalWorkOrders(prev => [finalUpdatedOrder, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        } else if (!wasActive && !isNowClosed) {
+            setHistoricalWorkOrders(prev => prev.filter(o => o.id !== id));
+            setActiveWorkOrders(prev => [finalUpdatedOrder, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        } else if (isNowClosed) {
+            setHistoricalWorkOrders(prev => prev.map(o => o.id === id ? finalUpdatedOrder : o));
+        } else {
+            setActiveWorkOrders(prev => prev.map(o => o.id === id ? finalUpdatedOrder : o));
+        }
+
+    } catch (error) {
+        console.error("Error updating order in Firestore:", error);
     }
   };
   
