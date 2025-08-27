@@ -71,7 +71,7 @@ export default function EditOrderPage() {
   };
 
   const formatNumber = (num: number): string => {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return isNaN(num) ? '0' : num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   };
 
   const handleNetPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -87,9 +87,9 @@ export default function EditOrderPage() {
   };
 
 
-  const handleUpdateOrder = () => {
+  const handleUpdateOrder = async () => {
     if (!order) return;
-    updateOrder(order.id, order);
+    await updateOrder(order.id, order);
     toast({
       title: "Orden de Trabajo Actualizada",
       description: `La OT "${order.description}" ha sido actualizada.`,
@@ -115,7 +115,7 @@ export default function EditOrderPage() {
   // preventing hydration mismatches between server and client.
   const startDate = order.date ? new Date(order.date.replace(/-/g, '/')) : undefined;
   const endDate = order.endDate ? new Date(order.endDate.replace(/-/g, '/')) : undefined;
-  const totalPrice = Math.round(order.netPrice * 1.19);
+  const totalPrice = order.netPrice ? Math.round(order.netPrice * 1.19) : 0;
   const currentPrefix = order.ot_number.split('-')[0];
   
   const assignedGantt = ganttCharts.find(g => g.assignedOT === order.ot_number);
