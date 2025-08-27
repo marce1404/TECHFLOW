@@ -62,7 +62,7 @@ interface GanttFormProps {
 }
 
 export default function GanttForm({ onSave, services, ganttChart }: GanttFormProps) {
-  const { suggestedTasks, activeWorkOrders } = useWorkOrders();
+  const { suggestedTasks, activeWorkOrders, ganttCharts } = useWorkOrders();
   const [customTaskName, setCustomTaskName] = React.useState('');
   const router = useRouter();
   const params = useParams();
@@ -83,62 +83,65 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
   
   React.useEffect(() => {
     if (ganttChart) {
-      const savedTasks = (ganttChart.tasks || []).map(task => ({
-        ...task,
-        startDate: new Date(task.startDate), // Ensure it's a Date object
-      }));
+        const savedTasks = (ganttChart.tasks || []).map(task => ({
+            ...task,
+            startDate: new Date(task.startDate),
+        }));
 
-      const phaseTasksMap: Record<string, any[]> = {};
-      const customTasks: any[] = [];
-      const phaseOrderMap = new Map<string, number>();
-      
-      suggestedTasks.forEach(st => {
-          if(st.phase && !phaseOrderMap.has(st.phase)) {
-              phaseOrderMap.set(st.phase, st.order);
-          }
-      });
+        const phaseTasksMap: Record<string, GanttTask[]> = {};
+        const customTasks: GanttTask[] = [];
+        const phaseOrderMap = new Map<string, number>();
 
-      savedTasks.forEach(task => {
-        const suggested = suggestedTasks.find(st => st.name === task.name);
-        const phase = suggested?.phase;
-        if (phase) {
-          if (!phaseTasksMap[phase]) phaseTasksMap[phase] = [];
-          phaseTasksMap[phase].push({ ...task, isPhase: false, phase });
-        } else {
-          customTasks.push({ ...task, isPhase: false, phase: 'Tareas Personalizadas' });
+        // Pre-populate phase order from suggested tasks
+        suggestedTasks.forEach(st => {
+            if(st.phase && !phaseOrderMap.has(st.phase)) {
+                phaseOrderMap.set(st.phase, st.order);
+            }
+        });
+
+        // Group saved tasks
+        savedTasks.forEach(task => {
+            const suggested = suggestedTasks.find(st => st.name === task.name);
+            const phase = suggested?.phase;
+            if (phase) {
+                if (!phaseTasksMap[phase]) phaseTasksMap[phase] = [];
+                phaseTasksMap[phase].push({ ...task, isPhase: false, phase });
+            } else {
+                customTasks.push({ ...task, isPhase: false, phase: 'Tareas Personalizadas' });
+            }
+        });
+
+        const sortedPhases = Object.keys(phaseTasksMap).sort((a, b) => {
+            return (phaseOrderMap.get(a) || 999) - (phaseOrderMap.get(b) || 999);
+        });
+
+        const reconstructedTasks: GanttFormValues['tasks'] = [];
+        sortedPhases.forEach(phaseName => {
+            reconstructedTasks.push({
+                id: crypto.randomUUID(), name: phaseName, isPhase: true,
+                startDate: new Date(), duration: 0, progress: 0, phase: phaseName,
+            });
+            phaseTasksMap[phaseName].forEach(task => reconstructedTasks.push({ ...task, startDate: new Date(task.startDate) }));
+        });
+
+        // Add custom tasks under their own phase
+        if (customTasks.length > 0) {
+            reconstructedTasks.push({
+                id: crypto.randomUUID(), name: 'Tareas Personalizadas', isPhase: true,
+                startDate: new Date(), duration: 0, progress: 0, phase: 'Tareas Personalizadas',
+            });
+            customTasks.forEach(task => reconstructedTasks.push({ ...task, startDate: new Date(task.startDate) }));
         }
-      });
 
-      const sortedPhases = Object.keys(phaseTasksMap).sort((a, b) => {
-        return (phaseOrderMap.get(a) || 999) - (phaseOrderMap.get(b) || 999);
-      });
-
-      const reconstructedTasks: GanttFormValues['tasks'] = [];
-      sortedPhases.forEach(phaseName => {
-        reconstructedTasks.push({
-          id: crypto.randomUUID(), name: phaseName, isPhase: true,
-          startDate: new Date(), duration: 0, progress: 0, phase: phaseName,
+        form.reset({
+            name: ganttChart.name || '',
+            assignedOT: ganttChart.assignedOT || '',
+            workOnSaturdays: ganttChart.workOnSaturdays ?? true,
+            workOnSundays: ganttChart.workOnSundays ?? false,
+            tasks: reconstructedTasks,
         });
-        phaseTasksMap[phaseName].forEach(task => reconstructedTasks.push(task));
-      });
-
-      if (customTasks.length > 0) {
-        reconstructedTasks.push({
-          id: crypto.randomUUID(), name: 'Tareas Personalizadas', isPhase: true,
-          startDate: new Date(), duration: 0, progress: 0, phase: 'Tareas Personalizadas',
-        });
-        customTasks.forEach(task => reconstructedTasks.push(task));
-      }
-
-      form.reset({
-        name: ganttChart.name || '',
-        assignedOT: ganttChart.assignedOT || '',
-        workOnSaturdays: ganttChart.workOnSaturdays ?? true,
-        workOnSundays: ganttChart.workOnSundays ?? false,
-        tasks: reconstructedTasks,
-      });
     }
-  }, [ganttChart, form, suggestedTasks]);
+}, [ganttChart, form, suggestedTasks]);
 
 
   const { fields, append, remove, replace } = useFieldArray({
