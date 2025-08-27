@@ -106,7 +106,7 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
   ];
 
   const handleStatusChange = (order: WorkOrder, newStatus: WorkOrder['status']) => {
-    updateOrder(order.id, { status: newStatus });
+    updateOrder(order.id, { ...order, status: newStatus });
   };
 
 

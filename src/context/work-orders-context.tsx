@@ -236,30 +236,28 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     return [...activeWorkOrders, ...historicalWorkOrders].find(order => order.id === id);
   };
 
-  const updateOrder = async (id: string, updatedData: Partial<WorkOrder>): Promise<void> => {
+  const updateOrder = async (id: string, updatedData: Partial<WorkOrder>) => {
     const orderRef = doc(db, 'work-orders', id);
     await updateDoc(orderRef, updatedData);
 
-    // After successful DB update, update the local state
     const fullUpdatedOrder = { ...getOrder(id), ...updatedData } as WorkOrder;
 
     if (fullUpdatedOrder.status === 'Cerrada') {
-      setActiveWorkOrders(prev => prev.filter(order => order.id !== id));
-      setHistoricalWorkOrders(prev => {
-        // Avoid duplicates
-        if (prev.some(o => o.id === id)) {
-          return prev.map(o => o.id === id ? fullUpdatedOrder : o);
-        }
-        return [...prev, fullUpdatedOrder];
-      });
+        setActiveWorkOrders(prevOrders => prevOrders.filter(order => order.id !== id));
+        setHistoricalWorkOrders(prevOrders => {
+            if (prevOrders.some(order => order.id === id)) {
+                return prevOrders.map(order => order.id === id ? fullUpdatedOrder : order);
+            }
+            return [...prevOrders, fullUpdatedOrder];
+        });
     } else {
-       setHistoricalWorkOrders(prev => prev.filter(order => order.id !== id));
-       setActiveWorkOrders(prev => {
-        if (prev.some(o => o.id === id)) {
-           return prev.map(o => o.id === id ? fullUpdatedOrder : o);
-        }
-        return [...prev, fullUpdatedOrder];
-      });
+        setHistoricalWorkOrders(prevOrders => prevOrders.filter(order => order.id !== id));
+        setActiveWorkOrders(prevOrders => {
+            if (prevOrders.some(order => order.id === id)) {
+                return prevOrders.map(order => order.id === id ? fullUpdatedOrder : order);
+            }
+            return [...prevOrders, fullUpdatedOrder];
+        });
     }
   };
   
