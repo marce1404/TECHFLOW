@@ -83,13 +83,10 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
   
   React.useEffect(() => {
     if (ganttChart) {
-      const reconstructedTasks: GanttFormValues['tasks'] = [];
-      const phases = new Map<string, boolean>();
-
       // Group saved tasks by their phase
       const tasksWithPhase = ganttChart.tasks.map(task => {
         const suggested = suggestedTasks.find(st => st.name === task.name);
-        return { ...task, phase: suggested?.phase || 'Tareas Generales' };
+        return { ...task, phase: suggested?.phase || 'Tareas Personalizadas' }; // Default phase
       });
 
       const groupedByPhase = tasksWithPhase.reduce((acc, task) => {
@@ -101,8 +98,24 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
           return acc;
       }, {} as Record<string, typeof tasksWithPhase>);
 
+      const reconstructedTasks: GanttFormValues['tasks'] = [];
+      const phaseOrder = suggestedTasks.reduce((acc, task) => {
+        if (!acc.has(task.phase)) {
+          acc.set(task.phase, task.order);
+        }
+        return acc;
+      }, new Map<string, number>());
+      
+      // Add a large number for custom tasks to appear last
+      phaseOrder.set('Tareas Personalizadas', 9999);
+
+
+      const sortedPhases = Object.keys(groupedByPhase).sort((a, b) => {
+          return (phaseOrder.get(a) || 9999) - (phaseOrder.get(b) || 9999);
+      });
+
       // Reconstruct the list with phases as headers
-      for (const phaseName in groupedByPhase) {
+      sortedPhases.forEach(phaseName => {
          reconstructedTasks.push({
             id: crypto.randomUUID(),
             name: phaseName,
@@ -110,6 +123,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
             startDate: new Date(),
             duration: 0,
             progress: 0,
+            phase: phaseName,
          });
          groupedByPhase[phaseName].forEach(task => {
             reconstructedTasks.push({
@@ -118,8 +132,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
               startDate: task.startDate ? new Date(task.startDate.toString().replace(/-/g, '/')) : new Date(),
             });
          });
-      }
-
+      });
 
       form.reset({
         name: ganttChart.name || '',
@@ -138,6 +151,26 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
 
   const handleAddTask = () => {
     if (customTaskName.trim()) {
+      let tasks = form.getValues('tasks');
+      const customPhaseName = 'Tareas Personalizadas';
+
+      // Check if the "Tareas Personalizadas" phase already exists
+      const phaseExists = tasks.some(task => task.isPhase && task.name === customPhaseName);
+
+      if (!phaseExists) {
+        // If it doesn't exist, add it first
+        append({
+            id: crypto.randomUUID(),
+            name: customPhaseName,
+            isPhase: true,
+            startDate: new Date(),
+            duration: 0,
+            progress: 0,
+            phase: customPhaseName,
+        });
+      }
+      
+      // Add the new custom task
       append({
         id: crypto.randomUUID(),
         name: customTaskName.trim(),
@@ -145,13 +178,15 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
         duration: 1,
         progress: 0,
         isPhase: false,
-        phase: 'Tareas Personalizadas'
+        phase: customPhaseName
       });
       setCustomTaskName('');
     }
   };
 
   const handleSuggestedTasks = (category: string) => {
+    replace([]); // Clear existing tasks before adding new ones
+    
     const tasksForCategory = suggestedTasks.filter(t => t.category === category);
     
     const seen = new Set();
@@ -290,7 +325,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
           .filter(t => !t.isPhase)
           .map(t => {
             const { isPhase, ...taskToSave } = t;
-            return taskToSave;
+            return { ...taskToSave, startDate: format(new Date(taskToSave.startDate), 'yyyy-MM-dd')};
           })
     };
     onSave(dataToSave as any);
