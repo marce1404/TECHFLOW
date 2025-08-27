@@ -145,7 +145,6 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
             });
         });
     }
-    // Use replace to ensure the form array is completely overwritten
     replace(newTasks);
   }
 
