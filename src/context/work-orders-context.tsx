@@ -10,6 +10,7 @@ import { Timestamp, runTransaction } from 'firebase/firestore';
 import { initialSuggestedTasks } from '@/lib/placeholder-data';
 import { predefinedReportTemplates } from '@/lib/predefined-templates';
 import { useAuth } from './auth-context';
+import { format } from 'date-fns';
 
 
 interface WorkOrdersContextType {
@@ -238,39 +239,37 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
   const updateOrder = async (id: string, updatedData: Partial<WorkOrder>) => {
     const orderRef = doc(db, 'work-orders', id);
-    const dataToSave = { ...updatedData };
+    const currentOrder = getOrder(id);
+    if (!currentOrder) {
+      console.error("Order not found for updating");
+      return;
+    }
+
+    const dataToSave = { ...currentOrder, ...updatedData };
     const isClosing = updatedData.status === 'Cerrada';
 
-    // If the order is being closed and doesn't have an end date, set it to now.
     if (isClosing && !dataToSave.endDate) {
-        dataToSave.endDate = format(new Date(), 'yyyy-MM-dd');
+      dataToSave.endDate = format(new Date(), 'yyyy-MM-dd');
     }
-    
-    // Step 1: Save the changes to Firestore.
+
     await updateDoc(orderRef, dataToSave);
 
-    // Step 2: Once saved, update the local state to reflect the change.
-    const fullUpdatedOrder = { ...getOrder(id), ...dataToSave } as WorkOrder;
-
     if (isClosing) {
-        // Move from active to historical
-        setActiveWorkOrders(prevOrders => prevOrders.filter(order => order.id !== id));
-        setHistoricalWorkOrders(prevOrders => {
-            if (prevOrders.some(order => order.id === id)) {
-                return prevOrders.map(order => order.id === id ? fullUpdatedOrder : order);
-            }
-            return [...prevOrders, fullUpdatedOrder];
-        });
+      setActiveWorkOrders(prev => prev.filter(o => o.id !== id));
+      setHistoricalWorkOrders(prev => {
+        if (!prev.some(o => o.id === id)) {
+          return [...prev, dataToSave];
+        }
+        return prev.map(o => o.id === id ? dataToSave : o);
+      });
     } else {
-        // It might be a move from historical to active
-        setHistoricalWorkOrders(prevOrders => prevOrders.filter(order => order.id !== id));
-        setActiveWorkOrders(prevOrders => {
-            if (prevOrders.some(order => order.id === id)) {
-                return prevOrders.map(order => order.id === id ? fullUpdatedOrder : order);
-            }
-            // If it wasn't in the active list before (i.e., it was in historical), add it.
-            return [...prevOrders, fullUpdatedOrder];
-        });
+      setHistoricalWorkOrders(prev => prev.filter(o => o.id !== id));
+      setActiveWorkOrders(prev => {
+        if (!prev.some(o => o.id === id)) {
+          return [...prev, dataToSave];
+        }
+        return prev.map(o => o.id === id ? dataToSave : o);
+      });
     }
   };
   
