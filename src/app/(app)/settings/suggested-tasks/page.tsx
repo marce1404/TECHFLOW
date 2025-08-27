@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -47,9 +48,19 @@ export default function SuggestedTasksPage() {
     const availableCategories = services.filter(s => s.status === 'Activa');
 
     const groupedAndSortedTasks = React.useCallback((categoryKey: string) => {
-        const tasksForCategory = suggestedTasks.filter(t => t.category === categoryKey);
+        // Filter tasks and remove duplicates by name within the category
+        const seen = new Set();
+        const uniqueTasksForCategory = suggestedTasks.filter(t => {
+            if (t.category !== categoryKey) return false;
+            if (seen.has(t.name)) {
+                return false;
+            } else {
+                seen.add(t.name);
+                return true;
+            }
+        });
 
-        const grouped = tasksForCategory.reduce((acc, task) => {
+        const grouped = uniqueTasksForCategory.reduce((acc, task) => {
             const phase = task.phase || 'Sin Fase';
             if (!acc[phase]) {
                 acc[phase] = [];
@@ -58,12 +69,12 @@ export default function SuggestedTasksPage() {
             return acc;
         }, {} as Record<string, SuggestedTask[]>);
 
-        // Sort tasks within each phase
+        // Sort tasks within each phase by their 'order' property
         for (const phase in grouped) {
             grouped[phase].sort((a, b) => (a.order || 0) - (b.order || 0));
         }
 
-        // Sort phases based on the first task's order in each phase
+        // Sort phases based on the 'order' of the first task in each phase
         const sortedPhases = Object.keys(grouped).sort((a, b) => {
             const firstTaskOrderA = grouped[a][0]?.order || 0;
             const firstTaskOrderB = grouped[b][0]?.order || 0;
@@ -71,7 +82,6 @@ export default function SuggestedTasksPage() {
         });
 
         return { grouped, sortedPhases };
-
     }, [suggestedTasks]);
 
 
