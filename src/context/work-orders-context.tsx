@@ -84,7 +84,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    console.log("CONTEXT: Iniciando fetchData...");
     try {
         const fetchAndSetSuggestedTasks = async () => {
             const seedCompleted = localStorage.getItem(SEED_FLAG_KEY);
@@ -143,12 +142,10 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         await fetchAndSetSuggestedTasks();
         
         const allOrders = workOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[];
-        console.log(`CONTEXT: Se cargaron ${allOrders.length} órdenes en total.`);
         
         const active = allOrders.filter(o => o.status !== 'Cerrada');
         const historical = allOrders.filter(o => o.status === 'Cerrada');
         
-        console.log(`CONTEXT: Separación - ${active.length} activas, ${historical.length} históricas.`);
         setActiveWorkOrders(active);
         setHistoricalWorkOrders(historical);
 
@@ -208,7 +205,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         setSubmittedReports([]);
         setCompanyInfo(null);
     } finally {
-        console.log("CONTEXT: fetchData finalizado.");
         setLoading(false);
     }
   }, []);
@@ -238,28 +234,19 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateOrder = async (id: string, updatedData: Partial<WorkOrder>) => {
-    console.log(`CONTEXT: Iniciando updateOrder para ID: ${id}`);
-    console.log("CONTEXT: Datos recibidos para actualizar:", updatedData);
-    
     const orderRef = doc(db, 'work-orders', id);
     const dataToUpdate = { ...updatedData };
 
+    // If the status is changing to 'Cerrada' and there's no endDate, set it.
     if (dataToUpdate.status === 'Cerrada' && !dataToUpdate.endDate) {
-      const today = format(new Date(), 'yyyy-MM-dd');
-      dataToUpdate.endDate = today;
-      console.log(`CONTEXT: Estado es 'Cerrada', estableciendo endDate a: ${today}`);
+      dataToUpdate.endDate = format(new Date(), 'yyyy-MM-dd');
     }
-    
+
     try {
-      console.log("CONTEXT: Intentando actualizar documento en Firebase...");
       await updateDoc(orderRef, dataToUpdate);
-      console.log("CONTEXT: Documento actualizado en Firebase exitosamente.");
-      
-      console.log("CONTEXT: Llamando a fetchData para resincronizar el estado.");
-      await fetchData();
+      await fetchData(); // Force a full data refetch from Firestore
     } catch (error) {
-       console.error("CONTEXT: Error al actualizar la orden en Firebase:", error);
-       // Opcional: podrías querer manejar este error, por ejemplo, mostrando una notificación al usuario.
+       console.error("Error updating work order:", error);
     }
   };
   
@@ -519,4 +506,5 @@ export const useWorkOrders = () => {
 
 
     
+
 
