@@ -235,13 +235,17 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
   const updateOrder = async (id: string, updatedData: Partial<WorkOrder>) => {
     const orderRef = doc(db, 'work-orders', id);
-    const dataToUpdate = { ...updatedData };
-
-    if (dataToUpdate.status === 'Cerrada' && !dataToUpdate.endDate) {
-        dataToUpdate.endDate = format(new Date(), 'yyyy-MM-dd');
+    const dataToSave = { ...updatedData };
+    
+    // Logic to set closing date if status is changed to "Cerrada"
+    if (dataToSave.status === 'Cerrada' && !dataToSave.endDate) {
+        const currentOrder = getOrder(id);
+        if (currentOrder && currentOrder.status !== 'Cerrada') {
+            dataToSave.endDate = format(new Date(), 'yyyy-MM-dd');
+        }
     }
 
-    await updateDoc(orderRef, dataToUpdate);
+    await updateDoc(orderRef, dataToSave);
     await fetchData(); // Re-fetch all data to ensure UI is in sync with DB
   };
   
@@ -489,3 +493,4 @@ export const useWorkOrders = () => {
 
 
     
+
