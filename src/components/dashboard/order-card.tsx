@@ -43,18 +43,14 @@ export function OrderCard({ order, progress }: OrderCardProps) {
   };
   
   const getChartColor = (status: WorkOrder['status']) => {
-     switch (status.toLowerCase()) {
-      case 'atrasada':
-        return 'hsl(var(--destructive))'; // Red
-      case 'en progreso':
+    const lowerCaseStatus = status.toLowerCase();
+    if (lowerCaseStatus === 'en progreso') {
         return 'hsl(142, 71%, 45%)'; // Green
-      case 'por iniciar':
-         return 'hsl(var(--muted))'; // Gray
-      case 'pendiente':
-         return 'hsl(var(--secondary-foreground))';
-      default:
-        return 'hsl(var(--muted))'; // Gray for others
     }
+    if (lowerCaseStatus === 'atrasada') {
+        return 'hsl(var(--destructive))'; // Red
+    }
+    return 'hsl(var(--muted))'; // Gray for all other cases
   }
   
   const statusBadgeStyle = order.status.toLowerCase() === 'en progreso' ? { backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' } : {};
