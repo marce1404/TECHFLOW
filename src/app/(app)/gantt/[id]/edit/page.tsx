@@ -22,49 +22,49 @@ export default function EditGanttPage() {
 
   React.useEffect(() => {
     if (initialGanttChart) {
-        const rawTasks = initialGanttChart.tasks.map(task => ({
-            ...task,
-            startDate: task.startDate ? new Date(task.startDate) : new Date(),
-        }));
-
+      const rawTasks = initialGanttChart.tasks.map(task => ({
+        ...task,
+        startDate: task.startDate ? new Date(task.startDate) : new Date(),
+      }));
+  
+      if (rawTasks.length > 0) {
+        const grouped = rawTasks.reduce((acc, task) => {
+          const phase = task.phase || 'Sin Fase';
+          if (!acc[phase]) {
+            acc[phase] = [];
+          }
+          acc[phase].push(task);
+          return acc;
+        }, {} as Record<string, GanttTask[]>);
+  
+        // Sort phases based on the 'order' of the first task in each phase
+        const sortedPhases = Object.keys(grouped).sort((a, b) => {
+          const firstTaskOrderA = grouped[a][0]?.order || 0;
+          const firstTaskOrderB = grouped[b][0]?.order || 0;
+          return firstTaskOrderA - firstTaskOrderB;
+        });
+  
         const newProcessedTasks: GanttTask[] = [];
-        
-        if (rawTasks.length > 0) {
-            const grouped = rawTasks.reduce((acc, task) => {
-                const phase = task.phase || 'Sin Fase';
-                if (!acc[phase]) {
-                    acc[phase] = [];
-                }
-                acc[phase].push(task);
-                return acc;
-            }, {} as Record<string, GanttTask[]>);
-
-            // Sort phases based on the 'order' of the first task in each phase
-            const sortedPhases = Object.keys(grouped).sort((a, b) => {
-                const firstTaskOrderA = grouped[a][0]?.order || 0;
-                const firstTaskOrderB = grouped[b][0]?.order || 0;
-                return firstTaskOrderA - firstTaskOrderB;
-            });
-
-            sortedPhases.forEach(phase => {
-                newProcessedTasks.push({
-                    id: crypto.randomUUID(),
-                    name: phase,
-                    isPhase: true,
-                    startDate: new Date(),
-                    duration: 0,
-                    progress: 0,
-                    phase: phase,
-                    order: grouped[phase][0]?.order || 0,
-                });
-                const sortedTasksInPhase = grouped[phase].sort((a, b) => (a.order || 0) - (b.order || 0));
-                sortedTasksInPhase.forEach(task => {
-                    newProcessedTasks.push(task as GanttTask);
-                });
-            });
-        }
-        
-        setProcessedTasks(newProcessedTasks);
+        sortedPhases.forEach(phase => {
+          newProcessedTasks.push({
+            id: crypto.randomUUID(),
+            name: phase,
+            isPhase: true,
+            startDate: new Date(),
+            duration: 0,
+            progress: 0,
+            phase: phase,
+            order: grouped[phase][0]?.order || 0,
+          });
+          const sortedTasksInPhase = grouped[phase].sort((a, b) => (a.order || 0) - (b.order || 0));
+          sortedTasksInPhase.forEach(task => {
+            newProcessedTasks.push(task as GanttTask);
+          });
+        });
+         setProcessedTasks(newProcessedTasks);
+      } else {
+         setProcessedTasks([]);
+      }
     }
   }, [initialGanttChart]);
 
