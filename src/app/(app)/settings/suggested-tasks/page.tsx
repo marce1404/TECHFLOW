@@ -49,7 +49,8 @@ export default function SuggestedTasksPage() {
     const availableCategories = services.filter(s => s.status === 'Activa');
 
     const groupedAndSortedTasks = React.useCallback((categoryKey: string) => {
-        const tasksForCategory = suggestedTasks.filter(t => t.category === categoryKey);
+        // Ensure comparison is always done in lowercase
+        const tasksForCategory = suggestedTasks.filter(t => t.category.toLowerCase() === categoryKey.toLowerCase());
         
         // Use a Set to track unique task names to prevent duplicates from bad data
         const seen = new Set();
