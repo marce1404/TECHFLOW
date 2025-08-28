@@ -147,17 +147,8 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         
         const allOrders = workOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[];
         
-        // --- MODO DE PRUEBA ---
-        // Tratar todas las OTs 'Por Iniciar' como 'Cerrada' para probar el filtrado.
-        const testOrders = allOrders.map(order => {
-          if (order.status === 'Por Iniciar') {
-            return { ...order, status: 'Cerrada' as const };
-          }
-          return order;
-        });
-        
-        setActiveWorkOrders(testOrders.filter(o => o.status !== 'Cerrada'));
-        setHistoricalWorkOrders(testOrders.filter(o => o.status === 'Cerrada'));
+        setActiveWorkOrders(allOrders.filter(o => o.status !== 'Cerrada'));
+        setHistoricalWorkOrders(allOrders.filter(o => o.status === 'Cerrada'));
 
         setOtCategories(categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as OTCategory[]);
         setOtStatuses(statusesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as OTStatus[]);
