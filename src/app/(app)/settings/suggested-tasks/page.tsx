@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -26,6 +25,7 @@ export default function SuggestedTasksPage() {
     const { services, suggestedTasks, addSuggestedTask, updateSuggestedTask, deleteSuggestedTask } = useWorkOrders();
     const [dialogOpen, setDialogOpen] = React.useState(false);
     const [selectedTask, setSelectedTask] = React.useState<SuggestedTask | null>(null);
+    const [activeTab, setActiveTab] = React.useState(services.find(s => s.status === 'Activa')?.name.toLowerCase() || '');
 
     const handleSave = (task: Omit<SuggestedTask, 'id'> | SuggestedTask) => {
         if ('id' in task) {
@@ -50,6 +50,7 @@ export default function SuggestedTasksPage() {
 
     const groupedAndSortedTasks = React.useCallback((categoryKey: string) => {
         const normalizeString = (str: string) => {
+            if (!str) return '';
             return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         }
         const normalizedCategoryKey = normalizeString(categoryKey);
@@ -88,6 +89,17 @@ export default function SuggestedTasksPage() {
         return { grouped, sortedPhases };
     }, [suggestedTasks]);
 
+    const existingPhases = React.useMemo(() => {
+        const normalizeString = (str: string) => {
+            if (!str) return '';
+            return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        }
+        const normalizedCategoryKey = normalizeString(activeTab);
+        const tasksForCategory = suggestedTasks.filter(t => normalizeString(t.category) === normalizedCategoryKey);
+        const phases = new Set(tasksForCategory.map(t => t.phase).filter(Boolean));
+        return Array.from(phases);
+    }, [activeTab, suggestedTasks]);
+
 
     return (
         <div className="flex flex-col gap-8">
@@ -103,7 +115,7 @@ export default function SuggestedTasksPage() {
             </div>
             
             <Card>
-                <Tabs defaultValue={availableCategories[0]?.name.toLowerCase() || ''} className="w-full">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <CardHeader>
                         <ScrollArea>
                             <TabsList>
@@ -205,6 +217,7 @@ export default function SuggestedTasksPage() {
                 onSave={handleSave}
                 task={selectedTask}
                 categories={availableCategories}
+                existingPhases={existingPhases}
             />
         </div>
     );

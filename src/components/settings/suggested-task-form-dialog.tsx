@@ -25,6 +25,10 @@ import {
 import { Input } from '@/components/ui/input';
 import type { SuggestedTask, Service } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { CaretSortIcon, CheckIcon } from '@radix-ui/react-icons';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
+import { cn } from '@/lib/utils';
 
 const suggestedTaskFormSchema = z.object({
   name: z.string().min(3, { message: 'El nombre debe tener al menos 3 caracteres.' }),
@@ -40,9 +44,10 @@ interface SuggestedTaskFormDialogProps {
   onSave: (data: SuggestedTaskFormValues | SuggestedTask) => void;
   task: SuggestedTask | null;
   categories: Service[];
+  existingPhases: string[];
 }
 
-export function SuggestedTaskFormDialog({ open, onOpenChange, onSave, task, categories }: SuggestedTaskFormDialogProps) {
+export function SuggestedTaskFormDialog({ open, onOpenChange, onSave, task, categories, existingPhases }: SuggestedTaskFormDialogProps) {
   const form = useForm<SuggestedTaskFormValues>({
     resolver: zodResolver(suggestedTaskFormSchema),
     defaultValues: {
@@ -123,18 +128,68 @@ export function SuggestedTaskFormDialog({ open, onOpenChange, onSave, task, cate
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="phase"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Fase del Proyecto</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ej: Fase 3: Instalación y Montaje" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+             <FormField
+                control={form.control}
+                name="phase"
+                render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                    <FormLabel>Fase del Proyecto</FormLabel>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                        <FormControl>
+                            <Button
+                            variant="outline"
+                            role="combobox"
+                            className={cn(
+                                "w-full justify-between",
+                                !field.value && "text-muted-foreground"
+                            )}
+                            >
+                            {field.value
+                                ? existingPhases.find(
+                                    (phase) => phase === field.value
+                                ) || field.value
+                                : "Seleccionar o crear fase"}
+                            <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                        </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                        <Command>
+                            <CommandInput
+                                placeholder="Buscar o crear fase..."
+                                onValueChange={(currentValue) => field.onChange(currentValue)}
+                            />
+                            <CommandList>
+                                <CommandEmpty>No se encontraron fases.</CommandEmpty>
+                                <CommandGroup>
+                                {existingPhases.map((phase) => (
+                                    <CommandItem
+                                    value={phase}
+                                    key={phase}
+                                    onSelect={() => {
+                                        form.setValue("phase", phase)
+                                    }}
+                                    >
+                                    {phase}
+                                    <CheckIcon
+                                        className={cn(
+                                        "ml-auto h-4 w-4",
+                                        phase === field.value
+                                            ? "opacity-100"
+                                            : "opacity-0"
+                                        )}
+                                    />
+                                    </CommandItem>
+                                ))}
+                                </CommandGroup>
+                            </CommandList>
+                        </Command>
+                        </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                    </FormItem>
+                )}
             />
              <DialogFooter>
                 <DialogClose asChild>
