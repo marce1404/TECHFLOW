@@ -73,19 +73,6 @@ const calculateEndDate = (startDate: Date, duration: number, workOnSaturdays: bo
     return currentDate;
 };
 
-// Helper function to calculate working days between two dates
-const calculateWorkingDays = (start: Date, end: Date, workOnSaturdays: boolean, workOnSundays: boolean) => {
-    let count = 0;
-    const interval = eachDayOfInterval({ start, end });
-    for (const day of interval) {
-        const dayOfWeek = day.getDay();
-        if (dayOfWeek === 6 && !workOnSaturdays) continue;
-        if (dayOfWeek === 0 && !workOnSundays) continue;
-        count++;
-    }
-    return count;
-};
-
 
 function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
     
@@ -136,82 +123,72 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
             </header>
             
             {days.length > 0 && earliestDate ? (
-                <table className="w-full border-collapse text-xs table-fixed">
-                    <colgroup>
-                        <col style={{ width: '250px' }} />
-                        <col style={{ width: '60px' }} />
-                        {days.map((_, i) => <col key={i} style={{ width: 'auto' }} />)}
-                    </colgroup>
-                    <thead>
-                        <tr className="border-t border-b border-gray-400">
-                            <th className="border-r border-gray-400 p-1 align-bottom text-left font-semibold">Tarea</th>
-                            <th className="border-r border-gray-400 p-1 align-bottom text-right font-semibold">Avance %</th>
-                            {months.map(([month, dayCount]) => (
-                                <th key={month} colSpan={dayCount} className="border-r border-gray-400 p-1 text-center font-semibold capitalize">
-                                    {month}
-                                </th>
-                            ))}
-                        </tr>
-                        <tr className="border-b border-gray-400">
-                            <th className="border-r border-gray-400 p-1"></th>
-                            <th className="border-r border-gray-400 p-1"></th>
-                            {days.map((day) => (
-                                <th key={day.toString()} className="border-r border-gray-400 p-1 font-normal w-[25px] h-[25px]">
-                                    {format(day, 'd')}
-                                </th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {ganttChart.tasks.map((task) => {
-                            if (task.isPhase) {
-                                return (
-                                    <tr key={task.id} className="border-b border-gray-300">
-                                        <td colSpan={2 + days.length} className="p-1 font-bold bg-gray-100">{task.name}</td>
-                                    </tr>
-                                )
-                            }
-                            
-                            const taskStartDate = task.startDate ? new Date(task.startDate) : null;
-                            const taskEndDate = taskStartDate ? calculateEndDate(taskStartDate, task.duration, ganttChart.workOnSaturdays, ganttChart.workOnSundays) : null;
-                            const totalWorkingDays = taskStartDate && taskEndDate ? calculateWorkingDays(taskStartDate, taskEndDate, ganttChart.workOnSaturdays, ganttChart.workOnSundays) : 0;
-                            const progressDays = Math.round(totalWorkingDays * ((task.progress || 0) / 100));
-                            
-                            let completedDaysRendered = 0;
+                <div className="grid" style={{ gridTemplateColumns: '250px 60px 1fr' }}>
+                    {/* Headers */}
+                    <div className="font-semibold p-1 border-b border-gray-400">Tarea</div>
+                    <div className="font-semibold p-1 border-b border-gray-400 text-right">Avance %</div>
+                    <div className="border-b border-gray-400">
+                        <div className="relative h-full">
+                            <div className="grid h-6" style={{ gridTemplateColumns: `repeat(${days.length}, 30px)` }}>
+                                {months.map(([month, dayCount]) => (
+                                    <div key={month} style={{ gridColumn: `span ${dayCount}`}} className="text-center font-semibold capitalize text-sm border-r border-gray-400">
+                                        {month}
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="grid h-6" style={{ gridTemplateColumns: `repeat(${days.length}, 30px)` }}>
+                                {days.map((day) => (
+                                    <div key={day.toString()} className="text-center font-normal text-xs border-r border-gray-400">
+                                        {format(day, 'd')}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Task Rows */}
+                    {ganttChart.tasks.map((task, index) => {
+                        if (task.isPhase) {
+                             return (
+                                <div key={task.id} className="col-span-3 p-1 font-bold bg-gray-100 border-t border-b border-gray-300">
+                                    {task.name}
+                                </div>
+                            )
+                        }
 
-                            return (
-                                <tr key={task.id} className="border-b border-gray-300 h-6">
-                                    <td className="border-r border-gray-400 p-1 text-xs">{task.name}</td>
-                                    <td className="border-r border-gray-400 p-1 text-xs text-right font-mono">{task.progress || 0}%</td>
-                                    {days.map((day, dayIndex) => {
-                                        const isInRange = taskStartDate && taskEndDate && day >= taskStartDate && day <= taskEndDate;
-                                        let content = '';
+                        const taskStartDate = task.startDate ? new Date(task.startDate) : null;
+                        if (!taskStartDate || !earliestDate) return null;
 
-                                        if (isInRange) {
-                                            const dayOfWeek = day.getDay();
-                                            const isWorkingDay = (dayOfWeek !== 6 || ganttChart.workOnSaturdays) && (dayOfWeek !== 0 || ganttChart.workOnSundays);
-                                            
-                                            if (isWorkingDay) {
-                                                if(completedDaysRendered < progressDays) {
-                                                    content = '█';
-                                                    completedDaysRendered++;
-                                                } else {
-                                                    content = '➕';
-                                                }
-                                            }
-                                        }
+                        const taskEndDate = calculateEndDate(taskStartDate, task.duration, ganttChart.workOnSaturdays, ganttChart.workOnSundays);
+                        const dayWidth = 30; // 30px per day
+                        
+                        const offsetDays = differenceInCalendarDays(taskStartDate, earliestDate);
+                        const left = offsetDays * dayWidth;
 
-                                        return (
-                                            <td key={dayIndex} className="border-r border-gray-400 text-center p-0 h-full w-full leading-none text-base font-mono">
-                                                {content}
-                                            </td>
-                                        );
-                                    })}
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
+                        const durationDays = differenceInCalendarDays(taskEndDate, taskStartDate) + 1;
+                        const width = durationDays * dayWidth;
+                        
+                        const progress = task.progress || 0;
+
+                        return (
+                             <React.Fragment key={task.id}>
+                                <div className="p-1 border-b border-gray-300 truncate text-sm">{task.name}</div>
+                                <div className="p-1 border-b border-gray-300 text-right font-mono text-sm">{progress}%</div>
+                                <div className="p-1 border-b border-gray-300 relative h-8">
+                                    <div 
+                                        className="absolute top-1/2 -translate-y-1/2 h-4 bg-gray-200 rounded-sm"
+                                        style={{ left: `${left}px`, width: `${width}px` }}
+                                    >
+                                        <div 
+                                            className="h-full bg-black rounded-sm"
+                                            style={{ width: `${progress}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+                            </React.Fragment>
+                        );
+                    })}
+                </div>
             ) : (
                  <div className="text-center p-8 border rounded-lg">
                     No hay tareas para mostrar en el gráfico.
