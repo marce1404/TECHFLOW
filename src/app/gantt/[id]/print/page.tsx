@@ -140,23 +140,23 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
                     <colgroup>
                         <col style={{ width: '250px' }} />
                         <col style={{ width: '60px' }} />
-                        {days.map((_, i) => <col key={i} style={{ width: '25px' }} />)}
+                        {days.map((_, i) => <col key={i} style={{ width: 'auto' }} />)}
                     </colgroup>
                     <thead>
-                        <tr>
-                            <th className="border p-1 align-bottom text-left">Tarea</th>
-                            <th className="border p-1 align-bottom text-right">Avance %</th>
+                        <tr className="border-t border-b border-gray-400">
+                            <th className="border-r border-gray-400 p-1 align-bottom text-left font-semibold">Tarea</th>
+                            <th className="border-r border-gray-400 p-1 align-bottom text-right font-semibold">Avance %</th>
                             {months.map(([month, dayCount]) => (
-                                <th key={month} colSpan={dayCount} className="border p-1 text-center font-semibold capitalize">
+                                <th key={month} colSpan={dayCount} className="border-r border-gray-400 p-1 text-center font-semibold capitalize">
                                     {month}
                                 </th>
                             ))}
                         </tr>
-                        <tr>
-                            <th className="border p-1"></th>
-                            <th className="border p-1"></th>
+                        <tr className="border-b border-gray-400">
+                            <th className="border-r border-gray-400 p-1"></th>
+                            <th className="border-r border-gray-400 p-1"></th>
                             {days.map((day) => (
-                                <th key={day.toString()} className="border p-1 font-normal w-[25px] h-[25px]">
+                                <th key={day.toString()} className="border-r border-gray-400 p-1 font-normal w-[25px] h-[25px]">
                                     {format(day, 'd')}
                                 </th>
                             ))}
@@ -166,35 +166,25 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
                         {ganttChart.tasks.map((task) => {
                             if (task.isPhase) {
                                 return (
-                                    <tr key={task.id}>
-                                        <td colSpan={2 + days.length} className="border p-1 font-bold bg-gray-100">{task.name}</td>
+                                    <tr key={task.id} className="border-b border-gray-300">
+                                        <td colSpan={2 + days.length} className="p-1 font-bold bg-gray-100">{task.name}</td>
                                     </tr>
                                 )
                             }
                             
-                            if (!task.startDate || !task.duration || !earliestDate) {
-                                return (
-                                     <tr key={task.id}>
-                                        <td className="border p-1 text-xs">{task.name}</td>
-                                        <td className="border p-1 text-xs text-right">{task.progress || 0}%</td>
-                                        <td colSpan={days.length} className="border"></td>
-                                    </tr>
-                                )
-                            };
-                            
-                            const taskStartDate = new Date(task.startDate);
-                            const taskEndDate = calculateEndDate(taskStartDate, task.duration, ganttChart.workOnSaturdays, ganttChart.workOnSundays);
-                            const totalWorkingDays = calculateWorkingDays(taskStartDate, taskEndDate, ganttChart.workOnSaturdays, ganttChart.workOnSundays);
+                            const taskStartDate = task.startDate ? new Date(task.startDate) : null;
+                            const taskEndDate = taskStartDate ? calculateEndDate(taskStartDate, task.duration, ganttChart.workOnSaturdays, ganttChart.workOnSundays) : null;
+                            const totalWorkingDays = taskStartDate && taskEndDate ? calculateWorkingDays(taskStartDate, taskEndDate, ganttChart.workOnSaturdays, ganttChart.workOnSundays) : 0;
                             const progressDays = Math.round(totalWorkingDays * ((task.progress || 0) / 100));
-
-                            let completedDaysCount = 0;
+                            
+                            let completedDaysRendered = 0;
 
                             return (
-                                <tr key={task.id}>
-                                    <td className="border p-1 text-xs">{task.name}</td>
-                                    <td className="border p-1 text-xs text-right">{task.progress || 0}%</td>
+                                <tr key={task.id} className="border-b border-gray-300 h-6">
+                                    <td className="border-r border-gray-400 p-1 text-xs">{task.name}</td>
+                                    <td className="border-r border-gray-400 p-1 text-xs text-right font-mono">{task.progress || 0}%</td>
                                     {days.map((day, dayIndex) => {
-                                        const isInRange = day >= taskStartDate && day <= taskEndDate;
+                                        const isInRange = taskStartDate && taskEndDate && day >= taskStartDate && day <= taskEndDate;
                                         let content = '';
 
                                         if (isInRange) {
@@ -202,9 +192,9 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
                                             const isWorkingDay = (dayOfWeek !== 6 || ganttChart.workOnSaturdays) && (dayOfWeek !== 0 || ganttChart.workOnSundays);
                                             
                                             if (isWorkingDay) {
-                                                if(completedDaysCount < progressDays) {
+                                                if(completedDaysRendered < progressDays) {
                                                     content = '█';
-                                                    completedDaysCount++;
+                                                    completedDaysRendered++;
                                                 } else {
                                                     content = '➕';
                                                 }
@@ -212,7 +202,7 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
                                         }
 
                                         return (
-                                            <td key={dayIndex} className="border text-center p-0 h-[25px] w-[25px] leading-none text-base font-mono">
+                                            <td key={dayIndex} className="border-r border-gray-400 text-center p-0 h-full w-full leading-none text-base font-mono">
                                                 {content}
                                             </td>
                                         );
