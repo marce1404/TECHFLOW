@@ -31,7 +31,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
   const [sortConfig, setSortConfig] = useState<{ key: keyof WorkOrder | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
-  const { updateOrder, otStatuses } = useWorkOrders();
+  const { updateOrder, otStatuses, promptToCloseOrder } = useWorkOrders();
 
   const getStatusVariant = (
     status: WorkOrder['status']
@@ -107,7 +107,11 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
   ];
 
   const handleStatusChange = async (order: WorkOrder, newStatus: WorkOrder['status']) => {
-    await updateOrder(order.id, { ...order, status: newStatus });
+    if (newStatus.toLowerCase() === 'cerrada') {
+        promptToCloseOrder(order);
+    } else {
+        await updateOrder(order.id, { ...order, status: newStatus });
+    }
   };
 
   return (
