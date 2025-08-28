@@ -71,33 +71,26 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
 
   const form = useForm<GanttFormValues>({
     resolver: zodResolver(ganttFormSchema),
-    defaultValues: {
-      name: '',
-      assignedOT: '',
-      workOnSaturdays: true,
-      workOnSundays: false,
-      tasks: [],
-    },
-  });
-  
-  React.useEffect(() => {
-    if (ganttChart) {
-        const tasksWithDates = (ganttChart.tasks || []).map(task => ({
+    defaultValues: ganttChart
+      ? {
+          name: ganttChart.name || '',
+          assignedOT: ganttChart.assignedOT || '',
+          workOnSaturdays: ganttChart.workOnSaturdays ?? true,
+          workOnSundays: ganttChart.workOnSundays ?? false,
+          tasks: (ganttChart.tasks || []).map(task => ({
             ...task,
             startDate: task.startDate ? new Date(task.startDate) : new Date(),
-        }));
-        
-        form.reset({
-            name: ganttChart.name || '',
-            assignedOT: ganttChart.assignedOT || '',
-            workOnSaturdays: ganttChart.workOnSaturdays ?? true,
-            workOnSundays: ganttChart.workOnSundays ?? false,
-            tasks: tasksWithDates,
-        });
-    }
-  }, [ganttChart, form.reset, form]);
-
-
+          })),
+        }
+      : {
+          name: '',
+          assignedOT: '',
+          workOnSaturdays: true,
+          workOnSundays: false,
+          tasks: [],
+        },
+  });
+  
   const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: 'tasks',

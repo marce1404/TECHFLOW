@@ -335,19 +335,19 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     await fetchData();
   };
 
-    const addGanttChart = async (ganttChart: Omit<GanttChart, 'id'>): Promise<GanttChart> => {
-        const dataToSave = {
-            ...ganttChart,
-            assignedOT: ganttChart.assignedOT === 'none' ? '' : ganttChart.assignedOT,
-            tasks: ganttChart.tasks.map(task => ({
-                ...task,
-                startDate: Timestamp.fromDate(new Date(task.startDate)),
-            }))
-        };
-        const docRef = await addDoc(collection(db, "gantt-charts"), dataToSave);
-        await fetchData(); // Re-fetch to ensure consistency and get the ID
-        return { ...ganttChart, id: docRef.id };
-    };
+  const addGanttChart = async (ganttChart: Omit<GanttChart, 'id'>): Promise<GanttChart> => {
+      const dataToSave = {
+          ...ganttChart,
+          assignedOT: ganttChart.assignedOT === 'none' ? '' : ganttChart.assignedOT,
+          tasks: ganttChart.tasks.map(task => ({
+              ...task,
+              startDate: Timestamp.fromDate(new Date(task.startDate)),
+          }))
+      };
+      const docRef = await addDoc(collection(db, "gantt-charts"), dataToSave);
+      await fetchData(); // Re-fetch to ensure consistency and get the ID
+      return { ...ganttChart, id: docRef.id };
+  };
   
   const getGanttChart = (id: string) => {
     return ganttCharts.find(chart => chart.id === id);
@@ -525,6 +525,7 @@ export const useWorkOrders = () => {
 
 
     
+
 
 
 
