@@ -81,11 +81,14 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [submittedReports, setSubmittedReports] = useState<SubmittedReport[]>([]);
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const { fetchUsers } = useAuth();
+  const { user, loading: authLoading, fetchUsers } = useAuth();
   const [orderToClose, setOrderToClose] = useState<WorkOrder | null>(null);
 
 
   const fetchData = useCallback(async () => {
+    // Prevent fetching if we are still in the auth loading phase or if there's no user
+    if (authLoading || !user) return;
+    
     setLoading(true);
     try {
         const fetchAndSetSuggestedTasks = async () => {
@@ -210,7 +213,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     } finally {
         setLoading(false);
     }
-  }, []);
+  }, [user, authLoading]);
 
 
   useEffect(() => {
@@ -534,3 +537,6 @@ export const useWorkOrders = () => {
 
 
 
+
+
+    
