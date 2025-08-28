@@ -43,6 +43,8 @@ const taskSchema = z.object({
   duration: z.coerce.number().min(0, { message: 'La duración debe ser al menos 0.' }), // Allow 0 for phases
   progress: z.coerce.number().min(0).max(100).optional().default(0),
   isPhase: z.boolean().optional().default(false),
+  phase: z.string().optional(),
+  order: z.number().optional(),
 });
 
 const ganttFormSchema = z.object({
@@ -71,30 +73,46 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
 
   const form = useForm<GanttFormValues>({
     resolver: zodResolver(ganttFormSchema),
-    defaultValues: ganttChart
-      ? {
-          name: ganttChart.name || '',
-          assignedOT: ganttChart.assignedOT || '',
-          workOnSaturdays: ganttChart.workOnSaturdays ?? true,
-          workOnSundays: ganttChart.workOnSundays ?? false,
-          tasks: (ganttChart.tasks || []).map(task => ({
-            ...task,
-            startDate: task.startDate ? new Date(task.startDate) : new Date(),
-          })),
-        }
-      : {
+    defaultValues: {
           name: '',
           assignedOT: '',
           workOnSaturdays: true,
           workOnSundays: false,
           tasks: [],
-        },
+    },
   });
-  
+
   const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: 'tasks',
   });
+
+  React.useEffect(() => {
+    if (ganttChart) {
+      const sortedTasks = [...(ganttChart.tasks || [])].sort((a, b) => {
+        if (a.phase && b.phase && a.phase !== b.phase) {
+          const firstTaskA = ganttChart.tasks.find(t => t.phase === a.phase);
+          const firstTaskB = ganttChart.tasks.find(t => t.phase === b.phase);
+          const orderA = firstTaskA?.order ?? Infinity;
+          const orderB = firstTaskB?.order ?? Infinity;
+          return orderA - orderB;
+        }
+        return (a.order || 0) - (b.order || 0);
+      });
+      
+      form.reset({
+        name: ganttChart.name || '',
+        assignedOT: ganttChart.assignedOT || '',
+        workOnSaturdays: ganttChart.workOnSaturdays ?? true,
+        workOnSundays: ganttChart.workOnSundays ?? false,
+        tasks: sortedTasks.map(task => ({
+          ...task,
+          startDate: task.startDate ? new Date(task.startDate) : new Date(),
+        })),
+      });
+    }
+  }, [ganttChart, form]);
+
 
   const handleAddTask = () => {
     if (customTaskName.trim()) {
@@ -111,6 +129,8 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
             startDate: new Date(),
             duration: 0,
             progress: 0,
+            phase: customPhaseName,
+            order: (tasks.filter(t => t.isPhase).length + 1) * 1000,
         });
       }
       
@@ -121,6 +141,8 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
         duration: 1,
         progress: 0,
         isPhase: false,
+        phase: customPhaseName,
+        order: (tasks.filter(t => t.isPhase).length + 1) * 1000 + tasks.filter(t => !t.isPhase).length + 1,
       });
       setCustomTaskName('');
     }
@@ -165,6 +187,8 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                 startDate: new Date(),
                 duration: 0,
                 progress: 0,
+                phase: phase,
+                order: grouped[phase][0].order,
             });
             const sortedTasksInPhase = grouped[phase].sort((a, b) => (a.order || 0) - (b.order || 0));
             sortedTasksInPhase.forEach(task => {
@@ -175,6 +199,8 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                     startDate: new Date(),
                     duration: 1,
                     progress: 0,
+                    phase: phase,
+                    order: task.order,
                 });
             });
         });
