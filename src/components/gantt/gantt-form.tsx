@@ -44,20 +44,25 @@ const ganttFormSchema = z.object({
 type GanttFormValues = z.infer<typeof ganttFormSchema>;
 
 interface GanttFormProps {
-  onSave: (data: Omit<GanttChart, 'id' | 'tasks'>) => void;
+  onSave: (data: Omit<GanttChart, 'id' | 'tasks'>, finalTasks: GanttTask[]) => void;
   ganttChart?: GanttChart;
-  tasks: GanttTask[]; // These are the processed tasks for rendering (with phases)
-  setTasks: React.Dispatch<React.SetStateAction<GanttTask[]>>; // This is to update the raw tasks
-  allTasks: GanttTask[]; // These are the raw tasks without phases
+  initialTasks: GanttTask[]; // These are the raw tasks without phases
 }
 
-export default function GanttForm({ onSave, ganttChart, tasks, setTasks, allTasks }: GanttFormProps) {
+export default function GanttForm({ onSave, ganttChart, initialTasks }: GanttFormProps) {
   const { activeWorkOrders, ganttCharts } = useWorkOrders();
-  const [customTaskName, setCustomTaskName] = React.useState('');
   const params = useParams();
   const ganttId = params.id as string;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  // Raw tasks state
+  const [tasks, setTasks] = React.useState<GanttTask[]>(initialTasks);
+  // Processed tasks for rendering (with phases)
+  const [processedTasks, setProcessedTasks] = React.useState<GanttTask[]>([]);
+  // State for the new task form
+  const [customTaskName, setCustomTaskName] = React.useState('');
+  const [selectedPhase, setSelectedPhase] = React.useState('');
 
   const form = useForm<GanttFormValues>({
     resolver: zodResolver(ganttFormSchema),
@@ -68,6 +73,53 @@ export default function GanttForm({ onSave, ganttChart, tasks, setTasks, allTask
       workOnSundays: false,
     },
   });
+
+  // Effect to process and order tasks whenever the raw `tasks` array changes
+  React.useEffect(() => {
+    if (tasks.length > 0) {
+        const newProcessedTasks: GanttTask[] = [];
+        const grouped = tasks.reduce((acc, task) => {
+            const phase = task.phase || 'Sin Fase';
+            if (!acc[phase]) {
+                acc[phase] = [];
+            }
+            acc[phase].push(task);
+            return acc;
+        }, {} as Record<string, GanttTask[]>);
+
+        const sortedPhases = Object.keys(grouped).sort((a, b) => {
+            const firstTaskOrderA = grouped[a][0]?.order || 0;
+            const firstTaskOrderB = grouped[b][0]?.order || 0;
+            return firstTaskOrderA - firstTaskOrderB;
+        });
+
+        sortedPhases.forEach(phase => {
+            newProcessedTasks.push({
+                id: crypto.randomUUID(),
+                name: phase,
+                isPhase: true,
+                startDate: new Date(),
+                duration: 0,
+                progress: 0,
+                phase: phase,
+                order: grouped[phase][0].order,
+            });
+            const sortedTasksInPhase = grouped[phase].sort((a, b) => (a.order || 0) - (b.order || 0));
+            sortedTasksInPhase.forEach(task => {
+                newProcessedTasks.push(task as GanttTask);
+            });
+        });
+         setProcessedTasks(newProcessedTasks);
+    } else {
+        setProcessedTasks([]);
+    }
+  }, [tasks]);
+
+   // Effect to initialize tasks from props
+  React.useEffect(() => {
+    setTasks(initialTasks);
+  }, [initialTasks]);
+
 
   React.useEffect(() => {
     if (ganttChart) {
@@ -81,24 +133,22 @@ export default function GanttForm({ onSave, ganttChart, tasks, setTasks, allTask
   }, [ganttChart, form]);
 
   const handleUpdateTask = (id: string, field: keyof GanttTask, value: any) => {
-    const newTasks = allTasks.map(t => {
+    setTasks(prevTasks => prevTasks.map(t => {
         if (t.id === id) {
             return { ...t, [field]: value };
         }
         return t;
-    });
-    setTasks(newTasks);
+    }));
   };
   
   const handleRemoveTask = (id: string) => {
-    const newTasks = allTasks.filter(t => t.id !== id);
-    setTasks(newTasks);
+    setTasks(prevTasks => prevTasks.filter(t => t.id !== id));
   };
 
   const handleAddTask = () => {
-    if (customTaskName.trim()) {
-      const customPhaseName = 'Tareas Personalizadas';
-      let phaseExists = allTasks.some(t => t.phase === customPhaseName);
+    if (customTaskName.trim() && selectedPhase) {
+      const phaseTasks = tasks.filter(t => t.phase === selectedPhase);
+      const maxOrderInPhase = Math.max(...phaseTasks.map(t => t.order || 0), 0);
       
       const newTask: GanttTask = {
         id: crypto.randomUUID(),
@@ -107,15 +157,14 @@ export default function GanttForm({ onSave, ganttChart, tasks, setTasks, allTask
         duration: 1,
         progress: 0,
         isPhase: false,
-        phase: customPhaseName,
-        order: (allTasks.filter(t => !t.isPhase).length + 1) * 100,
+        phase: selectedPhase,
+        order: maxOrderInPhase + 1,
       };
 
-      setTasks([...allTasks, newTask]);
+      setTasks(prevTasks => [...prevTasks, newTask]);
       setCustomTaskName('');
     }
   };
-
 
   const handlePrint = () => {
     if (ganttId) {
@@ -158,7 +207,7 @@ export default function GanttForm({ onSave, ganttChart, tasks, setTasks, allTask
   const watchedWorkdays = form.watch(['workOnSaturdays', 'workOnSundays']);
   
   const ganttChartData = React.useMemo(() => {
-    const validTasks = allTasks.filter(t => t.startDate && t.duration > 0 && !t.isPhase);
+    const validTasks = tasks.filter(t => t.startDate && t.duration > 0 && !t.isPhase);
     if (validTasks.length === 0) {
       return { days: [], months: [], earliestDate: null };
     }
@@ -182,14 +231,19 @@ export default function GanttForm({ onSave, ganttChart, tasks, setTasks, allTask
     }, {} as Record<string, number>);
 
     return { days, months: Object.entries(months), earliestDate };
-  }, [allTasks, watchedWorkdays]);
+  }, [tasks, watchedWorkdays]);
 
 
   const onSubmitForm = (data: GanttFormValues) => {
-    onSave(data);
+    onSave(data, tasks);
   };
   
   const availableOTs = activeWorkOrders.filter(ot => !ganttCharts.some(g => g.assignedOT === ot.ot_number && g.id !== ganttId) || (ganttChart && ganttChart.assignedOT === ot.ot_number));
+
+  const existingPhases = React.useMemo(() => {
+    const phases = new Set(tasks.map(t => t.phase).filter(Boolean));
+    return Array.from(phases);
+  }, [tasks]);
 
   return (
     <Form {...form}>
@@ -293,7 +347,7 @@ export default function GanttForm({ onSave, ganttChart, tasks, setTasks, allTask
                         <div className="text-center">Fecha Término</div>
                         <div></div>
                     </div>
-                    {tasks.map((task) => {
+                    {processedTasks.map((task) => {
                         if (task.isPhase) {
                           return (
                             <div key={task.id} className="flex items-center gap-2 pt-4 pb-2">
@@ -328,12 +382,23 @@ export default function GanttForm({ onSave, ganttChart, tasks, setTasks, allTask
                           </div>
                         )
                     })}
-                     <div className="flex items-center gap-2 pt-4">
+                     <div className="flex items-center gap-2 pt-4 border-t">
                         <Input
                             placeholder="Nombre de tarea personalizada"
                             value={customTaskName}
                             onChange={(e) => setCustomTaskName(e.target.value)}
+                            className="flex-1"
                         />
+                        <Select onValueChange={setSelectedPhase} value={selectedPhase}>
+                            <SelectTrigger className="w-[300px]">
+                                <SelectValue placeholder="Seleccionar fase..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {existingPhases.map(phase => (
+                                    <SelectItem key={phase} value={phase}>{phase}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                         <Button type="button" variant="outline" onClick={handleAddTask}>
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Añadir Tarea
@@ -370,7 +435,7 @@ export default function GanttForm({ onSave, ganttChart, tasks, setTasks, allTask
                             ))}
 
                            {/* Task Rows */}
-                           {tasks.map((task, index) => {
+                           {processedTasks.map((task, index) => {
                                 if (task.isPhase) {
                                     return (
                                         <React.Fragment key={task.id || index}>
