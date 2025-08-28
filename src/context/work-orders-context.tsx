@@ -146,8 +146,18 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         await fetchAndSetSuggestedTasks();
         
         const allOrders = workOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[];
-        setActiveWorkOrders(allOrders.filter(o => o.status !== 'Cerrada'));
-        setHistoricalWorkOrders(allOrders.filter(o => o.status === 'Cerrada'));
+        
+        // --- MODO DE PRUEBA ---
+        // Tratar todas las OTs 'Por Iniciar' como 'Cerrada' para probar el filtrado.
+        const testOrders = allOrders.map(order => {
+          if (order.status === 'Por Iniciar') {
+            return { ...order, status: 'Cerrada' as const };
+          }
+          return order;
+        });
+        
+        setActiveWorkOrders(testOrders.filter(o => o.status !== 'Cerrada'));
+        setHistoricalWorkOrders(testOrders.filter(o => o.status === 'Cerrada'));
 
         setOtCategories(categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as OTCategory[]);
         setOtStatuses(statusesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as OTStatus[]);
@@ -243,15 +253,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     }
 
     await updateDoc(orderRef, dataToSave);
-
-    // After successful update, re-sync the local state
-    const allOrders = [...activeWorkOrders, ...historicalWorkOrders];
-    const updatedOrders = allOrders.map(order => 
-      order.id === id ? { ...order, ...dataToSave } : order
-    );
-
-    setActiveWorkOrders(updatedOrders.filter(o => o.status !== 'Cerrada'));
-    setHistoricalWorkOrders(updatedOrders.filter(o => o.status === 'Cerrada'));
+    await fetchData();
   };
   
   const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory> => {
@@ -500,6 +502,8 @@ export const useWorkOrders = () => {
     
 
 
+
+    
 
     
 
