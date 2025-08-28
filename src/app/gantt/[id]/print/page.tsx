@@ -3,8 +3,9 @@
 import { getGanttForPrint } from '@/app/actions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import type { GanttChart } from '@/lib/types';
+import type { GanttChart, GanttTask } from '@/lib/types';
 import { addDays, differenceInCalendarDays, eachDayOfInterval, format, isPast, isToday } from 'date-fns';
+import { es } from 'date-fns/locale';
 import * as React from 'react';
 import { useParams } from 'next/navigation';
 
@@ -18,32 +19,37 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
         }, 500);
     }, []);
 
-    const calculateWorkingDays = (startDate: Date, endDate: Date, workOnSaturdays: boolean, workOnSundays: boolean) => {
+    const calculateWorkingDays = (startDate: Date, endDate: Date, workOnSaturdays: boolean, workOnSundays: boolean): number => {
         let count = 0;
         let currentDate = new Date(startDate);
         while (currentDate <= endDate) {
-            const dayOfWeek = currentDate.getDay();
-            if ((dayOfWeek !== 0 || workOnSundays) && (dayOfWeek !== 6 || workOnSaturdays)) {
+            const dayOfWeek = currentDate.getDay(); // Sunday is 0, Saturday is 6
+            if (dayOfWeek === 0 && !workOnSundays) {
+                // It's Sunday and we don't work on Sundays
+            } else if (dayOfWeek === 6 && !workOnSaturdays) {
+                // It's Saturday and we don't work on Saturdays
+            } else {
                 count++;
             }
             currentDate.setDate(currentDate.getDate() + 1);
         }
         return count;
     };
-
-    const calculateEndDate = (startDate: Date, duration: number, workOnSaturdays: boolean, workOnSundays: boolean) => {
+    
+    const calculateEndDate = (startDate: Date, duration: number, workOnSaturdays: boolean, workOnSundays: boolean): Date => {
+        if (duration === 0) return startDate;
         let remainingDays = duration;
         let currentDate = new Date(startDate);
         if (duration > 0) {
             currentDate.setDate(currentDate.getDate() - 1);
         }
-
+    
         while (remainingDays > 0) {
             currentDate = addDays(currentDate, 1);
             const dayOfWeek = currentDate.getDay();
             const isSaturday = dayOfWeek === 6;
             const isSunday = dayOfWeek === 0;
-
+    
             if ((!isSaturday || workOnSaturdays) && (!isSunday || workOnSundays)) {
                 remainingDays--;
             }
@@ -56,7 +62,7 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
             return { days: [], months: [], earliestDate: null, latestDate: null };
         }
 
-        const validTasks = ganttChart.tasks.filter(t => t.startDate && t.duration > 0);
+        const validTasks = ganttChart.tasks.filter(t => t.startDate && t.duration > 0 && !t.isPhase);
         if (validTasks.length === 0) {
             return { days: [], months: [], earliestDate: null, latestDate: null };
         }
@@ -71,7 +77,7 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
         const days = eachDayOfInterval({ start: earliestDate, end: latestDate });
 
         const months = days.reduce((acc, day) => {
-            const month = format(day, 'MMMM yyyy');
+            const month = format(day, 'MMMM yyyy', { locale: es });
             if (!acc[month]) {
                 acc[month] = 0;
             }
@@ -81,6 +87,28 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
 
         return { days, months: Object.entries(months), earliestDate, latestDate };
     }, [ganttChart]);
+
+    const getProgressColor = (task: GanttTask, endDate: Date) => {
+        const progress = task.progress || 0;
+        const startDate = new Date(task.startDate);
+
+        if (progress >= 100) {
+            return 'bg-blue-500'; // Completed
+        }
+        if (isPast(endDate) && progress < 100) {
+            return 'bg-red-500'; // Late
+        }
+        if ((isPast(startDate) || isToday(startDate)) && !isPast(endDate)) {
+            const totalWorkingDays = calculateWorkingDays(startDate, endDate, ganttChart.workOnSaturdays, ganttChart.workOnSundays);
+            if (totalWorkingDays === 0) return 'bg-green-500';
+
+            const elapsedWorkingDays = calculateWorkingDays(startDate, today, ganttChart.workOnSaturdays, ganttChart.workOnSundays);
+            const expectedProgress = Math.min(Math.round((elapsedWorkingDays / totalWorkingDays) * 100), 100);
+
+            return progress < expectedProgress ? 'bg-red-500' : 'bg-green-500'; // Behind or On-schedule
+        }
+        return 'bg-green-500'; // Not started yet, but on track
+    }
 
     return (
         <div className="bg-white text-black p-8">
@@ -111,32 +139,28 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
 
                                 {/* Task Rows & Bars */}
                                 {ganttChart.tasks.map((task, index) => {
+                                    const gridRowStart = index + 3;
+                                    
+                                    if (task.isPhase) {
+                                        return (
+                                            <React.Fragment key={task.id}>
+                                                <div className="sticky left-0 bg-gray-100 z-10 truncate pr-2 py-1 border-b border-r flex items-center font-bold" style={{ gridRow: gridRowStart, gridColumn: `1 / span ${ganttChartData.days.length + 1}` }}>
+                                                    {task.name}
+                                                </div>
+                                            </React.Fragment>
+                                        )
+                                    }
+
                                     if (!task.startDate || !task.duration || !ganttChartData.earliestDate) {
                                         return null;
                                     }
+
                                     const startDate = new Date(task.startDate);
                                     const endDate = calculateEndDate(startDate, task.duration, ganttChart.workOnSaturdays, ganttChart.workOnSundays);
                                     const offset = differenceInCalendarDays(startDate, ganttChartData.earliestDate);
-                                    const totalWorkingDays = calculateWorkingDays(startDate, endDate, ganttChart.workOnSaturdays, ganttChart.workOnSundays);
-
-                                    let progressColor = 'bg-blue-500';
-                                    if (isPast(endDate) && (task.progress || 0) < 100) {
-                                      progressColor = 'bg-red-500'; // Late and not finished
-                                    } else if ((isPast(startDate) || isToday(startDate)) && !isPast(endDate)) {
-                                      const elapsedWorkingDays = calculateWorkingDays(startDate, today, ganttChart.workOnSaturdays, ganttChart.workOnSundays);
-                                      const expectedProgress = Math.min(Math.round((elapsedWorkingDays / totalWorkingDays) * 100), 100);
-                                      
-                                      if ((task.progress || 0) < expectedProgress) {
-                                        progressColor = 'bg-red-500'; // Behind schedule
-                                      } else {
-                                        progressColor = 'bg-green-500'; // On schedule or ahead
-                                      }
-                                    }
-                                    if ((task.progress || 0) >= 100) {
-                                        progressColor = 'bg-blue-500'; // Completed
-                                    }
+                                    const durationInDays = differenceInCalendarDays(endDate, startDate) + 1;
                                     
-                                    const gridRowStart = index + 3;
+                                    const progressColor = getProgressColor(task, endDate);
 
                                     return (
                                         <React.Fragment key={task.id}>
@@ -148,21 +172,23 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
                                                 <div key={dayIndex} className="border-b border-r h-8" style={{ gridRow: gridRowStart, gridColumn: dayIndex + 2 }}></div>
                                             ))}
                                             
-                                            {task.duration > 0 && (
+                                            {task.duration > 0 && offset >= 0 && (
                                                 <div
                                                     className="absolute h-5 top-1.5 rounded bg-gray-200"
                                                     style={{ 
                                                         gridRow: gridRowStart,
-                                                        gridColumn: `${offset + 2} / span ${differenceInCalendarDays(endDate, startDate) + 1}`,
+                                                        gridColumn: `${offset + 2} / span ${durationInDays}`,
                                                     }}
                                                     title={`${task.name} - ${format(startDate, 'dd/MM')} a ${format(endDate, 'dd/MM')}`}
                                                 >
                                                     <div 
-                                                        className={cn("h-full rounded", progressColor)}
+                                                        className={cn("h-full rounded text-white text-[10px] flex items-center justify-end pr-1", progressColor)}
                                                         style={{
                                                             width: `${task.progress || 0}%`,
                                                         }}
-                                                    ></div>
+                                                    >
+                                                      <span>{task.progress || 0}%</span>
+                                                    </div>
                                                 </div>
                                             )}
                                         </React.Fragment>
