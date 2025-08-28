@@ -1,10 +1,10 @@
 
-
 'use client';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import DateTime from './date-time';
 import { usePathname } from 'next/navigation';
 import * as React from 'react';
+import { ThemeToggle } from './theme-toggle';
 
 export default function AppHeader() {
   const pathname = usePathname();
@@ -35,6 +35,7 @@ export default function AppHeader() {
       </div>
       <div className="flex items-center gap-4">
         <DateTime />
+        <ThemeToggle />
       </div>
     </header>
   );

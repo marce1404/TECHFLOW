@@ -4,6 +4,7 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import { Providers } from '@/components/providers';
+import { ThemeProvider } from '@/components/layout/theme-provider';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -31,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning>
       <body
         className={cn(
           'min-h-screen bg-background font-body antialiased flex flex-col',
@@ -40,12 +41,19 @@ export default function RootLayout({
           sourceCodePro.variable
         )}
       >
-        <Providers>
-            <div className="flex-1">
-                {children}
-            </div>
-        </Providers>
-        <Toaster />
+        <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+          <Providers>
+              <div className="flex-1">
+                  {children}
+              </div>
+          </Providers>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );
