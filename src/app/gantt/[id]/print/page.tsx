@@ -73,6 +73,20 @@ const calculateEndDate = (startDate: Date, duration: number, workOnSaturdays: bo
     return currentDate;
 };
 
+// Helper function to calculate working days between two dates
+const calculateWorkingDays = (start: Date, end: Date, workOnSaturdays: boolean, workOnSundays: boolean) => {
+    let count = 0;
+    const interval = eachDayOfInterval({ start, end });
+    for (const day of interval) {
+        const dayOfWeek = day.getDay();
+        if (dayOfWeek === 6 && !workOnSaturdays) continue;
+        if (dayOfWeek === 0 && !workOnSundays) continue;
+        count++;
+    }
+    return count;
+};
+
+
 function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
     
     React.useEffect(() => {
@@ -122,11 +136,16 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
             </header>
             
             {days.length > 0 && earliestDate ? (
-                <table className="w-full border-collapse text-xs">
+                <table className="w-full border-collapse text-xs table-fixed">
+                    <colgroup>
+                        <col style={{ width: '250px' }} />
+                        <col style={{ width: '60px' }} />
+                        {days.map((_, i) => <col key={i} style={{ width: '25px' }} />)}
+                    </colgroup>
                     <thead>
                         <tr>
-                            <th className="border p-1 align-bottom text-left w-[250px]">Tarea</th>
-                            <th className="border p-1 align-bottom text-right w-[80px]">Avance %</th>
+                            <th className="border p-1 align-bottom text-left">Tarea</th>
+                            <th className="border p-1 align-bottom text-right">Avance %</th>
                             {months.map(([month, dayCount]) => (
                                 <th key={month} colSpan={dayCount} className="border p-1 text-center font-semibold capitalize">
                                     {month}
@@ -153,25 +172,47 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
                                 )
                             }
                             
-                            if (!task.startDate || !task.duration || !earliestDate) return null;
+                            if (!task.startDate || !task.duration || !earliestDate) {
+                                return (
+                                     <tr key={task.id}>
+                                        <td className="border p-1 text-xs">{task.name}</td>
+                                        <td className="border p-1 text-xs text-right">{task.progress || 0}%</td>
+                                        <td colSpan={days.length} className="border"></td>
+                                    </tr>
+                                )
+                            };
                             
                             const taskStartDate = new Date(task.startDate);
                             const taskEndDate = calculateEndDate(taskStartDate, task.duration, ganttChart.workOnSaturdays, ganttChart.workOnSundays);
-                            const progressDays = Math.floor(task.duration * ((task.progress || 0) / 100));
+                            const totalWorkingDays = calculateWorkingDays(taskStartDate, taskEndDate, ganttChart.workOnSaturdays, ganttChart.workOnSundays);
+                            const progressDays = Math.round(totalWorkingDays * ((task.progress || 0) / 100));
+
+                            let completedDaysCount = 0;
 
                             return (
                                 <tr key={task.id}>
-                                    <td className="border p-1">{task.name}</td>
-                                    <td className="border p-1 text-right font-medium">{task.progress || 0}%</td>
+                                    <td className="border p-1 text-xs">{task.name}</td>
+                                    <td className="border p-1 text-xs text-right">{task.progress || 0}%</td>
                                     {days.map((day, dayIndex) => {
                                         const isInRange = day >= taskStartDate && day <= taskEndDate;
                                         let content = '';
+
                                         if (isInRange) {
-                                            const daysFromStart = differenceInCalendarDays(day, taskStartDate);
-                                            content = daysFromStart < progressDays ? '█' : '➕';
+                                            const dayOfWeek = day.getDay();
+                                            const isWorkingDay = (dayOfWeek !== 6 || ganttChart.workOnSaturdays) && (dayOfWeek !== 0 || ganttChart.workOnSundays);
+                                            
+                                            if (isWorkingDay) {
+                                                if(completedDaysCount < progressDays) {
+                                                    content = '█';
+                                                    completedDaysCount++;
+                                                } else {
+                                                    content = '➕';
+                                                }
+                                            }
                                         }
+
                                         return (
-                                            <td key={dayIndex} className="border text-center p-1 h-[25px]">
+                                            <td key={dayIndex} className="border text-center p-0 h-[25px] w-[25px] leading-none text-base font-mono">
                                                 {content}
                                             </td>
                                         );
