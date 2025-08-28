@@ -143,8 +143,8 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         
         const allOrders = workOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[];
         
-        const active = allOrders.filter(o => o.status !== 'Cerrada');
-        const historical = allOrders.filter(o => o.status === 'Cerrada');
+        const active = allOrders.filter(o => o.status.toLowerCase() !== 'cerrada');
+        const historical = allOrders.filter(o => o.status.toLowerCase() === 'cerrada');
         
         setActiveWorkOrders(active);
         setHistoricalWorkOrders(historical);
@@ -238,7 +238,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const dataToUpdate = { ...updatedData };
 
     // If the status is being changed to 'Cerrada', set the closing date.
-    if (dataToUpdate.status === 'Cerrada' && !dataToUpdate.endDate) {
+    if (dataToUpdate.status && dataToUpdate.status.toLowerCase() === 'cerrada' && !dataToUpdate.endDate) {
       dataToUpdate.endDate = format(new Date(), 'yyyy-MM-dd');
     }
 
@@ -507,6 +507,7 @@ export const useWorkOrders = () => {
 
 
     
+
 
 
 
