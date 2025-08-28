@@ -1,5 +1,4 @@
 
-
 'use client';
 import * as React from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
@@ -35,36 +34,24 @@ import Link from 'next/link';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { useParams } from 'next/navigation';
 
-
-const taskSchema = z.object({
-  id: z.string(),
-  name: z.string().min(1, { message: 'El nombre de la tarea es requerido.' }),
-  startDate: z.date({ required_error: 'La fecha de inicio es requerida.' }),
-  duration: z.coerce.number().min(0, { message: 'La duración debe ser al menos 0.' }), // Allow 0 for phases
-  progress: z.coerce.number().min(0).max(100).optional().default(0),
-  isPhase: z.boolean().optional().default(false),
-  phase: z.string().optional(),
-  order: z.number().optional(),
-});
-
 const ganttFormSchema = z.object({
   name: z.string().min(3, { message: 'El nombre debe tener al menos 3 caracteres.' }),
   assignedOT: z.string().optional(),
   workOnSaturdays: z.boolean().default(false),
   workOnSundays: z.boolean().default(false),
-  tasks: z.array(taskSchema),
 });
 
 type GanttFormValues = z.infer<typeof ganttFormSchema>;
 
 interface GanttFormProps {
-  onSave: (data: Omit<GanttChart, 'id'>) => void;
-  services: Service[];
+  onSave: (data: Omit<GanttChart, 'id' | 'tasks'>) => void;
   ganttChart?: GanttChart;
+  tasks: GanttTask[];
+  setTasks: React.Dispatch<React.SetStateAction<GanttTask[]>>;
 }
 
-export default function GanttForm({ onSave, services, ganttChart }: GanttFormProps) {
-  const { suggestedTasks, activeWorkOrders, ganttCharts } = useWorkOrders();
+export default function GanttForm({ onSave, ganttChart, tasks, setTasks }: GanttFormProps) {
+  const { activeWorkOrders, ganttCharts } = useWorkOrders();
   const [customTaskName, setCustomTaskName] = React.useState('');
   const params = useParams();
   const ganttId = params.id as string;
@@ -74,55 +61,44 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
   const form = useForm<GanttFormValues>({
     resolver: zodResolver(ganttFormSchema),
     defaultValues: {
-          name: '',
-          assignedOT: '',
-          workOnSaturdays: true,
-          workOnSundays: false,
-          tasks: [],
+      name: '',
+      assignedOT: '',
+      workOnSaturdays: true,
+      workOnSundays: false,
     },
-  });
-
-  const { fields, append, remove, replace } = useFieldArray({
-    control: form.control,
-    name: 'tasks',
   });
 
   React.useEffect(() => {
     if (ganttChart) {
-      const sortedTasks = [...(ganttChart.tasks || [])].sort((a, b) => {
-        if (a.phase && b.phase && a.phase !== b.phase) {
-          const firstTaskA = ganttChart.tasks.find(t => t.phase === a.phase);
-          const firstTaskB = ganttChart.tasks.find(t => t.phase === b.phase);
-          const orderA = firstTaskA?.order ?? Infinity;
-          const orderB = firstTaskB?.order ?? Infinity;
-          return orderA - orderB;
-        }
-        return (a.order || 0) - (b.order || 0);
-      });
-      
       form.reset({
         name: ganttChart.name || '',
         assignedOT: ganttChart.assignedOT || '',
         workOnSaturdays: ganttChart.workOnSaturdays ?? true,
         workOnSundays: ganttChart.workOnSundays ?? false,
-        tasks: sortedTasks.map(task => ({
-          ...task,
-          startDate: task.startDate ? new Date(task.startDate) : new Date(),
-        })),
       });
     }
   }, [ganttChart, form]);
 
+  const handleUpdateTask = (index: number, field: keyof GanttTask, value: any) => {
+    const newTasks = [...tasks];
+    (newTasks[index] as any)[field] = value;
+    setTasks(newTasks);
+  };
+  
+  const handleRemoveTask = (index: number) => {
+    const newTasks = tasks.filter((_, i) => i !== index);
+    setTasks(newTasks);
+  };
 
   const handleAddTask = () => {
     if (customTaskName.trim()) {
-      const tasks = form.getValues('tasks');
       const customPhaseName = 'Tareas Personalizadas';
-
       const phaseExists = tasks.some(task => task.isPhase && task.name === customPhaseName);
+      
+      const newTasks = [...tasks];
 
       if (!phaseExists) {
-        append({
+        newTasks.push({
             id: crypto.randomUUID(),
             name: customPhaseName,
             isPhase: true,
@@ -134,7 +110,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
         });
       }
       
-      append({
+      newTasks.push({
         id: crypto.randomUUID(),
         name: customTaskName.trim(),
         startDate: new Date(),
@@ -144,69 +120,11 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
         phase: customPhaseName,
         order: (tasks.filter(t => t.isPhase).length + 1) * 1000 + tasks.filter(t => !t.isPhase).length + 1,
       });
+
+      setTasks(newTasks);
       setCustomTaskName('');
     }
   };
-
-  const handleSuggestedTasks = (category: string) => {
-    const tasksForCategory = suggestedTasks.filter(t => t.category === category);
-    
-    const seen = new Set();
-    const uniqueTasksForCategory = tasksForCategory.filter(t => {
-        if (seen.has(t.name)) {
-            return false;
-        } else {
-            seen.add(t.name);
-            return true;
-        }
-    });
-
-    const newTasks: GanttFormValues['tasks'] = [];
-    
-    if (uniqueTasksForCategory.length > 0) {
-        const grouped = uniqueTasksForCategory.reduce((acc, task) => {
-            const phase = task.phase || 'Sin Fase';
-            if (!acc[phase]) {
-                acc[phase] = [];
-            }
-            acc[phase].push(task);
-            return acc;
-        }, {} as Record<string, SuggestedTask[]>);
-
-        const sortedPhases = Object.keys(grouped).sort((a, b) => {
-            const firstTaskOrderA = grouped[a][0]?.order || 0;
-            const firstTaskOrderB = grouped[b][0]?.order || 0;
-            return firstTaskOrderA - firstTaskOrderB;
-        });
-
-        sortedPhases.forEach(phase => {
-            newTasks.push({
-                id: crypto.randomUUID(),
-                name: phase,
-                isPhase: true,
-                startDate: new Date(),
-                duration: 0,
-                progress: 0,
-                phase: phase,
-                order: grouped[phase][0].order,
-            });
-            const sortedTasksInPhase = grouped[phase].sort((a, b) => (a.order || 0) - (b.order || 0));
-            sortedTasksInPhase.forEach(task => {
-                newTasks.push({
-                    id: crypto.randomUUID(),
-                    name: task.name,
-                    isPhase: false,
-                    startDate: new Date(),
-                    duration: 1,
-                    progress: 0,
-                    phase: phase,
-                    order: task.order,
-                });
-            });
-        });
-    }
-    replace(newTasks);
-  }
 
 
   const handlePrint = () => {
@@ -247,15 +165,14 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
     return currentDate;
   };
   
-  const watchedTasks = form.watch('tasks');
   const watchedWorkdays = form.watch(['workOnSaturdays', 'workOnSundays']);
   
   const ganttChartData = React.useMemo(() => {
-    if (!watchedTasks || watchedTasks.length === 0) {
+    if (!tasks || tasks.length === 0) {
       return { days: [], months: [], earliestDate: null };
     }
 
-    const validTasks = watchedTasks.filter(t => t.startDate && t.duration > 0 && !t.isPhase);
+    const validTasks = tasks.filter(t => t.startDate && t.duration > 0 && !t.isPhase);
     if (validTasks.length === 0) {
         return { days: [], months: [], earliestDate: null };
     }
@@ -279,22 +196,14 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
     }, {} as Record<string, number>);
 
     return { days, months: Object.entries(months), earliestDate };
-  }, [watchedTasks, watchedWorkdays]);
+  }, [tasks, watchedWorkdays]);
 
 
   const onSubmitForm = (data: GanttFormValues) => {
-    const dataToSave = {
-        ...data,
-        tasks: data.tasks.map(t => ({
-            ...t,
-            startDate: t.startDate,
-        }))
-    };
-    onSave(dataToSave as any);
+    onSave(data);
   };
   
   const availableOTs = activeWorkOrders.filter(ot => !ganttCharts.some(g => g.assignedOT === ot.ot_number && g.id !== ganttId) || (ganttChart && ganttChart.assignedOT === ot.ot_number));
-
 
   return (
     <Form {...form}>
@@ -384,28 +293,6 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
           </CardContent>
         </Card>
         
-        {!ganttChart && (
-            <Card>
-            <CardHeader>
-                <CardTitle>Cargar Tareas Sugeridas</CardTitle>
-                <CardDescription>Selecciona una categoría para cargar una lista de tareas predefinidas y agilizar la creación de tu cronograma.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <FormLabel>Cargar Tareas Sugeridas (Opcional)</FormLabel>
-                <Select onValueChange={handleSuggestedTasks}>
-                <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar una categoría de servicio..." />
-                </SelectTrigger>
-                <SelectContent>
-                    {services.filter(s => s.status === 'Activa').map(service => (
-                    <SelectItem key={service.id} value={service.name.toLowerCase()}>{service.name}</SelectItem>
-                    ))}
-                </SelectContent>
-                </Select>
-            </CardContent>
-            </Card>
-        )}
-
         <Card>
             <CardHeader>
                 <CardTitle>Tareas</CardTitle>
@@ -420,14 +307,12 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                         <div className="text-center">Fecha Término</div>
                         <div></div>
                     </div>
-                    {fields.map((field, index) => {
-                        const task = watchedTasks[index];
-
+                    {tasks.map((task, index) => {
                          if (task.isPhase) {
                             return (
-                                <div key={field.id} className="flex items-center gap-2 pt-4 pb-2">
+                                <div key={task.id} className="flex items-center gap-2 pt-4 pb-2">
                                     <h3 className="text-lg font-semibold text-primary flex-1">{task.name}</h3>
-                                    <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                                    <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveTask(index)}>
                                         <Trash2 className="h-4 w-4 text-destructive" />
                                     </Button>
                                 </div>
@@ -440,39 +325,21 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                         const isPastOrToday = isPast(startDate) || isToday(startDate);
                         
                         return (
-                            <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr,150px,120px,120px,120px,auto] gap-2 items-center p-2 rounded-lg border">
-                                <Controller
-                                    control={form.control}
-                                    name={`tasks.${index}.name`}
-                                    render={({ field }) => <Input {...field} />}
-                                />
-                                <Controller
-                                    control={form.control}
-                                    name={`tasks.${index}.startDate`}
-                                    render={({ field }) => (
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !field.value && 'text-muted-foreground')}>
-                                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                                    {field.value ? format(new Date(field.value), 'dd/MM/yy', { locale: es }) : <span>Elegir</span>}
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0"><Calendar locale={es} mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent>
-                                        </Popover>
-                                    )}
-                                />
-                                <Controller
-                                    control={form.control}
-                                    name={`tasks.${index}.duration`}
-                                    render={({ field }) => <Input type="number" className="w-full text-center" {...field} />}
-                                />
-                                 <Controller
-                                    control={form.control}
-                                    name={`tasks.${index}.progress`}
-                                    render={({ field }) => <Input type="number" className="w-full text-center" {...field} disabled={!isPastOrToday} />}
-                                />
+                            <div key={task.id} className="grid grid-cols-1 md:grid-cols-[1fr,150px,120px,120px,120px,auto] gap-2 items-center p-2 rounded-lg border">
+                                <Input value={task.name} onChange={(e) => handleUpdateTask(index, 'name', e.target.value)} />
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !task.startDate && 'text-muted-foreground')}>
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {task.startDate ? format(new Date(task.startDate), 'dd/MM/yy', { locale: es }) : <span>Elegir</span>}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0"><Calendar locale={es} mode="single" selected={task.startDate} onSelect={(date) => handleUpdateTask(index, 'startDate', date)} initialFocus /></PopoverContent>
+                                </Popover>
+                                <Input type="number" className="w-full text-center" value={task.duration} onChange={(e) => handleUpdateTask(index, 'duration', e.target.value)} />
+                                <Input type="number" className="w-full text-center" value={task.progress} onChange={(e) => handleUpdateTask(index, 'progress', e.target.value)} disabled={!isPastOrToday} />
                                 <Input value={endDate ? format(endDate, 'dd/MM/yy', { locale: es }) : 'N/A'} readOnly className="bg-muted w-full text-center" />
-                                <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                                <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveTask(index)}>
                                     <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
                             </div>
@@ -501,7 +368,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                 </CardDescription>
             </CardHeader>
             <CardContent className="overflow-x-auto p-0">
-                 {watchedTasks.length > 0 && ganttChartData.days.length > 0 && ganttChartData.earliestDate ? (
+                 {tasks.length > 0 && ganttChartData.days.length > 0 && ganttChartData.earliestDate ? (
                     <div className="min-w-[800px] p-6">
                         <div className="grid" style={{ gridTemplateColumns: `12rem repeat(${ganttChartData.days.length}, 2rem)`}}>
                            {/* Month Header */}
@@ -520,7 +387,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                             ))}
 
                            {/* Task Rows */}
-                           {watchedTasks.map((task, index) => {
+                           {tasks.map((task, index) => {
                                 if (task.isPhase) {
                                     return (
                                         <React.Fragment key={task.id || index}>
