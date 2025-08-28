@@ -20,33 +20,56 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
 
 export default function SuggestedTasksPage() {
     const { services, suggestedTasks, addSuggestedTask, updateSuggestedTask, deleteSuggestedTask } = useWorkOrders();
     const [dialogOpen, setDialogOpen] = React.useState(false);
     const [selectedTask, setSelectedTask] = React.useState<SuggestedTask | null>(null);
-    const [phaseForNewTask, setPhaseForNewTask] = React.useState<string | null>(null);
     const [activeTab, setActiveTab] = React.useState(services.find(s => s.status === 'Activa')?.name.toLowerCase() || '');
+    const [inlineAddTaskToPhase, setInlineAddTaskToPhase] = React.useState<string | null>(null);
+    const [newTaskName, setNewTaskName] = React.useState('');
 
     const handleSave = (task: Omit<SuggestedTask, 'id'> | SuggestedTask) => {
         if ('id' in task) {
             updateSuggestedTask(task.id, task);
         } else {
-            const newOrder = Math.max(...suggestedTasks.map(t => t.order || 0), 0) + 1;
-            addSuggestedTask({ ...task, order: newOrder });
+            // This path is now only for the dialog-based editing/saving, not creating.
         }
+    };
+    
+    const handleSaveNewTask = () => {
+        if (!newTaskName.trim() || !inlineAddTaskToPhase || !activeTab) return;
+
+        const realTasks = suggestedTasks.filter(t => !t.isPhase);
+        const phaseTasks = realTasks.filter(t => t.phase === inlineAddTaskToPhase);
+        const maxOrderInPhase = Math.max(...phaseTasks.map(t => t.order || 0), 0);
+      
+        const newTask: Omit<SuggestedTask, 'id'> = {
+            name: newTaskName,
+            category: activeTab,
+            phase: inlineAddTaskToPhase,
+            order: maxOrderInPhase + 1
+        };
+
+        addSuggestedTask(newTask);
+        setNewTaskName('');
+        setInlineAddTaskToPhase(null);
     };
 
     const handleEdit = (task: SuggestedTask) => {
         setSelectedTask(task);
-        setPhaseForNewTask(null);
         setDialogOpen(true);
     };
     
-    const handleAddNewTaskToPhase = (phaseName: string) => {
-        setSelectedTask(null);
-        setPhaseForNewTask(phaseName);
-        setDialogOpen(true);
+    const handleAddNewTaskClick = (phaseName: string) => {
+        setInlineAddTaskToPhase(phaseName);
+        setNewTaskName('');
+    };
+    
+    const handleCancelNewTask = () => {
+        setInlineAddTaskToPhase(null);
+        setNewTaskName('');
     };
 
     const availableCategories = services.filter(s => s.status === 'Activa');
@@ -140,7 +163,7 @@ export default function SuggestedTasksPage() {
                                             <div key={phase} className="mb-6">
                                                 <div className="flex items-center gap-2 mb-2">
                                                     <h3 className="font-semibold text-lg text-primary">{phase}</h3>
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleAddNewTaskToPhase(phase)}>
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleAddNewTaskClick(phase)}>
                                                         <PlusCircle className="h-5 w-5 text-muted-foreground hover:text-primary"/>
                                                     </Button>
                                                 </div>
@@ -201,6 +224,20 @@ export default function SuggestedTasksPage() {
                                                         </TableBody>
                                                     </Table>
                                                 </div>
+                                                {inlineAddTaskToPhase === phase && (
+                                                    <div className="mt-2 p-2 border rounded-lg bg-muted/50">
+                                                        <div className="flex items-center gap-2">
+                                                            <Input
+                                                                placeholder="Nombre de la nueva tarea..."
+                                                                value={newTaskName}
+                                                                onChange={(e) => setNewTaskName(e.target.value)}
+                                                                autoFocus
+                                                            />
+                                                            <Button size="sm" onClick={handleSaveNewTask}>Guardar</Button>
+                                                            <Button size="sm" variant="ghost" onClick={handleCancelNewTask}>Cancelar</Button>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))
                                     ) : (
@@ -222,8 +259,9 @@ export default function SuggestedTasksPage() {
                 task={selectedTask}
                 categories={availableCategories}
                 existingPhases={existingPhases}
-                preselectedPhase={phaseForNewTask}
             />
         </div>
     );
 }
+
+    
