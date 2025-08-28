@@ -25,7 +25,7 @@ import { useWorkOrders } from "@/context/work-orders-context";
 export default function EditOrderPage() {
   const params = useParams();
   const router = useRouter();
-  const { getOrder, updateOrder, otCategories, services, collaborators, ganttCharts, otStatuses, vehicles } = useWorkOrders();
+  const { getOrder, updateOrder, otCategories, services, collaborators, ganttCharts, otStatuses, vehicles, promptToCloseOrder } = useWorkOrders();
   const orderId = params.id as string;
   
   const initialOrder = getOrder(orderId);
@@ -62,6 +62,15 @@ export default function EditOrderPage() {
           newOrder.facturado = !!value;
       }
       setOrder(newOrder);
+    }
+  };
+  
+  const handleStatusChange = (value: WorkOrder['status']) => {
+    if (!order) return;
+    if (value.toLowerCase() === 'cerrada') {
+        promptToCloseOrder(order);
+    } else {
+        handleInputChange('status', value);
     }
   };
 
@@ -287,7 +296,7 @@ export default function EditOrderPage() {
                             <Label htmlFor="status">Estado</Label>
                             <Select 
                               value={order.status}
-                              onValueChange={(value) => handleInputChange('status', value)}
+                              onValueChange={(value) => handleStatusChange(value as WorkOrder['status'])}
                             >
                                 <SelectTrigger id="status">
                                     <SelectValue />
