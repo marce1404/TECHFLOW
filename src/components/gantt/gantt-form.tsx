@@ -1,7 +1,7 @@
 
 'use client';
 import * as React from 'react';
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format, addDays, differenceInCalendarDays, eachDayOfInterval, isPast, isToday } from 'date-fns';
 import { es } from 'date-fns/locale';
-import type { GanttChart, Service, SuggestedTask, GanttTask } from '@/lib/types';
+import type { GanttChart, GanttTask } from '@/lib/types';
 import Link from 'next/link';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { useParams } from 'next/navigation';
@@ -93,11 +93,9 @@ export default function GanttForm({ onSave, ganttChart, tasks, setTasks }: Gantt
   const handleAddTask = () => {
     if (customTaskName.trim()) {
       const customPhaseName = 'Tareas Personalizadas';
-      const phaseExists = tasks.some(task => task.isPhase && task.name === customPhaseName);
-      
-      const newTasks = [...tasks];
+      let newTasks = [...tasks];
 
-      if (!phaseExists) {
+      if (!newTasks.some(task => task.isPhase && task.name === customPhaseName)) {
         newTasks.push({
             id: crypto.randomUUID(),
             name: customPhaseName,
@@ -106,7 +104,7 @@ export default function GanttForm({ onSave, ganttChart, tasks, setTasks }: Gantt
             duration: 0,
             progress: 0,
             phase: customPhaseName,
-            order: (tasks.filter(t => t.isPhase).length + 1) * 1000,
+            order: (newTasks.filter(t => t.isPhase).length + 1) * 1000,
         });
       }
       
@@ -118,7 +116,7 @@ export default function GanttForm({ onSave, ganttChart, tasks, setTasks }: Gantt
         progress: 0,
         isPhase: false,
         phase: customPhaseName,
-        order: (tasks.filter(t => t.isPhase).length + 1) * 1000 + tasks.filter(t => !t.isPhase).length + 1,
+        order: (newTasks.filter(t => t.isPhase).length + 1) * 1000 + newTasks.filter(t => !t.isPhase).length + 1,
       });
 
       setTasks(newTasks);
@@ -147,7 +145,7 @@ export default function GanttForm({ onSave, ganttChart, tasks, setTasks }: Gantt
   };
   
   const calculateEndDate = (startDate: Date, duration: number, workOnSaturdays: boolean, workOnSundays: boolean) => {
-    if (duration === 0) return startDate;
+    if (duration <= 0) return startDate;
     let remainingDays = duration;
     let currentDate = new Date(startDate);
     currentDate.setDate(currentDate.getDate() - 1); 
@@ -204,6 +202,8 @@ export default function GanttForm({ onSave, ganttChart, tasks, setTasks }: Gantt
   };
   
   const availableOTs = activeWorkOrders.filter(ot => !ganttCharts.some(g => g.assignedOT === ot.ot_number && g.id !== ganttId) || (ganttChart && ganttChart.assignedOT === ot.ot_number));
+
+  let lastPhaseRendered: string | null = null;
 
   return (
     <Form {...form}>
@@ -308,16 +308,12 @@ export default function GanttForm({ onSave, ganttChart, tasks, setTasks }: Gantt
                         <div></div>
                     </div>
                     {tasks.map((task, index) => {
-                         if (task.isPhase) {
-                            return (
-                                <div key={task.id} className="flex items-center gap-2 pt-4 pb-2">
-                                    <h3 className="text-lg font-semibold text-primary flex-1">{task.name}</h3>
-                                    <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveTask(index)}>
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                    </Button>
-                                </div>
-                            );
+                        const isNewPhase = task.phase && task.phase !== lastPhaseRendered;
+                        if (isNewPhase) {
+                            lastPhaseRendered = task.phase;
                         }
+
+                        if (task.isPhase) return null; // We render phases based on the new logic below
 
                         const startDate = task.startDate ? new Date(task.startDate) : new Date();
                         const duration = task.duration || 1;
@@ -325,7 +321,16 @@ export default function GanttForm({ onSave, ganttChart, tasks, setTasks }: Gantt
                         const isPastOrToday = isPast(startDate) || isToday(startDate);
                         
                         return (
-                            <div key={task.id} className="grid grid-cols-1 md:grid-cols-[1fr,150px,120px,120px,120px,auto] gap-2 items-center p-2 rounded-lg border">
+                          <React.Fragment key={task.id}>
+                            {isNewPhase && (
+                              <div className="flex items-center gap-2 pt-4 pb-2">
+                                <h3 className="text-lg font-semibold text-primary flex-1">{task.phase}</h3>
+                                <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveTask(index)}>
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                            )}
+                            <div className="grid grid-cols-1 md:grid-cols-[1fr,150px,120px,120px,120px,auto] gap-2 items-center p-2 rounded-lg border">
                                 <Input value={task.name} onChange={(e) => handleUpdateTask(index, 'name', e.target.value)} />
                                 <Popover>
                                     <PopoverTrigger asChild>
@@ -336,13 +341,14 @@ export default function GanttForm({ onSave, ganttChart, tasks, setTasks }: Gantt
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0"><Calendar locale={es} mode="single" selected={task.startDate} onSelect={(date) => handleUpdateTask(index, 'startDate', date)} initialFocus /></PopoverContent>
                                 </Popover>
-                                <Input type="number" className="w-full text-center" value={task.duration} onChange={(e) => handleUpdateTask(index, 'duration', e.target.value)} />
-                                <Input type="number" className="w-full text-center" value={task.progress} onChange={(e) => handleUpdateTask(index, 'progress', e.target.value)} disabled={!isPastOrToday} />
+                                <Input type="number" className="w-full text-center" value={task.duration} onChange={(e) => handleUpdateTask(index, 'duration', parseInt(e.target.value) || 0)} />
+                                <Input type="number" className="w-full text-center" value={task.progress} onChange={(e) => handleUpdateTask(index, 'progress', parseInt(e.target.value) || 0)} disabled={!isPastOrToday} />
                                 <Input value={endDate ? format(endDate, 'dd/MM/yy', { locale: es }) : 'N/A'} readOnly className="bg-muted w-full text-center" />
                                 <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveTask(index)}>
                                     <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
                             </div>
+                          </React.Fragment>
                         )
                     })}
                      <div className="flex items-center gap-2 pt-4">
