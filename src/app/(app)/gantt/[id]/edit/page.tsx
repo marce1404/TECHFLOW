@@ -26,7 +26,6 @@ export default function EditGanttPage() {
         startDate: task.startDate ? new Date(task.startDate) : new Date(),
       }));
 
-      // --- Start: Logic copied and adapted from new/page.tsx ---
       const newTasks: GanttTask[] = [];
       const grouped = allTasks.reduce((acc, task) => {
         const phase = task.phase || 'Sin Fase';
@@ -60,7 +59,6 @@ export default function EditGanttPage() {
           newTasks.push(task);
         });
       });
-      // --- End: Logic copied and adapted from new/page.tsx ---
 
       setTasks(newTasks);
     }

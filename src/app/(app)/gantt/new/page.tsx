@@ -18,7 +18,8 @@ export default function NewGanttPage() {
   const [tasks, setTasks] = React.useState<GanttTask[]>([]);
 
   const handleSave = (ganttChartData: Omit<GanttChart, 'id' | 'tasks'>) => {
-    const finalGantt = { ...ganttChartData, tasks };
+    const finalTasksToSave = tasks.filter(t => !t.isPhase);
+    const finalGantt = { ...ganttChartData, tasks: finalTasksToSave };
     addGanttChart(finalGantt);
     toast({
       title: 'Carta Gantt Creada',
