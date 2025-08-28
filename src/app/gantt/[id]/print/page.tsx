@@ -9,6 +9,30 @@ import { es } from 'date-fns/locale';
 import * as React from 'react';
 import { useParams } from 'next/navigation';
 
+const calculateEndDate = (startDate: Date, duration: number, workOnSaturdays: boolean, workOnSundays: boolean): Date => {
+    if (duration === 0) return startDate;
+    let remainingDays = duration;
+    // Important: Create a new Date object to avoid mutating the original date
+    let currentDate = new Date(startDate);
+    
+    if (duration > 0) {
+        currentDate.setDate(currentDate.getDate() - 1);
+    }
+
+    while (remainingDays > 0) {
+        currentDate = addDays(currentDate, 1);
+        const dayOfWeek = currentDate.getDay();
+        const isSaturday = dayOfWeek === 6;
+        const isSunday = dayOfWeek === 0;
+
+        if ((!isSaturday || workOnSaturdays) && (!isSunday || workOnSundays)) {
+            remainingDays--;
+        }
+    }
+    return currentDate;
+};
+
+
 function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -23,12 +47,8 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
         let count = 0;
         let currentDate = new Date(startDate);
         while (currentDate <= endDate) {
-            const dayOfWeek = currentDate.getDay(); // Sunday is 0, Saturday is 6
-            if (dayOfWeek === 0 && !workOnSundays) {
-                // It's Sunday and we don't work on Sundays
-            } else if (dayOfWeek === 6 && !workOnSaturdays) {
-                // It's Saturday and we don't work on Saturdays
-            } else {
+            const dayOfWeek = currentDate.getDay();
+            if ((dayOfWeek !== 0 || workOnSundays) && (dayOfWeek !== 6 || workOnSaturdays)) {
                 count++;
             }
             currentDate.setDate(currentDate.getDate() + 1);
@@ -36,27 +56,6 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
         return count;
     };
     
-    const calculateEndDate = (startDate: Date, duration: number, workOnSaturdays: boolean, workOnSundays: boolean): Date => {
-        if (duration === 0) return startDate;
-        let remainingDays = duration;
-        let currentDate = new Date(startDate);
-        if (duration > 0) {
-            currentDate.setDate(currentDate.getDate() - 1);
-        }
-    
-        while (remainingDays > 0) {
-            currentDate = addDays(currentDate, 1);
-            const dayOfWeek = currentDate.getDay();
-            const isSaturday = dayOfWeek === 6;
-            const isSunday = dayOfWeek === 0;
-    
-            if ((!isSaturday || workOnSaturdays) && (!isSunday || workOnSundays)) {
-                remainingDays--;
-            }
-        }
-        return currentDate;
-    };
-
     const ganttChartData = React.useMemo(() => {
         if (!ganttChart.tasks || ganttChart.tasks.length === 0) {
             return { days: [], months: [], earliestDate: null, latestDate: null };
@@ -231,6 +230,7 @@ export default function PrintGanttPage() {
                     setError('No se pudo encontrar la Carta Gantt.');
                 }
             } catch (err) {
+                console.error("Error fetching Gantt data for print:", err);
                 setError('Ocurrió un error al cargar los datos.');
             } finally {
                 setLoading(false);
@@ -253,3 +253,4 @@ export default function PrintGanttPage() {
 
     return <PrintGanttPageContent ganttChart={ganttChart} />;
 }
+
