@@ -3,8 +3,8 @@
 
 import * as React from 'react';
 import { Button } from "@/components/ui/button";
-import { PlusCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { PlusCircle, MoreHorizontal, Pencil, Trash2, Edit } from "lucide-react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
     Table,
     TableBody,
@@ -21,20 +21,25 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
+import { AddPhaseDialog } from '@/components/settings/add-phase-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 export default function SuggestedTasksPage() {
-    const { services, suggestedTasks, addSuggestedTask, updateSuggestedTask, deleteSuggestedTask } = useWorkOrders();
+    const { services, suggestedTasks, addSuggestedTask, updateSuggestedTask, deleteSuggestedTask, updatePhaseName, deletePhase } = useWorkOrders();
+    const { toast } = useToast();
     const [dialogOpen, setDialogOpen] = React.useState(false);
+    const [addPhaseDialogOpen, setAddPhaseDialogOpen] = React.useState(false);
     const [selectedTask, setSelectedTask] = React.useState<SuggestedTask | null>(null);
     const [activeTab, setActiveTab] = React.useState(services.find(s => s.status === 'Activa')?.name.toLowerCase() || '');
     const [inlineAddTaskToPhase, setInlineAddTaskToPhase] = React.useState<string | null>(null);
     const [newTaskName, setNewTaskName] = React.useState('');
+    const [editingPhase, setEditingPhase] = React.useState<string | null>(null);
+    const [newPhaseName, setNewPhaseName] = React.useState('');
+
 
     const handleSave = (task: Omit<SuggestedTask, 'id'> | SuggestedTask) => {
         if ('id' in task) {
             updateSuggestedTask(task.id, task);
-        } else {
-            // This path is now only for the dialog-based editing/saving, not creating.
         }
     };
     
@@ -70,6 +75,21 @@ export default function SuggestedTasksPage() {
     const handleCancelNewTask = () => {
         setInlineAddTaskToPhase(null);
         setNewTaskName('');
+    };
+    
+    const handleEditPhase = (phaseName: string) => {
+        setEditingPhase(phaseName);
+        setNewPhaseName(phaseName);
+    };
+
+    const handleSavePhaseName = async (oldPhaseName: string) => {
+        if (!newPhaseName.trim() || newPhaseName === oldPhaseName) {
+            setEditingPhase(null);
+            return;
+        }
+        await updatePhaseName(activeTab, oldPhaseName, newPhaseName);
+        toast({ title: "Fase Actualizada", description: "El nombre de la fase ha sido actualizado."});
+        setEditingPhase(null);
     };
 
     const availableCategories = services.filter(s => s.status === 'Activa');
@@ -134,6 +154,10 @@ export default function SuggestedTasksPage() {
                      <h1 className="text-3xl font-headline font-bold tracking-tight">Tareas Sugeridas para Gantt</h1>
                      <p className="text-muted-foreground">Gestiona las tareas predefinidas que se pueden cargar en las Cartas Gantt.</p>
                 </div>
+                 <Button onClick={() => setAddPhaseDialogOpen(true)}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Nueva Fase
+                </Button>
             </div>
             
             <Card>
@@ -161,8 +185,43 @@ export default function SuggestedTasksPage() {
                                     {sortedPhases.length > 0 ? (
                                         sortedPhases.map((phase) => (
                                             <div key={phase} className="mb-6">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <h3 className="font-semibold text-lg text-primary">{phase}</h3>
+                                                <div className="flex items-center gap-2 mb-2 group">
+                                                    {editingPhase === phase ? (
+                                                        <div className="flex items-center gap-2 flex-1">
+                                                            <Input 
+                                                                value={newPhaseName} 
+                                                                onChange={(e) => setNewPhaseName(e.target.value)}
+                                                                className="text-lg font-semibold text-primary h-9"
+                                                                autoFocus
+                                                                onBlur={() => handleSavePhaseName(phase)}
+                                                                onKeyDown={(e) => { if(e.key === 'Enter') handleSavePhaseName(phase)}}
+                                                             />
+                                                        </div>
+                                                    ) : (
+                                                        <h3 className="font-semibold text-lg text-primary flex-1">{phase}</h3>
+                                                    )}
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleEditPhase(phase)}>
+                                                        <Edit className="h-4 w-4" />
+                                                    </Button>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <Trash2 className="h-4 w-4 text-destructive" />
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>¿Eliminar esta fase?</AlertDialogTitle>
+                                                                <AlertDialogDescription>
+                                                                    Esta acción no se puede deshacer. Se eliminarán permanentemente la fase <span className="font-bold">{phase}</span> y todas las tareas que contiene.
+                                                                </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => deletePhase(activeTab, phase)} className="bg-destructive hover:bg-destructive/90">Eliminar Fase</AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
                                                 </div>
                                                 <div className="rounded-md border">
                                                     <Table>
@@ -180,7 +239,7 @@ export default function SuggestedTasksPage() {
                                                             </TableRow>
                                                         </TableHeader>
                                                         <TableBody>
-                                                            {grouped[phase].map((task) => (
+                                                            {grouped[phase]?.map((task) => (
                                                                 <TableRow key={task.id}>
                                                                     <TableCell>{task.name}</TableCell>
                                                                     <TableCell className="text-right">
@@ -246,7 +305,7 @@ export default function SuggestedTasksPage() {
                                         ))
                                     ) : (
                                         <div className="text-center text-muted-foreground p-8 border rounded-lg">
-                                            No hay tareas sugeridas para esta categoría.
+                                            No hay fases ni tareas sugeridas para esta categoría.
                                         </div>
                                     )}
                                 </TabsContent>
@@ -263,6 +322,12 @@ export default function SuggestedTasksPage() {
                 task={selectedTask}
                 categories={availableCategories}
                 existingPhases={existingPhases}
+            />
+            
+            <AddPhaseDialog 
+                open={addPhaseDialogOpen}
+                onOpenChange={setAddPhaseDialogOpen}
+                category={activeTab}
             />
         </div>
     );

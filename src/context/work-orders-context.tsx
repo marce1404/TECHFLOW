@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
@@ -54,6 +53,8 @@ interface WorkOrdersContextType {
   addSuggestedTask: (task: Omit<SuggestedTask, 'id'>) => Promise<SuggestedTask>;
   updateSuggestedTask: (id: string, task: Partial<SuggestedTask>) => Promise<void>;
   deleteSuggestedTask: (id: string) => Promise<void>;
+  updatePhaseName: (category: string, oldPhaseName: string, newPhaseName: string) => Promise<void>;
+  deletePhase: (category: string, phaseName: string) => Promise<void>;
   addReportTemplate: (template: Omit<ReportTemplate, 'id'>) => Promise<ReportTemplate>;
   updateReportTemplate: (id: string, template: Partial<ReportTemplate>) => Promise<void>;
   deleteReportTemplate: (id: string) => Promise<void>;
@@ -401,6 +402,28 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     await fetchData();
   };
   
+  const updatePhaseName = async (category: string, oldPhaseName: string, newPhaseName: string) => {
+    const q = query(collection(db, 'suggested-tasks'), where('category', '==', category), where('phase', '==', oldPhaseName));
+    const snapshot = await getDocs(q);
+    const batch = writeBatch(db);
+    snapshot.forEach(doc => {
+      batch.update(doc.ref, { phase: newPhaseName });
+    });
+    await batch.commit();
+    await fetchData();
+  };
+
+  const deletePhase = async (category: string, phaseName: string) => {
+    const q = query(collection(db, 'suggested-tasks'), where('category', '==', category), where('phase', '==', phaseName));
+    const snapshot = await getDocs(q);
+    const batch = writeBatch(db);
+    snapshot.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+    await fetchData();
+  };
+  
   const addReportTemplate = async (template: Omit<ReportTemplate, 'id'>): Promise<ReportTemplate> => {
     const docRef = await addDoc(collection(db, "report-templates"), template);
     await fetchData();
@@ -483,6 +506,8 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         addSuggestedTask,
         updateSuggestedTask,
         deleteSuggestedTask,
+        updatePhaseName,
+        deletePhase,
         addReportTemplate,
         updateReportTemplate,
         deleteReportTemplate,
@@ -508,35 +533,3 @@ export const useWorkOrders = () => {
   }
   return context;
 };
-
-
-    
-
-
-
-    
-
-    
-
-    
-
-
-
-    
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-    

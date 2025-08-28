@@ -1,5 +1,4 @@
 
-
 import { z } from 'zod';
 import type { ChartConfig } from "@/components/ui/chart"
 
@@ -105,6 +104,8 @@ export type GanttTask = {
     duration: number;
     progress: number;
     isPhase?: boolean;
+    phase: string;
+    order: number;
 }
 
 export type GanttChart = {
@@ -140,6 +141,7 @@ export type SuggestedTask = {
     category: string; // This will be the lowercase name of the service
     phase: string;
     order: number;
+    isPhasePlaceholder?: boolean;
 }
 
 export type ReportTemplateField = {

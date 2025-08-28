@@ -153,9 +153,10 @@ export function SuggestedTaskFormDialog({ open, onOpenChange, onSave, task, cate
                                 <CommandInput
                                     placeholder="Buscar o crear fase..."
                                     onValueChange={(currentValue) => field.onChange(currentValue)}
+                                    value={field.value}
                                 />
                                 <CommandList>
-                                    <CommandEmpty>No se encontraron fases.</CommandEmpty>
+                                    <CommandEmpty>No se encontraron fases. Puedes crear una nueva.</CommandEmpty>
                                     <CommandGroup>
                                     {existingPhases.map((phase) => (
                                         <CommandItem
@@ -197,5 +198,3 @@ export function SuggestedTaskFormDialog({ open, onOpenChange, onSave, task, cate
     </Dialog>
   );
 }
-
-    
