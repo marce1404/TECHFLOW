@@ -163,15 +163,19 @@ export default function SuggestedTasksPage() {
                                             <div key={phase} className="mb-6">
                                                 <div className="flex items-center gap-2 mb-2">
                                                     <h3 className="font-semibold text-lg text-primary">{phase}</h3>
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleAddNewTaskClick(phase)}>
-                                                        <PlusCircle className="h-5 w-5 text-muted-foreground hover:text-primary"/>
-                                                    </Button>
                                                 </div>
                                                 <div className="rounded-md border">
                                                     <Table>
                                                         <TableHeader>
                                                             <TableRow>
-                                                                <TableHead>Nombre de la Tarea</TableHead>
+                                                                <TableHead className="flex-1">
+                                                                    <div className="flex items-center justify-between">
+                                                                        <span>Nombre de la Tarea</span>
+                                                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleAddNewTaskClick(phase)}>
+                                                                            <PlusCircle className="h-5 w-5 text-muted-foreground hover:text-primary"/>
+                                                                        </Button>
+                                                                    </div>
+                                                                </TableHead>
                                                                 <TableHead className="w-[100px] text-right">Acciones</TableHead>
                                                             </TableRow>
                                                         </TableHeader>
