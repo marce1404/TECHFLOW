@@ -28,7 +28,8 @@ async function getGanttForPrint(ganttId: string): Promise<GanttChart | null> {
             if (startDate && startDate instanceof Timestamp) {
                 convertedDate = startDate.toDate();
             } else if (startDate && typeof startDate === 'string') {
-                convertedDate = new Date(startDate);
+                // Ensure correct parsing even if it's already a string
+                convertedDate = new Date(startDate.includes('T') ? startDate : startDate.replace(/-/g, '/'));
             } else if (startDate && startDate.seconds) { // Fallback for serialized Timestamps
                 convertedDate = new Timestamp(startDate.seconds, startDate.nanoseconds).toDate();
             }
@@ -55,13 +56,10 @@ async function getGanttForPrint(ganttId: string): Promise<GanttChart | null> {
 
 
 const calculateEndDate = (startDate: Date, duration: number, workOnSaturdays: boolean, workOnSundays: boolean): Date => {
-    if (duration === 0) return new Date(startDate);
+    if (duration <= 0) return new Date(startDate);
     let remainingDays = duration;
-    let currentDate = new Date(startDate);
-    
-    if (duration > 0) {
-        currentDate.setDate(currentDate.getDate() - 1);
-    }
+    let currentDate = new Date(startDate); // Work with a copy
+    currentDate.setDate(currentDate.getDate() - 1); 
 
     while (remainingDays > 0) {
         currentDate = addDays(currentDate, 1);
@@ -78,28 +76,14 @@ const calculateEndDate = (startDate: Date, duration: number, workOnSaturdays: bo
 
 
 function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
     
     React.useEffect(() => {
+        // A short delay can help ensure all content is rendered before printing
         setTimeout(() => {
             window.print();
         }, 500);
     }, []);
 
-    const calculateWorkingDays = (startDate: Date, endDate: Date, workOnSaturdays: boolean, workOnSundays: boolean): number => {
-        let count = 0;
-        let currentDate = new Date(startDate);
-        while (currentDate <= endDate) {
-            const dayOfWeek = currentDate.getDay();
-            if ((dayOfWeek !== 0 || workOnSundays) && (dayOfWeek !== 6 || workOnSaturdays)) {
-                count++;
-            }
-            currentDate.setDate(currentDate.getDate() + 1);
-        }
-        return count;
-    };
-    
     const ganttChartData = React.useMemo(() => {
         if (!ganttChart.tasks || ganttChart.tasks.length === 0) {
             return { days: [], months: [], earliestDate: null, latestDate: null };
@@ -130,52 +114,6 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
 
         return { days, months: Object.entries(months), earliestDate, latestDate };
     }, [ganttChart]);
-
-    const getProgressStyle = (task: GanttTask, endDate: Date): React.CSSProperties => {
-        if (!task.startDate) return { backgroundColor: '#ccc' }; // Default gray
-
-        if (isPast(endDate) && (task.progress || 0) < 100) {
-            return { 
-                backgroundColor: '#777',
-                backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.2) 0, rgba(255,255,255,0.2) 2px, transparent 2px, transparent 4px)',
-            };
-        }
-        return { backgroundColor: '#aaa' }; // On-schedule or Not started - Light Gray
-    }
-    
-    const getProgressBarStyle = (task: GanttTask, endDate: Date): React.CSSProperties => {
-        const progress = task.progress || 0;
-        if (!task.startDate) return { backgroundColor: '#ccc' }; 
-
-        if (progress >= 100) {
-            return { backgroundColor: '#333' }; // Completed - Dark Gray
-        }
-
-        const startDate = new Date(task.startDate);
-
-        if (isPast(endDate) && progress < 100) {
-            return { 
-                backgroundColor: '#777',
-                backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.2) 0, rgba(255,255,255,0.2) 2px, transparent 2px, transparent 4px)',
-            };
-        }
-
-        if ((isPast(startDate) || isToday(startDate)) && !isPast(endDate)) {
-            const totalWorkingDays = calculateWorkingDays(startDate, endDate, ganttChart.workOnSaturdays, ganttChart.workOnSundays);
-            if (totalWorkingDays === 0) return { backgroundColor: '#aaa' };
-
-            const elapsedWorkingDays = calculateWorkingDays(startDate, today, ganttChart.workOnSaturdays, ganttChart.workOnSundays);
-            const expectedProgress = Math.min(Math.round((elapsedWorkingDays / totalWorkingDays) * 100), 100);
-
-            if (progress < expectedProgress) {
-                 return { 
-                    backgroundColor: '#777',
-                    backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.2) 0, rgba(255,255,255,0.2) 2px, transparent 2px, transparent 4px)',
-                };
-            }
-        }
-        return { backgroundColor: '#aaa' }; // On-schedule or Not started - Light Gray
-    }
 
     return (
         <div className="bg-white text-black p-8 printable-content max-w-7xl mx-auto">
@@ -229,8 +167,6 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
                                     const offset = differenceInCalendarDays(startDate, ganttChartData.earliestDate);
                                     const durationInDays = differenceInCalendarDays(endDate, startDate) + 1;
                                     
-                                    const progressBarStyle = getProgressBarStyle(task, endDate);
-                                    
                                     return (
                                         <React.Fragment key={task.id}>
                                             <div className="sticky left-0 bg-white z-10 pr-2 py-1 border-b border-r flex items-center" style={{ gridRow: gridRowStart }}>
@@ -239,28 +175,30 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
                                             <div className="sticky left-0 bg-white z-10 pr-2 py-1 border-b border-r flex items-center justify-end font-medium" style={{ gridRow: gridRowStart }}>
                                                 {task.progress || 0}%
                                             </div>
-                                            <div className="relative border-b border-r h-8" style={{ gridRow: gridRowStart, gridColumn: `3 / span ${ganttChartData.days.length}` }}>
-                                                {/* Grid lines */}
-                                                {ganttChartData.days.map((_, dayIndex) => (
-                                                    <div key={dayIndex} className="inline-block h-full border-r" style={{width: '1.5rem'}}></div>
-                                                ))}
+                                            <div className="relative border-b h-8 flex items-center" style={{ gridRow: gridRowStart, gridColumn: `3 / span ${ganttChartData.days.length}` }}>
+                                                {/* Grid lines for visual separation */}
+                                                <div className="absolute top-0 left-0 w-full h-full flex">
+                                                    {ganttChartData.days.map((_, dayIndex) => (
+                                                        <div key={dayIndex} className="inline-block h-full border-r" style={{width: '1.5rem'}}></div>
+                                                    ))}
+                                                </div>
                                                 {task.duration > 0 && offset >= 0 && (
                                                    <div
-                                                        className="absolute h-6 top-1 rounded bg-gray-200"
+                                                        className="absolute h-4 bg-gray-800"
                                                         style={{ 
                                                             left: `${offset * 1.5}rem`,
                                                             width: `${durationInDays * 1.5}rem`,
                                                         }}
                                                         title={`${task.name} - ${format(startDate, 'dd/MM')} a ${format(endDate, 'dd/MM')}`}
                                                     >
-                                                        <div 
-                                                            className="h-full rounded"
+                                                         <div 
+                                                            className="h-full bg-black relative"
                                                             style={{
-                                                                ...progressBarStyle,
                                                                 width: `${task.progress || 0}%`,
                                                             }}
                                                         >
-                                                        </div>
+                                                             <div className="absolute top-0 right-0 h-full w-[3px] bg-white"></div>
+                                                         </div>
                                                     </div>
                                                 )}
                                             </div>
