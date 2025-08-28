@@ -243,7 +243,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     }
 
     await updateDoc(orderRef, dataToUpdate);
-    await fetchData(); // Force a re-fetch from Firestore to ensure UI consistency.
+    await fetchData();
   };
   
   const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory> => {
@@ -507,5 +507,6 @@ export const useWorkOrders = () => {
 
 
     
+
 
 
