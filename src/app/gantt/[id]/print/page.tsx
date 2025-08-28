@@ -2,7 +2,7 @@
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { GanttChart, GanttTask } from '@/lib/types';
-import { addDays, differenceInCalendarDays, eachDayOfInterval, format, isPast, isToday } from 'date-fns';
+import { addDays, differenceInCalendarDays, eachDayOfInterval, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import * as React from 'react';
 import { useParams } from 'next/navigation';
@@ -28,9 +28,8 @@ async function getGanttForPrint(ganttId: string): Promise<GanttChart | null> {
             if (startDate && startDate instanceof Timestamp) {
                 convertedDate = startDate.toDate();
             } else if (startDate && typeof startDate === 'string') {
-                // Ensure correct parsing even if it's already a string
                 convertedDate = new Date(startDate.includes('T') ? startDate : startDate.replace(/-/g, '/'));
-            } else if (startDate && startDate.seconds) { // Fallback for serialized Timestamps
+            } else if (startDate && startDate.seconds) { 
                 convertedDate = new Timestamp(startDate.seconds, startDate.nanoseconds).toDate();
             }
             return {
@@ -54,11 +53,11 @@ async function getGanttForPrint(ganttId: string): Promise<GanttChart | null> {
     }
 }
 
-
 const calculateEndDate = (startDate: Date, duration: number, workOnSaturdays: boolean, workOnSundays: boolean): Date => {
     if (duration <= 0) return new Date(startDate);
+
     let remainingDays = duration;
-    let currentDate = new Date(startDate); // Work with a copy
+    let currentDate = new Date(startDate);
     currentDate.setDate(currentDate.getDate() - 1); 
 
     while (remainingDays > 0) {
@@ -74,11 +73,9 @@ const calculateEndDate = (startDate: Date, duration: number, workOnSaturdays: bo
     return currentDate;
 };
 
-
 function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
     
     React.useEffect(() => {
-        // A short delay can help ensure all content is rendered before printing
         setTimeout(() => {
             window.print();
         }, 500);
@@ -115,109 +112,83 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
         return { days, months: Object.entries(months), earliestDate, latestDate };
     }, [ganttChart]);
 
+    const { days, months, earliestDate } = ganttChartData;
+
     return (
-        <div className="bg-white text-black p-8 printable-content max-w-7xl mx-auto">
-            <Card className="border-none shadow-none">
-                <CardHeader>
-                    <CardTitle className="text-2xl font-headline">{ganttChart.name}</CardTitle>
-                    <CardDescription>OT Asociada: {ganttChart.assignedOT || 'N/A'}</CardDescription>
-                </CardHeader>
-                <CardContent className="overflow-x-auto p-0">
-                    {ganttChart.tasks.length > 0 && ganttChartData.days.length > 0 && ganttChartData.earliestDate && ganttChartData.latestDate ? (
-                         <div className="min-w-full text-xs">
-                             <div className="grid" style={{ gridTemplateColumns: `20rem 5rem repeat(${ganttChartData.days.length}, minmax(1.5rem, 1fr))` }}>
-                                {/* Headers */}
-                                <div className="sticky left-0 z-10 bg-white border-b border-r font-semibold"></div>
-                                <div className="sticky left-0 z-10 bg-white border-b border-r font-semibold"></div>
-                                {ganttChartData.months.map(([month, dayCount]) => (
-                                    <div key={month} className="text-center font-semibold capitalize border-b border-r" style={{ gridColumn: `span ${dayCount}` }}>
-                                        {month}
-                                    </div>
-                                ))}
+        <div className="bg-white text-black p-4 printable-content max-w-full mx-auto">
+            <header className="mb-4">
+                <h1 className="text-2xl font-headline font-bold">{ganttChart.name}</h1>
+                <p className="text-md text-gray-600">OT Asociada: {ganttChart.assignedOT || 'N/A'}</p>
+            </header>
+            
+            {days.length > 0 && earliestDate ? (
+                <table className="w-full border-collapse text-xs">
+                    <thead>
+                        <tr>
+                            <th className="border p-1 align-bottom text-left w-[250px]">Tarea</th>
+                            <th className="border p-1 align-bottom text-right w-[80px]">Avance %</th>
+                            {months.map(([month, dayCount]) => (
+                                <th key={month} colSpan={dayCount} className="border p-1 text-center font-semibold capitalize">
+                                    {month}
+                                </th>
+                            ))}
+                        </tr>
+                        <tr>
+                            <th className="border p-1"></th>
+                            <th className="border p-1"></th>
+                            {days.map((day) => (
+                                <th key={day.toString()} className="border p-1 font-normal w-[25px] h-[25px]">
+                                    {format(day, 'd')}
+                                </th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {ganttChart.tasks.map((task) => {
+                            if (task.isPhase) {
+                                return (
+                                    <tr key={task.id}>
+                                        <td colSpan={2 + days.length} className="border p-1 font-bold bg-gray-100">{task.name}</td>
+                                    </tr>
+                                )
+                            }
+                            
+                            if (!task.startDate || !task.duration || !earliestDate) return null;
+                            
+                            const taskStartDate = new Date(task.startDate);
+                            const taskEndDate = calculateEndDate(taskStartDate, task.duration, ganttChart.workOnSaturdays, ganttChart.workOnSundays);
+                            const progressDays = Math.floor(task.duration * ((task.progress || 0) / 100));
 
-                                <div className="sticky left-0 z-10 bg-white border-b border-r font-semibold flex items-end p-1">Tarea</div>
-                                <div className="sticky left-0 z-10 bg-white border-b border-r font-semibold flex items-end justify-end p-1">Avance %</div>
-                                {ganttChartData.days.map((day) => (
-                                    <div key={day.toString()} className="text-center font-semibold border-b border-r h-6 flex items-center justify-center">
-                                        {format(day, 'd')}
-                                    </div>
-                                ))}
-
-                                {/* Task Rows & Bars */}
-                                {ganttChart.tasks.map((task, index) => {
-                                    const gridRowStart = index + 3;
-                                    
-                                    if (task.isPhase) {
+                            return (
+                                <tr key={task.id}>
+                                    <td className="border p-1">{task.name}</td>
+                                    <td className="border p-1 text-right font-medium">{task.progress || 0}%</td>
+                                    {days.map((day, dayIndex) => {
+                                        const isInRange = day >= taskStartDate && day <= taskEndDate;
+                                        let content = '';
+                                        if (isInRange) {
+                                            const daysFromStart = differenceInCalendarDays(day, taskStartDate);
+                                            content = daysFromStart < progressDays ? '█' : '➕';
+                                        }
                                         return (
-                                            <React.Fragment key={task.id}>
-                                                <div className="sticky left-0 bg-gray-100 z-10 pr-2 py-1 border-b border-r flex items-center font-bold col-span-2" style={{ gridRow: gridRowStart, gridColumn: '1 / span 2' }}>
-                                                    {task.name}
-                                                </div>
-                                                 <div className="bg-gray-100 border-b" style={{ gridRow: gridRowStart, gridColumn: `3 / span ${ganttChartData.days.length}`}}></div>
-                                            </React.Fragment>
-                                        )
-                                    }
-
-                                    if (!task.startDate || !task.duration || !ganttChartData.earliestDate) {
-                                        return null;
-                                    }
-
-                                    const startDate = new Date(task.startDate);
-                                    const endDate = calculateEndDate(startDate, task.duration, ganttChart.workOnSaturdays, ganttChart.workOnSundays);
-                                    const offset = differenceInCalendarDays(startDate, ganttChartData.earliestDate);
-                                    const durationInDays = differenceInCalendarDays(endDate, startDate) + 1;
-                                    
-                                    return (
-                                        <React.Fragment key={task.id}>
-                                            <div className="sticky left-0 bg-white z-10 pr-2 py-1 border-b border-r flex items-center" style={{ gridRow: gridRowStart }}>
-                                                {task.name}
-                                            </div>
-                                            <div className="sticky left-0 bg-white z-10 pr-2 py-1 border-b border-r flex items-center justify-end font-medium" style={{ gridRow: gridRowStart }}>
-                                                {task.progress || 0}%
-                                            </div>
-                                            <div className="relative border-b h-8 flex items-center" style={{ gridRow: gridRowStart, gridColumn: `3 / span ${ganttChartData.days.length}` }}>
-                                                {/* Grid lines for visual separation */}
-                                                <div className="absolute top-0 left-0 w-full h-full flex">
-                                                    {ganttChartData.days.map((_, dayIndex) => (
-                                                        <div key={dayIndex} className="inline-block h-full border-r" style={{width: '1.5rem'}}></div>
-                                                    ))}
-                                                </div>
-                                                {task.duration > 0 && offset >= 0 && (
-                                                   <div
-                                                        className="absolute h-4 bg-gray-800"
-                                                        style={{ 
-                                                            left: `${offset * 1.5}rem`,
-                                                            width: `${durationInDays * 1.5}rem`,
-                                                        }}
-                                                        title={`${task.name} - ${format(startDate, 'dd/MM')} a ${format(endDate, 'dd/MM')}`}
-                                                    >
-                                                         <div 
-                                                            className="h-full bg-black relative"
-                                                            style={{
-                                                                width: `${task.progress || 0}%`,
-                                                            }}
-                                                        >
-                                                             <div className="absolute top-0 right-0 h-full w-[3px] bg-white"></div>
-                                                         </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </React.Fragment>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="text-center p-8">
-                            No hay tareas para mostrar en el gráfico.
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+                                            <td key={dayIndex} className="border text-center p-1 h-[25px]">
+                                                {content}
+                                            </td>
+                                        );
+                                    })}
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            ) : (
+                 <div className="text-center p-8 border rounded-lg">
+                    No hay tareas para mostrar en el gráfico.
+                </div>
+            )}
         </div>
     );
 }
-
 
 export default function PrintGanttPage() {
     const params = useParams();
