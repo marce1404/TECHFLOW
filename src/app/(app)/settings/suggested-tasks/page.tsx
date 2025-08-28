@@ -49,10 +49,13 @@ export default function SuggestedTasksPage() {
     const availableCategories = services.filter(s => s.status === 'Activa');
 
     const groupedAndSortedTasks = React.useCallback((categoryKey: string) => {
-        // Ensure comparison is always done in lowercase
-        const tasksForCategory = suggestedTasks.filter(t => t.category.toLowerCase() === categoryKey.toLowerCase());
+        const normalizeString = (str: string) => {
+            return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        }
+        const normalizedCategoryKey = normalizeString(categoryKey);
+
+        const tasksForCategory = suggestedTasks.filter(t => normalizeString(t.category) === normalizedCategoryKey);
         
-        // Use a Set to track unique task names to prevent duplicates from bad data
         const seen = new Set();
         const uniqueTasksForCategory = tasksForCategory.filter(t => {
             if (seen.has(t.name)) {
@@ -72,12 +75,10 @@ export default function SuggestedTasksPage() {
             return acc;
         }, {} as Record<string, SuggestedTask[]>);
 
-        // Sort tasks within each phase by their 'order' property
         for (const phase in grouped) {
             grouped[phase].sort((a, b) => (a.order || 0) - (b.order || 0));
         }
 
-        // Sort phases based on the 'order' of the first task in each phase
         const sortedPhases = Object.keys(grouped).sort((a, b) => {
             const firstTaskOrderA = grouped[a][0]?.order || 0;
             const firstTaskOrderB = grouped[b][0]?.order || 0;
