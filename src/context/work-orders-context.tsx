@@ -83,6 +83,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
 
   const fetchData = useCallback(async () => {
+    console.log("SYNC: Iniciando fetchData...");
     setLoading(true);
     try {
         const fetchAndSetSuggestedTasks = async () => {
@@ -146,9 +147,14 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         await fetchAndSetSuggestedTasks();
         
         const allOrders = workOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[];
+        console.log(`SYNC: Se cargaron ${allOrders.length} órdenes en total desde Firestore.`);
         
-        setActiveWorkOrders(allOrders.filter(o => o.status !== 'Cerrada'));
-        setHistoricalWorkOrders(allOrders.filter(o => o.status === 'Cerrada'));
+        const active = allOrders.filter(o => o.status !== 'Cerrada');
+        const historical = allOrders.filter(o => o.status === 'Cerrada');
+        
+        console.log(`SYNC: Separación - ${active.length} activas, ${historical.length} históricas.`);
+        setActiveWorkOrders(active);
+        setHistoricalWorkOrders(historical);
 
         setOtCategories(categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as OTCategory[]);
         setOtStatuses(statusesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as OTStatus[]);
@@ -191,7 +197,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         }
         
     } catch (error) {
-        console.error("Error fetching data from Firestore: ", error);
+        console.error("Error en fetchData: ", error);
         // Fallback to empty arrays on error
         setActiveWorkOrders([]);
         setHistoricalWorkOrders([]);
@@ -207,6 +213,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         setCompanyInfo(null);
     } finally {
         setLoading(false);
+        console.log("SYNC: fetchData finalizado.");
     }
   }, []);
 
@@ -235,16 +242,24 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateOrder = async (id: string, updatedData: Partial<WorkOrder>) => {
+    console.log(`UPDATE: Iniciando actualización para OT ID: ${id} con datos:`, updatedData);
     const orderRef = doc(db, 'work-orders', id);
     const dataToSave = { ...updatedData };
     
     // If status is being changed to 'Cerrada' and there's no endDate, set it.
     if (dataToSave.status === 'Cerrada' && !dataToSave.endDate) {
-      dataToSave.endDate = format(new Date(), 'yyyy-MM-dd');
+      const closingDate = format(new Date(), 'yyyy-MM-dd');
+      dataToSave.endDate = closingDate;
+      console.log(`UPDATE: OT marcada como 'Cerrada'. Añadiendo fecha de cierre: ${closingDate}`);
     }
 
-    await updateDoc(orderRef, dataToSave);
-    await fetchData(); // Force a re-fetch from Firestore to guarantee UI consistency.
+    try {
+        await updateDoc(orderRef, dataToSave);
+        console.log(`UPDATE: Éxito al guardar en Firestore para OT ID: ${id}.`);
+        await fetchData();
+    } catch(error) {
+        console.error(`UPDATE: Error al actualizar Firestore para OT ID: ${id}:`, error);
+    }
   };
   
   const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory> => {
@@ -500,3 +515,6 @@ export const useWorkOrders = () => {
 
     
 
+
+
+    
