@@ -4,7 +4,7 @@
 import GanttForm from '@/components/gantt/gantt-form';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { useRouter, useParams } from 'next/navigation';
-import type { GanttChart, GanttTask } from '@/lib/types';
+import type { GanttChart, GanttTask, SuggestedTask } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import * as React from 'react';
 
@@ -18,57 +18,60 @@ export default function EditGanttPage() {
   const initialGanttChart = React.useMemo(() => getGanttChart(ganttId), [ganttId, getGanttChart]);
 
   const [tasks, setTasks] = React.useState<GanttTask[]>([]);
+  const [processedTasks, setProcessedTasks] = React.useState<GanttTask[]>([]);
 
   React.useEffect(() => {
-    if (initialGanttChart && initialGanttChart.tasks) {
-      const allTasks = [...initialGanttChart.tasks].map(task => ({
-        ...task,
-        startDate: task.startDate ? new Date(task.startDate) : new Date(),
-      }));
-
-      const newTasks: GanttTask[] = [];
-      const grouped = allTasks.reduce((acc, task) => {
-        const phase = task.phase || 'Sin Fase';
-        if (!acc[phase]) {
-          acc[phase] = [];
-        }
-        acc[phase].push(task);
-        return acc;
-      }, {} as Record<string, GanttTask[]>);
-
-      const sortedPhases = Object.keys(grouped).sort((a, b) => {
-        const firstTaskOrderA = grouped[a][0]?.order || 0;
-        const firstTaskOrderB = grouped[b][0]?.order || 0;
-        return firstTaskOrderA - firstTaskOrderB;
-      });
-
-      sortedPhases.forEach(phase => {
-        newTasks.push({
-          id: crypto.randomUUID(),
-          name: phase,
-          isPhase: true,
-          startDate: new Date(),
-          duration: 0,
-          progress: 0,
-          phase: phase,
-          order: grouped[phase][0]?.order,
-        });
-
-        const sortedTasksInPhase = grouped[phase].sort((a, b) => (a.order || 0) - (b.order || 0));
-        sortedTasksInPhase.forEach(task => {
-          newTasks.push(task);
-        });
-      });
-
-      setTasks(newTasks);
+    if (initialGanttChart) {
+        setTasks(initialGanttChart.tasks.map(task => ({
+            ...task,
+            startDate: task.startDate ? new Date(task.startDate) : new Date(),
+        })));
     }
   }, [initialGanttChart]);
 
+  React.useEffect(() => {
+        if (tasks.length > 0) {
+            const newProcessedTasks: GanttTask[] = [];
+            const grouped = tasks.reduce((acc, task) => {
+                const phase = task.phase || 'Sin Fase';
+                if (!acc[phase]) {
+                    acc[phase] = [];
+                }
+                acc[phase].push(task);
+                return acc;
+            }, {} as Record<string, SuggestedTask[]>);
+
+            const sortedPhases = Object.keys(grouped).sort((a, b) => {
+                const firstTaskOrderA = grouped[a][0]?.order || 0;
+                const firstTaskOrderB = grouped[b][0]?.order || 0;
+                return firstTaskOrderA - firstTaskOrderB;
+            });
+
+            sortedPhases.forEach(phase => {
+                newProcessedTasks.push({
+                    id: crypto.randomUUID(),
+                    name: phase,
+                    isPhase: true,
+                    startDate: new Date(),
+                    duration: 0,
+                    progress: 0,
+                    phase: phase,
+                    order: grouped[phase][0].order,
+                });
+                const sortedTasksInPhase = grouped[phase].sort((a, b) => (a.order || 0) - (b.order || 0));
+                sortedTasksInPhase.forEach(task => {
+                    newProcessedTasks.push(task as GanttTask);
+                });
+            });
+             setProcessedTasks(newProcessedTasks);
+        } else {
+            setProcessedTasks([]);
+        }
+  }, [tasks]);
+
 
   const handleSave = (ganttChartData: Omit<GanttChart, 'id' | 'tasks'>) => {
-    // Filter out phase pseudo-tasks before saving
-    const finalTasksToSave = tasks.filter(t => !t.isPhase);
-    const finalGantt = { ...ganttChartData, tasks: finalTasksToSave };
+    const finalGantt = { ...ganttChartData, tasks: tasks };
     updateGanttChart(ganttId, finalGantt);
     toast({
       title: 'Carta Gantt Actualizada',
@@ -92,7 +95,7 @@ export default function EditGanttPage() {
           Modifica los detalles de la Carta Gantt.
         </p>
       </div>
-      <GanttForm onSave={handleSave} ganttChart={initialGanttChart} tasks={tasks} setTasks={setTasks} />
+      <GanttForm onSave={handleSave} ganttChart={initialGanttChart} tasks={processedTasks} setTasks={setTasks} allTasks={tasks} />
     </div>
   );
 }

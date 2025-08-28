@@ -46,11 +46,12 @@ type GanttFormValues = z.infer<typeof ganttFormSchema>;
 interface GanttFormProps {
   onSave: (data: Omit<GanttChart, 'id' | 'tasks'>) => void;
   ganttChart?: GanttChart;
-  tasks: GanttTask[];
-  setTasks: React.Dispatch<React.SetStateAction<GanttTask[]>>;
+  tasks: GanttTask[]; // These are the processed tasks for rendering (with phases)
+  setTasks: React.Dispatch<React.SetStateAction<GanttTask[]>>; // This is to update the raw tasks
+  allTasks: GanttTask[]; // These are the raw tasks without phases
 }
 
-export default function GanttForm({ onSave, ganttChart, tasks, setTasks }: GanttFormProps) {
+export default function GanttForm({ onSave, ganttChart, tasks, setTasks, allTasks }: GanttFormProps) {
   const { activeWorkOrders, ganttCharts } = useWorkOrders();
   const [customTaskName, setCustomTaskName] = React.useState('');
   const params = useParams();
@@ -79,36 +80,27 @@ export default function GanttForm({ onSave, ganttChart, tasks, setTasks }: Gantt
     }
   }, [ganttChart, form]);
 
-  const handleUpdateTask = (index: number, field: keyof GanttTask, value: any) => {
-    const newTasks = [...tasks];
-    (newTasks[index] as any)[field] = value;
+  const handleUpdateTask = (id: string, field: keyof GanttTask, value: any) => {
+    const newTasks = allTasks.map(t => {
+        if (t.id === id) {
+            return { ...t, [field]: value };
+        }
+        return t;
+    });
     setTasks(newTasks);
   };
   
-  const handleRemoveTask = (index: number) => {
-    const newTasks = tasks.filter((_, i) => i !== index);
+  const handleRemoveTask = (id: string) => {
+    const newTasks = allTasks.filter(t => t.id !== id);
     setTasks(newTasks);
   };
 
   const handleAddTask = () => {
     if (customTaskName.trim()) {
       const customPhaseName = 'Tareas Personalizadas';
-      let newTasks = [...tasks];
-
-      if (!newTasks.some(task => task.isPhase && task.name === customPhaseName)) {
-        newTasks.push({
-            id: crypto.randomUUID(),
-            name: customPhaseName,
-            isPhase: true,
-            startDate: new Date(),
-            duration: 0,
-            progress: 0,
-            phase: customPhaseName,
-            order: (newTasks.filter(t => t.isPhase).length + 1) * 1000,
-        });
-      }
+      let phaseExists = allTasks.some(t => t.phase === customPhaseName);
       
-      newTasks.push({
+      const newTask: GanttTask = {
         id: crypto.randomUUID(),
         name: customTaskName.trim(),
         startDate: new Date(),
@@ -116,10 +108,10 @@ export default function GanttForm({ onSave, ganttChart, tasks, setTasks }: Gantt
         progress: 0,
         isPhase: false,
         phase: customPhaseName,
-        order: (newTasks.filter(t => t.isPhase).length + 1) * 1000 + newTasks.filter(t => !t.isPhase).length + 1,
-      });
+        order: (allTasks.filter(t => !t.isPhase).length + 1) * 100,
+      };
 
-      setTasks(newTasks);
+      setTasks([...allTasks, newTask]);
       setCustomTaskName('');
     }
   };
@@ -166,13 +158,9 @@ export default function GanttForm({ onSave, ganttChart, tasks, setTasks }: Gantt
   const watchedWorkdays = form.watch(['workOnSaturdays', 'workOnSundays']);
   
   const ganttChartData = React.useMemo(() => {
-    if (!tasks || tasks.length === 0) {
-      return { days: [], months: [], earliestDate: null };
-    }
-
-    const validTasks = tasks.filter(t => t.startDate && t.duration > 0 && !t.isPhase);
+    const validTasks = allTasks.filter(t => t.startDate && t.duration > 0 && !t.isPhase);
     if (validTasks.length === 0) {
-        return { days: [], months: [], earliestDate: null };
+      return { days: [], months: [], earliestDate: null };
     }
 
     const earliestDate = new Date(Math.min(...validTasks.map(t => new Date(t.startDate).getTime())));
@@ -194,7 +182,7 @@ export default function GanttForm({ onSave, ganttChart, tasks, setTasks }: Gantt
     }, {} as Record<string, number>);
 
     return { days, months: Object.entries(months), earliestDate };
-  }, [tasks, watchedWorkdays]);
+  }, [allTasks, watchedWorkdays]);
 
 
   const onSubmitForm = (data: GanttFormValues) => {
@@ -305,7 +293,7 @@ export default function GanttForm({ onSave, ganttChart, tasks, setTasks }: Gantt
                         <div className="text-center">Fecha Término</div>
                         <div></div>
                     </div>
-                    {tasks.map((task, index) => {
+                    {tasks.map((task) => {
                         if (task.isPhase) {
                           return (
                             <div key={task.id} className="flex items-center gap-2 pt-4 pb-2">
@@ -321,7 +309,7 @@ export default function GanttForm({ onSave, ganttChart, tasks, setTasks }: Gantt
                         
                         return (
                           <div key={task.id} className="grid grid-cols-1 md:grid-cols-[1fr,150px,120px,120px,120px,auto] gap-2 items-center p-2 rounded-lg border">
-                              <Input value={task.name} onChange={(e) => handleUpdateTask(index, 'name', e.target.value)} />
+                              <Input value={task.name} onChange={(e) => handleUpdateTask(task.id, 'name', e.target.value)} />
                               <Popover>
                                   <PopoverTrigger asChild>
                                       <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !task.startDate && 'text-muted-foreground')}>
@@ -329,12 +317,12 @@ export default function GanttForm({ onSave, ganttChart, tasks, setTasks }: Gantt
                                           {task.startDate ? format(new Date(task.startDate), 'dd/MM/yy', { locale: es }) : <span>Elegir</span>}
                                       </Button>
                                   </PopoverTrigger>
-                                  <PopoverContent className="w-auto p-0"><Calendar locale={es} mode="single" selected={task.startDate} onSelect={(date) => handleUpdateTask(index, 'startDate', date)} initialFocus /></PopoverContent>
+                                  <PopoverContent className="w-auto p-0"><Calendar locale={es} mode="single" selected={task.startDate} onSelect={(date) => handleUpdateTask(task.id, 'startDate', date)} initialFocus /></PopoverContent>
                               </Popover>
-                              <Input type="number" className="w-full text-center" value={task.duration} onChange={(e) => handleUpdateTask(index, 'duration', parseInt(e.target.value) || 0)} />
-                              <Input type="number" className="w-full text-center" value={task.progress} onChange={(e) => handleUpdateTask(index, 'progress', parseInt(e.target.value) || 0)} disabled={!isPastOrToday} />
+                              <Input type="number" className="w-full text-center" value={task.duration} onChange={(e) => handleUpdateTask(task.id, 'duration', parseInt(e.target.value) || 0)} />
+                              <Input type="number" className="w-full text-center" value={task.progress} onChange={(e) => handleUpdateTask(task.id, 'progress', parseInt(e.target.value) || 0)} disabled={!isPastOrToday} />
                               <Input value={endDate ? format(endDate, 'dd/MM/yy', { locale: es }) : 'N/A'} readOnly className="bg-muted w-full text-center" />
-                              <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveTask(index)}>
+                              <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveTask(task.id)}>
                                   <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
                           </div>

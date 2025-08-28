@@ -16,11 +16,52 @@ export default function NewGanttPage() {
   const { addGanttChart, services, suggestedTasks } = useWorkOrders();
   const { toast } = useToast();
   const [tasks, setTasks] = React.useState<GanttTask[]>([]);
+  const [processedTasks, setProcessedTasks] = React.useState<GanttTask[]>([]);
+
+
+  React.useEffect(() => {
+        if (tasks.length > 0) {
+            const newProcessedTasks: GanttTask[] = [];
+            const grouped = tasks.reduce((acc, task) => {
+                const phase = task.phase || 'Sin Fase';
+                if (!acc[phase]) {
+                    acc[phase] = [];
+                }
+                acc[phase].push(task);
+                return acc;
+            }, {} as Record<string, SuggestedTask[]>);
+
+            const sortedPhases = Object.keys(grouped).sort((a, b) => {
+                const firstTaskOrderA = grouped[a][0]?.order || 0;
+                const firstTaskOrderB = grouped[b][0]?.order || 0;
+                return firstTaskOrderA - firstTaskOrderB;
+            });
+
+            sortedPhases.forEach(phase => {
+                newProcessedTasks.push({
+                    id: crypto.randomUUID(),
+                    name: phase,
+                    isPhase: true,
+                    startDate: new Date(),
+                    duration: 0,
+                    progress: 0,
+                    phase: phase,
+                    order: grouped[phase][0].order,
+                });
+                const sortedTasksInPhase = grouped[phase].sort((a, b) => (a.order || 0) - (b.order || 0));
+                sortedTasksInPhase.forEach(task => {
+                    newProcessedTasks.push(task as GanttTask);
+                });
+            });
+             setProcessedTasks(newProcessedTasks);
+        } else {
+            setProcessedTasks([]);
+        }
+  }, [tasks]);
+
 
   const handleSave = (ganttChartData: Omit<GanttChart, 'id' | 'tasks'>) => {
-    // Filter out phase pseudo-tasks before saving
-    const finalTasksToSave = tasks.filter(t => !t.isPhase);
-    const finalGantt = { ...ganttChartData, tasks: finalTasksToSave };
+    const finalGantt = { ...ganttChartData, tasks: tasks };
     addGanttChart(finalGantt);
     toast({
       title: 'Carta Gantt Creada',
@@ -46,46 +87,19 @@ export default function NewGanttPage() {
     const newTasks: GanttTask[] = [];
     
     if (uniqueTasksForCategory.length > 0) {
-        const grouped = uniqueTasksForCategory.reduce((acc, task) => {
-            const phase = task.phase || 'Sin Fase';
-            if (!acc[phase]) {
-                acc[phase] = [];
-            }
-            acc[phase].push(task);
-            return acc;
-        }, {} as Record<string, SuggestedTask[]>);
-
-        const sortedPhases = Object.keys(grouped).sort((a, b) => {
-            const firstTaskOrderA = grouped[a][0]?.order || 0;
-            const firstTaskOrderB = grouped[b][0]?.order || 0;
-            return firstTaskOrderA - firstTaskOrderB;
-        });
-
-        sortedPhases.forEach(phase => {
-            newTasks.push({
-                id: crypto.randomUUID(),
-                name: phase,
-                isPhase: true,
-                startDate: new Date(),
-                duration: 0,
-                progress: 0,
-                phase: phase,
-                order: grouped[phase][0].order,
-            });
-            const sortedTasksInPhase = grouped[phase].sort((a, b) => (a.order || 0) - (b.order || 0));
-            sortedTasksInPhase.forEach(task => {
-                newTasks.push({
-                    id: crypto.randomUUID(),
-                    name: task.name,
-                    isPhase: false,
-                    startDate: new Date(),
-                    duration: 1,
-                    progress: 0,
-                    phase: phase,
-                    order: task.order,
-                });
-            });
-        });
+      const sortedTasks = [...uniqueTasksForCategory].sort((a,b) => (a.order || 0) - (b.order || 0));
+      sortedTasks.forEach(task => {
+          newTasks.push({
+              id: crypto.randomUUID(),
+              name: task.name,
+              isPhase: false,
+              startDate: new Date(),
+              duration: 1,
+              progress: 0,
+              phase: task.phase,
+              order: task.order,
+          });
+      });
     }
     setTasks(newTasks);
   }
@@ -121,7 +135,7 @@ export default function NewGanttPage() {
             </CardContent>
         </Card>
 
-      <GanttForm onSave={handleSave} tasks={tasks} setTasks={setTasks} />
+      <GanttForm onSave={handleSave} tasks={processedTasks} setTasks={setTasks} allTasks={tasks} />
     </div>
   );
 }
