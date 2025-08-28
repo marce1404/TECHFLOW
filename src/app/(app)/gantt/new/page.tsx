@@ -18,6 +18,7 @@ export default function NewGanttPage() {
   const [tasks, setTasks] = React.useState<GanttTask[]>([]);
 
   const handleSave = (ganttChartData: Omit<GanttChart, 'id' | 'tasks'>) => {
+    // Filter out phase pseudo-tasks before saving
     const finalTasksToSave = tasks.filter(t => !t.isPhase);
     const finalGantt = { ...ganttChartData, tasks: finalTasksToSave };
     addGanttChart(finalGantt);
