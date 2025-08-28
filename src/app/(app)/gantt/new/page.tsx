@@ -18,6 +18,7 @@ export default function NewGanttPage() {
   const [tasks, setTasks] = React.useState<GanttTask[]>([]);
   
   const handleSave = (ganttChartData: Omit<GanttChart, 'id' | 'tasks'>, finalTasks: GanttTask[]) => {
+    // Filter out the pseudo-tasks (phase headers) before saving
     const rawTasks = finalTasks.filter(t => !t.isPhase);
     const finalGantt = { ...ganttChartData, tasks: rawTasks };
     addGanttChart(finalGantt);
@@ -32,22 +33,15 @@ export default function NewGanttPage() {
   const handleSuggestedTasks = (category: string) => {
     const tasksForCategory = suggestedTasks.filter(t => t.category === category);
     
-    const seen = new Set();
-    const uniqueTasksForCategory = tasksForCategory.filter(t => {
-        if (seen.has(t.name)) {
-            return false;
-        } else {
-            seen.add(t.name);
-            return true;
-        }
-    });
+    const uniqueTasksForCategory = Array.from(new Set(tasksForCategory.map(t => t.name)))
+      .map(name => tasksForCategory.find(t => t.name === name)!);
 
-    const newTasks: GanttTask[] = [];
+    const rawTasks: GanttTask[] = [];
     
     if (uniqueTasksForCategory.length > 0) {
       const sortedTasks = [...uniqueTasksForCategory].sort((a,b) => (a.order || 0) - (b.order || 0));
       sortedTasks.forEach(task => {
-          newTasks.push({
+          rawTasks.push({
               id: crypto.randomUUID(),
               name: task.name,
               isPhase: false,
@@ -59,7 +53,45 @@ export default function NewGanttPage() {
           });
       });
     }
-    setTasks(newTasks);
+
+     if (rawTasks.length > 0) {
+        const grouped = rawTasks.reduce((acc, task) => {
+          const phase = task.phase || 'Sin Fase';
+          if (!acc[phase]) {
+            acc[phase] = [];
+          }
+          acc[phase].push(task);
+          return acc;
+        }, {} as Record<string, GanttTask[]>);
+  
+        const sortedPhases = Object.keys(grouped).sort((a, b) => {
+          const firstTaskOrderA = grouped[a][0]?.order || 0;
+          const firstTaskOrderB = grouped[b][0]?.order || 0;
+          return firstTaskOrderA - firstTaskOrderB;
+        });
+  
+        const newProcessedTasks: GanttTask[] = [];
+        sortedPhases.forEach(phase => {
+          newProcessedTasks.push({
+            id: `phase_${phase}_${crypto.randomUUID()}`,
+            name: phase,
+            isPhase: true,
+            startDate: new Date(),
+            duration: 0,
+            progress: 0,
+            phase: phase,
+            order: grouped[phase][0]?.order || 0,
+          });
+          
+          const sortedTasksInPhase = grouped[phase].sort((a, b) => (a.order || 0) - (b.order || 0));
+          sortedTasksInPhase.forEach(task => {
+            newProcessedTasks.push(task);
+          });
+        });
+         setTasks(newProcessedTasks);
+      } else {
+         setTasks([]);
+      }
   }
 
   return (

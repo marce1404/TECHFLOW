@@ -17,14 +17,12 @@ export default function EditGanttPage() {
   const ganttId = params.id as string;
   const initialGanttChart = React.useMemo(() => getGanttChart(ganttId), [ganttId, getGanttChart]);
   
-  // This state will hold the final list for rendering, including phase headers
   const [processedTasks, setProcessedTasks] = React.useState<GanttTask[]>([]);
 
   React.useEffect(() => {
     if (initialGanttChart && initialGanttChart.tasks) {
       const rawTasks = initialGanttChart.tasks.map(task => ({
         ...task,
-        // Ensure startDate is a Date object, handling potential string or Firestore Timestamp formats
         startDate: task.startDate ? (task.startDate instanceof Date ? task.startDate : new Date(task.startDate)) : new Date(),
       }));
   
@@ -38,7 +36,6 @@ export default function EditGanttPage() {
           return acc;
         }, {} as Record<string, GanttTask[]>);
   
-        // Sort phases based on the 'order' of the first task in each phase
         const sortedPhases = Object.keys(grouped).sort((a, b) => {
           const firstTaskOrderA = grouped[a][0]?.order || 0;
           const firstTaskOrderB = grouped[b][0]?.order || 0;
@@ -47,7 +44,6 @@ export default function EditGanttPage() {
   
         const newProcessedTasks: GanttTask[] = [];
         sortedPhases.forEach(phase => {
-          // Add the phase header as a special task
           newProcessedTasks.push({
             id: `phase_${phase}_${crypto.randomUUID()}`,
             name: phase,
@@ -59,7 +55,6 @@ export default function EditGanttPage() {
             order: grouped[phase][0]?.order || 0,
           });
           
-          // Sort tasks within the phase and add them
           const sortedTasksInPhase = grouped[phase].sort((a, b) => (a.order || 0) - (b.order || 0));
           sortedTasksInPhase.forEach(task => {
             newProcessedTasks.push(task);
@@ -73,7 +68,6 @@ export default function EditGanttPage() {
   }, [initialGanttChart]);
 
   const handleSave = (ganttChartData: Omit<GanttChart, 'id' | 'tasks'>, finalTasks: GanttTask[]) => {
-    // Filter out the pseudo-tasks (phase headers) before saving
     const rawTasks = finalTasks.filter(t => !t.isPhase);
     const finalGantt = { ...ganttChartData, tasks: rawTasks };
     updateGanttChart(ganttId, finalGantt);

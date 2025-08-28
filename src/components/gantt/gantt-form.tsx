@@ -71,6 +71,9 @@ export default function GanttForm({ onSave, ganttChart, initialTasks }: GanttFor
   });
 
   React.useEffect(() => {
+    // This is now the source of truth for the displayed tasks.
+    // The parent component (`new/page` or `edit/page`) is responsible
+    // for preparing `initialTasks` with phase headers.
     setTasks(initialTasks);
   }, [initialTasks]);
 
@@ -116,7 +119,11 @@ export default function GanttForm({ onSave, ganttChart, initialTasks }: GanttFor
         order: maxOrderInPhase + 1,
       };
 
-      setTasks(prevTasks => [...prevTasks, newTask]);
+      const phaseIndex = tasks.findIndex(t => t.isPhase && t.name === selectedPhase);
+      const newTasks = [...tasks];
+      newTasks.splice(phaseIndex + phaseTasks.length + 1, 0, newTask);
+      
+      setTasks(newTasks);
       setCustomTaskName('');
     }
   };
