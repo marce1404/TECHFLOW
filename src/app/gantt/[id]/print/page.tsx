@@ -1,14 +1,12 @@
 
 'use client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import type { GanttChart, GanttTask } from '@/lib/types';
-import { addDays, differenceInCalendarDays, eachDayOfInterval, format, isSaturday, isSunday } from 'date-fns';
+import type { GanttChart } from '@/lib/types';
+import { addDays, differenceInCalendarDays, eachDayOfInterval, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import * as React from 'react';
 import { useParams } from 'next/navigation';
 import { doc, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { cn } from '@/lib/utils';
 
 async function getGanttForPrint(ganttId: string): Promise<GanttChart | null> {
     try {
@@ -112,31 +110,32 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
     }, [ganttChart]);
 
     const { days, months, earliestDate } = ganttChartData;
+    const dayWidth = 30; // 30px
 
     return (
-        <div className="bg-white text-black p-4 printable-content max-w-full mx-auto">
+        <div className="bg-white text-black p-6 printable-content max-w-full mx-auto">
             <header className="mb-4">
                 <h1 className="text-2xl font-headline font-bold">{ganttChart.name}</h1>
                 <p className="text-md text-gray-600">OT Asociada: {ganttChart.assignedOT || 'N/A'}</p>
             </header>
             
             {days.length > 0 && earliestDate ? (
-                <div className="grid" style={{ gridTemplateColumns: '250px 60px 1fr' }}>
+                 <div className="grid" style={{ gridTemplateColumns: `250px 60px 1fr` }}>
                     {/* Headers */}
-                    <div className="font-semibold p-1 border-b border-gray-400">Tarea</div>
-                    <div className="font-semibold p-1 border-b border-gray-400 text-right">Avance %</div>
-                    <div className="border-b border-gray-400">
+                    <div className="font-semibold p-1 border-y border-l border-gray-300">Tarea</div>
+                    <div className="font-semibold p-1 border-y border-gray-300 text-right">Avance %</div>
+                    <div className="border-y border-gray-300 overflow-hidden">
                         <div className="relative h-full">
-                            <div className="grid h-6" style={{ gridTemplateColumns: `repeat(${days.length}, 30px)` }}>
+                            <div className="grid h-6" style={{ gridTemplateColumns: `repeat(${days.length}, ${dayWidth}px)` }}>
                                 {months.map(([month, dayCount]) => (
-                                    <div key={month} style={{ gridColumn: `span ${dayCount}`}} className="text-center font-semibold capitalize text-sm border-r border-gray-400">
+                                    <div key={month} style={{ gridColumn: `span ${dayCount}`}} className="text-center font-semibold capitalize text-sm border-r border-gray-300">
                                         {month}
                                     </div>
                                 ))}
                             </div>
-                            <div className="grid h-6" style={{ gridTemplateColumns: `repeat(${days.length}, 30px)` }}>
-                                {days.map((day) => (
-                                    <div key={day.toString()} className="text-center font-normal text-xs border-r border-gray-400">
+                            <div className="grid h-6" style={{ gridTemplateColumns: `repeat(${days.length}, ${dayWidth}px)` }}>
+                                {days.map((day, i) => (
+                                    <div key={day.toString()} className={`text-center font-normal text-xs border-r ${i === days.length - 1 ? 'border-gray-300' : 'border-gray-300'}`}>
                                         {format(day, 'd')}
                                     </div>
                                 ))}
@@ -145,10 +144,10 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
                     </div>
                     
                     {/* Task Rows */}
-                    {ganttChart.tasks.map((task, index) => {
+                    {ganttChart.tasks.map((task) => {
                         if (task.isPhase) {
                              return (
-                                <div key={task.id} className="col-span-3 p-1 font-bold bg-gray-100 border-t border-b border-gray-300">
+                                <div key={task.id} className="col-span-3 p-1 font-bold bg-gray-100 border-b border-gray-300 text-black">
                                     {task.name}
                                 </div>
                             )
@@ -158,7 +157,6 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
                         if (!taskStartDate || !earliestDate) return null;
 
                         const taskEndDate = calculateEndDate(taskStartDate, task.duration, ganttChart.workOnSaturdays, ganttChart.workOnSundays);
-                        const dayWidth = 30; // 30px per day
                         
                         const offsetDays = differenceInCalendarDays(taskStartDate, earliestDate);
                         const left = offsetDays * dayWidth;
@@ -167,12 +165,13 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
                         const width = durationDays * dayWidth;
                         
                         const progress = task.progress || 0;
+                        const progressWidth = (width * progress) / 100;
 
                         return (
                              <React.Fragment key={task.id}>
-                                <div className="pl-2 pr-1 border-b border-gray-300 truncate text-sm flex items-center">{task.name}</div>
+                                <div className="pl-2 pr-1 border-b border-l border-gray-300 truncate text-sm flex items-center">{task.name}</div>
                                 <div className="p-1 border-b border-gray-300 text-right font-mono text-sm flex items-center justify-end">{progress}%</div>
-                                <div className="p-1 border-b border-gray-300 relative h-8">
+                                <div className="p-1 border-b border-r border-gray-300 relative h-8">
                                     <div 
                                         className="absolute top-1/2 -translate-y-1/2 h-5 bg-gray-200 rounded-sm"
                                         style={{ left: `${left}px`, width: `${width}px` }}
