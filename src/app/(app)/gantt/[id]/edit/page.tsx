@@ -26,51 +26,43 @@ export default function EditGanttPage() {
         startDate: task.startDate ? new Date(task.startDate) : new Date(),
       }));
 
-      // Group tasks by phase
-      const groupedByPhase = allTasks.reduce((acc, task) => {
-        if (task.isPhase) return acc;
-        const phaseName = task.phase || 'Tareas sin Fase';
-        if (!acc[phaseName]) {
-          acc[phaseName] = [];
+      // --- Start: Logic copied and adapted from new/page.tsx ---
+      const newTasks: GanttTask[] = [];
+      const grouped = allTasks.reduce((acc, task) => {
+        const phase = task.phase || 'Sin Fase';
+        if (!acc[phase]) {
+          acc[phase] = [];
         }
-        acc[phaseName].push(task);
+        acc[phase].push(task);
         return acc;
       }, {} as Record<string, GanttTask[]>);
 
-      // Sort tasks within each phase
-      for (const phaseName in groupedByPhase) {
-        groupedByPhase[phaseName].sort((a, b) => (a.order || 0) - (b.order || 0));
-      }
-
-      // Sort the phases themselves based on the order of their first task
-      const sortedPhaseNames = Object.keys(groupedByPhase).sort((a, b) => {
-        const orderA = groupedByPhase[a][0]?.order || 0;
-        const orderB = groupedByPhase[b][0]?.order || 0;
-        return orderA - orderB;
+      const sortedPhases = Object.keys(grouped).sort((a, b) => {
+        const firstTaskOrderA = grouped[a][0]?.order || 0;
+        const firstTaskOrderB = grouped[b][0]?.order || 0;
+        return firstTaskOrderA - firstTaskOrderB;
       });
-      
-      // Reconstruct the tasks array with phases included and sorted
-      const sortedTasksWithPhases: GanttTask[] = [];
-      sortedPhaseNames.forEach(phaseName => {
-        // Find or create the phase task object
-        const phaseTaskTemplate = allTasks.find(t => t.isPhase && t.name === phaseName);
-        const firstTaskInPhase = groupedByPhase[phaseName][0];
-        
-        sortedTasksWithPhases.push({
-          id: phaseTaskTemplate?.id || crypto.randomUUID(),
-          name: phaseName,
+
+      sortedPhases.forEach(phase => {
+        newTasks.push({
+          id: crypto.randomUUID(),
+          name: phase,
           isPhase: true,
-          startDate: firstTaskInPhase?.startDate || new Date(),
+          startDate: new Date(),
           duration: 0,
           progress: 0,
-          phase: phaseName,
-          order: firstTaskInPhase?.order || 0,
+          phase: phase,
+          order: grouped[phase][0]?.order,
         });
 
-        sortedTasksWithPhases.push(...groupedByPhase[phaseName]);
+        const sortedTasksInPhase = grouped[phase].sort((a, b) => (a.order || 0) - (b.order || 0));
+        sortedTasksInPhase.forEach(task => {
+          newTasks.push(task);
+        });
       });
+      // --- End: Logic copied and adapted from new/page.tsx ---
 
-      setTasks(sortedTasksWithPhases);
+      setTasks(newTasks);
     }
   }, [initialGanttChart]);
 
