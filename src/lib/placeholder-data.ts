@@ -221,4 +221,22 @@ export const initialSuggestedTasks: Omit<SuggestedTask, 'id'>[] = [
   { order: 59, phase: "Fase 4: Pruebas y Puesta en Marcha", category: "extinción", name: "Puesta en Marcha del Sistema de Bombeo" },
   { order: 60, phase: "Fase 4: Pruebas y Puesta en Marcha", category: "extinción", name: "Pruebas de Flujo" },
   { order: 61, phase: "Fase 5: Entrega", category: "extinción", name: "Entrega y Certificación del Sistema" },
+  // INCENDIO
+  { order: 62, phase: "Fase 1: Detección", category: "INCENDIO", name: "Diseño de Detección y Alarma según Normativa" },
+  { order: 63, phase: "Fase 1: Detección", category: "INCENDIO", name: "Instalación de Panel de Incendio" },
+  { order: 64, phase: "Fase 1: Detección", category: "INCENDIO", name: "Instalación de Detectores y Palancas" },
+  { order: 65, phase: "Fase 1: Detección", category: "INCENDIO", name: "Instalación de Sirenas con Estroboscopio" },
+  { order: 66, phase: "Fase 2: Extinción", category: "INCENDIO", name: "Diseño de Red de Rociadores (Sprinklers)" },
+  { order: 67, phase: "Fase 2: Extinción", category: "INCENDIO", name: "Montaje de Tuberías y Soportes" },
+  { order: 68, phase: "Fase 2: Extinción", category: "INCENDIO", name: "Instalación de Rociadores y Válvulas" },
+  { order: 69, phase: "Fase 3: Pruebas y Entrega", category: "INCENDIO", name: "Pruebas de Presión y Flujo" },
+  { order: 70, phase: "Fase 3: Pruebas y Entrega", category: "INCENDIO", name: "Puesta en Marcha y Certificación" },
+  // VENTA
+  { order: 71, phase: "Fase 1: Proceso de Venta", category: "VENTA", name: "Cotización y Negociación con Cliente" },
+  { order: 72, phase: "Fase 1: Proceso de Venta", category: "VENTA", name: "Emisión y Recepción de Orden de Compra" },
+  { order: 73, phase: "Fase 2: Despacho y Entrega", category: "VENTA", name: "Preparación de Productos en Bodega" },
+  { order: 74, phase: "Fase 2: Despacho y Entrega", category: "VENTA", name: "Coordinación de Transporte y Despacho" },
+  { order: 75, phase: "Fase 2: Despacho y Entrega", category: "VENTA", name: "Entrega Conforme a Cliente" },
+  { order: 76, phase: "Fase 3: Post-Venta", category: "VENTA", name: "Facturación y Cobranza" },
+  { order: 77, phase: "Fase 3: Post-Venta", category: "VENTA", name: "Soporte y Garantía" },
 ];
