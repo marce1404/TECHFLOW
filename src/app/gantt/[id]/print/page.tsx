@@ -133,27 +133,37 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
         return { days, months: Object.entries(months), earliestDate, latestDate };
     }, [ganttChart]);
 
-    const getProgressColor = (task: GanttTask, endDate: Date) => {
+    const getProgressStyle = (task: GanttTask, endDate: Date): React.CSSProperties => {
         const progress = task.progress || 0;
-        if (!task.startDate) return 'bg-gray-400';
+        if (!task.startDate) return { backgroundColor: '#ccc' }; // Default gray
         const startDate = new Date(task.startDate);
 
         if (progress >= 100) {
-            return 'bg-blue-500'; // Completed
+            return { backgroundColor: '#333' }; // Completed - Dark Gray
         }
         if (isPast(endDate) && progress < 100) {
-            return 'bg-red-500'; // Late
+            // Late - Striped pattern
+            return { 
+                backgroundColor: '#777',
+                backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.2) 0, rgba(255,255,255,0.2) 2px, transparent 2px, transparent 4px)',
+            };
         }
         if ((isPast(startDate) || isToday(startDate)) && !isPast(endDate)) {
             const totalWorkingDays = calculateWorkingDays(startDate, endDate, ganttChart.workOnSaturdays, ganttChart.workOnSundays);
-            if (totalWorkingDays === 0) return 'bg-green-500';
+            if (totalWorkingDays === 0) return { backgroundColor: '#aaa' };
 
             const elapsedWorkingDays = calculateWorkingDays(startDate, today, ganttChart.workOnSaturdays, ganttChart.workOnSundays);
             const expectedProgress = Math.min(Math.round((elapsedWorkingDays / totalWorkingDays) * 100), 100);
 
-            return progress < expectedProgress ? 'bg-red-500' : 'bg-green-500'; // Behind or On-schedule
+            if (progress < expectedProgress) {
+                // Behind - Striped pattern
+                 return { 
+                    backgroundColor: '#777',
+                    backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.2) 0, rgba(255,255,255,0.2) 2px, transparent 2px, transparent 4px)',
+                };
+            }
         }
-        return 'bg-green-500'; // Not started yet, but on track
+        return { backgroundColor: '#aaa' }; // On-schedule or Not started - Light Gray
     }
 
     return (
@@ -206,7 +216,7 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
                                     const offset = differenceInCalendarDays(startDate, ganttChartData.earliestDate);
                                     const durationInDays = differenceInCalendarDays(endDate, startDate) + 1;
                                     
-                                    const progressColor = getProgressColor(task, endDate);
+                                    const progressStyle = getProgressStyle(task, endDate);
 
                                     return (
                                         <React.Fragment key={task.id}>
@@ -228,10 +238,13 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
                                                         title={`${task.name} - ${format(startDate, 'dd/MM')} a ${format(endDate, 'dd/MM')}`}
                                                     >
                                                         <div 
-                                                            className={cn("h-full rounded text-white text-[11px] flex items-center justify-end pr-1", progressColor)}
+                                                            className="h-full rounded text-black flex items-center justify-end pr-1"
                                                             style={{
+                                                                ...progressStyle,
                                                                 width: `${task.progress || 0}%`,
-                                                                textShadow: '0px 0px 3px rgba(0,0,0,0.5)',
+                                                                textShadow: '0 0 2px white, 0 0 2px white, 0 0 2px white, 0 0 2px white',
+                                                                fontSize: '11px',
+                                                                fontWeight: 'bold',
                                                             }}
                                                         >
                                                         {(task.progress || 0) > 10 && <span>{task.progress || 0}%</span>}
