@@ -237,17 +237,15 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const orderRef = doc(db, 'work-orders', id);
     const dataToUpdate = { ...updatedData };
 
-    // If the status is changing to 'Cerrada' and there's no endDate, set it.
     if (dataToUpdate.status === 'Cerrada' && !dataToUpdate.endDate) {
       dataToUpdate.endDate = format(new Date(), 'yyyy-MM-dd');
     }
 
     try {
       await updateDoc(orderRef, dataToUpdate);
-      await fetchData(); // Force a full data refetch from Firestore
+      await fetchData(); 
     } catch (error) {
        console.error("Error updating work order:", error);
-       // Optionally re-throw or handle the error in the UI
        throw error;
     }
   };
@@ -513,3 +511,4 @@ export const useWorkOrders = () => {
 
 
     
+
