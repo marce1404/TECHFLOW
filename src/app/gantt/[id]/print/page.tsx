@@ -2,12 +2,13 @@
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { GanttChart, GanttTask } from '@/lib/types';
-import { addDays, differenceInCalendarDays, eachDayOfInterval, format } from 'date-fns';
+import { addDays, differenceInCalendarDays, eachDayOfInterval, format, isSaturday, isSunday } from 'date-fns';
 import { es } from 'date-fns/locale';
 import * as React from 'react';
 import { useParams } from 'next/navigation';
 import { doc, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { cn } from '@/lib/utils';
 
 async function getGanttForPrint(ganttId: string): Promise<GanttChart | null> {
     try {
@@ -23,17 +24,16 @@ async function getGanttForPrint(ganttId: string): Promise<GanttChart | null> {
         if (!data) return null;
         
         const tasks = (data.tasks || []).map((task: any) => {
-            const { startDate, ...rest } = task;
             let convertedDate: Date | null = null;
-            if (startDate && startDate instanceof Timestamp) {
-                convertedDate = startDate.toDate();
-            } else if (startDate && typeof startDate === 'string') {
-                convertedDate = new Date(startDate.includes('T') ? startDate : startDate.replace(/-/g, '/'));
-            } else if (startDate && startDate.seconds) { 
-                convertedDate = new Timestamp(startDate.seconds, startDate.nanoseconds).toDate();
+            if (task.startDate && task.startDate.seconds) { 
+                convertedDate = new Timestamp(task.startDate.seconds, task.startDate.nanoseconds).toDate();
+            } else if (task.startDate && typeof task.startDate === 'string') {
+                convertedDate = new Date(task.startDate.includes('T') ? task.startDate : task.startDate.replace(/-/g, '/'));
+            } else if (task.startDate) {
+                convertedDate = new Date(task.startDate)
             }
             return {
-                ...rest,
+                ...task,
                 startDate: convertedDate,
             };
         });
@@ -63,10 +63,8 @@ const calculateEndDate = (startDate: Date, duration: number, workOnSaturdays: bo
     while (remainingDays > 0) {
         currentDate = addDays(currentDate, 1);
         const dayOfWeek = currentDate.getDay();
-        const isSaturday = dayOfWeek === 6;
-        const isSunday = dayOfWeek === 0;
-
-        if ((!isSaturday || workOnSaturdays) && (!isSunday || workOnSundays)) {
+        
+        if ((dayOfWeek !== 6 || workOnSaturdays) && (dayOfWeek !== 0 || workOnSundays)) {
             remainingDays--;
         }
     }
@@ -172,11 +170,11 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
 
                         return (
                              <React.Fragment key={task.id}>
-                                <div className="p-1 border-b border-gray-300 truncate text-sm">{task.name}</div>
-                                <div className="p-1 border-b border-gray-300 text-right font-mono text-sm">{progress}%</div>
+                                <div className="pl-2 pr-1 border-b border-gray-300 truncate text-sm flex items-center">{task.name}</div>
+                                <div className="p-1 border-b border-gray-300 text-right font-mono text-sm flex items-center justify-end">{progress}%</div>
                                 <div className="p-1 border-b border-gray-300 relative h-8">
                                     <div 
-                                        className="absolute top-1/2 -translate-y-1/2 h-4 bg-gray-200 rounded-sm"
+                                        className="absolute top-1/2 -translate-y-1/2 h-5 bg-gray-200 rounded-sm"
                                         style={{ left: `${left}px`, width: `${width}px` }}
                                     >
                                         <div 
