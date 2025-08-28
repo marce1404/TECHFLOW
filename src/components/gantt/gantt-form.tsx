@@ -46,7 +46,7 @@ type GanttFormValues = z.infer<typeof ganttFormSchema>;
 interface GanttFormProps {
   onSave: (data: Omit<GanttChart, 'id' | 'tasks'>, finalTasks: GanttTask[]) => void;
   ganttChart?: GanttChart;
-  initialTasks: GanttTask[]; // These are the raw tasks without phases
+  initialTasks: GanttTask[]; 
 }
 
 export default function GanttForm({ onSave, ganttChart, initialTasks }: GanttFormProps) {
@@ -56,11 +56,7 @@ export default function GanttForm({ onSave, ganttChart, initialTasks }: GanttFor
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Raw tasks state
   const [tasks, setTasks] = React.useState<GanttTask[]>(initialTasks);
-  // Processed tasks for rendering (with phases)
-  const [processedTasks, setProcessedTasks] = React.useState<GanttTask[]>([]);
-  // State for the new task form
   const [customTaskName, setCustomTaskName] = React.useState('');
   const [selectedPhase, setSelectedPhase] = React.useState('');
 
@@ -74,48 +70,6 @@ export default function GanttForm({ onSave, ganttChart, initialTasks }: GanttFor
     },
   });
 
-  // Effect to process and order tasks whenever the raw `tasks` array changes
-  React.useEffect(() => {
-    if (tasks.length > 0) {
-        const newProcessedTasks: GanttTask[] = [];
-        const grouped = tasks.reduce((acc, task) => {
-            const phase = task.phase || 'Sin Fase';
-            if (!acc[phase]) {
-                acc[phase] = [];
-            }
-            acc[phase].push(task);
-            return acc;
-        }, {} as Record<string, GanttTask[]>);
-
-        const sortedPhases = Object.keys(grouped).sort((a, b) => {
-            const firstTaskOrderA = grouped[a][0]?.order || 0;
-            const firstTaskOrderB = grouped[b][0]?.order || 0;
-            return firstTaskOrderA - firstTaskOrderB;
-        });
-
-        sortedPhases.forEach(phase => {
-            newProcessedTasks.push({
-                id: crypto.randomUUID(),
-                name: phase,
-                isPhase: true,
-                startDate: new Date(),
-                duration: 0,
-                progress: 0,
-                phase: phase,
-                order: grouped[phase][0].order,
-            });
-            const sortedTasksInPhase = grouped[phase].sort((a, b) => (a.order || 0) - (b.order || 0));
-            sortedTasksInPhase.forEach(task => {
-                newProcessedTasks.push(task as GanttTask);
-            });
-        });
-         setProcessedTasks(newProcessedTasks);
-    } else {
-        setProcessedTasks([]);
-    }
-  }, [tasks]);
-
-   // Effect to initialize tasks from props
   React.useEffect(() => {
     setTasks(initialTasks);
   }, [initialTasks]);
@@ -147,7 +101,8 @@ export default function GanttForm({ onSave, ganttChart, initialTasks }: GanttFor
 
   const handleAddTask = () => {
     if (customTaskName.trim() && selectedPhase) {
-      const phaseTasks = tasks.filter(t => t.phase === selectedPhase);
+      const realTasks = tasks.filter(t => !t.isPhase);
+      const phaseTasks = realTasks.filter(t => t.phase === selectedPhase);
       const maxOrderInPhase = Math.max(...phaseTasks.map(t => t.order || 0), 0);
       
       const newTask: GanttTask = {
@@ -241,7 +196,7 @@ export default function GanttForm({ onSave, ganttChart, initialTasks }: GanttFor
   const availableOTs = activeWorkOrders.filter(ot => !ganttCharts.some(g => g.assignedOT === ot.ot_number && g.id !== ganttId) || (ganttChart && ganttChart.assignedOT === ot.ot_number));
 
   const existingPhases = React.useMemo(() => {
-    const phases = new Set(tasks.map(t => t.phase).filter(Boolean));
+    const phases = new Set(tasks.filter(t => !t.isPhase).map(t => t.phase).filter(Boolean));
     return Array.from(phases);
   }, [tasks]);
 
@@ -347,7 +302,7 @@ export default function GanttForm({ onSave, ganttChart, initialTasks }: GanttFor
                         <div className="text-center">Fecha Término</div>
                         <div></div>
                     </div>
-                    {processedTasks.map((task) => {
+                    {tasks.map((task) => {
                         if (task.isPhase) {
                           return (
                             <div key={task.id} className="flex items-center gap-2 pt-4 pb-2">
@@ -435,18 +390,19 @@ export default function GanttForm({ onSave, ganttChart, initialTasks }: GanttFor
                             ))}
 
                            {/* Task Rows */}
-                           {processedTasks.map((task, index) => {
+                           {tasks.map((task, index) => {
+                                const rowNumber = index + 3; // +3 to account for header rows
                                 if (task.isPhase) {
                                     return (
                                         <React.Fragment key={task.id || index}>
                                             <div className="sticky left-0 bg-card z-10 text-sm truncate pr-2 py-1 border-t flex items-center font-bold text-primary">{task.name}</div>
-                                            <div className="relative border-t col-span-full h-8" style={{ gridColumnStart: 2, gridRowStart: index + 3}}></div>
+                                            <div className="relative border-t col-span-full h-8" style={{ gridColumnStart: 2, gridRowStart: rowNumber}}></div>
                                         </React.Fragment>
                                     );
                                 }
                                 
                                 if (!task.startDate || !task.duration || !ganttChartData.earliestDate) {
-                                    return <div key={task.id || index}></div>;
+                                    return <div key={task.id || index} style={{ gridRowStart: rowNumber, gridColumnStart: 1 }}></div>;
                                 }
 
                                 const startDate = new Date(task.startDate);
@@ -454,7 +410,7 @@ export default function GanttForm({ onSave, ganttChart, initialTasks }: GanttFor
                                 const offset = differenceInCalendarDays(startDate, ganttChartData.earliestDate);
                                 
                                 const totalWorkingDays = calculateWorkingDays(startDate, endDate, watchedWorkdays[0], watchedWorkdays[1]);
-                                if (totalWorkingDays <= 0) return null;
+                                if (totalWorkingDays <= 0) return <div key={task.id || index} style={{ gridRowStart: rowNumber, gridColumnStart: 1 }}></div>;
 
                                 let progressColor = 'bg-primary';
                                 if (isPast(endDate) && (task.progress || 0) < 100) {
@@ -477,7 +433,7 @@ export default function GanttForm({ onSave, ganttChart, initialTasks }: GanttFor
                                 return (
                                     <React.Fragment key={task.id || index}>
                                         <div className="sticky left-0 bg-card z-10 text-sm truncate pr-2 py-1 border-t flex items-center">{task.name}</div>
-                                        <div className="relative border-t col-span-full h-8" style={{ gridColumnStart: 2, gridRowStart: index + 3}}>
+                                        <div className="relative border-t col-span-full h-8" style={{ gridColumnStart: 2, gridRowStart: rowNumber}}>
                                             <div
                                                 className="absolute bg-secondary h-6 top-1 rounded"
                                                 style={{ left: `${offset * 2}rem`, width: `${(differenceInCalendarDays(endDate, startDate) + 1) * 2}rem` }}
