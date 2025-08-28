@@ -237,17 +237,13 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const orderRef = doc(db, 'work-orders', id);
     const dataToUpdate = { ...updatedData };
 
+    // If the status is being changed to 'Cerrada', set the closing date.
     if (dataToUpdate.status === 'Cerrada' && !dataToUpdate.endDate) {
       dataToUpdate.endDate = format(new Date(), 'yyyy-MM-dd');
     }
 
-    try {
-      await updateDoc(orderRef, dataToUpdate);
-      await fetchData(); 
-    } catch (error) {
-       console.error("Error updating work order:", error);
-       throw error;
-    }
+    await updateDoc(orderRef, dataToUpdate);
+    await fetchData(); // Force a re-fetch from Firestore to ensure UI consistency.
   };
   
   const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory> => {
@@ -511,4 +507,5 @@ export const useWorkOrders = () => {
 
 
     
+
 
