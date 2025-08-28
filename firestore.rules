@@ -1,51 +1,11 @@
+
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper function to check if a user is authenticated
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    // Users can read their own profile, Admins can read all profiles
-    match /users/{userId} {
-      allow read, update: if isAuthenticated() && request.auth.uid == userId;
-      allow list, create, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
-    }
-
-    // Allow authenticated users to read and write to all other app-specific collections
-    match /work-orders/{docId} {
-      allow read, write: if isAuthenticated();
-    }
-    match /ot-categories/{docId} {
-      allow read, write: if isAuthenticated();
-    }
-    match /ot-statuses/{docId} {
-      allow read, write: if isAuthenticated();
-    }
-    match /services/{docId} {
-      allow read, write: if isAuthenticated();
-    }
-    match /collaborators/{docId} {
-      allow read, write: if isAuthenticated();
-    }
-    match /vehicles/{docId} {
-      allow read, write: if isAuthenticated();
-    }
-    match /gantt-charts/{docId} {
-      allow read, write: if isAuthenticated();
-    }
-    match /suggested-tasks/{docId} {
-      allow read, write: if isAuthenticated();
-    }
-    match /report-templates/{docId} {
-      allow read, write: if isAuthenticated();
-    }
-    match /submitted-reports/{docId} {
-      allow read, write: if isAuthenticated();
-    }
-    match /settings/{docId} {
-      allow read, write: if isAuthenticated();
+    // Allow read/write access to all collections for any authenticated user
+    match /{document=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }
