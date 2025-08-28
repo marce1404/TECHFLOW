@@ -1,7 +1,6 @@
 
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
 import type { GanttChart, GanttTask } from '@/lib/types';
 import { addDays, differenceInCalendarDays, eachDayOfInterval, format, isPast, isToday } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -217,6 +216,7 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
                                     const durationInDays = differenceInCalendarDays(endDate, startDate) + 1;
                                     
                                     const progressStyle = getProgressStyle(task, endDate);
+                                    const progressWidth = ((task.progress || 0) / 100) * (durationInDays * 1.5);
 
                                     return (
                                         <React.Fragment key={task.id}>
@@ -229,7 +229,7 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
                                                     <div key={dayIndex} className="inline-block h-full border-r" style={{width: '1.5rem'}}></div>
                                                 ))}
                                                 {task.duration > 0 && offset >= 0 && (
-                                                    <div
+                                                   <div
                                                         className="absolute h-6 top-1 rounded bg-gray-200"
                                                         style={{ 
                                                             left: `${offset * 1.5}rem`,
@@ -238,16 +238,21 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
                                                         title={`${task.name} - ${format(startDate, 'dd/MM')} a ${format(endDate, 'dd/MM')}`}
                                                     >
                                                         <div 
-                                                            className="h-full rounded text-black flex items-center justify-end pr-1"
+                                                            className="h-full rounded"
                                                             style={{
                                                                 ...progressStyle,
                                                                 width: `${task.progress || 0}%`,
-                                                                textShadow: '0 0 2px white, 0 0 2px white, 0 0 2px white, 0 0 2px white',
-                                                                fontSize: '11px',
-                                                                fontWeight: 'bold',
                                                             }}
                                                         >
-                                                        {(task.progress || 0) > 10 && <span>{task.progress || 0}%</span>}
+                                                        </div>
+                                                         <div
+                                                            className="absolute top-0 flex items-center h-full text-black font-bold"
+                                                            style={{
+                                                                left: `calc(${durationInDays * 1.5}rem + 4px)`,
+                                                                fontSize: '11px',
+                                                            }}
+                                                        >
+                                                           {(task.progress || 0)}%
                                                         </div>
                                                     </div>
                                                 )}
