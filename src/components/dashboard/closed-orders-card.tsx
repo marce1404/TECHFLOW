@@ -12,6 +12,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import type { WorkOrder } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';
+import { Archive } from 'lucide-react';
 
 interface ClosedOrdersCardProps {
   orders: WorkOrder[];
@@ -19,19 +20,28 @@ interface ClosedOrdersCardProps {
 
 export function ClosedOrdersCard({ orders }: ClosedOrdersCardProps) {
   return (
-    <Card className="flex flex-col">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-bold leading-tight">OT Cerradas del Mes</CardTitle>
-        <CardDescription>Resumen de OTs completadas</CardDescription>
+    <Card className="flex flex-col bg-secondary/50">
+       <CardHeader>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="text-lg font-bold">OT Cerradas del Mes</CardTitle>
+            <CardDescription>Resumen de OTs completadas.</CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+             <p className="text-3xl font-bold text-primary">{orders.length}</p>
+             <Archive className="h-8 w-8 text-primary" />
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col">
         {orders.length > 0 ? (
-          <ScrollArea className="h-48">
-            <div className="flex flex-wrap gap-2 pt-2">
+          <ScrollArea className="h-48 pr-4">
+            <div className="space-y-2">
               {orders.map((order) => (
-                <Badge key={order.id} variant="secondary" className="text-sm font-normal">
-                  {`${order.ot_number} - ${order.description}`}
-                </Badge>
+                 <div key={order.id} className="text-xs p-2 bg-background/50 rounded-md border">
+                    <p className="font-semibold truncate">{order.description}</p>
+                    <p className="text-muted-foreground">{order.ot_number} - {order.client}</p>
+                </div>
               ))}
             </div>
           </ScrollArea>
