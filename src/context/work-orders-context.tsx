@@ -353,25 +353,29 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     return ganttCharts.find(chart => chart.id === id);
   };
 
-    const updateGanttChart = async (id: string, ganttChart: Partial<Omit<GanttChart, 'id'>>) => {
-        const docRef = doc(db, "gantt-charts", id);
-        const dataToSave: Partial<{ [key in keyof GanttChart]: any }> = { ...ganttChart };
-        if (ganttChart.tasks) {
-            dataToSave.tasks = ganttChart.tasks.map(task => {
-                const { isPhase, ...restOfTask } = task;
-                return {
-                    ...restOfTask,
-                    startDate: Timestamp.fromDate(new Date(task.startDate)),
-                };
-            });
-        }
-        if (ganttChart.assignedOT === 'none') {
-            dataToSave.assignedOT = '';
-        }
-        
-        await updateDoc(docRef, dataToSave);
-        await fetchData();
-    };
+  const updateGanttChart = async (id: string, ganttChartData: Partial<Omit<GanttChart, 'id'>>) => {
+      const docRef = doc(db, "gantt-charts", id);
+      
+      const dataToSave: { [key: string]: any } = { ...ganttChartData };
+
+      if (ganttChartData.tasks) {
+          dataToSave.tasks = ganttChartData.tasks.map(task => {
+              const { ...restOfTask } = task;
+              // Ensure startDate is a Firestore Timestamp
+              if (!(restOfTask.startDate instanceof Timestamp)) {
+                  restOfTask.startDate = Timestamp.fromDate(new Date(restOfTask.startDate));
+              }
+              return restOfTask;
+          });
+      }
+
+      if (ganttChartData.assignedOT === 'none') {
+          dataToSave.assignedOT = '';
+      }
+
+      await updateDoc(docRef, dataToSave);
+      await fetchData();
+  };
 
   const deleteGanttChart = async (id: string) => {
     await deleteDoc(doc(db, "gantt-charts", id));
@@ -522,6 +526,7 @@ export const useWorkOrders = () => {
 
 
     
+
 
 
 
