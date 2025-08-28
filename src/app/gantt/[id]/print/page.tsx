@@ -56,7 +56,7 @@ async function getGanttForPrint(ganttId: string): Promise<GanttChart | null> {
 
 
 const calculateEndDate = (startDate: Date, duration: number, workOnSaturdays: boolean, workOnSundays: boolean): Date => {
-    if (duration === 0) return startDate;
+    if (duration === 0) return new Date(startDate);
     let remainingDays = duration;
     // Important: Create a new Date object to avoid mutating the original date
     let currentDate = new Date(startDate);
@@ -166,7 +166,7 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
                 <CardContent className="overflow-x-auto p-0">
                     {ganttChart.tasks.length > 0 && ganttChartData.days.length > 0 && ganttChartData.earliestDate && ganttChartData.latestDate ? (
                         <div className="min-w-full text-xs">
-                            <div className="grid" style={{ gridTemplateColumns: `12rem repeat(${ganttChartData.days.length}, minmax(1.5rem, 1fr))` }}>
+                             <div className="grid" style={{ gridTemplateColumns: `12rem repeat(${ganttChartData.days.length}, minmax(1.5rem, 1fr))` }}>
                                 {/* Month Header */}
                                 <div className="sticky left-0 z-10 bg-white border-b border-r font-semibold"></div>
                                 {ganttChartData.months.map(([month, dayCount]) => (
@@ -190,7 +190,7 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
                                     if (task.isPhase) {
                                         return (
                                             <React.Fragment key={task.id}>
-                                                <div className="sticky left-0 bg-gray-100 z-10 truncate pr-2 py-1 border-b border-r flex items-center font-bold" style={{ gridRow: gridRowStart, gridColumn: `1 / span ${ganttChartData.days.length + 1}` }}>
+                                                <div className="sticky left-0 bg-gray-100 z-10 truncate pr-2 py-1 border-b border-r flex items-center font-bold" style={{ gridRow: gridRowStart, gridColumn: `1 / span ${ganttChartData.days.length + 2}` }}>
                                                     {task.name}
                                                 </div>
                                             </React.Fragment>
@@ -213,30 +213,30 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
                                             <div className="sticky left-0 bg-white z-10 truncate pr-2 py-1 border-b border-r flex items-center" style={{ gridRow: gridRowStart, gridColumnStart: 1, gridColumnEnd: 2 }}>
                                                 {task.name}
                                             </div>
-                                            
-                                            {ganttChartData.days.map((_, dayIndex) => (
-                                                <div key={dayIndex} className="border-b border-r h-8" style={{ gridRow: gridRowStart, gridColumn: dayIndex + 2 }}></div>
-                                            ))}
-                                            
-                                            {task.duration > 0 && offset >= 0 && (
-                                                <div
-                                                    className="absolute h-5 top-1.5 rounded bg-gray-200"
-                                                    style={{ 
-                                                        gridRow: gridRowStart,
-                                                        gridColumn: `${offset + 2} / span ${durationInDays}`,
-                                                    }}
-                                                    title={`${task.name} - ${format(startDate, 'dd/MM')} a ${format(endDate, 'dd/MM')}`}
-                                                >
-                                                    <div 
-                                                        className={cn("h-full rounded text-white text-[10px] flex items-center justify-end pr-1", progressColor)}
-                                                        style={{
-                                                            width: `${task.progress || 0}%`,
+                                            <div className="relative border-b border-r h-8" style={{ gridRow: gridRowStart, gridColumn: `2 / span ${ganttChartData.days.length}` }}>
+                                                {ganttChartData.days.map((_, dayIndex) => (
+                                                    <div key={dayIndex} className="inline-block h-full border-r" style={{width: '1.5rem'}}></div>
+                                                ))}
+                                                {task.duration > 0 && offset >= 0 && (
+                                                    <div
+                                                        className="absolute h-5 top-1.5 rounded bg-gray-200"
+                                                        style={{ 
+                                                            left: `${offset * 1.5}rem`,
+                                                            width: `${durationInDays * 1.5}rem`,
                                                         }}
+                                                        title={`${task.name} - ${format(startDate, 'dd/MM')} a ${format(endDate, 'dd/MM')}`}
                                                     >
-                                                      <span>{task.progress || 0}%</span>
+                                                        <div 
+                                                            className={cn("h-full rounded text-white text-[10px] flex items-center justify-end pr-1", progressColor)}
+                                                            style={{
+                                                                width: `${task.progress || 0}%`,
+                                                            }}
+                                                        >
+                                                        <span>{task.progress || 0}%</span>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
+                                                )}
+                                            </div>
                                         </React.Fragment>
                                     );
                                 })}
