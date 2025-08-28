@@ -21,7 +21,7 @@ interface ClosedOrdersCardProps {
 export function ClosedOrdersCard({ orders }: ClosedOrdersCardProps) {
   return (
     <Card className="flex flex-col bg-secondary/50">
-       <CardHeader>
+      <CardHeader>
         <div className="flex items-start justify-between">
           <div>
             <CardTitle className="text-lg font-bold">OT Cerradas del Mes</CardTitle>
