@@ -25,6 +25,7 @@ export default function SuggestedTasksPage() {
     const { services, suggestedTasks, addSuggestedTask, updateSuggestedTask, deleteSuggestedTask } = useWorkOrders();
     const [dialogOpen, setDialogOpen] = React.useState(false);
     const [selectedTask, setSelectedTask] = React.useState<SuggestedTask | null>(null);
+    const [phaseForNewTask, setPhaseForNewTask] = React.useState<string | null>(null);
     const [activeTab, setActiveTab] = React.useState(services.find(s => s.status === 'Activa')?.name.toLowerCase() || '');
 
     const handleSave = (task: Omit<SuggestedTask, 'id'> | SuggestedTask) => {
@@ -38,11 +39,13 @@ export default function SuggestedTasksPage() {
 
     const handleEdit = (task: SuggestedTask) => {
         setSelectedTask(task);
+        setPhaseForNewTask(null);
         setDialogOpen(true);
     };
     
-    const handleAddNew = () => {
+    const handleAddNewTaskToPhase = (phaseName: string) => {
         setSelectedTask(null);
+        setPhaseForNewTask(phaseName);
         setDialogOpen(true);
     };
 
@@ -97,7 +100,7 @@ export default function SuggestedTasksPage() {
         const normalizedCategoryKey = normalizeString(activeTab);
         const tasksForCategory = suggestedTasks.filter(t => normalizeString(t.category) === normalizedCategoryKey);
         const phases = new Set(tasksForCategory.map(t => t.phase).filter(Boolean));
-        return Array.from(phases);
+        return Array.from(phases) as string[];
     }, [activeTab, suggestedTasks]);
 
 
@@ -108,10 +111,6 @@ export default function SuggestedTasksPage() {
                      <h1 className="text-3xl font-headline font-bold tracking-tight">Tareas Sugeridas para Gantt</h1>
                      <p className="text-muted-foreground">Gestiona las tareas predefinidas que se pueden cargar en las Cartas Gantt.</p>
                 </div>
-                <Button onClick={handleAddNew}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Nueva Tarea
-                </Button>
             </div>
             
             <Card>
@@ -139,7 +138,12 @@ export default function SuggestedTasksPage() {
                                     {sortedPhases.length > 0 ? (
                                         sortedPhases.map((phase) => (
                                             <div key={phase} className="mb-6">
-                                                <h3 className="font-semibold text-lg mb-2 text-primary">{phase}</h3>
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <h3 className="font-semibold text-lg text-primary">{phase}</h3>
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleAddNewTaskToPhase(phase)}>
+                                                        <PlusCircle className="h-5 w-5 text-muted-foreground hover:text-primary"/>
+                                                    </Button>
+                                                </div>
                                                 <div className="rounded-md border">
                                                     <Table>
                                                         <TableHeader>
@@ -218,6 +222,7 @@ export default function SuggestedTasksPage() {
                 task={selectedTask}
                 categories={availableCategories}
                 existingPhases={existingPhases}
+                preselectedPhase={phaseForNewTask}
             />
         </div>
     );

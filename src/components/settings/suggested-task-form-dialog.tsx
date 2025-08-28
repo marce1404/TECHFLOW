@@ -45,9 +45,10 @@ interface SuggestedTaskFormDialogProps {
   task: SuggestedTask | null;
   categories: Service[];
   existingPhases: string[];
+  preselectedPhase?: string | null;
 }
 
-export function SuggestedTaskFormDialog({ open, onOpenChange, onSave, task, categories, existingPhases }: SuggestedTaskFormDialogProps) {
+export function SuggestedTaskFormDialog({ open, onOpenChange, onSave, task, categories, existingPhases, preselectedPhase }: SuggestedTaskFormDialogProps) {
   const form = useForm<SuggestedTaskFormValues>({
     resolver: zodResolver(suggestedTaskFormSchema),
     defaultValues: {
@@ -58,20 +59,22 @@ export function SuggestedTaskFormDialog({ open, onOpenChange, onSave, task, cate
   });
 
   React.useEffect(() => {
-    if (task) {
-      form.reset({
-        name: task.name,
-        category: task.category,
-        phase: task.phase,
-      });
-    } else {
-      form.reset({
-        name: '',
-        category: '',
-        phase: '',
-      });
+    if (open) {
+        if (task) { // Editing existing task
+        form.reset({
+            name: task.name,
+            category: task.category,
+            phase: task.phase,
+        });
+        } else { // Creating new task
+        form.reset({
+            name: '',
+            category: '',
+            phase: preselectedPhase || '',
+        });
+        }
     }
-  }, [task, open, form]);
+  }, [task, open, form, preselectedPhase]);
 
   const onSubmit = (data: SuggestedTaskFormValues) => {
     if (task) {
@@ -81,6 +84,8 @@ export function SuggestedTaskFormDialog({ open, onOpenChange, onSave, task, cate
     }
     onOpenChange(false);
   };
+  
+  const isNewTaskWithPhase = !task && !!preselectedPhase;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -88,7 +93,7 @@ export function SuggestedTaskFormDialog({ open, onOpenChange, onSave, task, cate
         <DialogHeader>
           <DialogTitle>{task ? 'Editar Tarea' : 'Nueva Tarea'}</DialogTitle>
           <DialogDescription>
-            {task ? 'Modifica los detalles de la tarea sugerida.' : 'Completa los detalles para crear una nueva tarea.'}
+            {task ? 'Modifica los detalles de la tarea sugerida.' : `Añade una nueva tarea a la fase: ${preselectedPhase || ''}`}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -133,60 +138,64 @@ export function SuggestedTaskFormDialog({ open, onOpenChange, onSave, task, cate
                 name="phase"
                 render={({ field }) => (
                     <FormItem className="flex flex-col">
-                    <FormLabel>Fase del Proyecto</FormLabel>
-                    <Popover>
-                        <PopoverTrigger asChild>
-                        <FormControl>
-                            <Button
-                            variant="outline"
-                            role="combobox"
-                            className={cn(
-                                "w-full justify-between",
-                                !field.value && "text-muted-foreground"
-                            )}
-                            >
-                            {field.value
-                                ? existingPhases.find(
-                                    (phase) => phase === field.value
-                                ) || field.value
-                                : "Seleccionar o crear fase"}
-                            <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                        </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                        <Command>
-                            <CommandInput
-                                placeholder="Buscar o crear fase..."
-                                onValueChange={(currentValue) => field.onChange(currentValue)}
-                            />
-                            <CommandList>
-                                <CommandEmpty>No se encontraron fases.</CommandEmpty>
-                                <CommandGroup>
-                                {existingPhases.map((phase) => (
-                                    <CommandItem
-                                    value={phase}
-                                    key={phase}
-                                    onSelect={() => {
-                                        form.setValue("phase", phase)
-                                    }}
+                        <FormLabel>Fase del Proyecto</FormLabel>
+                        {isNewTaskWithPhase ? (
+                            <Input {...field} readOnly className="bg-muted" />
+                        ) : (
+                             <Popover>
+                                <PopoverTrigger asChild>
+                                <FormControl>
+                                    <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    className={cn(
+                                        "w-full justify-between",
+                                        !field.value && "text-muted-foreground"
+                                    )}
                                     >
-                                    {phase}
-                                    <CheckIcon
-                                        className={cn(
-                                        "ml-auto h-4 w-4",
-                                        phase === field.value
-                                            ? "opacity-100"
-                                            : "opacity-0"
-                                        )}
+                                    {field.value
+                                        ? existingPhases.find(
+                                            (phase) => phase === field.value
+                                        ) || field.value
+                                        : "Seleccionar o crear fase"}
+                                    <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                <Command>
+                                    <CommandInput
+                                        placeholder="Buscar o crear fase..."
+                                        onValueChange={(currentValue) => field.onChange(currentValue)}
                                     />
-                                    </CommandItem>
-                                ))}
-                                </CommandGroup>
-                            </CommandList>
-                        </Command>
-                        </PopoverContent>
-                    </Popover>
+                                    <CommandList>
+                                        <CommandEmpty>No se encontraron fases.</CommandEmpty>
+                                        <CommandGroup>
+                                        {existingPhases.map((phase) => (
+                                            <CommandItem
+                                            value={phase}
+                                            key={phase}
+                                            onSelect={() => {
+                                                form.setValue("phase", phase)
+                                            }}
+                                            >
+                                            {phase}
+                                            <CheckIcon
+                                                className={cn(
+                                                "ml-auto h-4 w-4",
+                                                phase === field.value
+                                                    ? "opacity-100"
+                                                    : "opacity-0"
+                                                )}
+                                            />
+                                            </CommandItem>
+                                        ))}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                                </PopoverContent>
+                            </Popover>
+                        )}
                     <FormMessage />
                     </FormItem>
                 )}
