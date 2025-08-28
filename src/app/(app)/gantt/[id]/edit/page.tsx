@@ -21,10 +21,11 @@ export default function EditGanttPage() {
   const [processedTasks, setProcessedTasks] = React.useState<GanttTask[]>([]);
 
   React.useEffect(() => {
-    if (initialGanttChart) {
+    if (initialGanttChart && initialGanttChart.tasks) {
       const rawTasks = initialGanttChart.tasks.map(task => ({
         ...task,
-        startDate: task.startDate ? new Date(task.startDate) : new Date(),
+        // Ensure startDate is a Date object, handling potential string or Firestore Timestamp formats
+        startDate: task.startDate ? (task.startDate instanceof Date ? task.startDate : new Date(task.startDate)) : new Date(),
       }));
   
       if (rawTasks.length > 0) {
@@ -46,8 +47,9 @@ export default function EditGanttPage() {
   
         const newProcessedTasks: GanttTask[] = [];
         sortedPhases.forEach(phase => {
+          // Add the phase header as a special task
           newProcessedTasks.push({
-            id: crypto.randomUUID(),
+            id: `phase_${phase}_${crypto.randomUUID()}`,
             name: phase,
             isPhase: true,
             startDate: new Date(),
@@ -56,9 +58,11 @@ export default function EditGanttPage() {
             phase: phase,
             order: grouped[phase][0]?.order || 0,
           });
+          
+          // Sort tasks within the phase and add them
           const sortedTasksInPhase = grouped[phase].sort((a, b) => (a.order || 0) - (b.order || 0));
           sortedTasksInPhase.forEach(task => {
-            newProcessedTasks.push(task as GanttTask);
+            newProcessedTasks.push(task);
           });
         });
          setProcessedTasks(newProcessedTasks);
