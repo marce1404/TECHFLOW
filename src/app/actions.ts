@@ -42,53 +42,6 @@ const initializeFirebaseAdmin = () => {
 
 // --- Server Actions ---
 
-export async function getGanttForPrint(ganttId: string): Promise<GanttChart | null> {
-    initializeFirebaseAdmin();
-    const db = getFirestore();
-    try {
-        const ganttRef = db.collection('gantt-charts').doc(ganttId);
-        const ganttSnap = await ganttRef.get();
-
-        if (!ganttSnap.exists) {
-            console.log("No such Gantt Chart document!");
-            return null;
-        }
-
-        const data = ganttSnap.data();
-        if (!data) return null;
-        
-        // Correctly handle date conversion from Firestore Timestamp
-        const tasks = (data.tasks || []).map((task: any) => {
-            const { startDate, ...rest } = task;
-            let convertedDate: Date | null = null;
-            if (startDate && startDate instanceof Timestamp) {
-                convertedDate = startDate.toDate();
-            } else if (startDate && typeof startDate === 'string') {
-                // Fallback for string dates, though Timestamps are expected
-                convertedDate = new Date(startDate);
-            }
-            return {
-                ...rest,
-                startDate: convertedDate,
-            };
-        });
-
-        return {
-            id: ganttSnap.id,
-            name: data.name,
-            assignedOT: data.assignedOT,
-            workOnSaturdays: data.workOnSaturdays,
-            workOnSundays: data.workOnSundays,
-            tasks: tasks,
-        } as GanttChart;
-
-    } catch (error) {
-        console.error("Error getting Gantt chart for print:", error);
-        return null;
-    }
-}
-
-
 export async function getResourceSuggestions(
   input: SuggestOptimalResourceAssignmentInput
 ): Promise<SuggestOptimalResourceAssignmentOutputWithError> {
@@ -146,4 +99,3 @@ export async function toggleUserStatusAction(uid: string, currentStatus: 'Activo
     return { success: false, message: error.message || 'Error al cambiar el estado del usuario.' };
   }
 }
-

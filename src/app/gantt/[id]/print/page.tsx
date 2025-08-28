@@ -1,6 +1,5 @@
 
 'use client';
-import { getGanttForPrint } from '@/app/actions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { GanttChart, GanttTask } from '@/lib/types';
@@ -8,6 +7,53 @@ import { addDays, differenceInCalendarDays, eachDayOfInterval, format, isPast, i
 import { es } from 'date-fns/locale';
 import * as React from 'react';
 import { useParams } from 'next/navigation';
+import { doc, getDoc, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+
+async function getGanttForPrint(ganttId: string): Promise<GanttChart | null> {
+    try {
+        const ganttRef = doc(db, 'gantt-charts', ganttId);
+        const ganttSnap = await getDoc(ganttRef);
+
+        if (!ganttSnap.exists()) {
+            console.log("No such Gantt Chart document!");
+            return null;
+        }
+
+        const data = ganttSnap.data();
+        if (!data) return null;
+        
+        const tasks = (data.tasks || []).map((task: any) => {
+            const { startDate, ...rest } = task;
+            let convertedDate: Date | null = null;
+            if (startDate && startDate instanceof Timestamp) {
+                convertedDate = startDate.toDate();
+            } else if (startDate && typeof startDate === 'string') {
+                convertedDate = new Date(startDate);
+            } else if (startDate && startDate.seconds) { // Fallback for serialized Timestamps
+                convertedDate = new Timestamp(startDate.seconds, startDate.nanoseconds).toDate();
+            }
+            return {
+                ...rest,
+                startDate: convertedDate,
+            };
+        });
+
+        return {
+            id: ganttSnap.id,
+            name: data.name,
+            assignedOT: data.assignedOT,
+            workOnSaturdays: data.workOnSaturdays,
+            workOnSundays: data.workOnSundays,
+            tasks: tasks,
+        } as GanttChart;
+
+    } catch (error) {
+        console.error("Error getting Gantt chart for print:", error);
+        return null;
+    }
+}
+
 
 const calculateEndDate = (startDate: Date, duration: number, workOnSaturdays: boolean, workOnSundays: boolean): Date => {
     if (duration === 0) return startDate;
@@ -89,6 +135,7 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
 
     const getProgressColor = (task: GanttTask, endDate: Date) => {
         const progress = task.progress || 0;
+        if (!task.startDate) return 'bg-gray-400';
         const startDate = new Date(task.startDate);
 
         if (progress >= 100) {
@@ -110,7 +157,7 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
     }
 
     return (
-        <div className="bg-white text-black p-8">
+        <div className="bg-white text-black p-8 printable-content max-w-7xl mx-auto">
             <Card className="border-none shadow-none">
                 <CardHeader>
                     <CardTitle className="text-2xl font-headline">{ganttChart.name}</CardTitle>
@@ -253,4 +300,3 @@ export default function PrintGanttPage() {
 
     return <PrintGanttPageContent ganttChart={ganttChart} />;
 }
-
