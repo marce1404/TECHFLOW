@@ -83,7 +83,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
 
   const fetchData = useCallback(async () => {
-    console.log("SYNC: Iniciando fetchData...");
     setLoading(true);
     try {
         const fetchAndSetSuggestedTasks = async () => {
@@ -94,8 +93,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
                  return;
             }
 
-            console.log("Seeding suggested tasks v6...");
-            
             const tasksCollectionRef = collection(db, "suggested-tasks");
             const existingTasksSnapshot = await getDocs(tasksCollectionRef);
             
@@ -103,7 +100,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
                 const deleteBatch = writeBatch(db);
                 existingTasksSnapshot.forEach(doc => deleteBatch.delete(doc.ref));
                 await deleteBatch.commit();
-                console.log("All existing suggested tasks deleted.");
             }
 
             const addBatch = writeBatch(db);
@@ -112,7 +108,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
                 addBatch.set(docRef, task);
             });
             await addBatch.commit();
-            console.log("Seeding of new suggested tasks complete.");
 
             const tasksSnapshot = await getDocs(query(collection(db, "suggested-tasks"), orderBy("order")));
             setSuggestedTasks(tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SuggestedTask[]);
@@ -147,12 +142,10 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         await fetchAndSetSuggestedTasks();
         
         const allOrders = workOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[];
-        console.log(`SYNC: Se cargaron ${allOrders.length} órdenes en total desde Firestore.`);
         
         const active = allOrders.filter(o => o.status !== 'Cerrada');
         const historical = allOrders.filter(o => o.status === 'Cerrada');
         
-        console.log(`SYNC: Separación - ${active.length} activas, ${historical.length} históricas.`);
         setActiveWorkOrders(active);
         setHistoricalWorkOrders(historical);
 
@@ -213,7 +206,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         setCompanyInfo(null);
     } finally {
         setLoading(false);
-        console.log("SYNC: fetchData finalizado.");
     }
   }, []);
 
@@ -242,24 +234,19 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateOrder = async (id: string, updatedData: Partial<WorkOrder>) => {
-    console.log(`UPDATE: Iniciando actualización para OT ID: ${id} con datos:`, updatedData);
     const orderRef = doc(db, 'work-orders', id);
-    const dataToSave = { ...updatedData };
-    
-    // If status is being changed to 'Cerrada' and there's no endDate, set it.
-    if (dataToSave.status === 'Cerrada' && !dataToSave.endDate) {
-      const closingDate = format(new Date(), 'yyyy-MM-dd');
-      dataToSave.endDate = closingDate;
-      console.log(`UPDATE: OT marcada como 'Cerrada'. Añadiendo fecha de cierre: ${closingDate}`);
-    }
+    const dataToUpdate = { ...updatedData };
 
-    try {
-        await updateDoc(orderRef, dataToSave);
-        console.log(`UPDATE: Éxito al guardar en Firestore para OT ID: ${id}.`);
-        await fetchData();
-    } catch(error) {
-        console.error(`UPDATE: Error al actualizar Firestore para OT ID: ${id}:`, error);
+    // If status is 'Cerrada' and there's no endDate, set it to today.
+    if (dataToUpdate.status === 'Cerrada' && !dataToUpdate.endDate) {
+      dataToUpdate.endDate = format(new Date(), 'yyyy-MM-dd');
     }
+    
+    // Persist the changes to Firestore first.
+    await updateDoc(orderRef, dataToUpdate);
+
+    // After successful persistence, re-fetch all data to ensure UI consistency.
+    await fetchData();
   };
   
   const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory> => {
