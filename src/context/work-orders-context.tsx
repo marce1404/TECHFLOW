@@ -247,6 +247,8 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
       await fetchData(); // Force a full data refetch from Firestore
     } catch (error) {
        console.error("Error updating work order:", error);
+       // Optionally re-throw or handle the error in the UI
+       throw error;
     }
   };
   

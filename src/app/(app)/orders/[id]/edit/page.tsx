@@ -99,6 +99,8 @@ export default function EditOrderPage() {
       duration: 2000,
     });
     
+    // The context's fetchData will handle moving the order,
+    // so we can reliably redirect.
     if (order.status === 'Cerrada') {
       router.push(`/orders/history`);
     } else {

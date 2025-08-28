@@ -106,8 +106,8 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
       { key: 'facturado', label: 'Facturado' },
   ];
 
-  const handleStatusChange = (order: WorkOrder, newStatus: WorkOrder['status']) => {
-    updateOrder(order.id, { ...order, status: newStatus });
+  const handleStatusChange = async (order: WorkOrder, newStatus: WorkOrder['status']) => {
+    await updateOrder(order.id, { ...order, status: newStatus });
   };
 
   return (
