@@ -43,7 +43,6 @@ const taskSchema = z.object({
   duration: z.coerce.number().min(0, { message: 'La duración debe ser al menos 0.' }), // Allow 0 for phases
   progress: z.coerce.number().min(0).max(100).optional().default(0),
   isPhase: z.boolean().optional().default(false),
-  phase: z.string().optional(), // Added to associate tasks with a phase
 });
 
 const ganttFormSchema = z.object({
@@ -96,7 +95,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
             tasks: tasksWithDates,
         });
     }
-  }, [ganttChart, form.reset]);
+  }, [ganttChart, form.reset, form]);
 
 
   const { fields, append, remove, replace } = useFieldArray({
@@ -109,11 +108,9 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
       const tasks = form.getValues('tasks');
       const customPhaseName = 'Tareas Personalizadas';
 
-      // Check if the "Tareas Personalizadas" phase already exists
       const phaseExists = tasks.some(task => task.isPhase && task.name === customPhaseName);
 
       if (!phaseExists) {
-        // If it doesn't exist, add it first
         append({
             id: crypto.randomUUID(),
             name: customPhaseName,
@@ -121,11 +118,9 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
             startDate: new Date(),
             duration: 0,
             progress: 0,
-            phase: customPhaseName,
         });
       }
       
-      // Add the new custom task
       append({
         id: crypto.randomUUID(),
         name: customTaskName.trim(),
@@ -133,7 +128,6 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
         duration: 1,
         progress: 0,
         isPhase: false,
-        phase: customPhaseName
       });
       setCustomTaskName('');
     }
@@ -178,7 +172,6 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                 startDate: new Date(),
                 duration: 0,
                 progress: 0,
-                phase: phase,
             });
             const sortedTasksInPhase = grouped[phase].sort((a, b) => (a.order || 0) - (b.order || 0));
             sortedTasksInPhase.forEach(task => {
@@ -189,7 +182,6 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                     startDate: new Date(),
                     duration: 1,
                     progress: 0,
-                    phase: phase,
                 });
             });
         });
@@ -244,7 +236,7 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
       return { days: [], months: [], earliestDate: null };
     }
 
-    const validTasks = watchedTasks.filter(t => t.startDate && t.duration > 0);
+    const validTasks = watchedTasks.filter(t => t.startDate && t.duration > 0 && !t.isPhase);
     if (validTasks.length === 0) {
         return { days: [], months: [], earliestDate: null };
     }
@@ -274,12 +266,10 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
   const onSubmitForm = (data: GanttFormValues) => {
     const dataToSave = {
         ...data,
-        tasks: data.tasks
-          .filter(t => !t.isPhase)
-          .map(t => {
-            const { isPhase, ...taskToSave } = t;
-            return { ...taskToSave, startDate: t.startDate };
-          })
+        tasks: data.tasks.map(t => ({
+            ...t,
+            startDate: t.startDate,
+        }))
     };
     onSave(dataToSave as any);
   };
@@ -413,10 +403,23 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
                     </div>
                     {fields.map((field, index) => {
                         const task = watchedTasks[index];
+
+                         if (task.isPhase) {
+                            return (
+                                <div key={field.id} className="flex items-center gap-2 pt-4 pb-2">
+                                    <h3 className="text-lg font-semibold text-primary flex-1">{task.name}</h3>
+                                    <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                </div>
+                            );
+                        }
+
                         const startDate = task.startDate ? new Date(task.startDate) : new Date();
                         const duration = task.duration || 1;
                         const endDate = calculateEndDate(startDate, duration, watchedWorkdays[0], watchedWorkdays[1]);
                         const isPastOrToday = isPast(startDate) || isToday(startDate);
+                        
                         return (
                             <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr,150px,120px,120px,120px,auto] gap-2 items-center p-2 rounded-lg border">
                                 <Controller
@@ -499,9 +502,19 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
 
                            {/* Task Rows */}
                            {watchedTasks.map((task, index) => {
+                                if (task.isPhase) {
+                                    return (
+                                        <React.Fragment key={task.id || index}>
+                                            <div className="sticky left-0 bg-card z-10 text-sm truncate pr-2 py-1 border-t flex items-center font-bold text-primary">{task.name}</div>
+                                            <div className="relative border-t col-span-full h-8" style={{ gridColumnStart: 2, gridRowStart: index + 3}}></div>
+                                        </React.Fragment>
+                                    );
+                                }
+                                
                                 if (!task.startDate || !task.duration || !ganttChartData.earliestDate) {
                                     return <div key={task.id || index}></div>;
                                 }
+
                                 const startDate = new Date(task.startDate);
                                 const endDate = calculateEndDate(startDate, task.duration, watchedWorkdays[0], watchedWorkdays[1]);
                                 const offset = differenceInCalendarDays(startDate, ganttChartData.earliestDate);

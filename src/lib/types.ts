@@ -105,7 +105,6 @@ export type GanttTask = {
     duration: number;
     progress: number;
     isPhase?: boolean;
-    phase?: string;
 }
 
 export type GanttChart = {

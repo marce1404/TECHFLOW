@@ -361,7 +361,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
       if (ganttChartData.tasks) {
           dataToSave.tasks = ganttChartData.tasks.map(task => {
               const { ...restOfTask } = task;
-              // Ensure startDate is a Firestore Timestamp
               if (!(restOfTask.startDate instanceof Timestamp)) {
                   restOfTask.startDate = Timestamp.fromDate(new Date(restOfTask.startDate));
               }
@@ -526,6 +525,7 @@ export const useWorkOrders = () => {
 
 
     
+
 
 
 
