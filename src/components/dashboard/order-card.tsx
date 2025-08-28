@@ -57,7 +57,7 @@ export function OrderCard({ order, progress }: OrderCardProps) {
     }
   }
   
-  const statusBadgeStyle = order.status.toLowerCase() === 'en progreso' ? { backgroundColor: 'hsl(142, 71%, 45%)', color: 'white' } : {};
+  const statusBadgeStyle = order.status.toLowerCase() === 'en progreso' ? { backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' } : {};
 
 
   return (
