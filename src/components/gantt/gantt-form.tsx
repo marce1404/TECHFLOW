@@ -93,10 +93,10 @@ export default function GanttForm({ onSave, services, ganttChart }: GanttFormPro
             assignedOT: ganttChart.assignedOT || '',
             workOnSaturdays: ganttChart.workOnSaturdays ?? true,
             workOnSundays: ganttChart.workOnSundays ?? false,
-            tasks: tasksWithDates.map(t => ({...t, isPhase: false})),
+            tasks: tasksWithDates,
         });
     }
-  }, [ganttChart, form]);
+  }, [ganttChart, form.reset]);
 
 
   const { fields, append, remove, replace } = useFieldArray({
