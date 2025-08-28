@@ -235,8 +235,23 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
   const updateOrder = async (id: string, updatedData: Partial<WorkOrder>) => {
     const orderRef = doc(db, 'work-orders', id);
-    await updateDoc(orderRef, updatedData);
-    await fetchData(); // Re-fetch all data to ensure UI is in sync with DB
+    const dataToSave = { ...updatedData };
+    
+    // If status is being changed to 'Cerrada' and there's no endDate, set it.
+    if (dataToSave.status === 'Cerrada' && !dataToSave.endDate) {
+      dataToSave.endDate = format(new Date(), 'yyyy-MM-dd');
+    }
+
+    await updateDoc(orderRef, dataToSave);
+
+    // After successful update, re-sync the local state
+    const allOrders = [...activeWorkOrders, ...historicalWorkOrders];
+    const updatedOrders = allOrders.map(order => 
+      order.id === id ? { ...order, ...dataToSave } : order
+    );
+
+    setActiveWorkOrders(updatedOrders.filter(o => o.status !== 'Cerrada'));
+    setHistoricalWorkOrders(updatedOrders.filter(o => o.status === 'Cerrada'));
   };
   
   const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory> => {
@@ -485,5 +500,7 @@ export const useWorkOrders = () => {
     
 
 
+
+    
 
     
