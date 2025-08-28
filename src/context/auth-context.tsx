@@ -41,8 +41,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (user) {
-        await fetchUsers();
-        
+        // Fetch existing users first
+        const usersCollection = collection(db, 'users');
+        const initialUsersSnapshot = await getDocs(usersCollection);
+        const initialUsersList = initialUsersSnapshot.docs.map(doc => doc.data() as AppUser);
+        setUsers(initialUsersList);
+
         const userDocRef = doc(db, 'users', user.uid);
         const userDocSnap = await getDoc(userDocRef);
         
@@ -65,7 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           try {
             await setDoc(userDocRef, newProfile);
             profileData = newProfile;
-            // Add the new profile to the local users list
+            // Add the new profile to the local users list to update UI immediately
             setUsers(prev => [...prev.filter(p => p.uid !== newProfile.uid), newProfile]);
           } catch (error) {
              console.error("Error creating Firestore user profile:", error);
@@ -88,7 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => unsubscribe();
-  }, [fetchUsers]);
+  }, []);
 
   if (loading) {
     return (
