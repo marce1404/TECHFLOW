@@ -22,6 +22,10 @@ import nodemailer from 'nodemailer';
 
 // This function ensures Firebase Admin is initialized, but only once.
 const initializeFirebaseAdmin = () => {
+    if (process.env.NODE_ENV !== 'production') {
+        require('dotenv').config({ path: '.env.local' });
+    }
+
     if (admin.apps.length > 0) {
         return admin.app();
     }
@@ -200,14 +204,14 @@ export async function sendReportEmailAction(
     initializeFirebaseAdmin();
     const db = getFirestore();
     
-    const smtpSnap = await getDoc(doc(db, 'settings', 'smtpConfig'));
+    const smtpSnap = await getDoc(db, 'settings', 'smtpConfig'));
     if (!smtpSnap.exists()) {
         return { success: false, message: 'La configuración SMTP no ha sido establecida.' };
     }
     const config = smtpSnap.data() as SmtpConfig;
     const { host, port, secure, user, pass, fromName, fromEmail } = config;
 
-    const reportSnap = await getDoc(doc(db, 'submitted-reports', reportId));
+    const reportSnap = await getDoc(db, 'submitted-reports', reportId));
     if (!reportSnap.exists()) {
         return { success: false, message: 'Informe no encontrado.' };
     }
@@ -257,3 +261,5 @@ export async function sendReportEmailAction(
         return { success: false, message: `Error al enviar el correo: ${error.message}` };
     }
 }
+
+    
