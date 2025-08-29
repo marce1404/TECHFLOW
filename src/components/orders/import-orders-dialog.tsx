@@ -27,11 +27,11 @@ interface ImportOrdersDialogProps {
 }
 
 const CreateWorkOrderInputSchemaForExcel = z.object({
-  ot_number: z.string(),
-  description: z.string(),
-  client: z.string(),
-  service: z.string(),
-  date: z.string(),
+  ot_number: z.string().min(1, 'ot_number no puede estar vacío.'),
+  description: z.string().min(1, 'description no puede estar vacío.'),
+  client: z.string().min(1, 'client no puede estar vacío.'),
+  service: z.string().min(1, 'service no puede estar vacío.'),
+  date: z.string().min(1, 'date no puede estar vacío.'),
   endDate: z.string().optional(),
   notes: z.string().optional(),
   status: z.enum(['Por Iniciar', 'En Progreso', 'Pendiente', 'Atrasada', 'Cerrada']),
@@ -43,6 +43,10 @@ const CreateWorkOrderInputSchemaForExcel = z.object({
   technicians: z.string().optional(),
   vehicles: z.string().optional(),
   vendedor: z.string().optional(),
+  rut: z.string().optional(),
+  saleNumber: z.string().optional(),
+  hesEmMigo: z.string().optional(),
+  rentedVehicle: z.string().optional(),
 });
 
 
@@ -140,10 +144,10 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         ot_number: "OT-1000",
         description: "Ejemplo de descripción de la OT",
         client: "Nombre del Cliente",
+        rut: "12.345.678-9",
         service: "CCTV",
         date: "2024-08-15",
         endDate: "2024-08-20",
-        notes: "Notas adicionales sobre el trabajo",
         status: "Por Iniciar",
         priority: "Media",
         netPrice: 150000,
@@ -152,7 +156,11 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         assigned: "Supervisor 1, Supervisor 2",
         technicians: "Técnico A, Técnico B",
         vehicles: "PPU-1111, PPU-2222",
-        vendedor: "Vendedor Ejemplo"
+        vendedor: "Vendedor Ejemplo",
+        saleNumber: 'VN-001',
+        hesEmMigo: 'HES-9876',
+        rentedVehicle: 'Hertz, PPU-RENT',
+        notes: "Notas adicionales sobre el trabajo. Esto es un texto largo.",
     }];
     const worksheet = xlsx.utils.json_to_sheet(templateData);
     const workbook = xlsx.utils.book_new();
@@ -290,4 +298,3 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
-
