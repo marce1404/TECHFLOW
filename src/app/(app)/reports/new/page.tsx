@@ -1,5 +1,4 @@
 
-
 'use client';
 import { useSearchParams } from 'next/navigation';
 import * as React from 'react';
@@ -113,11 +112,11 @@ export default function NewReportPage() {
                         El informe para la OT <span className="font-bold">{workOrder?.ot_number}</span> ha sido guardado correctamente.
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="flex justify-center gap-2">
-                     <Button asChild>
+                <CardContent className="flex flex-col sm:flex-row justify-center gap-2">
+                     <Button asChild className="w-full sm:w-auto">
                         <Link href="/reports">Crear Otro Informe</Link>
                     </Button>
-                    <Button variant="outline" onClick={handlePrint}>
+                    <Button variant="outline" onClick={handlePrint} className="w-full sm:w-auto">
                         <Printer className="mr-2 h-4 w-4"/>
                         Imprimir
                     </Button>
@@ -299,9 +298,9 @@ export default function NewReportPage() {
                         ))}
                     </div>
 
-                    <div className="flex justify-end gap-2 pt-4">
-                        <Button variant="outline" type="button" asChild><Link href="/reports">Cancelar</Link></Button>
-                        <Button type="submit" disabled={isSubmitting}>
+                    <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
+                        <Button variant="outline" type="button" asChild className="w-full sm:w-auto"><Link href="/reports">Cancelar</Link></Button>
+                        <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
                           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                           Guardar y Enviar Informe
                         </Button>

@@ -14,8 +14,8 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import * as React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FilePlus2 } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { FilePlus2, ChevronRight } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
@@ -88,7 +88,7 @@ export default function ReportsPage() {
                     </div>
                 </div>
               <TabsContent value={activeTab}>
-                 <div className="rounded-md border">
+                 <div className="rounded-md border hidden md:block">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -125,6 +125,33 @@ export default function ReportsPage() {
                       </TableBody>
                     </Table>
                   </div>
+                   <div className="md:hidden space-y-4">
+                    {filteredOrders.length > 0 ? (
+                        filteredOrders.map((order) => (
+                            <Card key={order.id}>
+                                <CardHeader>
+                                    <CardTitle className="text-base">{order.ot_number}</CardTitle>
+                                    <CardDescription>{order.client}</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-sm">{order.description}</p>
+                                </CardContent>
+                                <CardFooter>
+                                    <Button asChild className="w-full">
+                                        <Link href={`/reports/new?ot_number=${order.ot_number}`}>
+                                            <FilePlus2 className="mr-2 h-4 w-4" />
+                                            Llenar Informe
+                                        </Link>
+                                    </Button>
+                                </CardFooter>
+                            </Card>
+                        ))
+                    ) : (
+                        <div className="text-center text-muted-foreground py-10">
+                            No hay órdenes de trabajo pendientes de informe que coincidan con tu búsqueda.
+                        </div>
+                    )}
+                </div>
               </TabsContent>
             </Tabs>
         </CardContent>

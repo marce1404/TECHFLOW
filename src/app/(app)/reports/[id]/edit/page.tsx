@@ -218,9 +218,9 @@ export default function EditReportPage() {
                         ))}
                     </div>
 
-                    <div className="flex justify-end gap-2 pt-4">
-                        <Button variant="outline" type="button" asChild><Link href="/reports/history">Cancelar</Link></Button>
-                        <Button type="submit" disabled={isSubmitting}>
+                    <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
+                        <Button variant="outline" type="button" asChild className="w-full sm:w-auto"><Link href="/reports/history">Cancelar</Link></Button>
+                        <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
                           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                           <Save className="mr-2 h-4 w-4" />
                           Guardar Cambios

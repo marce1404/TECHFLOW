@@ -14,8 +14,8 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import * as React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Printer, Mail, FilePenLine } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Printer, Mail, FilePenLine, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -105,7 +105,7 @@ export default function ReportsHistoryPage() {
                       </div>
                   </div>
                   <TabsContent value={activeTab}>
-                      <div className="rounded-md border">
+                      <div className="rounded-md border hidden md:block">
                       <Table>
                           <TableHeader>
                           <TableRow>
@@ -157,6 +157,44 @@ export default function ReportsHistoryPage() {
                           )}
                           </TableBody>
                       </Table>
+                      </div>
+                      <div className="md:hidden space-y-4">
+                        {filteredReports.length > 0 ? (
+                            filteredReports.map((report) => (
+                                <Card key={report.id} className="relative">
+                                    <Link href={`/reports/${report.id}/edit`} className="absolute inset-0 z-10"><span className="sr-only">Ver detalles</span></Link>
+                                    <CardHeader>
+                                        <div className="flex justify-between items-center">
+                                            <CardTitle className="text-base">{report.otDetails.ot_number}</CardTitle>
+                                            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                                        </div>
+                                        <CardDescription>{report.otDetails.client}</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="text-sm font-medium">{report.templateName}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {report.submittedAt ? format(report.submittedAt.toDate(), 'dd/MM/yyyy HH:mm', { locale: es }) : 'N/A'}
+                                        </p>
+                                    </CardContent>
+                                    <CardFooter className="flex justify-end gap-2 relative z-20">
+                                        <Button size="icon" variant="outline" onClick={(e) => { e.stopPropagation(); handleSendEmailClick(report); }}>
+                                            <Mail className="h-4 w-4" />
+                                            <span className="sr-only">Enviar por correo</span>
+                                        </Button>
+                                        <Button size="icon" variant="outline" asChild onClick={(e) => e.stopPropagation()}>
+                                            <Link href={`/reports/${report.id}/print`} target="_blank">
+                                            <Printer className="h-4 w-4" />
+                                            <span className="sr-only">Ver / Imprimir</span>
+                                            </Link>
+                                        </Button>
+                                    </CardFooter>
+                                </Card>
+                            ))
+                        ) : (
+                            <div className="text-center text-muted-foreground py-10">
+                                No se han guardado informes que coincidan con tu búsqueda.
+                            </div>
+                        )}
                       </div>
                   </TabsContent>
               </Tabs>
