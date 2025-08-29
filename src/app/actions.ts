@@ -1,6 +1,8 @@
 
 'use server';
 
+import 'dotenv/config';
+
 import {
   SuggestOptimalResourceAssignmentInput,
   SuggestOptimalResourceAssignmentOutputWithError,
