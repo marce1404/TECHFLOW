@@ -85,7 +85,7 @@ export default function ReportsPage() {
         <CardHeader>
           <CardTitle>Generar Informe o Guía de Servicio</CardTitle>
           <CardDescription>
-            Selecciona una Orden de Trabajo activa para completar su informe o guía correspondiente.
+            Selecciona una Orden de Trabajo para completar su informe o guía correspondiente.
           </CardDescription>
         </CardHeader>
         <CardContent>
