@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { PlusCircle, MoreHorizontal } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import {
     Table,
     TableBody,
@@ -27,6 +27,9 @@ export default function OTStatusesPage() {
     const { otStatuses, addStatus, updateStatus } = useWorkOrders();
     const [dialogOpen, setDialogOpen] = React.useState(false);
     const [selectedStatus, setSelectedStatus] = React.useState<OTStatus | null>(null);
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const itemsPerPage = 15;
+
 
     const handleSave = (status: Omit<OTStatus, 'id'> | OTStatus) => {
         if ('id' in status) {
@@ -44,6 +47,20 @@ export default function OTStatusesPage() {
     const handleAddNew = () => {
         setSelectedStatus(null);
         setDialogOpen(true);
+    };
+
+    const totalPages = Math.ceil(otStatuses.length / itemsPerPage);
+    const paginatedData = otStatuses.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    const handlePreviousPage = () => {
+        setCurrentPage((prev) => Math.max(prev - 1, 1));
+    };
+
+    const handleNextPage = () => {
+        setCurrentPage((prev) => Math.min(prev + 1, totalPages));
     };
 
     return (
@@ -68,7 +85,7 @@ export default function OTStatusesPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {otStatuses.map((status) => (
+                                {paginatedData.length > 0 ? paginatedData.map((status) => (
                                     <TableRow key={status.id}>
                                         <TableCell className="font-medium">{status.name}</TableCell>
                                         <TableCell className="text-right">
@@ -85,11 +102,27 @@ export default function OTStatusesPage() {
                                             </DropdownMenu>
                                         </TableCell>
                                     </TableRow>
-                                ))}
+                                )) : (
+                                     <TableRow>
+                                        <TableCell colSpan={2} className="h-24 text-center">No hay estados para mostrar.</TableCell>
+                                    </TableRow>
+                                )}
                             </TableBody>
                         </Table>
                     </div>
                 </CardContent>
+                 {totalPages > 1 && (
+                    <CardFooter className="flex items-center justify-between text-sm text-muted-foreground pt-6">
+                        <div>
+                            Mostrando {paginatedData.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} a {Math.min(currentPage * itemsPerPage, otStatuses.length)} de {otStatuses.length} estados.
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>Anterior</Button>
+                            <span>Página {currentPage} de {totalPages > 0 ? totalPages : 1}</span>
+                            <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages || totalPages === 0}>Siguiente</Button>
+                        </div>
+                    </CardFooter>
+                )}
             </Card>
             <StatusFormDialog
                 open={dialogOpen}

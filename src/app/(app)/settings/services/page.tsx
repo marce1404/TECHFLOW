@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { PlusCircle, MoreHorizontal } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import {
     Table,
     TableBody,
@@ -39,6 +39,8 @@ export default function ServicesPage() {
     const { services, addService, updateService, deleteService } = useWorkOrders();
     const [dialogOpen, setDialogOpen] = React.useState(false);
     const [selectedService, setSelectedService] = React.useState<Service | null>(null);
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const itemsPerPage = 15;
 
     const handleSave = (service: Omit<Service, 'id'> | Service) => {
         if ('id' in service) {
@@ -61,6 +63,20 @@ export default function ServicesPage() {
     const handleToggleStatus = (service: Service) => {
         const newStatus = service.status === 'Activa' ? 'Inactiva' : 'Activa';
         updateService(service.id, { ...service, status: newStatus });
+    };
+
+    const totalPages = Math.ceil(services.length / itemsPerPage);
+    const paginatedData = services.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    const handlePreviousPage = () => {
+        setCurrentPage((prev) => Math.max(prev - 1, 1));
+    };
+
+    const handleNextPage = () => {
+        setCurrentPage((prev) => Math.min(prev + 1, totalPages));
     };
 
     return (
@@ -86,7 +102,7 @@ export default function ServicesPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {services.map((service) => (
+                                {paginatedData.length > 0 ? paginatedData.map((service) => (
                                     <TableRow key={service.id}>
                                         <TableCell className="font-medium">{service.name}</TableCell>
                                         <TableCell>
@@ -134,11 +150,27 @@ export default function ServicesPage() {
                                             </AlertDialog>
                                         </TableCell>
                                     </TableRow>
-                                ))}
+                                )) : (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="h-24 text-center">No hay servicios para mostrar.</TableCell>
+                                    </TableRow>
+                                )}
                             </TableBody>
                         </Table>
                     </div>
                 </CardContent>
+                 {totalPages > 1 && (
+                    <CardFooter className="flex items-center justify-between text-sm text-muted-foreground pt-6">
+                        <div>
+                            Mostrando {paginatedData.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} a {Math.min(currentPage * itemsPerPage, services.length)} de {services.length} servicios.
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>Anterior</Button>
+                            <span>Página {currentPage} de {totalPages > 0 ? totalPages : 1}</span>
+                            <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages || totalPages === 0}>Siguiente</Button>
+                        </div>
+                    </CardFooter>
+                )}
             </Card>
             <ServiceFormDialog
                 open={dialogOpen}
