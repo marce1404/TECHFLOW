@@ -271,11 +271,6 @@ export default function NewOrderPage() {
 
                     {/* Right Column */}
                     <div className="space-y-4">
-                        <div>
-                            <Label htmlFor="rented-vehicle">Vehículo Arrendado (Opcional)</Label>
-                            <Input id="rented-vehicle" placeholder="Ej: Hertz, PPU..." />
-                        </div>
-                        
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <Label htmlFor="status">Estado</Label>
@@ -351,6 +346,11 @@ export default function NewOrderPage() {
                                     onChange={(e) => setOcNumber(e.target.value)}
                                 />
                             </div>
+                        </div>
+                        
+                        <div>
+                            <Label htmlFor="rented-vehicle">Vehículo Arrendado (Opcional)</Label>
+                            <Input id="rented-vehicle" placeholder="Ej: Hertz, PPU..." />
                         </div>
 
                         <div>
