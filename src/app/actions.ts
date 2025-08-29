@@ -21,12 +21,7 @@ import nodemailer from 'nodemailer';
 
 // This function ensures Firebase Admin is initialized, but only once.
 const initializeFirebaseAdmin = () => {
-    config({ path: '.env.local' });
     
-    if (process.env.NODE_ENV !== 'production') {
-        require('dotenv').config({ path: '.env.local' });
-    }
-
     if (admin.apps.length > 0) {
         return admin.app();
     }
