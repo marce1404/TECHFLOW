@@ -51,7 +51,7 @@ interface SendReportByEmailDialogProps {
 
 export function SendReportByEmailDialog({ open, onOpenChange, report, reportManager, currentUser }: SendReportByEmailDialogProps) {
   const { toast } = useToast();
-  const { collaborators, companyInfo, reportTemplates } = useWorkOrders();
+  const { collaborators, companyInfo, reportTemplates, smtpConfig } = useWorkOrders();
   const [loading, setLoading] = React.useState(false);
 
   const form = useForm<EmailFormValues>({
@@ -113,6 +113,14 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
 
   const onSubmit = async (data: EmailFormValues) => {
     if (!report) return;
+    if (!smtpConfig) {
+        toast({
+            variant: 'destructive',
+            title: 'Configuración Faltante',
+            description: 'No se ha configurado el servidor de correo (SMTP). Por favor, ve a la configuración para añadirla.',
+        });
+        return;
+    }
     setLoading(true);
 
     const template = reportTemplates.find(t => t.id === report.templateId);
@@ -142,7 +150,7 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
     const subject = `Informe de Servicio - OT ${report.otDetails.ot_number}`;
     const htmlBody = generateReportHtml(report, template);
 
-    const result = await sendReportEmailAction(data.to, uniqueCcList, subject, htmlBody);
+    const result = await sendReportEmailAction(data.to, uniqueCcList, subject, htmlBody, smtpConfig);
 
     if (result.success) {
       toast({

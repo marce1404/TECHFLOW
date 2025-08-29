@@ -1,21 +1,16 @@
 
 'use server';
 
-import { config } from 'dotenv';
 import {
   SuggestOptimalResourceAssignmentInput,
   SuggestOptimalResourceAssignmentOutputWithError,
-  type GanttChart,
   SmtpConfig,
-  SubmittedReport,
-  ReportTemplate,
-  AppUser,
 } from '@/lib/types';
 
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
 import * as admin from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore, Timestamp, doc, getDoc } from 'firebase-admin/firestore';
+import { getFirestore } from 'firebase-admin/firestore';
 import nodemailer from 'nodemailer';
 
 
@@ -152,15 +147,11 @@ export async function sendReportEmailAction(
     cc: string[],
     subject: string,
     htmlBody: string,
+    config: SmtpConfig | null,
 ): Promise<{ success: boolean; message: string }> {
-    initializeFirebaseAdmin();
-    const db = getFirestore();
-    
-    const smtpSnap = await getDoc(doc(db, 'settings', 'smtpConfig'));
-    if (!smtpSnap.exists()) {
+    if (!config) {
         return { success: false, message: 'La configuración SMTP no ha sido establecida.' };
     }
-    const config = smtpSnap.data() as SmtpConfig;
     const { host, port, secure, user, pass, fromName, fromEmail } = config;
 
     let transporter;
