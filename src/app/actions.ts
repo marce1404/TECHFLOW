@@ -7,19 +7,21 @@ import {
   SuggestOptimalResourceAssignmentOutputWithError,
   type GanttChart,
   SmtpConfig,
+  SubmittedReport,
+  ReportTemplate,
 } from '@/lib/types';
 
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
 import * as admin from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { getFirestore, Timestamp, doc, getDoc } from 'firebase-admin/firestore';
 import nodemailer from 'nodemailer';
 
 
 // This function ensures Firebase Admin is initialized, but only once.
 const initializeFirebaseAdmin = () => {
     if (admin.apps.length > 0) {
-        return;
+        return admin.app();
     }
 
     try {
@@ -31,7 +33,7 @@ const initializeFirebaseAdmin = () => {
         const serviceAccountString = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
         const serviceAccount = JSON.parse(serviceAccountString);
 
-        admin.initializeApp({
+        return admin.initializeApp({
             credential: admin.credential.cert(serviceAccount),
         });
 
@@ -141,4 +143,115 @@ export async function sendTestEmailAction(config: SmtpConfig, to: string): Promi
     console.error("Error sending test email:", error);
     return { success: false, message: `Error al enviar el correo: ${error.message}. Revisa el usuario, contraseña y permisos.` };
   }
+}
+
+async function getReportHtml(reportId: string): Promise<string> {
+    initializeFirebaseAdmin();
+    const db = getFirestore();
+    // This is a simplified server-side recreation of the print page content.
+    // In a real scenario, you would use a templating engine or a headless browser.
+    
+    const reportSnap = await getDoc(doc(db, 'submitted-reports', reportId));
+    if (!reportSnap.exists()) throw new Error('Report not found');
+    const report = reportSnap.data() as SubmittedReport;
+
+    const templateSnap = await getDoc(doc(db, 'report-templates', report.templateId));
+    if (!templateSnap.exists()) throw new Error('Template not found');
+    const template = templateSnap.data() as ReportTemplate;
+
+    const companyInfoSnap = await getDoc(doc(db, 'settings', 'companyInfo'));
+    const companyInfo = companyInfoSnap.exists() ? companyInfoSnap.data() : { name: 'TechFlow', slogan: '' };
+    
+    const submittedDate = report.submittedAt?.toDate ? new Date(report.submittedAt.toDate()).toLocaleDateString('es-CL') : 'N/A';
+    const shortFolio = report.id.substring(report.id.length - 6).toUpperCase();
+
+    // WARNING: This is a basic HTML generation. It's not styled like the print page.
+    // For a real PDF, you'd use a library like Puppeteer to render the print page to a PDF.
+    // This sends an HTML attachment instead.
+    
+    let html = `
+        <h1 style="font-family: sans-serif; color: #333;">${template.name} - Folio: ${shortFolio}</h1>
+        <p>Fecha de Emisión: ${submittedDate}</p>
+        <hr>
+        <h2>Información de la OT</h2>
+        <p><strong>Nº OT:</strong> ${report.otDetails.ot_number}</p>
+        <p><strong>Cliente:</strong> ${report.otDetails.client}</p>
+        <p><strong>Descripción:</strong> ${report.otDetails.description}</p>
+        <hr>
+        <h2>Detalles del Servicio</h2>
+    `;
+    template.fields.forEach(field => {
+        const value = report.reportData[field.name];
+        if (value !== undefined && value !== null && value !== '') {
+             html += `<p><strong>${field.label}:</strong> ${String(value)}</p>`;
+        }
+    });
+    html += '<hr><p>Gracias por su preferencia.</p>';
+
+    return html;
+}
+
+export async function sendReportEmailAction(
+    reportId: string,
+    to: string,
+    cc: string[],
+): Promise<{ success: boolean; message: string }> {
+    initializeFirebaseAdmin();
+    const db = getFirestore();
+    
+    const smtpSnap = await getDoc(doc(db, 'settings', 'smtpConfig'));
+    if (!smtpSnap.exists()) {
+        return { success: false, message: 'La configuración SMTP no ha sido establecida.' };
+    }
+    const config = smtpSnap.data() as SmtpConfig;
+    const { host, port, secure, user, pass, fromName, fromEmail } = config;
+
+    const reportSnap = await getDoc(doc(db, 'submitted-reports', reportId));
+    if (!reportSnap.exists()) {
+        return { success: false, message: 'Informe no encontrado.' };
+    }
+    const report = reportSnap.data() as SubmittedReport;
+
+
+    let transporter;
+    try {
+        transporter = nodemailer.createTransport({
+            host, port, secure: secure === 'ssl', auth: { user, pass },
+             ...(secure === 'starttls' && { tls: { ciphers: 'SSLv3' }})
+        });
+        await transporter.verify();
+    } catch (error: any) {
+        console.error("Error verifying SMTP transporter:", error);
+        return { success: false, message: `Error de conexión SMTP: ${error.message}` };
+    }
+    
+    const reportHtml = await getReportHtml(reportId);
+
+    const mailOptions = {
+        from: `"${fromName}" <${fromEmail}>`,
+        to,
+        cc: cc.join(','),
+        subject: `Informe de Servicio - OT ${report.otDetails.ot_number}`,
+        html: `<p>Estimado Cliente,</p>
+               <p>Adjunto encontrará el informe técnico correspondiente al servicio realizado.</p>
+               <p>Agradeceríamos nos pudiera responder este correo con sus comentarios y la recepción conforme del servicio.</p>
+               <br>
+               <p>Saludos cordiales,</p>
+               <p><strong>El Equipo de ${fromName}</strong></p>`,
+        attachments: [
+            {
+                filename: `Informe_OT_${report.otDetails.ot_number}.html`,
+                content: reportHtml,
+                contentType: 'text/html'
+            }
+        ]
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        return { success: true, message: '¡Correo enviado con éxito!' };
+    } catch (error: any) {
+        console.error("Error sending report email:", error);
+        return { success: false, message: `Error al enviar el correo: ${error.message}` };
+    }
 }

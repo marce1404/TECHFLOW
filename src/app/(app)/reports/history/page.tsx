@@ -9,22 +9,27 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useWorkOrders } from '@/context/work-orders-context';
-import type { SubmittedReport } from '@/lib/types';
+import type { SubmittedReport, AppUser } from '@/lib/types';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Printer } from 'lucide-react';
+import { Printer, Mail } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { SendReportByEmailDialog } from '@/components/reports/send-report-by-email-dialog';
+import { useAuth } from '@/context/auth-context';
 
 export default function ReportsHistoryPage() {
-  const { submittedReports, otCategories, loading } = useWorkOrders();
+  const { submittedReports, otCategories, loading, collaborators } = useWorkOrders();
+  const { user: currentUser } = useAuth();
   const [search, setSearch] = React.useState('');
   const [activeTab, setActiveTab] = React.useState('todos');
+  const [selectedReport, setSelectedReport] = React.useState<SubmittedReport | null>(null);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = React.useState(false);
 
   const categories = [
     { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
@@ -53,84 +58,117 @@ export default function ReportsHistoryPage() {
     
     return reports;
   }, [submittedReports, search, activeTab]);
+
+  const handleSendEmailClick = (report: SubmittedReport) => {
+    setSelectedReport(report);
+    setIsEmailDialogOpen(true);
+  };
   
+  const getReportManager = (report: SubmittedReport): AppUser | undefined => {
+      // Logic to find the manager (vendedor) from the collaborators list
+      const managerName = report.reportData.technician_signature; // Assuming the technician is the one sending
+      if (!managerName) return undefined;
+      
+      const collab = collaborators.find(c => c.name === managerName);
+      // This is a simplification. In a real app, you'd look up the AppUser by email or a linked ID.
+      // For now, we'll return a mock AppUser.
+      if (collab) {
+        return { uid: 'mock', displayName: collab.name, email: `${collab.name.split(' ')[0].toLowerCase()}@example.com`, role: 'Técnico', status: 'Activo' };
+      }
+      return undefined;
+  };
+
+
   if (loading) {
     return <div>Cargando informes...</div>;
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      <Card>
-        <CardHeader>
-          <CardTitle>Informes Guardados</CardTitle>
-          <CardDescription>
-            Consulta y gestiona todos los informes y guías de servicio que se han completado.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
-                    <ScrollArea className="w-full sm:w-auto">
-                        <TabsList className="w-max">
-                            {categories.map(cat => (
-                                <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
-                            ))}
-                        </TabsList>
-                        <ScrollBar orientation="horizontal" />
-                    </ScrollArea>
-                    <div className="flex w-full sm:w-auto items-center gap-2">
-                        <Input
-                            placeholder="Buscar por Nº OT, cliente, plantilla..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="w-full sm:max-w-sm"
-                        />
-                    </div>
-                </div>
-                <TabsContent value={activeTab}>
-                    <div className="rounded-md border">
-                    <Table>
-                        <TableHeader>
-                        <TableRow>
-                            <TableHead>Nº OT</TableHead>
-                            <TableHead>Cliente</TableHead>
-                            <TableHead>Plantilla Utilizada</TableHead>
-                            <TableHead>Fecha de Envío</TableHead>
-                            <TableHead className="text-right">Acción</TableHead>
-                        </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                        {filteredReports.length > 0 ? (
-                            filteredReports.map((report: SubmittedReport) => (
-                            <TableRow key={report.id}>
-                                <TableCell className="font-medium">{report.otDetails.ot_number}</TableCell>
-                                <TableCell>{report.otDetails.client}</TableCell>
-                                <TableCell>{report.templateName}</TableCell>
-                                <TableCell>{report.submittedAt ? format(report.submittedAt.toDate(), 'dd/MM/yyyy HH:mm', { locale: es }) : 'N/A'}</TableCell>
-                                <TableCell className="text-right">
-                                <Button asChild variant="outline">
-                                    <Link href={`/reports/${report.id}/print`} target="_blank">
-                                    <Printer className="mr-2 h-4 w-4" />
-                                    Ver / Imprimir
-                                    </Link>
-                                </Button>
-                                </TableCell>
-                            </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                            <TableCell colSpan={5} className="h-24 text-center">
-                                No se han guardado informes que coincidan con tu búsqueda.
-                            </TableCell>
-                            </TableRow>
-                        )}
-                        </TableBody>
-                    </Table>
-                    </div>
-                </TabsContent>
-            </Tabs>
-        </CardContent>
-      </Card>
-    </div>
+    <>
+      <div className="flex flex-col gap-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Informes Guardados</CardTitle>
+            <CardDescription>
+              Consulta y gestiona todos los informes y guías de servicio que se han completado.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                      <ScrollArea className="w-full sm:w-auto">
+                          <TabsList className="w-max">
+                              {categories.map(cat => (
+                                  <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
+                              ))}
+                          </TabsList>
+                          <ScrollBar orientation="horizontal" />
+                      </ScrollArea>
+                      <div className="flex w-full sm:w-auto items-center gap-2">
+                          <Input
+                              placeholder="Buscar por Nº OT, cliente, plantilla..."
+                              value={search}
+                              onChange={(e) => setSearch(e.target.value)}
+                              className="w-full sm:max-w-sm"
+                          />
+                      </div>
+                  </div>
+                  <TabsContent value={activeTab}>
+                      <div className="rounded-md border">
+                      <Table>
+                          <TableHeader>
+                          <TableRow>
+                              <TableHead>Nº OT</TableHead>
+                              <TableHead>Cliente</TableHead>
+                              <TableHead>Plantilla Utilizada</TableHead>
+                              <TableHead>Fecha de Envío</TableHead>
+                              <TableHead className="text-right">Acciones</TableHead>
+                          </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                          {filteredReports.length > 0 ? (
+                              filteredReports.map((report: SubmittedReport) => (
+                              <TableRow key={report.id}>
+                                  <TableCell className="font-medium">{report.otDetails.ot_number}</TableCell>
+                                  <TableCell>{report.otDetails.client}</TableCell>
+                                  <TableCell>{report.templateName}</TableCell>
+                                  <TableCell>{report.submittedAt ? format(report.submittedAt.toDate(), 'dd/MM/yyyy HH:mm', { locale: es }) : 'N/A'}</TableCell>
+                                  <TableCell className="text-right space-x-2">
+                                    <Button size="icon" variant="outline" onClick={() => handleSendEmailClick(report)}>
+                                        <Mail className="h-4 w-4" />
+                                        <span className="sr-only">Enviar por correo</span>
+                                    </Button>
+                                    <Button size="icon" variant="outline" asChild>
+                                        <Link href={`/reports/${report.id}/print`} target="_blank">
+                                        <Printer className="h-4 w-4" />
+                                         <span className="sr-only">Ver / Imprimir</span>
+                                        </Link>
+                                    </Button>
+                                  </TableCell>
+                              </TableRow>
+                              ))
+                          ) : (
+                              <TableRow>
+                              <TableCell colSpan={5} className="h-24 text-center">
+                                  No se han guardado informes que coincidan con tu búsqueda.
+                              </TableCell>
+                              </TableRow>
+                          )}
+                          </TableBody>
+                      </Table>
+                      </div>
+                  </TabsContent>
+              </Tabs>
+          </CardContent>
+        </Card>
+      </div>
+      <SendReportByEmailDialog
+        open={isEmailDialogOpen}
+        onOpenChange={setIsEmailDialogOpen}
+        report={selectedReport}
+        reportManager={selectedReport ? getReportManager(selectedReport) : undefined}
+        currentUser={currentUser}
+      />
+    </>
   );
 }
