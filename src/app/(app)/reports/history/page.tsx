@@ -120,7 +120,11 @@ export default function ReportsHistoryPage() {
                           {filteredReports.length > 0 ? (
                               filteredReports.map((report: SubmittedReport) => (
                               <TableRow key={report.id}>
-                                  <TableCell className="font-medium">{report.otDetails.ot_number}</TableCell>
+                                  <TableCell className="font-medium">
+                                    <Link href={`/reports/${report.id}/edit`} className="text-primary hover:underline">
+                                        {report.otDetails.ot_number}
+                                    </Link>
+                                  </TableCell>
                                   <TableCell>{report.otDetails.client}</TableCell>
                                   <TableCell>{report.templateName}</TableCell>
                                   <TableCell>{report.submittedAt ? format(report.submittedAt.toDate(), 'dd/MM/yyyy HH:mm', { locale: es }) : 'N/A'}</TableCell>

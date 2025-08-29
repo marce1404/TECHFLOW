@@ -60,9 +60,9 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
         }
     }
     
-    const headers: { key: keyof Vehicle | 'lastMaintenance' | 'assignmentHistory', label: string }[] = [
-        { key: 'model', label: 'Vehículo' },
+    const headers: { key: keyof Vehicle, label: string }[] = [
         { key: 'plate', label: 'Patente' },
+        { key: 'model', label: 'Vehículo' },
         { key: 'status', label: 'Estado' },
         { key: 'assignedTo', label: 'Asignado a' },
     ];
@@ -115,14 +115,14 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
                         {paginatedData.length > 0 ? paginatedData.map((vehicle) => {
                             return (
                             <TableRow key={vehicle.id}>
-                                <TableCell className="font-medium">
-                                    <div>{vehicle.model}</div>
-                                    <div className="text-xs text-muted-foreground">{vehicle.year}</div>
-                                </TableCell>
                                 <TableCell>
                                     <Link href={`/vehicles/${vehicle.id}/edit`} className="text-primary hover:underline">
                                         {vehicle.plate}
                                     </Link>
+                                </TableCell>
+                                <TableCell className="font-medium">
+                                    <div>{vehicle.model}</div>
+                                    <div className="text-xs text-muted-foreground">{vehicle.year}</div>
                                 </TableCell>
                                 <TableCell>
                                     <DropdownMenu>
