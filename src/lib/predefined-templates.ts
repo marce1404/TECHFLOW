@@ -16,6 +16,7 @@ export const predefinedReportTemplates: Omit<ReportTemplate, 'id'>[] = [
       { id: 'field_7', name: 'client_conformity', label: 'Cliente Conforme con el Servicio', type: 'checkbox', required: false },
       { id: 'field_8', name: 'client_observations', label: 'Observaciones del Cliente', type: 'textarea', required: false },
       { id: 'field_9', name: 'client_name_signature', label: 'Nombre de quien recibe', type: 'text', required: true },
+      { id: 'field_15', name: 'client_rut_signature', label: 'RUT de quien recibe', type: 'text', required: false },
       { id: 'field_10', name: 'technician_signature', label: 'Técnico Responsable', type: 'select', required: true, options: 'technicians' },
       { id: 'field_11', name: 'valor_pendiente', label: 'Valor pendiente', type: 'checkbox', required: false },
       { id: 'field_12', name: 'valor_cancelado', label: 'Valor cancelado', type: 'checkbox', required: false },

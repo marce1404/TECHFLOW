@@ -114,7 +114,7 @@ function PrintReportContent({ report, template, companyInfo }: { report: Submitt
                          )
                     })}
                     <Separator className="my-3 bg-black"/>
-                    {mainFields.filter(f => !['requirement', 'solution', 'technician_signature', 'service_date', 'client_name_signature'].includes(f.name)).map(field => {
+                    {mainFields.filter(f => !['requirement', 'solution', 'technician_signature', 'service_date', 'client_name_signature', 'client_rut_signature'].includes(f.name)).map(field => {
                          const value = report.reportData[field.name];
                          if (value === undefined || value === null || value === '') return null;
                          return (
@@ -162,6 +162,7 @@ function PrintReportContent({ report, template, companyInfo }: { report: Submitt
                             <p className="mb-12 border-b border-black w-full"></p>
                             <p><strong>Firma Cliente</strong></p>
                             <p className="capitalize">{report.reportData.client_name_signature || 'N/A'}</p>
+                            <p className="uppercase">{report.reportData.client_rut_signature || ''}</p>
                         </div>
                     </div>
                     <div className="flex flex-col justify-between">
