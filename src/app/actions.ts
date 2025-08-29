@@ -5,6 +5,8 @@ import {
   SuggestOptimalResourceAssignmentInput,
   SuggestOptimalResourceAssignmentOutputWithError,
   SmtpConfig,
+  WorkOrder,
+  CreateWorkOrderInput,
 } from '@/lib/types';
 
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
@@ -12,6 +14,8 @@ import * as admin from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import nodemailer from 'nodemailer';
+import * as xlsx from 'xlsx';
+import { createWorkOrderFromApi } from './ai/flows/create-ot-from-api';
 
 
 // This function ensures Firebase Admin is initialized, but only once.
@@ -181,4 +185,57 @@ export async function sendReportEmailAction(
         console.error("Error sending report email:", error);
         return { success: false, message: `Error al enviar el correo: ${error.message}` };
     }
+}
+
+
+export async function exportOrdersToExcel(orders: WorkOrder[]): Promise<string> {
+    const dataToExport = orders.map(order => ({
+        'Nº OT': order.ot_number,
+        'Descripción': order.description,
+        'Cliente': order.client,
+        'Servicio': order.service,
+        'Fecha Inicio': order.date,
+        'Fecha Término': order.endDate || '',
+        'Estado': order.status,
+        'Prioridad': order.priority,
+        'Encargados': order.assigned.join(', '),
+        'Técnicos': order.technicians.join(', '),
+        'Vehículos': order.vehicles.join(', '),
+        'Vendedor': order.vendedor,
+        'Precio Neto': order.netPrice,
+        'Facturado': order.facturado ? 'Sí' : 'No',
+        'Nº Factura': order.invoiceNumber || '',
+        'Nº OC': order.ocNumber || '',
+        'Notas': order.notes || '',
+    }));
+
+    const worksheet = xlsx.utils.json_to_sheet(dataToExport);
+    const workbook = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(workbook, worksheet, 'Órdenes de Trabajo');
+
+    const buffer = xlsx.write(workbook, { bookType: 'xlsx', type: 'buffer' });
+    return buffer.toString('base64');
+}
+
+export async function importOrdersFromExcel(ordersData: CreateWorkOrderInput[]): Promise<{ successCount: number; errorCount: number; errors: string[] }> {
+    let successCount = 0;
+    let errorCount = 0;
+    const errors: string[] = [];
+
+    for (const orderData of ordersData) {
+        try {
+            const result = await createWorkOrderFromApi(orderData);
+            if (result.success) {
+                successCount++;
+            } else {
+                errorCount++;
+                errors.push(`OT ${orderData.ot_number}: ${result.message}`);
+            }
+        } catch (error: any) {
+            errorCount++;
+            errors.push(`OT ${orderData.ot_number}: Error inesperado - ${error.message}`);
+        }
+    }
+
+    return { successCount, errorCount, errors };
 }

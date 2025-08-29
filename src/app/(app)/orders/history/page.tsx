@@ -9,12 +9,18 @@ import type { WorkOrder } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { FileUp, Loader2 } from "lucide-react";
+import { exportOrdersToExcel } from "@/app/actions";
+import { useToast } from "@/hooks/use-toast";
 
 
 export default function HistoryPage() {
     const { historicalWorkOrders, otCategories } = useWorkOrders();
+    const { toast } = useToast();
     const [search, setSearch] = React.useState('');
     const [activeTab, setActiveTab] = React.useState('todos');
+    const [isExporting, setIsExporting] = React.useState(false);
 
 
     const filterOrders = (categoryPrefix: string | null) => {
@@ -49,6 +55,32 @@ export default function HistoryPage() {
             }))
     ];
 
+    const handleExport = async () => {
+        setIsExporting(true);
+        try {
+            const base64 = await exportOrdersToExcel(filteredOrders);
+            const byteCharacters = atob(base64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'OT_Historial.xlsx';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            toast({ title: "Exportación Exitosa", description: `${filteredOrders.length} órdenes han sido exportadas.` });
+        } catch (error) {
+            console.error("Error exporting to Excel: ", error);
+            toast({ variant: "destructive", title: "Error de Exportación", description: "No se pudo generar el archivo de Excel." });
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     return (
         <div className="flex flex-col gap-8">
             <Card>
@@ -63,12 +95,18 @@ export default function HistoryPage() {
                                 </TabsList>
                                 <ScrollBar orientation="horizontal" />
                             </ScrollArea>
-                            <Input
-                                placeholder="Buscar por ID, cliente, servicio..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="w-full sm:max-w-sm"
-                            />
+                             <div className="flex w-full sm:w-auto items-center gap-2">
+                                <Input
+                                    placeholder="Buscar por ID, cliente, servicio..."
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    className="w-full sm:max-w-sm"
+                                />
+                                <Button onClick={handleExport} disabled={isExporting}>
+                                    {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileUp className="mr-2 h-4 w-4" />}
+                                    Exportar
+                                </Button>
+                            </div>
                         </div>
                         <TabsContent value={activeTab} className="mt-4">
                             <HistoricalOrdersTable orders={filteredOrders} />
