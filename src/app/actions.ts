@@ -9,6 +9,7 @@ import {
   SmtpConfig,
   SubmittedReport,
   ReportTemplate,
+  AppUser,
 } from '@/lib/types';
 
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
@@ -148,27 +149,26 @@ export async function sendTestEmailAction(config: SmtpConfig, to: string): Promi
 async function getReportHtml(reportId: string): Promise<string> {
     initializeFirebaseAdmin();
     const db = getFirestore();
-    // This is a simplified server-side recreation of the print page content.
-    // In a real scenario, you would use a templating engine or a headless browser.
     
-    const reportSnap = await getDoc(doc(db, 'submitted-reports', reportId));
+    const reportRef = doc(db, 'submitted-reports', reportId);
+    const reportSnap = await getDoc(reportRef);
     if (!reportSnap.exists()) throw new Error('Report not found');
-    const report = reportSnap.data() as SubmittedReport;
+    const reportData = reportSnap.data();
+    const report = { id: reportSnap.id, ...reportData } as SubmittedReport;
 
-    const templateSnap = await getDoc(doc(db, 'report-templates', report.templateId));
+    const templateRef = doc(db, 'report-templates', report.templateId);
+    const templateSnap = await getDoc(templateRef);
     if (!templateSnap.exists()) throw new Error('Template not found');
-    const template = templateSnap.data() as ReportTemplate;
+    const template = { id: templateSnap.id, ...templateSnap.data() } as ReportTemplate;
 
     const companyInfoSnap = await getDoc(doc(db, 'settings', 'companyInfo'));
     const companyInfo = companyInfoSnap.exists() ? companyInfoSnap.data() : { name: 'TechFlow', slogan: '' };
     
-    const submittedDate = report.submittedAt?.toDate ? new Date(report.submittedAt.toDate()).toLocaleDateString('es-CL') : 'N/A';
+    const submittedDate = report.submittedAt instanceof Timestamp 
+        ? report.submittedAt.toDate().toLocaleDateString('es-CL') 
+        : 'N/A';
     const shortFolio = report.id.substring(report.id.length - 6).toUpperCase();
 
-    // WARNING: This is a basic HTML generation. It's not styled like the print page.
-    // For a real PDF, you'd use a library like Puppeteer to render the print page to a PDF.
-    // This sends an HTML attachment instead.
-    
     let html = `
         <h1 style="font-family: sans-serif; color: #333;">${template.name} - Folio: ${shortFolio}</h1>
         <p>Fecha de Emisión: ${submittedDate}</p>

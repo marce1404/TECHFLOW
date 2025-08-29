@@ -25,7 +25,7 @@ import { useAuth } from '@/context/auth-context';
 
 export default function ReportsHistoryPage() {
   const { submittedReports, otCategories, loading, collaborators } = useWorkOrders();
-  const { user: currentUser } = useAuth();
+  const { users } = useAuth();
   const [search, setSearch] = React.useState('');
   const [activeTab, setActiveTab] = React.useState('todos');
   const [selectedReport, setSelectedReport] = React.useState<SubmittedReport | null>(null);
@@ -65,18 +65,15 @@ export default function ReportsHistoryPage() {
   };
   
   const getReportManager = (report: SubmittedReport): AppUser | undefined => {
-      // Logic to find the manager (vendedor) from the collaborators list
-      const managerName = report.reportData.technician_signature; // Assuming the technician is the one sending
+      const managerName = report.otDetails.vendedor;
       if (!managerName) return undefined;
-      
-      const collab = collaborators.find(c => c.name === managerName);
-      // This is a simplification. In a real app, you'd look up the AppUser by email or a linked ID.
-      // For now, we'll return a mock AppUser.
-      if (collab) {
-        return { uid: 'mock', displayName: collab.name, email: `${collab.name.split(' ')[0].toLowerCase()}@example.com`, role: 'Técnico', status: 'Activo' };
-      }
-      return undefined;
+      return users.find(u => u.displayName === managerName);
   };
+  
+  const getCurrentUser = (): AppUser | undefined => {
+      const { userProfile } = useAuth();
+      return userProfile || undefined;
+  }
 
 
   if (loading) {
@@ -167,7 +164,7 @@ export default function ReportsHistoryPage() {
         onOpenChange={setIsEmailDialogOpen}
         report={selectedReport}
         reportManager={selectedReport ? getReportManager(selectedReport) : undefined}
-        currentUser={currentUser}
+        currentUser={getCurrentUser()}
       />
     </>
   );

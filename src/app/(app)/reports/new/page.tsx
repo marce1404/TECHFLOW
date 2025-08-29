@@ -75,6 +75,7 @@ export default function NewReportPage() {
             client: workOrder.client,
             description: workOrder.description,
             netPrice: workOrder.netPrice,
+            vendedor: workOrder.vendedor,
           }
       };
 

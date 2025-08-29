@@ -43,7 +43,7 @@ interface SendReportByEmailDialogProps {
   onOpenChange: (open: boolean) => void;
   report: SubmittedReport | null;
   reportManager?: AppUser;
-  currentUser: AppUser | null;
+  currentUser?: AppUser;
 }
 
 export function SendReportByEmailDialog({ open, onOpenChange, report, reportManager, currentUser }: SendReportByEmailDialogProps) {

@@ -1,6 +1,7 @@
 
 import { z } from 'zod';
 import type { ChartConfig } from "@/components/ui/chart"
+import { Timestamp } from 'firebase/firestore';
 
 export type StatCardData = {
   title: string;
@@ -170,9 +171,10 @@ export type SubmittedReport = {
         client: string;
         description: string;
         netPrice: number;
+        vendedor?: string;
     };
     templateName: string;
-    submittedAt: any; // Using `any` for Firestore Timestamp compatibility
+    submittedAt: Timestamp;
 };
 
 export type CompanyInfo = {
