@@ -59,7 +59,7 @@ export default function ReportsHistoryPage() {
       );
     }
     
-    return reports;
+    return reports.sort((a, b) => b.submittedAt.toMillis() - a.submittedAt.toMillis());
   }, [submittedReports, search, activeTab]);
 
   const totalPages = Math.ceil(filteredReports.length / itemsPerPage);

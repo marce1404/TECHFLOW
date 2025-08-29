@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { FilePlus2, ChevronRight } from 'lucide-react';
+import { FilePlus2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
@@ -47,7 +47,7 @@ export default function ReportsPage() {
             order.client.toLowerCase().includes(search.toLowerCase())
         );
     }
-    return orders;
+    return orders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [activeWorkOrders, historicalWorkOrders, activeTab, search, submittedOtIds]);
   
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
