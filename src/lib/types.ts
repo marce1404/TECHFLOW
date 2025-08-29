@@ -37,7 +37,6 @@ export type WorkOrder = {
   netPrice: number;
   invoiceNumber?: string;
   ocNumber?: string;
-  rut?: string;
 };
 
 export type WorkClothingItem = {
@@ -268,7 +267,7 @@ export const UpdateUserOutputSchema = z.object({
 
 export type UpdateUserOutput = z.infer<typeof UpdateUserOutputSchema>;
 
-// Excel Import Types
+// Excel Import Types & API Types
 export const CreateWorkOrderInputSchema = z.object({
   ot_number: z.string().describe("The unique work order number, including prefix. E.g., 'OT-1525'"),
   description: z.string().describe("The name or description of the work order."),
@@ -288,3 +287,10 @@ export const CreateWorkOrderInputSchema = z.object({
   vendedor: z.string().optional().describe("The name of the salesperson."),
 });
 export type CreateWorkOrderInput = z.infer<typeof CreateWorkOrderInputSchema>;
+
+export const CreateWorkOrderOutputSchema = z.object({
+  success: z.boolean(),
+  orderId: z.string().optional(),
+  message: z.string(),
+});
+export type CreateWorkOrderOutput = z.infer<typeof CreateWorkOrderOutputSchema>;
