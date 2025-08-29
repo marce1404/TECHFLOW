@@ -147,58 +147,16 @@ export async function sendTestEmailAction(config: SmtpConfig, to: string): Promi
   }
 }
 
-async function getReportHtml(reportId: string): Promise<string> {
-    initializeFirebaseAdmin();
-    const db = getFirestore();
-    
-    const reportRef = doc(db, 'submitted-reports', reportId);
-    const reportSnap = await getDoc(reportRef);
-    if (!reportSnap.exists()) throw new Error('Report not found');
-    const reportData = reportSnap.data();
-    const report = { id: reportSnap.id, ...reportData } as SubmittedReport;
-
-    const templateRef = doc(db, 'report-templates', report.templateId);
-    const templateSnap = await getDoc(templateRef);
-    if (!templateSnap.exists()) throw new Error('Template not found');
-    const template = { id: templateSnap.id, ...templateSnap.data() } as ReportTemplate;
-
-    const companyInfoSnap = await getDoc(doc(db, 'settings', 'companyInfo'));
-    const companyInfo = companyInfoSnap.exists() ? companyInfoSnap.data() : { name: 'TechFlow', slogan: '' };
-    
-    const submittedDate = report.submittedAt instanceof Timestamp 
-        ? report.submittedAt.toDate().toLocaleDateString('es-CL') 
-        : 'N/A';
-    const shortFolio = report.id.substring(report.id.length - 6).toUpperCase();
-
-    let html = `
-        <h1 style="font-family: sans-serif; color: #333;">${template.name} - Folio: ${shortFolio}</h1>
-        <p>Fecha de Emisión: ${submittedDate}</p>
-        <hr>
-        <h2>Información de la OT</h2>
-        <p><strong>Nº OT:</strong> ${report.otDetails.ot_number}</p>
-        <p><strong>Cliente:</strong> ${report.otDetails.client}</p>
-        <p><strong>Descripción:</strong> ${report.otDetails.description}</p>
-        <hr>
-        <h2>Detalles del Servicio</h2>
-    `;
-    template.fields.forEach(field => {
-        const value = report.reportData[field.name];
-        if (value !== undefined && value !== null && value !== '') {
-             html += `<p><strong>${field.label}:</strong> ${String(value)}</p>`;
-        }
-    });
-    html += '<hr><p>Gracias por su preferencia.</p>';
-
-    return html;
-}
-
 export async function sendReportEmailAction(
-    reportId: string,
     to: string,
     cc: string[],
+    subject: string,
+    htmlBody: string,
 ): Promise<{ success: boolean; message: string }> {
-    initializeFirebaseAdmin();
-    const db = getFirestore();
+    // This action NO LONGER initializes Firebase Admin.
+    // It relies on the client to generate the HTML and pass it in.
+
+    const db = getFirestore(admin.apps.length > 0 ? admin.app() : undefined);
     
     const smtpSnap = await getDoc(doc(db, 'settings', 'smtpConfig'));
     if (!smtpSnap.exists()) {
@@ -206,13 +164,6 @@ export async function sendReportEmailAction(
     }
     const config = smtpSnap.data() as SmtpConfig;
     const { host, port, secure, user, pass, fromName, fromEmail } = config;
-
-    const reportSnap = await getDoc(doc(db, 'submitted-reports', reportId));
-    if (!reportSnap.exists()) {
-        return { success: false, message: 'Informe no encontrado.' };
-    }
-    const report = reportSnap.data() as SubmittedReport;
-
 
     let transporter;
     try {
@@ -226,27 +177,12 @@ export async function sendReportEmailAction(
         return { success: false, message: `Error de conexión SMTP: ${error.message}` };
     }
     
-    const reportHtml = await getReportHtml(reportId);
-    
-    const emailBody = `
-        <p>Estimado Cliente,</p>
-        <p>A continuación, encontrará el informe técnico correspondiente al servicio realizado.</p>
-        <p>Agradeceríamos nos pudiera responder este correo con sus comentarios y la recepción conforme del servicio.</p>
-        <br>
-        <hr>
-        ${reportHtml}
-        <hr>
-        <br>
-        <p>Saludos cordiales,</p>
-        <p><strong>El Equipo de ${fromName}</strong></p>
-    `;
-
     const mailOptions = {
         from: `"${fromName}" <${fromEmail}>`,
         to,
         cc: cc.join(','),
-        subject: `Informe de Servicio - OT ${report.otDetails.ot_number}`,
-        html: emailBody,
+        subject,
+        html: htmlBody,
     };
 
     try {
@@ -257,5 +193,3 @@ export async function sendReportEmailAction(
         return { success: false, message: `Error al enviar el correo: ${error.message}` };
     }
 }
-
-    

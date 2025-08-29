@@ -24,12 +24,13 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import type { SubmittedReport, AppUser, Collaborator } from '@/lib/types';
+import type { SubmittedReport, AppUser, Collaborator, ReportTemplate } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Send } from 'lucide-react';
 import { sendReportEmailAction } from '@/app/actions';
 import { MultiSelect } from '../ui/multi-select';
 import { useWorkOrders } from '@/context/work-orders-context';
+import { Timestamp } from 'firebase/firestore';
 
 const emailFormSchema = z.object({
   to: z.string().email({ message: 'El correo del cliente no es válido.' }),
@@ -50,7 +51,7 @@ interface SendReportByEmailDialogProps {
 
 export function SendReportByEmailDialog({ open, onOpenChange, report, reportManager, currentUser }: SendReportByEmailDialogProps) {
   const { toast } = useToast();
-  const { collaborators } = useWorkOrders();
+  const { collaborators, companyInfo, reportTemplates } = useWorkOrders();
   const [loading, setLoading] = React.useState(false);
 
   const form = useForm<EmailFormValues>({
@@ -69,9 +70,57 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
     }
   }, [open, form]);
 
+  const generateReportHtml = (report: SubmittedReport, template: ReportTemplate | undefined): string => {
+    if (!template) return "<p>Error: Plantilla no encontrada.</p>";
+
+    const submittedDate = report.submittedAt instanceof Timestamp 
+        ? report.submittedAt.toDate().toLocaleDateString('es-CL') 
+        : 'N/A';
+    const shortFolio = report.id.substring(report.id.length - 6).toUpperCase();
+
+    let fieldsHtml = '';
+    template.fields.forEach(field => {
+        const value = report.reportData[field.name];
+        if (value !== undefined && value !== null && value !== '') {
+             fieldsHtml += `<p><strong>${field.label}:</strong> ${String(value)}</p>`;
+        }
+    });
+
+    const emailBody = `
+        <p>Estimado Cliente,</p>
+        <p>A continuación, encontrará el informe técnico correspondiente al servicio realizado.</p>
+        <p>Agradeceríamos nos pudiera responder este correo con sus comentarios y la recepción conforme del servicio.</p>
+        <br>
+        <hr>
+        <h1 style="font-family: sans-serif; color: #333;">${template.name} - Folio: ${shortFolio}</h1>
+        <p>Fecha de Emisión: ${submittedDate}</p>
+        <hr>
+        <h2>Información de la OT</h2>
+        <p><strong>Nº OT:</strong> ${report.otDetails.ot_number}</p>
+        <p><strong>Cliente:</strong> ${report.otDetails.client}</p>
+        <p><strong>Descripción:</strong> ${report.otDetails.description}</p>
+        <hr>
+        <h2>Detalles del Servicio</h2>
+        ${fieldsHtml}
+        <hr>
+        <br>
+        <p>Saludos cordiales,</p>
+        <p><strong>El Equipo de ${companyInfo?.name || 'TechFlow'}</strong></p>
+    `;
+
+    return emailBody;
+  }
+
   const onSubmit = async (data: EmailFormValues) => {
     if (!report) return;
     setLoading(true);
+
+    const template = reportTemplates.find(t => t.id === report.templateId);
+    if (!template) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo encontrar la plantilla del informe.'});
+        setLoading(false);
+        return;
+    }
 
     const ccList: string[] = [];
     if (data.ccManager && reportManager?.email) {
@@ -89,8 +138,11 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
     
     // Remove duplicates
     const uniqueCcList = Array.from(new Set(ccList));
+    
+    const subject = `Informe de Servicio - OT ${report.otDetails.ot_number}`;
+    const htmlBody = generateReportHtml(report, template);
 
-    const result = await sendReportEmailAction(report.id, data.to, uniqueCcList);
+    const result = await sendReportEmailAction(data.to, uniqueCcList, subject, htmlBody);
 
     if (result.success) {
       toast({
