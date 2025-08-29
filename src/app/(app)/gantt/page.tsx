@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -25,7 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 
 
 export default function GanttPage() {
@@ -135,19 +134,19 @@ export default function GanttPage() {
                             </TableBody>
                         </Table>
                     </div>
-                     {totalPages > 1 && (
-                        <div className="flex items-center justify-between p-4 text-sm text-muted-foreground border-t">
-                            <div>
-                                Mostrando {paginatedData.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} a {Math.min(currentPage * itemsPerPage, ganttCharts.length)} de {ganttCharts.length} cartas.
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>Anterior</Button>
-                                <span>Página {currentPage} de {totalPages > 0 ? totalPages : 1}</span>
-                                <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages || totalPages === 0}>Siguiente</Button>
-                            </div>
-                        </div>
-                    )}
                 </CardContent>
+                {totalPages > 1 && (
+                    <CardFooter className="flex items-center justify-between p-4 text-sm text-muted-foreground border-t">
+                        <div>
+                            Mostrando {paginatedData.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} a {Math.min(currentPage * itemsPerPage, ganttCharts.length)} de {ganttCharts.length} cartas.
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>Anterior</Button>
+                            <span>Página {currentPage} de {totalPages > 0 ? totalPages : 1}</span>
+                            <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages || totalPages === 0}>Siguiente</Button>
+                        </div>
+                    </CardFooter>
+                )}
             </Card>
         </div>
     );
