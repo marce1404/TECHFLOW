@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, query, where, writeBatch, serverTimestamp, orderBy, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { WorkOrder, OTCategory, Service, Collaborator, Vehicle, GanttChart, SuggestedTask, OTStatus, ReportTemplate, SubmittedReport, CompanyInfo, AppUser } from '@/lib/types';
+import type { WorkOrder, OTCategory, Service, Collaborator, Vehicle, GanttChart, SuggestedTask, OTStatus, ReportTemplate, SubmittedReport, CompanyInfo, AppUser, SmtpConfig } from '@/lib/types';
 import { Timestamp, runTransaction } from 'firebase/firestore';
 import { initialSuggestedTasks } from '@/lib/placeholder-data';
 import { predefinedReportTemplates } from '@/lib/predefined-templates';
@@ -26,6 +26,7 @@ interface WorkOrdersContextType {
   reportTemplates: ReportTemplate[];
   submittedReports: SubmittedReport[];
   companyInfo: CompanyInfo | null;
+  smtpConfig: SmtpConfig | null;
   loading: boolean;
   fetchData: () => Promise<void>;
   updateOrder: (id: string, updatedOrder: Partial<WorkOrder>) => Promise<void>;
@@ -60,6 +61,7 @@ interface WorkOrdersContextType {
   deleteReportTemplate: (id: string) => Promise<void>;
   addSubmittedReport: (report: Omit<SubmittedReport, 'id' | 'submittedAt'>) => Promise<SubmittedReport>;
   updateCompanyInfo: (info: CompanyInfo) => Promise<void>;
+  updateSmtpConfig: (config: SmtpConfig) => Promise<void>;
   updateUserProfile: (uid: string, data: Partial<Pick<AppUser, 'displayName' | 'role'>>) => Promise<void>;
   promptToCloseOrder: (order: WorkOrder) => void;
 }
@@ -81,6 +83,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [reportTemplates, setReportTemplates] = useState<ReportTemplate[]>([]);
   const [submittedReports, setSubmittedReports] = useState<SubmittedReport[]>([]);
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
+  const [smtpConfig, setSmtpConfig] = useState<SmtpConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const { user, loading: authLoading, fetchUsers } = useAuth();
   const [orderToClose, setOrderToClose] = useState<WorkOrder | null>(null);
@@ -133,6 +136,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             reportTemplatesSnapshot,
             submittedReportsSnapshot,
             companyInfoSnapshot,
+            smtpConfigSnapshot,
         ] = await Promise.all([
             getDocs(query(collection(db, "work-orders"), orderBy("date", "desc"))),
             getDocs(collection(db, "ot-categories")),
@@ -144,6 +148,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             getDocs(collection(db, "report-templates")),
             getDocs(query(collection(db, "submitted-reports"), orderBy("submittedAt", "desc"))),
             getDoc(doc(db, "settings", "companyInfo")),
+            getDoc(doc(db, "settings", "smtpConfig")),
         ]);
         
         await fetchAndSetSuggestedTasks();
@@ -169,6 +174,12 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             const defaultInfo = { name: "TechFlow", slogan: "Gestión de Operaciones", address: "" };
             await setDoc(doc(db, "settings", "companyInfo"), defaultInfo);
             setCompanyInfo(defaultInfo);
+        }
+
+        if (smtpConfigSnapshot.exists()) {
+            setSmtpConfig(smtpConfigSnapshot.data() as SmtpConfig);
+        } else {
+            setSmtpConfig(null);
         }
 
         setGanttCharts(ganttChartsSnapshot.docs.map(doc => {
@@ -211,6 +222,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         setReportTemplates([]);
         setSubmittedReports([]);
         setCompanyInfo(null);
+        setSmtpConfig(null);
     } finally {
         setLoading(false);
     }
@@ -457,6 +469,12 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     await setDoc(docRef, info, { merge: true });
     await fetchData();
   };
+
+  const updateSmtpConfig = async (config: SmtpConfig) => {
+    const docRef = doc(db, 'settings', 'smtpConfig');
+    await setDoc(docRef, config, { merge: true });
+    await fetchData();
+  };
   
   const updateUserProfile = async (uid: string, data: Partial<Pick<AppUser, 'displayName' | 'role'>>) => {
     const userRef = doc(db, 'users', uid);
@@ -479,6 +497,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         reportTemplates,
         submittedReports,
         companyInfo,
+        smtpConfig,
         loading,
         fetchData,
         updateOrder, 
@@ -513,6 +532,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         deleteReportTemplate,
         addSubmittedReport,
         updateCompanyInfo,
+        updateSmtpConfig,
         updateUserProfile,
         promptToCloseOrder,
     }}>

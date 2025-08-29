@@ -181,6 +181,16 @@ export type CompanyInfo = {
     address?: string;
 };
 
+export type SmtpConfig = {
+    host: string;
+    port: number;
+    secure: 'none' | 'ssl' | 'starttls';
+    user: string;
+    pass: string;
+    fromEmail: string;
+    fromName: string;
+};
+
 
 // AI Resource Assignment Types
 export const SuggestOptimalResourceAssignmentInputSchema = z.object({

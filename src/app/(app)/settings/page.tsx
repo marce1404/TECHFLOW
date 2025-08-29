@@ -1,7 +1,7 @@
 
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ChevronRight, Building, Users, Settings, BarChart2, Tag, ListChecks, ClipboardPenLine, GitBranch } from 'lucide-react';
+import { ChevronRight, Building, Users, Settings, BarChart2, Tag, ListChecks, ClipboardPenLine, GitBranch, Mail } from 'lucide-react';
 import packageJson from '@/../package.json';
 
 interface SettingsGroupProps {
@@ -60,6 +60,12 @@ export default function SettingsPage() {
                     icon={Users}
                     title="Usuarios y Permisos"
                     description="Gestiona los usuarios que pueden acceder al sistema y sus roles."
+                />
+                <SettingsLink 
+                    href="/settings/smtp-settings"
+                    icon={Mail}
+                    title="Configuración de Correo"
+                    description="Configura el servidor SMTP para el envío de correos electrónicos."
                 />
             </SettingsGroup>
 
