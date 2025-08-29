@@ -1,7 +1,6 @@
 
 'use server';
 
-import { config } from 'dotenv';
 import {
   SuggestOptimalResourceAssignmentInput,
   SuggestOptimalResourceAssignmentOutputWithError,
@@ -21,11 +20,6 @@ import nodemailer from 'nodemailer';
 
 // This function ensures Firebase Admin is initialized, but only once.
 const initializeFirebaseAdmin = () => {
-    // Load .env file only if not in production (like in Vercel)
-    if (process.env.NODE_ENV !== 'production') {
-        config();
-    }
-    
     if (admin.apps.length > 0) {
         return admin.app();
     }
