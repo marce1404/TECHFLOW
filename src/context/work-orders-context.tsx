@@ -60,6 +60,7 @@ interface WorkOrdersContextType {
   updateReportTemplate: (id: string, template: Partial<ReportTemplate>) => Promise<void>;
   deleteReportTemplate: (id: string) => Promise<void>;
   addSubmittedReport: (report: Omit<SubmittedReport, 'id' | 'submittedAt'>) => Promise<SubmittedReport>;
+  updateSubmittedReport: (id: string, report: Partial<SubmittedReport>) => Promise<void>;
   updateCompanyInfo: (info: CompanyInfo) => Promise<void>;
   updateSmtpConfig: (config: SmtpConfig) => Promise<void>;
   updateUserProfile: (uid: string, data: Partial<Pick<AppUser, 'displayName' | 'role'>>) => Promise<void>;
@@ -464,6 +465,12 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     return { ...report, id: docRef.id, submittedAt: new Date() } as SubmittedReport; // Simulate timestamp for immediate UI update
   };
 
+  const updateSubmittedReport = async (id: string, report: Partial<SubmittedReport>) => {
+    const docRef = doc(db, "submitted-reports", id);
+    await updateDoc(docRef, report);
+    await fetchData();
+  };
+
   const updateCompanyInfo = async (info: CompanyInfo) => {
     const docRef = doc(db, 'settings', 'companyInfo');
     await setDoc(docRef, info, { merge: true });
@@ -531,6 +538,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         updateReportTemplate,
         deleteReportTemplate,
         addSubmittedReport,
+        updateSubmittedReport,
         updateCompanyInfo,
         updateSmtpConfig,
         updateUserProfile,

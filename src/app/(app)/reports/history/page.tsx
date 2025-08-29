@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Printer, Mail } from 'lucide-react';
+import { Printer, Mail, FilePenLine } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -125,6 +125,12 @@ export default function ReportsHistoryPage() {
                                   <TableCell>{report.templateName}</TableCell>
                                   <TableCell>{report.submittedAt ? format(report.submittedAt.toDate(), 'dd/MM/yyyy HH:mm', { locale: es }) : 'N/A'}</TableCell>
                                   <TableCell className="text-right space-x-2">
+                                    <Button size="icon" variant="outline" asChild>
+                                      <Link href={`/reports/${report.id}/edit`}>
+                                        <FilePenLine className="h-4 w-4" />
+                                        <span className="sr-only">Editar</span>
+                                      </Link>
+                                    </Button>
                                     <Button size="icon" variant="outline" onClick={() => handleSendEmailClick(report)}>
                                         <Mail className="h-4 w-4" />
                                         <span className="sr-only">Enviar por correo</span>
