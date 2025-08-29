@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import type { ReportTemplate, SubmittedReport, AppUser } from '@/lib/types';
+import type { ReportTemplate, SubmittedReport, AppUser, WorkOrder } from '@/lib/types';
 import Link from 'next/link';
 import { FileWarning, CheckCircle2, Printer, File, User, Building, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +23,7 @@ export default function NewReportPage() {
   const searchParams = useSearchParams();
   const otNumber = searchParams.get('ot_number');
   
-  const { activeWorkOrders, reportTemplates, collaborators, getOrder, addSubmittedReport } = useWorkOrders();
+  const { activeWorkOrders, historicalWorkOrders, reportTemplates, collaborators, getOrder, addSubmittedReport } = useWorkOrders();
   const { users, userProfile } = useAuth();
   const { toast } = useToast();
   
@@ -36,8 +36,10 @@ export default function NewReportPage() {
 
   const workOrder = React.useMemo(() => {
     if (!otNumber) return undefined;
-    return getOrder(activeWorkOrders.find(o => o.ot_number === otNumber)?.id || '');
-  }, [activeWorkOrders, otNumber, getOrder]);
+    const allOrders: WorkOrder[] = [...activeWorkOrders, ...historicalWorkOrders];
+    const foundOrder = allOrders.find(o => o.ot_number === otNumber);
+    return foundOrder ? getOrder(foundOrder.id) : undefined;
+  }, [activeWorkOrders, historicalWorkOrders, otNumber, getOrder]);
 
   const technicians = React.useMemo(() => {
     return collaborators.filter(c => c.role === 'Técnico' && c.status === 'Activo');
@@ -88,7 +90,7 @@ export default function NewReportPage() {
         setSubmittedReport(savedReport);
         toast({
             title: "Informe Guardado",
-            description: "El informe ha sido guardado correctamente. Ahora puedes enviarlo por correo.",
+            description: "El informe ha sido guardado correctamente. Ahora puedes proceder al envío.",
         });
         setIsEmailDialogOpen(true);
       } catch (error) {
