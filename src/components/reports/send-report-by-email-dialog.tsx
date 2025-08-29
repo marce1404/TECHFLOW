@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import type { SubmittedReport, AppUser, Collaborator, ReportTemplate } from '@/lib/types';
+import type { SubmittedReport, AppUser, Collaborator, ReportTemplate, SmtpConfig } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Send } from 'lucide-react';
 import { sendReportEmailAction } from '@/app/actions';
@@ -74,38 +74,137 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
     if (!template) return "<p>Error: Plantilla no encontrada.</p>";
 
     const submittedDate = report.submittedAt instanceof Timestamp 
-        ? report.submittedAt.toDate().toLocaleDateString('es-CL') 
+        ? report.submittedAt.toDate().toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric'}) 
         : 'N/A';
     const shortFolio = report.id.substring(report.id.length - 6).toUpperCase();
 
     let fieldsHtml = '';
-    template.fields.forEach(field => {
+    template.fields.sort((a,b) => (a.id > b.id ? 1 : -1)).forEach(field => {
         const value = report.reportData[field.name];
         if (value !== undefined && value !== null && value !== '') {
-             fieldsHtml += `<p><strong>${field.label}:</strong> ${String(value)}</p>`;
+             if (field.type === 'checkbox') {
+                fieldsHtml += `<tr><td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;">${field.label}</td><td style="padding: 8px; border-bottom: 1px solid #ddd;">✔️</td></tr>`;
+             } else {
+                fieldsHtml += `<tr><td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;">${field.label}</td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${String(value).replace(/\n/g, '<br>')}</td></tr>`;
+             }
         }
     });
 
     const emailBody = `
-        <p>Estimado Cliente,</p>
-        <p>A continuación, encontrará el informe técnico correspondiente al servicio realizado.</p>
-        <p>Agradeceríamos nos pudiera responder este correo con sus comentarios y la recepción conforme del servicio.</p>
-        <br>
-        <hr>
-        <h1 style="font-family: sans-serif; color: #333;">${template.name} - Folio: ${shortFolio}</h1>
-        <p>Fecha de Emisión: ${submittedDate}</p>
-        <hr>
-        <h2>Información de la OT</h2>
-        <p><strong>Nº OT:</strong> ${report.otDetails.ot_number}</p>
-        <p><strong>Cliente:</strong> ${report.otDetails.client}</p>
-        <p><strong>Descripción:</strong> ${report.otDetails.description}</p>
-        <hr>
-        <h2>Detalles del Servicio</h2>
-        ${fieldsHtml}
-        <hr>
-        <br>
-        <p>Saludos cordiales,</p>
-        <p><strong>El Equipo de ${companyInfo?.name || 'TechFlow'}</strong></p>
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+        <style>
+            body {
+                font-family: 'Inter', sans-serif;
+                background-color: #f4f4f4;
+                color: #333;
+                margin: 0;
+                padding: 0;
+            }
+            .container {
+                max-width: 600px;
+                margin: 20px auto;
+                background-color: #ffffff;
+                border-radius: 8px;
+                overflow: hidden;
+                border: 1px solid #e2e8f0;
+            }
+            .header {
+                background-color: #3CA7FA;
+                color: #ffffff;
+                padding: 24px;
+                text-align: center;
+            }
+            .header h1 {
+                margin: 0;
+                font-size: 24px;
+            }
+            .content {
+                padding: 24px;
+            }
+            .content p {
+                line-height: 1.6;
+            }
+            .section-title {
+                font-size: 18px;
+                color: #3CA7FA;
+                margin-top: 20px;
+                margin-bottom: 10px;
+                border-bottom: 2px solid #3CA7FA;
+                padding-bottom: 5px;
+            }
+            .details-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+            }
+            .details-table td {
+                padding: 8px;
+                border-bottom: 1px solid #ddd;
+            }
+            .details-table td:first-child {
+                font-weight: bold;
+                width: 40%;
+            }
+            .footer {
+                background-color: #f1f5f9;
+                color: #64748b;
+                padding: 20px;
+                text-align: center;
+                font-size: 12px;
+            }
+            .button {
+                display: inline-block;
+                background-color: #3CA7FA;
+                color: #ffffff;
+                padding: 12px 24px;
+                text-decoration: none;
+                border-radius: 5px;
+                margin-top: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>${template.name}</h1>
+            </div>
+            <div class="content">
+                <p>Estimado Cliente,</p>
+                <p>A continuación, encontrará el informe técnico correspondiente al servicio realizado. Agradeceríamos nos pudiera responder este correo con sus comentarios y la recepción conforme del servicio.</p>
+                
+                <h2 class="section-title">Información de la Orden de Trabajo</h2>
+                <table class="details-table">
+                    <tr><td>Nº OT</td><td>${report.otDetails.ot_number}</td></tr>
+                    <tr><td>Cliente</td><td>${report.otDetails.client}</td></tr>
+                    <tr><td>Descripción</td><td>${report.otDetails.description}</td></tr>
+                    <tr><td>Folio Informe</td><td>${shortFolio}</td></tr>
+                    <tr><td>Fecha Emisión</td><td>${submittedDate}</td></tr>
+                </table>
+
+                <h2 class="section-title">Detalles del Servicio Realizado</h2>
+                <table class="details-table">
+                   ${fieldsHtml}
+                </table>
+
+                <p>Para ver el informe completo en formato PDF, por favor haga clic en el siguiente botón:</p>
+                <a href="#" class="button">Ver Informe Completo Online</a>
+                
+                <br><br>
+                <p>Saludos cordiales,</p>
+                <p><strong>El Equipo de ${companyInfo?.name || 'TechFlow'}</strong></p>
+            </div>
+            <div class="footer">
+                <p>&copy; ${new Date().getFullYear()} ${companyInfo?.name || 'TechFlow'}. Todos los derechos reservados.</p>
+                <p>${companyInfo?.address || ''}</p>
+            </div>
+        </div>
+    </body>
+    </html>
     `;
 
     return emailBody;
@@ -113,14 +212,7 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
 
   const onSubmit = async (data: EmailFormValues) => {
     if (!report) return;
-    if (!smtpConfig) {
-        toast({
-            variant: 'destructive',
-            title: 'Configuración Faltante',
-            description: 'No se ha configurado el servidor de correo (SMTP). Por favor, ve a la configuración para añadirla.',
-        });
-        return;
-    }
+    
     setLoading(true);
 
     const template = reportTemplates.find(t => t.id === report.templateId);
@@ -144,10 +236,9 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
       ccList.push(...collaboratorEmails);
     }
     
-    // Remove duplicates
     const uniqueCcList = Array.from(new Set(ccList));
     
-    const subject = `Informe de Servicio - OT ${report.otDetails.ot_number}`;
+    const subject = `Informe de Servicio - OT ${report.otDetails.ot_number} - ${report.otDetails.client}`;
     const htmlBody = generateReportHtml(report, template);
 
     const result = await sendReportEmailAction(data.to, uniqueCcList, subject, htmlBody, smtpConfig);
