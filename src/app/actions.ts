@@ -226,25 +226,26 @@ export async function sendReportEmailAction(
     }
     
     const reportHtml = await getReportHtml(reportId);
+    
+    const emailBody = `
+        <p>Estimado Cliente,</p>
+        <p>A continuación, encontrará el informe técnico correspondiente al servicio realizado.</p>
+        <p>Agradeceríamos nos pudiera responder este correo con sus comentarios y la recepción conforme del servicio.</p>
+        <br>
+        <hr>
+        ${reportHtml}
+        <hr>
+        <br>
+        <p>Saludos cordiales,</p>
+        <p><strong>El Equipo de ${fromName}</strong></p>
+    `;
 
     const mailOptions = {
         from: `"${fromName}" <${fromEmail}>`,
         to,
         cc: cc.join(','),
         subject: `Informe de Servicio - OT ${report.otDetails.ot_number}`,
-        html: `<p>Estimado Cliente,</p>
-               <p>Adjunto encontrará el informe técnico correspondiente al servicio realizado.</p>
-               <p>Agradeceríamos nos pudiera responder este correo con sus comentarios y la recepción conforme del servicio.</p>
-               <br>
-               <p>Saludos cordiales,</p>
-               <p><strong>El Equipo de ${fromName}</strong></p>`,
-        attachments: [
-            {
-                filename: `Informe_OT_${report.otDetails.ot_number}.html`,
-                content: reportHtml,
-                contentType: 'text/html'
-            }
-        ]
+        html: emailBody,
     };
 
     try {
