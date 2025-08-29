@@ -47,7 +47,7 @@ export default function EditOrderPage() {
     .map(c => ({ value: c.name, label: c.name }));
 
   const vendors = collaborators
-    .filter(c => c.role === 'Vendedor')
+    .filter(c => c.role === 'Comercial')
     .map(c => ({ value: c.name, label: c.name }));
   
   const vehicleOptions = vehicles.map(v => ({
@@ -398,13 +398,13 @@ export default function EditOrderPage() {
                     </div>
 
                     <div>
-                        <Label htmlFor="vendor">Vendedor</Label>
+                        <Label htmlFor="vendor">Comercial</Label>
                         <Select
-                          value={order.vendedor}
-                          onValueChange={(value) => handleInputChange('vendedor', value)}
+                          value={order.comercial}
+                          onValueChange={(value) => handleInputChange('comercial', value)}
                         >
                             <SelectTrigger id="vendor">
-                                <SelectValue placeholder="Seleccionar vendedor" />
+                                <SelectValue placeholder="Seleccionar comercial" />
                             </SelectTrigger>
                             <SelectContent>
                                 {vendors.map(v => <SelectItem key={v.value} value={v.label}>{v.label}</SelectItem>)}

@@ -54,7 +54,7 @@ export default function CollaboratorsPage() {
         return matchesRole && matchesSearch;
     });
 
-    const collaboratorRoles: (Collaborator['role'] | 'Todos')[] = ['Todos', 'Técnico', 'Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado', 'Vendedor'];
+    const collaboratorRoles: (Collaborator['role'] | 'Todos')[] = ['Todos', 'Técnico', 'Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado', 'Comercial'];
 
     return (
         <div className="flex flex-col gap-8">

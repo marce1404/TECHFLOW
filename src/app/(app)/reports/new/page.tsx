@@ -81,7 +81,7 @@ export default function NewReportPage() {
             client: workOrder.client,
             description: workOrder.description,
             netPrice: workOrder.netPrice,
-            vendedor: workOrder.vendedor,
+            comercial: workOrder.comercial,
           }
       };
 
@@ -106,7 +106,7 @@ export default function NewReportPage() {
   }
   
   const getReportManager = (report: SubmittedReport): AppUser | undefined => {
-      const managerName = report.otDetails.vendedor;
+      const managerName = report.otDetails.comercial;
       if (!managerName) return undefined;
       return users.find(u => u.displayName === managerName);
   };
@@ -154,7 +154,7 @@ export default function NewReportPage() {
                     </div>
                     <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-muted-foreground"/>
-                        <span className="font-semibold">{workOrder.vendedor}</span>
+                        <span className="font-semibold">{workOrder.comercial}</span>
                     </div>
                     <Separator />
                     <div className="flex justify-between items-center">

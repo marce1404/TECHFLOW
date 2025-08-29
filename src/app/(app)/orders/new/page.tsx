@@ -45,7 +45,7 @@ export default function NewOrderPage() {
     const [saleNumber, setSaleNumber] = React.useState('');
     const [hesEmMigo, setHesEmMigo] = React.useState('');
     const [assigned, setAssigned] = React.useState<string[]>([]);
-    const [vendedor, setVendedor] = React.useState('');
+    const [comercial, setComercial] = React.useState('');
     
 
     const technicians = collaborators
@@ -57,7 +57,7 @@ export default function NewOrderPage() {
       .map(c => ({ value: c.id, label: c.name }));
 
     const vendors = collaborators
-      .filter(c => c.role === 'Vendedor' && c.status === 'Activo')
+      .filter(c => c.role === 'Comercial' && c.status === 'Activo')
       .map(c => ({ value: c.id, label: c.name }));
 
   const vehicleOptions = vehicles.map(v => ({
@@ -97,7 +97,7 @@ export default function NewOrderPage() {
         hesEmMigo,
         facturado: !!invoiceNumber,
         assigned: assigned.map(id => collaborators.find(c => c.id === id)?.name || ''),
-        vendedor: collaborators.find(c => c.id === vendedor)?.name || '',
+        comercial: collaborators.find(c => c.id === comercial)?.name || '',
     };
     
     addOrder(newOrder);
@@ -405,10 +405,10 @@ export default function NewOrderPage() {
                         </div>
 
                         <div>
-                            <Label htmlFor="vendor">Vendedor</Label>
-                            <Select onValueChange={setVendedor} value={vendedor}>
+                            <Label htmlFor="vendor">Comercial</Label>
+                            <Select onValueChange={setComercial} value={comercial}>
                                 <SelectTrigger id="vendor">
-                                    <SelectValue placeholder="Seleccionar vendedor" />
+                                    <SelectValue placeholder="Seleccionar comercial" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {vendors.map(v => <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>)}

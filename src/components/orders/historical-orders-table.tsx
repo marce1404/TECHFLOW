@@ -100,7 +100,7 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
       { key: 'client', label: 'Cliente' },
       { key: 'service', label: 'Servicio' },
       { key: 'assigned', label: 'Encargado' },
-      { key: 'vendedor', label: 'Vendedor' },
+      { key: 'comercial', label: 'Comercial' },
       { key: 'status', label: 'Estado' },
       { key: 'facturado', label: 'Facturado' },
   ];
@@ -140,7 +140,7 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                         <TableCell>{order.client}</TableCell>
                         <TableCell>{order.service}</TableCell>
                         <TableCell>{order.assigned.join(', ')}</TableCell>
-                        <TableCell>{order.vendedor}</TableCell>
+                        <TableCell>{order.comercial}</TableCell>
                         <TableCell>
                             <DropdownMenu>
                             <DropdownMenuTrigger asChild>

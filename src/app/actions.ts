@@ -202,7 +202,7 @@ export async function exportOrdersToExcel(orders: WorkOrder[]): Promise<string> 
         'Encargados': order.assigned.join(', '),
         'Técnicos': order.technicians.join(', '),
         'Vehículos': order.vehicles.join(', '),
-        'Vendedor': order.vendedor,
+        'Comercial': order.comercial,
         'Precio Neto': order.netPrice,
         'Facturado': order.facturado ? 'Sí' : 'No',
         'Nº Factura': order.invoiceNumber || '',

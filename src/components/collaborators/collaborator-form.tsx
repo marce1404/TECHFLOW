@@ -55,7 +55,7 @@ const certificationSchema = z.object({
 const collaboratorFormSchema = z.object({
   name: z.string().min(3, { message: 'El nombre debe tener al menos 3 caracteres.' }),
   email: z.string().email({ message: 'Debe ser un correo electrónico válido.' }).optional().or(z.literal('')),
-  role: z.enum(['Técnico', 'Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado', 'Vendedor']),
+  role: z.enum(['Técnico', 'Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado', 'Comercial']),
   area: z.string().optional(),
   status: z.enum(['Activo', 'Licencia', 'Vacaciones']),
   license: z.string().optional(),
@@ -229,7 +229,7 @@ export default function CollaboratorForm({ onSave, collaborator }: CollaboratorF
     </Popover>
   );
   
-  const roles: Collaborator['role'][] = ['Técnico', 'Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado', 'Vendedor'];
+  const roles: Collaborator['role'][] = ['Técnico', 'Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado', 'Comercial'];
 
 
   return (

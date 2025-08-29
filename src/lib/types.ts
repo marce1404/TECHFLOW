@@ -28,7 +28,7 @@ export type WorkOrder = {
   client: string;
   service: string;
   assigned: string[];
-  vendedor: string;
+  comercial: string;
   status: 'Por Iniciar' | 'En Progreso' | 'Pendiente' | 'Atrasada' | 'Cerrada';
   priority: 'Baja' | 'Media' | 'Alta';
   facturado: boolean;
@@ -74,7 +74,7 @@ export type Collaborator = {
   id: string;
   name: string;
   email?: string;
-  role: 'Técnico' | 'Supervisor' | 'Coordinador' | 'Jefe de Proyecto' | 'Encargado' | 'Vendedor';
+  role: 'Técnico' | 'Supervisor' | 'Coordinador' | 'Jefe de Proyecto' | 'Encargado' | 'Comercial';
   area: string;
   status: 'Activo' | 'Licencia' | 'Vacaciones';
   license: string;
@@ -176,7 +176,7 @@ export type SubmittedReport = {
         client: string;
         description: string;
         netPrice: number;
-        vendedor?: string;
+        comercial?: string;
     };
     templateName: string;
     submittedAt: Timestamp;
@@ -289,7 +289,7 @@ export const CreateWorkOrderInputSchema = z.object({
   assigned: z.array(z.string()).optional().default([]).describe("A list of names for assigned supervisors/managers."),
   technicians: z.array(z.string()).optional().default([]).describe("A list of names for assigned technicians."),
   vehicles: z.array(z.string()).optional().default([]).describe("A list of assigned vehicles."),
-  vendedor: z.string().optional().describe("The name of the salesperson."),
+  comercial: z.string().optional().describe("The name of the salesperson."),
   saleNumber: z.string().optional().describe("The sale number."),
   hesEmMigo: z.string().optional().describe("The HES/EM/MIGO number."),
   rentedVehicle: z.string().optional().describe("Details of a rented vehicle."),
