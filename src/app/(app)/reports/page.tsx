@@ -88,42 +88,44 @@ export default function ReportsPage() {
                     </div>
                 </div>
               <TabsContent value={activeTab}>
-                 <div className="rounded-md border hidden md:block">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Nº OT</TableHead>
-                          <TableHead>Descripción</TableHead>
-                          <TableHead>Cliente</TableHead>
-                          <TableHead className="text-right">Acción</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredOrders.length > 0 ? (
-                          filteredOrders.map((order: WorkOrder) => (
-                            <TableRow key={order.id}>
-                              <TableCell>{order.ot_number}</TableCell>
-                              <TableCell>{order.description}</TableCell>
-                              <TableCell>{order.client}</TableCell>
-                              <TableCell className="text-right">
-                                <Button asChild>
-                                  <Link href={`/reports/new?ot_number=${order.ot_number}`}>
-                                    <FilePlus2 className="mr-2 h-4 w-4" />
-                                    Llenar Informe
-                                  </Link>
-                                </Button>
-                              </TableCell>
+                 <div className="hidden md:block">
+                    <div className="rounded-md border">
+                        <Table>
+                        <TableHeader>
+                            <TableRow>
+                            <TableHead>Nº OT</TableHead>
+                            <TableHead>Descripción</TableHead>
+                            <TableHead>Cliente</TableHead>
+                            <TableHead className="text-right">Acción</TableHead>
                             </TableRow>
-                          ))
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={4} className="h-24 text-center">
-                              No hay órdenes de trabajo pendientes de informe que coincidan con tu búsqueda.
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {filteredOrders.length > 0 ? (
+                            filteredOrders.map((order: WorkOrder) => (
+                                <TableRow key={order.id}>
+                                <TableCell>{order.ot_number}</TableCell>
+                                <TableCell>{order.description}</TableCell>
+                                <TableCell>{order.client}</TableCell>
+                                <TableCell className="text-right">
+                                    <Button asChild>
+                                    <Link href={`/reports/new?ot_number=${order.ot_number}`}>
+                                        <FilePlus2 className="mr-2 h-4 w-4" />
+                                        Llenar Informe
+                                    </Link>
+                                    </Button>
+                                </TableCell>
+                                </TableRow>
+                            ))
+                            ) : (
+                            <TableRow>
+                                <TableCell colSpan={4} className="h-24 text-center">
+                                No hay órdenes de trabajo pendientes de informe que coincidan con tu búsqueda.
+                                </TableCell>
+                            </TableRow>
+                            )}
+                        </TableBody>
+                        </Table>
+                    </div>
                   </div>
                    <div className="md:hidden space-y-4">
                     {filteredOrders.length > 0 ? (

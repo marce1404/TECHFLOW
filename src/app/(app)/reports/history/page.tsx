@@ -105,67 +105,69 @@ export default function ReportsHistoryPage() {
                       </div>
                   </div>
                   <TabsContent value={activeTab}>
-                      <div className="rounded-md border hidden md:block">
-                      <Table>
-                          <TableHeader>
-                          <TableRow>
-                              <TableHead>Nº OT</TableHead>
-                              <TableHead>Cliente</TableHead>
-                              <TableHead>Plantilla Utilizada</TableHead>
-                              <TableHead>Fecha de Envío</TableHead>
-                              <TableHead className="text-right">Acciones</TableHead>
-                          </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                          {filteredReports.length > 0 ? (
-                              filteredReports.map((report: SubmittedReport) => (
-                              <TableRow key={report.id}>
-                                  <TableCell className="font-medium">
-                                    <Link href={`/reports/${report.id}/edit`} className="text-primary hover:underline">
-                                        {report.otDetails.ot_number}
-                                    </Link>
-                                  </TableCell>
-                                  <TableCell>{report.otDetails.client}</TableCell>
-                                  <TableCell>{report.templateName}</TableCell>
-                                  <TableCell>{report.submittedAt ? format(report.submittedAt.toDate(), 'dd/MM/yyyy HH:mm', { locale: es }) : 'N/A'}</TableCell>
-                                  <TableCell className="text-right space-x-2">
-                                    <Button size="icon" variant="outline" asChild>
-                                      <Link href={`/reports/${report.id}/edit`}>
-                                        <FilePenLine className="h-4 w-4" />
-                                        <span className="sr-only">Editar</span>
-                                      </Link>
-                                    </Button>
-                                    <Button size="icon" variant="outline" onClick={() => handleSendEmailClick(report)}>
-                                        <Mail className="h-4 w-4" />
-                                        <span className="sr-only">Enviar por correo</span>
-                                    </Button>
-                                    <Button size="icon" variant="outline" asChild>
-                                        <Link href={`/reports/${report.id}/print`} target="_blank">
-                                        <Printer className="h-4 w-4" />
-                                         <span className="sr-only">Ver / Imprimir</span>
-                                        </Link>
-                                    </Button>
-                                  </TableCell>
-                              </TableRow>
-                              ))
-                          ) : (
-                              <TableRow>
-                              <TableCell colSpan={5} className="h-24 text-center">
-                                  No se han guardado informes que coincidan con tu búsqueda.
-                              </TableCell>
-                              </TableRow>
-                          )}
-                          </TableBody>
-                      </Table>
+                      <div className="hidden md:block">
+                        <div className="rounded-md border">
+                            <Table>
+                                <TableHeader>
+                                <TableRow>
+                                    <TableHead>Nº OT</TableHead>
+                                    <TableHead>Cliente</TableHead>
+                                    <TableHead>Plantilla Utilizada</TableHead>
+                                    <TableHead>Fecha de Envío</TableHead>
+                                    <TableHead className="text-right">Acciones</TableHead>
+                                </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                {filteredReports.length > 0 ? (
+                                    filteredReports.map((report: SubmittedReport) => (
+                                    <TableRow key={report.id}>
+                                        <TableCell className="font-medium">
+                                            <Link href={`/reports/${report.id}/edit`} className="text-primary hover:underline">
+                                                {report.otDetails.ot_number}
+                                            </Link>
+                                        </TableCell>
+                                        <TableCell>{report.otDetails.client}</TableCell>
+                                        <TableCell>{report.templateName}</TableCell>
+                                        <TableCell>{report.submittedAt ? format(report.submittedAt.toDate(), 'dd/MM/yyyy HH:mm', { locale: es }) : 'N/A'}</TableCell>
+                                        <TableCell className="text-right space-x-2">
+                                            <Button size="icon" variant="outline" asChild>
+                                            <Link href={`/reports/${report.id}/edit`}>
+                                                <FilePenLine className="h-4 w-4" />
+                                                <span className="sr-only">Editar</span>
+                                            </Link>
+                                            </Button>
+                                            <Button size="icon" variant="outline" onClick={() => handleSendEmailClick(report)}>
+                                                <Mail className="h-4 w-4" />
+                                                <span className="sr-only">Enviar por correo</span>
+                                            </Button>
+                                            <Button size="icon" variant="outline" asChild>
+                                                <Link href={`/reports/${report.id}/print`} target="_blank">
+                                                <Printer className="h-4 w-4" />
+                                                <span className="sr-only">Ver / Imprimir</span>
+                                                </Link>
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                    <TableCell colSpan={5} className="h-24 text-center">
+                                        No se han guardado informes que coincidan con tu búsqueda.
+                                    </TableCell>
+                                    </TableRow>
+                                )}
+                                </TableBody>
+                            </Table>
+                        </div>
                       </div>
                       <div className="md:hidden space-y-4">
                         {filteredReports.length > 0 ? (
                             filteredReports.map((report) => (
                                 <Card key={report.id} className="relative">
-                                    <Link href={`/reports/${report.id}/edit`} className="absolute inset-0 z-10"><span className="sr-only">Ver detalles</span></Link>
                                     <CardHeader>
                                         <div className="flex justify-between items-center">
                                             <CardTitle className="text-base">{report.otDetails.ot_number}</CardTitle>
+                                             <Link href={`/reports/${report.id}/edit`} className="absolute inset-0 z-10"><span className="sr-only">Ver detalles</span></Link>
                                             <ChevronRight className="h-5 w-5 text-muted-foreground" />
                                         </div>
                                         <CardDescription>{report.otDetails.client}</CardDescription>

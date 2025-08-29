@@ -111,7 +111,7 @@ export default function NewReportPage() {
   
   if (!workOrder) {
     return (
-       <div className="flex flex-col items-center justify-center h-full gap-6">
+       <div className="flex flex-col items-center justify-center h-full gap-6 p-4">
             <Card className="w-full max-w-lg">
                 <CardHeader className="items-center text-center">
                     <FileWarning className="h-16 w-16 text-destructive mb-4" />
@@ -133,76 +133,80 @@ export default function NewReportPage() {
   return (
     <div className="flex flex-col gap-8">
       <div className="grid md:grid-cols-3 gap-6">
-        <Card className="md:col-span-1">
-            <CardHeader>
-                <CardTitle>Información de OT</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm">
-                <div className="flex items-center gap-2">
-                    <File className="h-4 w-4 text-muted-foreground"/>
-                    <span className="font-semibold">{workOrder.ot_number}</span>
-                </div>
-                 <div className="flex items-start gap-2">
-                    <Building className="h-4 w-4 text-muted-foreground mt-1"/>
-                    <div className="flex flex-col">
-                        <span className="font-semibold">{workOrder.client}</span>
-                        <span className="text-muted-foreground">{workOrder.description}</span>
+        <div className="md:col-span-3 lg:col-span-1">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Información de OT</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 text-sm">
+                    <div className="flex items-center gap-2">
+                        <File className="h-4 w-4 text-muted-foreground"/>
+                        <span className="font-semibold">{workOrder.ot_number}</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                        <Building className="h-4 w-4 text-muted-foreground mt-1"/>
+                        <div className="flex flex-col">
+                            <span className="font-semibold">{workOrder.client}</span>
+                            <span className="text-muted-foreground">{workOrder.description}</span>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground"/>
+                        <span className="font-semibold">{workOrder.vendedor}</span>
+                    </div>
+                    <Separator />
+                    <div className="flex justify-between items-center">
+                        <span className="font-semibold">Valor del Servicio (Neto)</span>
+                        <Badge variant="secondary">${new Intl.NumberFormat('es-CL').format(workOrder.netPrice)}</Badge>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+
+        <div className="md:col-span-3 lg:col-span-2">
+            <Card>
+                <CardHeader>
+                <CardTitle>Seleccionar Plantilla</CardTitle>
+                <CardDescription>
+                    Elige el formato de informe que deseas completar para la OT seleccionada.
+                </CardDescription>
+                </CardHeader>
+                <CardContent>
+                <div className="space-y-4">
+                    <div>
+                    <Label htmlFor="template-select">Seleccionar Plantilla</Label>
+                    <Select onValueChange={handleTemplateChange}>
+                        <SelectTrigger id="template-select">
+                        <SelectValue placeholder="Elige el formato a completar..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {reportTemplates.filter(t => t.type === 'service-guide').length > 0 && (
+                                <SelectGroup>
+                                    <SelectLabel>Guías de Servicio</SelectLabel>
+                                    {reportTemplates.filter(t => t.type === 'service-guide').map(template => (
+                                        <SelectItem key={template.id} value={template.id}>
+                                        {template.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            )}
+                            {reportTemplates.filter(t => t.type === 'project-delivery').length > 0 && (
+                                <SelectGroup>
+                                    <SelectLabel>Entrega de Proyectos</SelectLabel>
+                                    {reportTemplates.filter(t => t.type === 'project-delivery').map(template => (
+                                        <SelectItem key={template.id} value={template.id}>
+                                        {template.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            )}
+                        </SelectContent>
+                    </Select>
                     </div>
                 </div>
-                 <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-muted-foreground"/>
-                    <span className="font-semibold">{workOrder.vendedor}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between items-center">
-                    <span className="font-semibold">Valor del Servicio (Neto)</span>
-                    <Badge variant="secondary">${new Intl.NumberFormat('es-CL').format(workOrder.netPrice)}</Badge>
-                </div>
-            </CardContent>
-        </Card>
-
-        <Card className="md:col-span-2">
-            <CardHeader>
-            <CardTitle>Seleccionar Plantilla</CardTitle>
-            <CardDescription>
-                Elige el formato de informe que deseas completar para la OT seleccionada.
-            </CardDescription>
-            </CardHeader>
-            <CardContent>
-            <div className="space-y-4">
-                <div>
-                <Label htmlFor="template-select">Seleccionar Plantilla</Label>
-                <Select onValueChange={handleTemplateChange}>
-                    <SelectTrigger id="template-select">
-                    <SelectValue placeholder="Elige el formato a completar..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {reportTemplates.filter(t => t.type === 'service-guide').length > 0 && (
-                            <SelectGroup>
-                                <SelectLabel>Guías de Servicio</SelectLabel>
-                                {reportTemplates.filter(t => t.type === 'service-guide').map(template => (
-                                    <SelectItem key={template.id} value={template.id}>
-                                    {template.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectGroup>
-                        )}
-                        {reportTemplates.filter(t => t.type === 'project-delivery').length > 0 && (
-                            <SelectGroup>
-                                <SelectLabel>Entrega de Proyectos</SelectLabel>
-                                {reportTemplates.filter(t => t.type === 'project-delivery').map(template => (
-                                    <SelectItem key={template.id} value={template.id}>
-                                    {template.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectGroup>
-                        )}
-                    </SelectContent>
-                </Select>
-                </div>
-            </div>
-            </CardContent>
-        </Card>
+                </CardContent>
+            </Card>
+        </div>
       </div>
       
       {selectedTemplate && (
