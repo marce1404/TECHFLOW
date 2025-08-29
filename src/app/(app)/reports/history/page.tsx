@@ -24,8 +24,8 @@ import { SendReportByEmailDialog } from '@/components/reports/send-report-by-ema
 import { useAuth } from '@/context/auth-context';
 
 export default function ReportsHistoryPage() {
-  const { submittedReports, otCategories, loading, collaborators } = useWorkOrders();
-  const { users } = useAuth();
+  const { submittedReports, otCategories, loading } = useWorkOrders();
+  const { users, userProfile } = useAuth();
   const [search, setSearch] = React.useState('');
   const [activeTab, setActiveTab] = React.useState('todos');
   const [selectedReport, setSelectedReport] = React.useState<SubmittedReport | null>(null);
@@ -69,12 +69,6 @@ export default function ReportsHistoryPage() {
       if (!managerName) return undefined;
       return users.find(u => u.displayName === managerName);
   };
-  
-  const getCurrentUser = (): AppUser | undefined => {
-      const { userProfile } = useAuth();
-      return userProfile || undefined;
-  }
-
 
   if (loading) {
     return <div>Cargando informes...</div>;
@@ -164,7 +158,7 @@ export default function ReportsHistoryPage() {
         onOpenChange={setIsEmailDialogOpen}
         report={selectedReport}
         reportManager={selectedReport ? getReportManager(selectedReport) : undefined}
-        currentUser={getCurrentUser()}
+        currentUser={userProfile || undefined}
       />
     </>
   );
