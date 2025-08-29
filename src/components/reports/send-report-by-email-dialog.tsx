@@ -157,15 +157,6 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
                 text-align: center;
                 font-size: 12px;
             }
-            .button {
-                display: inline-block;
-                background-color: #3CA7FA;
-                color: #ffffff;
-                padding: 12px 24px;
-                text-decoration: none;
-                border-radius: 5px;
-                margin-top: 20px;
-            }
         </style>
     </head>
     <body>
@@ -190,11 +181,8 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
                 <table class="details-table">
                    ${fieldsHtml}
                 </table>
-
-                <p>Para ver el informe completo en formato PDF, por favor haga clic en el siguiente botón:</p>
-                <a href="#" class="button">Ver Informe Completo Online</a>
                 
-                <br><br>
+                <br>
                 <p>Saludos cordiales,</p>
                 <p><strong>El Equipo de ${companyInfo?.name || 'TechFlow'}</strong></p>
             </div>
