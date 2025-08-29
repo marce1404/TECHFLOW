@@ -210,7 +210,7 @@ export async function exportOrdersToExcel(orders: WorkOrder[]): Promise<string> 
         'Nº Venta': order.saleNumber || '',
         'HES / EM / MIGO': order.hesEmMigo || '',
         'Vehículo Arrendado': order.rentedVehicle || '',
-        'Notas': order.notes || '',
+        'Observaciones / Notas Adicionales': order.notes || '',
     }));
 
     const worksheet = xlsx.utils.json_to_sheet(dataToExport);
