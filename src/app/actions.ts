@@ -15,7 +15,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import nodemailer from 'nodemailer';
 import * as xlsx from 'xlsx';
-import { createWorkOrderFromApi } from './ai/flows/create-ot-from-api';
+import { createWorkOrderFromApi } from '@/ai/flows/create-ot-from-api';
 
 
 // This function ensures Firebase Admin is initialized, but only once.
