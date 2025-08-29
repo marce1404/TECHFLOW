@@ -24,16 +24,18 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import type { SubmittedReport, AppUser } from '@/lib/types';
+import type { SubmittedReport, AppUser, Collaborator } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Send } from 'lucide-react';
 import { sendReportEmailAction } from '@/app/actions';
+import { MultiSelect } from '../ui/multi-select';
+import { useWorkOrders } from '@/context/work-orders-context';
 
 const emailFormSchema = z.object({
   to: z.string().email({ message: 'El correo del cliente no es válido.' }),
   ccManager: z.boolean().default(true),
   ccCurrentUser: z.boolean().default(true),
-  ccCustom: z.string().optional(),
+  ccCollaborators: z.array(z.string()).optional(),
 });
 
 type EmailFormValues = z.infer<typeof emailFormSchema>;
@@ -48,6 +50,7 @@ interface SendReportByEmailDialogProps {
 
 export function SendReportByEmailDialog({ open, onOpenChange, report, reportManager, currentUser }: SendReportByEmailDialogProps) {
   const { toast } = useToast();
+  const { collaborators } = useWorkOrders();
   const [loading, setLoading] = React.useState(false);
 
   const form = useForm<EmailFormValues>({
@@ -56,7 +59,7 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
       to: '',
       ccManager: true,
       ccCurrentUser: true,
-      ccCustom: '',
+      ccCollaborators: [],
     },
   });
 
@@ -77,8 +80,11 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
     if (data.ccCurrentUser && currentUser?.email) {
       ccList.push(currentUser.email);
     }
-    if (data.ccCustom) {
-      ccList.push(...data.ccCustom.split(',').map(email => email.trim()).filter(email => email));
+    if (data.ccCollaborators) {
+      const collaboratorEmails = data.ccCollaborators
+        .map(collaboratorId => collaborators.find(c => c.id === collaboratorId)?.email)
+        .filter((email): email is string => !!email);
+      ccList.push(...collaboratorEmails);
     }
     
     // Remove duplicates
@@ -103,6 +109,8 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
 
     setLoading(false);
   };
+  
+  const collaboratorOptions = collaborators.map(c => ({ value: c.id, label: `${c.name} (${c.email})`})).filter(c => c.label.includes('@'));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -158,19 +166,22 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
                         )}
                     />
                 )}
-                 <FormField
+                <FormField
                     control={form.control}
-                    name="ccCustom"
+                    name="ccCollaborators"
                     render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Otros Correos (separados por coma)</FormLabel>
-                        <FormControl>
-                            <Input placeholder="otro@ejemplo.com, gerencia@miempresa.com" {...field} />
-                        </FormControl>
+                      <FormItem>
+                        <FormLabel>Otros Colaboradores</FormLabel>
+                        <MultiSelect
+                          options={collaboratorOptions}
+                          selected={field.value || []}
+                          onChange={field.onChange}
+                          placeholder="Seleccionar colaboradores..."
+                        />
                         <FormMessage />
-                        </FormItem>
+                      </FormItem>
                     )}
-                />
+                  />
             </div>
              <DialogFooter>
                 <DialogClose asChild>

@@ -49,6 +49,7 @@ export default function CollaboratorsPage() {
         const matchesSearch = 
             collaborator.name.toLowerCase().includes(search.toLowerCase()) ||
             collaborator.role.toLowerCase().includes(search.toLowerCase()) ||
+            (collaborator.email && collaborator.email.toLowerCase().includes(search.toLowerCase())) ||
             collaborator.area.toLowerCase().includes(search.toLowerCase());
         return matchesRole && matchesSearch;
     });

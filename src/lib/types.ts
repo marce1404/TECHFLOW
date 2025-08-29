@@ -69,6 +69,7 @@ export type CertificationItem = {
 export type Collaborator = {
   id: string;
   name: string;
+  email?: string;
   role: 'Técnico' | 'Supervisor' | 'Coordinador' | 'Jefe de Proyecto' | 'Encargado' | 'Vendedor';
   area: string;
   status: 'Activo' | 'Licencia' | 'Vacaciones';

@@ -65,6 +65,7 @@ export default function CollaboratorsTable({ collaborators, requestSort, sortCon
 
     const headers: { key: keyof Collaborator, label: string }[] = [
         { key: 'name', label: 'Nombre' },
+        { key: 'email', label: 'Correo' },
         { key: 'role', label: 'Cargo' },
         { key: 'area', label: 'Área' },
         { key: 'status', label: 'Estado' },
@@ -113,6 +114,7 @@ export default function CollaboratorsTable({ collaborators, requestSort, sortCon
                                         {collaborator.name}
                                     </Link>
                                 </TableCell>
+                                <TableCell>{collaborator.email}</TableCell>
                                 <TableCell>{collaborator.role}</TableCell>
                                 <TableCell>{collaborator.area}</TableCell>
                                 <TableCell>
@@ -164,7 +166,7 @@ export default function CollaboratorsTable({ collaborators, requestSort, sortCon
                             </TableRow>
                         )) : (
                             <TableRow>
-                                <TableCell colSpan={5} className="h-24 text-center">
+                                <TableCell colSpan={6} className="h-24 text-center">
                                     No hay resultados.
                                 </TableCell>
                             </TableRow>

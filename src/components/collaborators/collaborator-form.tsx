@@ -54,6 +54,7 @@ const certificationSchema = z.object({
 
 const collaboratorFormSchema = z.object({
   name: z.string().min(3, { message: 'El nombre debe tener al menos 3 caracteres.' }),
+  email: z.string().email({ message: 'Debe ser un correo electrónico válido.' }).optional().or(z.literal('')),
   role: z.enum(['Técnico', 'Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado', 'Vendedor']),
   area: z.string().optional(),
   status: z.enum(['Activo', 'Licencia', 'Vacaciones']),
@@ -100,6 +101,7 @@ export default function CollaboratorForm({ onSave, collaborator }: CollaboratorF
     resolver: zodResolver(collaboratorFormSchema),
     defaultValues: {
       name: '',
+      email: '',
       role: 'Técnico',
       area: '',
       status: 'Activo',
@@ -124,6 +126,7 @@ export default function CollaboratorForm({ onSave, collaborator }: CollaboratorF
     if (collaborator) {
       form.reset({
         name: collaborator.name,
+        email: collaborator.email,
         role: collaborator.role,
         area: collaborator.area,
         status: collaborator.status,
@@ -158,6 +161,7 @@ export default function CollaboratorForm({ onSave, collaborator }: CollaboratorF
         }));
       form.reset({
         name: '',
+        email: '',
         role: 'Técnico',
         area: '',
         status: 'Activo',
@@ -248,6 +252,19 @@ export default function CollaboratorForm({ onSave, collaborator }: CollaboratorF
                             </FormItem>
                         )}
                         />
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                          <FormItem>
+                              <FormLabel>Correo Electrónico</FormLabel>
+                              <FormControl>
+                                  <Input type="email" placeholder="ejemplo@correo.com" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                          </FormItem>
+                      )}
+                    />
                     <FormField
                       control={form.control}
                       name="role"
