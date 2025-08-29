@@ -6,12 +6,14 @@ import {
   SuggestOptimalResourceAssignmentInput,
   SuggestOptimalResourceAssignmentOutputWithError,
   type GanttChart,
+  SmtpConfig,
 } from '@/lib/types';
 
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
 import * as admin from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import nodemailer from 'nodemailer';
 
 
 // This function ensures Firebase Admin is initialized, but only once.
@@ -97,5 +99,46 @@ export async function toggleUserStatusAction(uid: string, currentStatus: 'Activo
   } catch (error: any) {
     console.error('Error toggling user status:', error);
     return { success: false, message: error.message || 'Error al cambiar el estado del usuario.' };
+  }
+}
+
+export async function sendTestEmailAction(config: SmtpConfig, to: string): Promise<{ success: boolean; message: string }> {
+  const { host, port, secure, user, pass, fromName, fromEmail } = config;
+
+  let transporter;
+  try {
+     transporter = nodemailer.createTransport({
+        host,
+        port,
+        secure: secure === 'ssl', // true for 465, false for other ports
+        auth: { user, pass },
+        ...(secure === 'starttls' && { tls: { ciphers: 'SSLv3' }})
+    });
+  } catch (error: any) {
+    console.error("Error creating transporter:", error);
+    return { success: false, message: `Error de configuración del transporter: ${error.message}` };
+  }
+ 
+  try {
+    await transporter.verify();
+  } catch (error: any) {
+     console.error("Error verifying transporter:", error);
+     return { success: false, message: `Error de verificación del servidor: ${error.message}. Revisa el host, puerto y seguridad.` };
+  }
+
+  const mailOptions = {
+    from: `"${fromName}" <${fromEmail}>`,
+    to: to,
+    subject: 'Correo de Prueba - TechFlow',
+    text: 'Este es un correo de prueba para verificar tu configuración SMTP en TechFlow.',
+    html: '<h3>Correo de Prueba</h3><p>Este es un correo de prueba para verificar tu configuración SMTP en <strong>TechFlow</strong>.</p><p>Si recibiste esto, ¡la configuración es correcta!</p>',
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    return { success: true, message: '¡Correo de prueba enviado con éxito! Revisa tu bandeja de entrada.' };
+  } catch (error: any) {
+    console.error("Error sending test email:", error);
+    return { success: false, message: `Error al enviar el correo: ${error.message}. Revisa el usuario, contraseña y permisos.` };
   }
 }

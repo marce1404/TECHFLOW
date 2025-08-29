@@ -12,8 +12,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import type { SmtpConfig } from '@/lib/types';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Send } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { UserSendTestEmailDialog } from './user-send-test-email-dialog';
 
 const smtpFormSchema = z.object({
   host: z.string().min(1, 'El servidor es requerido.'),
@@ -25,12 +26,13 @@ const smtpFormSchema = z.object({
   fromName: z.string().min(1, 'El nombre del remitente es requerido.'),
 });
 
-type SmtpFormValues = z.infer<typeof smtpFormSchema>;
+export type SmtpFormValues = z.infer<typeof smtpFormSchema>;
 
 export function SmtpForm() {
   const { toast } = useToast();
   const { smtpConfig, updateSmtpConfig, loading } = useWorkOrders();
   const [showPassword, setShowPassword] = React.useState(false);
+  const [testDialogOpen, setTestDialogOpen] = React.useState(false);
 
   const form = useForm<SmtpFormValues>({
     resolver: zodResolver(smtpFormSchema),
@@ -59,8 +61,23 @@ export function SmtpForm() {
       duration: 2000,
     });
   };
+  
+  const handleTestConnection = () => {
+    form.trigger().then(isValid => {
+        if(isValid) {
+            setTestDialogOpen(true);
+        } else {
+            toast({
+                variant: "destructive",
+                title: "Campos Inválidos",
+                description: "Por favor, completa correctamente todos los campos antes de probar la conexión."
+            })
+        }
+    });
+  }
 
   return (
+    <>
     <Card>
       <CardHeader>
         <CardTitle>Configuración de Correo (SMTP)</CardTitle>
@@ -180,15 +197,25 @@ export function SmtpForm() {
                     )}
                 />
              </div>
-            <div className="flex justify-end">
-              <Button type="submit" disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Guardar Configuración
-              </Button>
+            <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={handleTestConnection}>
+                  <Send className="mr-2 h-4 w-4" />
+                  Probar y Enviar Correo de Prueba
+                </Button>
+                <Button type="submit" disabled={loading}>
+                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Guardar Configuración
+                </Button>
             </div>
           </form>
         </Form>
       </CardContent>
     </Card>
+    <UserSendTestEmailDialog
+        open={testDialogOpen}
+        onOpenChange={setTestDialogOpen}
+        config={form.getValues()}
+    />
+    </>
   );
 }
