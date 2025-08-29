@@ -37,6 +37,10 @@ export type WorkOrder = {
   netPrice: number;
   invoiceNumber?: string;
   ocNumber?: string;
+  rut?: string;
+  saleNumber?: string;
+  hesEmMigo?: string;
+  rentedVehicle?: string;
 };
 
 export type WorkClothingItem = {
@@ -272,6 +276,7 @@ export const CreateWorkOrderInputSchema = z.object({
   ot_number: z.string().describe("The unique work order number, including prefix. E.g., 'OT-1525'"),
   description: z.string().describe("The name or description of the work order."),
   client: z.string().describe("The client's name for this work order."),
+  rut: z.string().optional().describe("The client's RUT."),
   service: z.string().describe("The service category, e.g., 'CCTV', 'CCAA'."),
   date: z.string().describe("The start date of the work order in 'YYYY-MM-DD' format."),
   endDate: z.string().optional().describe("The potential end date in 'YYYY-MM-DD' format."),
@@ -285,6 +290,9 @@ export const CreateWorkOrderInputSchema = z.object({
   technicians: z.array(z.string()).optional().default([]).describe("A list of names for assigned technicians."),
   vehicles: z.array(z.string()).optional().default([]).describe("A list of assigned vehicles."),
   vendedor: z.string().optional().describe("The name of the salesperson."),
+  saleNumber: z.string().optional().describe("The sale number."),
+  hesEmMigo: z.string().optional().describe("The HES/EM/MIGO number."),
+  rentedVehicle: z.string().optional().describe("Details of a rented vehicle."),
 });
 export type CreateWorkOrderInput = z.infer<typeof CreateWorkOrderInputSchema>;
 

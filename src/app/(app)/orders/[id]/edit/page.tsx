@@ -174,14 +174,25 @@ export default function EditOrderPage() {
                         </Select>
                     </div>
 
-                    <div>
-                        <Label htmlFor="client">Cliente</Label>
-                        <Input 
-                          id="client" 
-                          value={order.client}
-                          onChange={(e) => handleInputChange('client', e.target.value)}
-                          placeholder="Escribe el nombre del cliente..." 
-                        />
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <Label htmlFor="client">Cliente</Label>
+                            <Input 
+                                id="client" 
+                                value={order.client}
+                                onChange={(e) => handleInputChange('client', e.target.value)}
+                                placeholder="Escribe el nombre del cliente..." 
+                            />
+                        </div>
+                         <div>
+                            <Label htmlFor="rut">RUT Cliente</Label>
+                            <Input 
+                                id="rut" 
+                                value={order.rut || ''}
+                                onChange={(e) => handleInputChange('rut', e.target.value)}
+                                placeholder="Ej: 12.345.678-9" 
+                            />
+                        </div>
                     </div>
 
                     <div>
@@ -273,6 +284,15 @@ export default function EditOrderPage() {
                             selected={order.vehicles || []}
                             onChange={(selected) => handleInputChange('vehicles', selected)}
                             placeholder="Seleccionar vehículos..."
+                        />
+                    </div>
+                    
+                    <div>
+                        <Label htmlFor="rented-vehicle">Vehículo Arrendado (Opcional)</Label>
+                        <Input 
+                            id="rented-vehicle" 
+                            value={order.rentedVehicle || ''}
+                            onChange={(e) => handleInputChange('rentedVehicle', e.target.value)}
                         />
                     </div>
 
@@ -390,6 +410,25 @@ export default function EditOrderPage() {
                                 {vendors.map(v => <SelectItem key={v.value} value={v.label}>{v.label}</SelectItem>)}
                             </SelectContent>
                         </Select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <Label htmlFor="sale-number">Nº Venta</Label>
+                            <Input 
+                                id="sale-number" 
+                                value={order.saleNumber || ''}
+                                onChange={(e) => handleInputChange('saleNumber', e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="hes-em-migo">HES / EM / MIGO</Label>
+                            <Input 
+                                id="hes-em-migo" 
+                                value={order.hesEmMigo || ''}
+                                onChange={(e) => handleInputChange('hesEmMigo', e.target.value)}
+                            />
+                        </div>
                     </div>
 
                      {assignedGantt && (

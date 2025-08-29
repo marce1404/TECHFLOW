@@ -29,17 +29,21 @@ export default function NewOrderPage() {
     const [description, setDescription] = React.useState('');
     const [categoryPrefix, setCategoryPrefix] = React.useState('');
     const [client, setClient] = React.useState('');
+    const [rut, setRut] = React.useState('');
     const [service, setService] = React.useState('');
     const [startDate, setStartDate] = React.useState<Date>();
     const [endDate, setEndDate] = React.useState<Date>();
     const [selectedTechnicians, setSelectedTechnicians] = React.useState<string[]>([]);
     const [selectedVehicles, setSelectedVehicles] = React.useState<string[]>([]);
+    const [rentedVehicle, setRentedVehicle] = React.useState('');
     const [notes, setNotes] = React.useState('');
     const [status, setStatus] = React.useState<WorkOrder['status']>(otStatuses.length > 0 ? otStatuses[0].name as WorkOrder['status'] : 'Por Iniciar');
     const [priority, setPriority] = React.useState<WorkOrder['priority']>('Baja');
     const [netPrice, setNetPrice] = React.useState(0);
     const [invoiceNumber, setInvoiceNumber] = React.useState('');
     const [ocNumber, setOcNumber] = React.useState('');
+    const [saleNumber, setSaleNumber] = React.useState('');
+    const [hesEmMigo, setHesEmMigo] = React.useState('');
     const [assigned, setAssigned] = React.useState<string[]>([]);
     const [vendedor, setVendedor] = React.useState('');
     
@@ -76,17 +80,21 @@ export default function NewOrderPage() {
         ot_number: getNextOtNumber(categoryPrefix),
         description,
         client,
+        rut,
         service,
         date: startDate ? format(startDate, 'yyyy-MM-dd') : '',
         endDate: endDate ? format(endDate, 'yyyy-MM-dd') : '',
         technicians: selectedTechnicians.map(id => collaborators.find(c => c.id === id)?.name || ''),
         vehicles: selectedVehicles,
+        rentedVehicle,
         notes,
         status,
         priority,
         netPrice,
         invoiceNumber,
         ocNumber,
+        saleNumber,
+        hesEmMigo,
         facturado: !!invoiceNumber,
         assigned: assigned.map(id => collaborators.find(c => c.id === id)?.name || ''),
         vendedor: collaborators.find(c => c.id === vendedor)?.name || '',
@@ -157,15 +165,26 @@ export default function NewOrderPage() {
                             </SelectContent>
                             </Select>
                         </div>
-
-                        <div>
-                            <Label htmlFor="client">Cliente</Label>
-                            <Input 
-                                id="client" 
-                                placeholder="Escribe el nombre del cliente..." 
-                                value={client}
-                                onChange={(e) => setClient(e.target.value)}
-                            />
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <Label htmlFor="client">Cliente</Label>
+                                <Input 
+                                    id="client" 
+                                    placeholder="Escribe el nombre del cliente..." 
+                                    value={client}
+                                    onChange={(e) => setClient(e.target.value)}
+                                />
+                            </div>
+                             <div>
+                                <Label htmlFor="rut">RUT Cliente</Label>
+                                <Input 
+                                    id="rut" 
+                                    placeholder="Ej: 12.345.678-9" 
+                                    value={rut}
+                                    onChange={(e) => setRut(e.target.value)}
+                                />
+                            </div>
                         </div>
 
                         <div>
@@ -259,7 +278,12 @@ export default function NewOrderPage() {
                         
                         <div>
                             <Label htmlFor="rented-vehicle">Vehículo Arrendado (Opcional)</Label>
-                            <Input id="rented-vehicle" placeholder="Ej: Hertz, PPU..." />
+                            <Input 
+                                id="rented-vehicle" 
+                                placeholder="Ej: Hertz, PPU..." 
+                                value={rentedVehicle}
+                                onChange={(e) => setRentedVehicle(e.target.value)}
+                            />
                         </div>
 
                         <div>
@@ -337,11 +361,19 @@ export default function NewOrderPage() {
                         <div className="grid grid-cols-3 gap-4">
                             <div>
                                 <Label htmlFor="sale-number">Nº Venta</Label>
-                                <Input id="sale-number" />
+                                <Input 
+                                    id="sale-number" 
+                                    value={saleNumber}
+                                    onChange={(e) => setSaleNumber(e.target.value)}
+                                />
                             </div>
                             <div>
                                 <Label htmlFor="hes-em-migo">HES / EM / MIGO</Label>
-                                <Input id="hes-em-migo" />
+                                <Input 
+                                    id="hes-em-migo" 
+                                    value={hesEmMigo}
+                                    onChange={(e) => setHesEmMigo(e.target.value)}
+                                />
                             </div>
                              <div>
                                 <Label htmlFor="oc-number">OC</Label>

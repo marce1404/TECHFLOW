@@ -193,6 +193,7 @@ export async function exportOrdersToExcel(orders: WorkOrder[]): Promise<string> 
         'Nº OT': order.ot_number,
         'Descripción': order.description,
         'Cliente': order.client,
+        'RUT Cliente': order.rut || '',
         'Servicio': order.service,
         'Fecha Inicio': order.date,
         'Fecha Término': order.endDate || '',
@@ -206,6 +207,9 @@ export async function exportOrdersToExcel(orders: WorkOrder[]): Promise<string> 
         'Facturado': order.facturado ? 'Sí' : 'No',
         'Nº Factura': order.invoiceNumber || '',
         'Nº OC': order.ocNumber || '',
+        'Nº Venta': order.saleNumber || '',
+        'HES / EM / MIGO': order.hesEmMigo || '',
+        'Vehículo Arrendado': order.rentedVehicle || '',
         'Notas': order.notes || '',
     }));
 
