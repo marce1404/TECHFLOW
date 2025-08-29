@@ -139,6 +139,7 @@ export const services: Service[] = [
     { id: '7', name: 'ABLOY', status: 'Activa' },
     { id: '8', name: 'INCENDIO', status: 'Activa' },
     { id: '9', name: 'VENTA', status: 'Activa' },
+    { id: '10', name: 'Mantención', status: 'Activa' },
 ]
 
 
