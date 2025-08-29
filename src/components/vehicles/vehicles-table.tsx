@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -62,8 +63,6 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
         { key: 'plate', label: 'Patente' },
         { key: 'status', label: 'Estado' },
         { key: 'assignedTo', label: 'Asignado a' },
-        { key: 'lastMaintenance', label: 'Mantenciones' },
-        { key: 'assignmentHistory', label: 'Historial OT' },
     ];
     
     const handleStatusChange = (vehicle: Vehicle, status: Vehicle['status']) => {
@@ -98,7 +97,11 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
                                 <div>{vehicle.model}</div>
                                 <div className="text-xs text-muted-foreground">{vehicle.year}</div>
                             </TableCell>
-                            <TableCell>{vehicle.plate}</TableCell>
+                            <TableCell>
+                                <Link href={`/vehicles/${vehicle.id}/edit`} className="text-primary hover:underline">
+                                    {vehicle.plate}
+                                </Link>
+                            </TableCell>
                             <TableCell>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -116,22 +119,6 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
                                 </DropdownMenu>
                             </TableCell>
                             <TableCell>{vehicle.assignedTo || 'N/A'}</TableCell>
-                            <TableCell>
-                                <Button variant="outline" size="icon" asChild>
-                                    <Link href={`/vehicles/${vehicle.id}/edit`}>
-                                        <History className="h-4 w-4" />
-                                        <span className="sr-only">Ver Mantenciones</span>
-                                    </Link>
-                                </Button>
-                            </TableCell>
-                            <TableCell>
-                                <Button variant="outline" size="icon" asChild>
-                                    <Link href={`/vehicles/${vehicle.id}/edit`}>
-                                        <History className="h-4 w-4" />
-                                        <span className="sr-only">Ver Historial de OTs</span>
-                                    </Link>
-                                </Button>
-                            </TableCell>
                             <TableCell className="text-right">
                                 <AlertDialog>
                                     <DropdownMenu>

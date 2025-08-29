@@ -58,7 +58,11 @@ export default function GanttPage() {
                                 {ganttCharts.length > 0 ? (
                                     ganttCharts.map((chart) => (
                                         <TableRow key={chart.id}>
-                                            <TableCell className="font-medium">{chart.name}</TableCell>
+                                            <TableCell className="font-medium">
+                                                <Link href={`/gantt/${chart.id}/edit`} className="text-primary hover:underline">
+                                                    {chart.name}
+                                                </Link>
+                                            </TableCell>
                                             <TableCell>{chart.tasks.length}</TableCell>
                                             <TableCell>{chart.assignedOT || 'N/A'}</TableCell>
                                             <TableCell className="text-right">

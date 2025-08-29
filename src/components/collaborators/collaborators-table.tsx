@@ -87,7 +87,11 @@ export default function CollaboratorsTable({ collaborators, requestSort, sortCon
                 <TableBody>
                     {collaborators.length > 0 ? collaborators.map((collaborator) => (
                         <TableRow key={collaborator.id}>
-                            <TableCell className="font-medium">{collaborator.name}</TableCell>
+                            <TableCell className="font-medium">
+                                <Link href={`/collaborators/${collaborator.id}/edit`} className="text-primary hover:underline">
+                                    {collaborator.name}
+                                </Link>
+                            </TableCell>
                             <TableCell>{collaborator.role}</TableCell>
                             <TableCell>{collaborator.area}</TableCell>
                             <TableCell>
