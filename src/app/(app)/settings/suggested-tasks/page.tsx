@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -46,8 +47,8 @@ export default function SuggestedTasksPage() {
     const handleSaveNewTask = () => {
         if (!newTaskName.trim() || !inlineAddTaskToPhase || !activeTab) return;
 
-        const realTasks = suggestedTasks.filter(t => !t.isPhase);
-        const phaseTasks = realTasks.filter(t => t.phase === inlineAddTaskToPhase);
+        const realTasks = suggestedTasks.filter(t => !t.isPhasePlaceholder);
+        const phaseTasks = realTasks.filter(t => t.phase === inlineAddTaskToPhase && t.category.toLowerCase() === activeTab.toLowerCase());
         const maxOrderInPhase = Math.max(...phaseTasks.map(t => t.order || 0), 0);
       
         const newTask: Omit<SuggestedTask, 'id'> = {
@@ -101,19 +102,9 @@ export default function SuggestedTasksPage() {
         }
         const normalizedCategoryKey = normalizeString(categoryKey);
 
-        const tasksForCategory = suggestedTasks.filter(t => normalizeString(t.category) === normalizedCategoryKey);
+        const tasksForCategory = suggestedTasks.filter(t => normalizeString(t.category) === normalizedCategoryKey && !t.isPhasePlaceholder);
         
-        const seen = new Set();
-        const uniqueTasksForCategory = tasksForCategory.filter(t => {
-            if (seen.has(t.name)) {
-                return false;
-            } else {
-                seen.add(t.name);
-                return true;
-            }
-        });
-
-        const grouped = uniqueTasksForCategory.reduce((acc, task) => {
+        const grouped = tasksForCategory.reduce((acc, task) => {
             const phase = task.phase || 'Sin Fase';
             if (!acc[phase]) {
                 acc[phase] = [];
@@ -125,11 +116,16 @@ export default function SuggestedTasksPage() {
         for (const phase in grouped) {
             grouped[phase].sort((a, b) => (a.order || 0) - (b.order || 0));
         }
+        
+        const phaseOrder = suggestedTasks
+            .filter(t => normalizeString(t.category) === normalizedCategoryKey)
+            .sort((a, b) => (a.order || 0) - (b.order || 0))
+            .map(t => t.phase)
+            .filter((value, index, self) => self.indexOf(value) === index);
+
 
         const sortedPhases = Object.keys(grouped).sort((a, b) => {
-            const firstTaskOrderA = grouped[a][0]?.order || 0;
-            const firstTaskOrderB = grouped[b][0]?.order || 0;
-            return firstTaskOrderA - firstTaskOrderB;
+           return phaseOrder.indexOf(a) - phaseOrder.indexOf(b);
         });
 
         return { grouped, sortedPhases };
@@ -332,5 +328,7 @@ export default function SuggestedTasksPage() {
         </div>
     );
 }
+
+    
 
     
