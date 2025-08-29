@@ -47,9 +47,10 @@ interface SendReportByEmailDialogProps {
   report: SubmittedReport | null;
   reportManager?: AppUser;
   currentUser?: AppUser;
+  onSendSuccess?: () => void;
 }
 
-export function SendReportByEmailDialog({ open, onOpenChange, report, reportManager, currentUser }: SendReportByEmailDialogProps) {
+export function SendReportByEmailDialog({ open, onOpenChange, report, reportManager, currentUser, onSendSuccess }: SendReportByEmailDialogProps) {
   const { toast } = useToast();
   const { collaborators, companyInfo, reportTemplates, smtpConfig } = useWorkOrders();
   const [loading, setLoading] = React.useState(false);
@@ -66,7 +67,12 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
 
   React.useEffect(() => {
     if (!open) {
-      form.reset();
+      form.reset({
+        to: '',
+        ccManager: true,
+        ccCurrentUser: true,
+        ccCollaborators: [],
+      });
     }
   }, [open, form]);
 
@@ -96,17 +102,16 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
         <style>
             body {
-                font-family: 'Inter', sans-serif;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
                 background-color: #f4f4f4;
                 color: #333;
                 margin: 0;
                 padding: 0;
             }
             .container {
-                max-width: 600px;
+                max-width: 680px;
                 margin: 20px auto;
                 background-color: #ffffff;
                 border-radius: 8px;
@@ -114,7 +119,7 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
                 border: 1px solid #e2e8f0;
             }
             .header {
-                background-color: #3CA7FA;
+                background-color: #3CA7FA; /* Tailwind primary blue */
                 color: #ffffff;
                 padding: 24px;
                 text-align: center;
@@ -122,37 +127,46 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
             .header h1 {
                 margin: 0;
                 font-size: 24px;
+                font-weight: 600;
             }
             .content {
                 padding: 24px;
             }
             .content p {
                 line-height: 1.6;
+                font-size: 16px;
             }
             .section-title {
-                font-size: 18px;
+                font-size: 20px;
+                font-weight: 600;
                 color: #3CA7FA;
-                margin-top: 20px;
-                margin-bottom: 10px;
+                margin-top: 24px;
+                margin-bottom: 12px;
                 border-bottom: 2px solid #3CA7FA;
-                padding-bottom: 5px;
+                padding-bottom: 6px;
             }
             .details-table {
                 width: 100%;
                 border-collapse: collapse;
-                margin-bottom: 20px;
+                margin-bottom: 24px;
             }
-            .details-table td {
-                padding: 8px;
-                border-bottom: 1px solid #ddd;
+            .details-table td, .details-table th {
+                padding: 12px;
+                border-bottom: 1px solid #e2e8f0;
+                text-align: left;
+                font-size: 14px;
+            }
+            .details-table tr:last-child td {
+                border-bottom: none;
             }
             .details-table td:first-child {
-                font-weight: bold;
+                font-weight: 600;
                 width: 40%;
+                color: #4a5568; /* Gray 600 */
             }
             .footer {
-                background-color: #f1f5f9;
-                color: #64748b;
+                background-color: #f1f5f9; /* Slate 100 */
+                color: #64748b; /* Slate 500 */
                 padding: 20px;
                 text-align: center;
                 font-size: 12px;
@@ -166,7 +180,7 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
             </div>
             <div class="content">
                 <p>Estimado Cliente,</p>
-                <p>A continuación, encontrará el informe técnico correspondiente al servicio realizado. Agradeceríamos nos pudiera responder este correo con sus comentarios y la recepción conforme del servicio.</p>
+                <p>Junto con saludar, adjuntamos el informe técnico correspondiente al servicio realizado. Agradeceríamos nos pudiera responder este correo con sus comentarios y la recepción conforme del servicio.</p>
                 
                 <h2 class="section-title">Información de la Orden de Trabajo</h2>
                 <table class="details-table">
@@ -199,7 +213,14 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
   }
 
   const onSubmit = async (data: EmailFormValues) => {
-    if (!report) return;
+    if (!report || !smtpConfig) {
+        toast({
+            variant: 'destructive',
+            title: 'Error de Configuración',
+            description: 'No se ha podido cargar la información del informe o la configuración de correo.',
+        });
+        return;
+    }
     
     setLoading(true);
 
@@ -229,7 +250,13 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
     const subject = `Informe de Servicio - OT ${report.otDetails.ot_number} - ${report.otDetails.client}`;
     const htmlBody = generateReportHtml(report, template);
 
-    const result = await sendReportEmailAction(data.to, uniqueCcList, subject, htmlBody, smtpConfig);
+    const result = await sendReportEmailAction({
+        to: data.to,
+        cc: uniqueCcList,
+        subject,
+        htmlBody,
+        smtpConfig,
+    });
 
     if (result.success) {
       toast({
@@ -237,6 +264,7 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
         description: result.message,
       });
       onOpenChange(false);
+      onSendSuccess?.();
     } else {
       toast({
         variant: 'destructive',

@@ -10,22 +10,27 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import type { ReportTemplate, SubmittedReport } from '@/lib/types';
+import type { ReportTemplate, SubmittedReport, AppUser } from '@/lib/types';
 import Link from 'next/link';
 import { FileWarning, CheckCircle2, Printer, File, User, Building, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { SendReportByEmailDialog } from '@/components/reports/send-report-by-email-dialog';
+import { useAuth } from '@/context/auth-context';
+import { useToast } from '@/hooks/use-toast';
 
 export default function NewReportPage() {
   const searchParams = useSearchParams();
   const otNumber = searchParams.get('ot_number');
   
   const { activeWorkOrders, reportTemplates, collaborators, getOrder, addSubmittedReport } = useWorkOrders();
+  const { users, userProfile } = useAuth();
+  const { toast } = useToast();
   
   const [selectedTemplate, setSelectedTemplate] = React.useState<ReportTemplate | null>(null);
   const [formData, setFormData] = React.useState<Record<string, any>>({});
-  const [isSubmitted, setIsSubmitted] = React.useState(false);
-  const [submittedReportId, setSubmittedReportId] = React.useState<string | null>(null);
+  const [submittedReport, setSubmittedReport] = React.useState<SubmittedReport | null>(null);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
 
@@ -80,52 +85,30 @@ export default function NewReportPage() {
 
       try {
         const savedReport = await addSubmittedReport(reportToSave);
-        setSubmittedReportId(savedReport.id);
-        setIsSubmitted(true);
+        setSubmittedReport(savedReport);
+        toast({
+            title: "Informe Guardado",
+            description: "El informe ha sido guardado correctamente. Ahora puedes enviarlo por correo.",
+        });
+        setIsEmailDialogOpen(true);
       } catch (error) {
         console.error("Failed to save report: ", error);
-        // Optionally, show a toast error
+        toast({
+            variant: "destructive",
+            title: "Error al Guardar",
+            description: "No se pudo guardar el informe.",
+        });
       } finally {
         setIsSubmitting(false);
       }
   }
   
-  const handlePrint = () => {
-    if (submittedReportId) {
-        window.open(`/reports/${submittedReportId}/print`, '_blank');
-    } else {
-        alert("No se pudo encontrar el ID del informe para imprimir.");
-    }
-  }
-
-  const serviceGuides = reportTemplates.filter(t => t.type === 'service-guide');
-  const projectDeliveries = reportTemplates.filter(t => t.type === 'project-delivery');
-
-  if (isSubmitted) {
-    return (
-        <div className="flex flex-col items-center justify-center h-full gap-6">
-            <Card className="w-full max-w-2xl">
-                <CardHeader className="items-center text-center">
-                     <CheckCircle2 className="h-16 w-16 text-green-500 mb-4" />
-                    <CardTitle className="text-2xl">¡Informe Enviado!</CardTitle>
-                    <CardDescription>
-                        El informe para la OT <span className="font-bold">{workOrder?.ot_number}</span> ha sido guardado correctamente.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col sm:flex-row justify-center gap-2">
-                     <Button asChild className="w-full sm:w-auto">
-                        <Link href="/reports">Crear Otro Informe</Link>
-                    </Button>
-                    <Button variant="outline" onClick={handlePrint} className="w-full sm:w-auto">
-                        <Printer className="mr-2 h-4 w-4"/>
-                        Imprimir
-                    </Button>
-                </CardContent>
-            </Card>
-        </div>
-    );
-  }
-
+  const getReportManager = (report: SubmittedReport): AppUser | undefined => {
+      const managerName = report.otDetails.vendedor;
+      if (!managerName) return undefined;
+      return users.find(u => u.displayName === managerName);
+  };
+  
   if (!workOrder) {
     return (
        <div className="flex flex-col items-center justify-center h-full gap-6">
@@ -194,20 +177,20 @@ export default function NewReportPage() {
                     <SelectValue placeholder="Elige el formato a completar..." />
                     </SelectTrigger>
                     <SelectContent>
-                        {serviceGuides.length > 0 && (
+                        {reportTemplates.filter(t => t.type === 'service-guide').length > 0 && (
                             <SelectGroup>
                                 <SelectLabel>Guías de Servicio</SelectLabel>
-                                {serviceGuides.map(template => (
+                                {reportTemplates.filter(t => t.type === 'service-guide').map(template => (
                                     <SelectItem key={template.id} value={template.id}>
                                     {template.name}
                                     </SelectItem>
                                 ))}
                             </SelectGroup>
                         )}
-                        {projectDeliveries.length > 0 && (
+                        {reportTemplates.filter(t => t.type === 'project-delivery').length > 0 && (
                             <SelectGroup>
                                 <SelectLabel>Entrega de Proyectos</SelectLabel>
-                                {projectDeliveries.map(template => (
+                                {reportTemplates.filter(t => t.type === 'project-delivery').map(template => (
                                     <SelectItem key={template.id} value={template.id}>
                                     {template.name}
                                     </SelectItem>
@@ -302,13 +285,25 @@ export default function NewReportPage() {
                         <Button variant="outline" type="button" asChild className="w-full sm:w-auto"><Link href="/reports">Cancelar</Link></Button>
                         <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
                           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                          Guardar y Enviar Informe
+                          Guardar y Proceder al Envío
                         </Button>
                     </div>
                 </CardContent>
             </Card>
         </form>
       )}
+
+      <SendReportByEmailDialog
+        open={isEmailDialogOpen}
+        onOpenChange={setIsEmailDialogOpen}
+        report={submittedReport}
+        reportManager={submittedReport ? getReportManager(submittedReport) : undefined}
+        currentUser={userProfile || undefined}
+        onSendSuccess={() => {
+            // After successful send, navigate to history or reset form
+        }}
+      />
+
     </div>
   );
 }
