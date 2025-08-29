@@ -20,7 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 export default function ReportsPage() {
-  const { activeWorkOrders, otCategories, submittedReports } = useWorkOrders();
+  const { activeWorkOrders, historicalWorkOrders, otCategories, submittedReports } = useWorkOrders();
   const [search, setSearch] = React.useState('');
   const [activeTab, setActiveTab] = React.useState('todos');
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -34,7 +34,8 @@ export default function ReportsPage() {
   const submittedOtIds = React.useMemo(() => new Set(submittedReports.map(r => r.workOrderId)), [submittedReports]);
 
   const filteredOrders = React.useMemo(() => {
-    let orders = activeWorkOrders.filter(order => !submittedOtIds.has(order.id));
+    const allWorkOrders = [...activeWorkOrders, ...historicalWorkOrders];
+    let orders = allWorkOrders.filter(order => !submittedOtIds.has(order.id));
 
     if (activeTab !== 'todos') {
         orders = orders.filter(order => order.ot_number.startsWith(activeTab));
@@ -47,7 +48,7 @@ export default function ReportsPage() {
         );
     }
     return orders;
-  }, [activeWorkOrders, activeTab, search, submittedOtIds]);
+  }, [activeWorkOrders, historicalWorkOrders, activeTab, search, submittedOtIds]);
   
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
   const paginatedOrders = filteredOrders.slice(
@@ -70,7 +71,6 @@ export default function ReportsPage() {
   const categories = [
     { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
     ...otCategories
-        .filter(cat => cat.status === 'Activa')
         .map(cat => ({
             id: cat.id,
             value: cat.prefix,
