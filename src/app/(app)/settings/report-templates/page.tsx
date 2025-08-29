@@ -31,83 +31,120 @@ import type { ReportTemplate } from '@/lib/types';
 
 export default function ReportTemplatesPage() {
     const { reportTemplates, deleteReportTemplate } = useWorkOrders();
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const itemsPerPage = 15;
+
 
     const serviceGuides = reportTemplates.filter(t => t.type === 'service-guide');
     const projectDeliveries = reportTemplates.filter(t => t.type === 'project-delivery');
     
-    const renderTable = (templates: ReportTemplate[]) => (
-        <div className="rounded-b-lg border-t">
-            <Table>
-                <TableHeader className="bg-muted/50">
-                    <TableRow>
-                        <TableHead>Nombre de la Plantilla</TableHead>
-                        <TableHead>Descripción</TableHead>
-                        <TableHead>Nº de Campos</TableHead>
-                        <TableHead className="text-right">Acciones</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {templates.length > 0 ? (
-                        templates.map((template) => (
-                            <TableRow key={template.id}>
-                                <TableCell className="font-medium">{template.name}</TableCell>
-                                <TableCell>{template.description}</TableCell>
-                                <TableCell>{template.fields.length}</TableCell>
-                                <TableCell className="text-right">
-                                    <AlertDialog>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                                    <span className="sr-only">Abrir menú</span>
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem asChild>
-                                                    <Link href={`/settings/report-templates/${template.id}/edit`}>
-                                                        <Edit className="mr-2 h-4 w-4" /> Ver/Editar
-                                                    </Link>
-                                                </DropdownMenuItem>
-                                                <AlertDialogTrigger asChild>
-                                                    <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                                        <Trash2 className="mr-2 h-4 w-4" /> Eliminar
-                                                    </DropdownMenuItem>
-                                                </AlertDialogTrigger>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    Esta acción no se puede deshacer. Esto eliminará permanentemente la plantilla
-                                                    <span className="font-bold"> {template.name}</span>.
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                <AlertDialogAction
-                                                    className="bg-destructive hover:bg-destructive/90"
-                                                    onClick={() => deleteReportTemplate(template.id)}
-                                                >
-                                                    Eliminar
-                                                </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </TableCell>
+    const renderTable = (templates: ReportTemplate[]) => {
+        const totalPages = Math.ceil(templates.length / itemsPerPage);
+        const paginatedData = templates.slice(
+            (currentPage - 1) * itemsPerPage,
+            currentPage * itemsPerPage
+        );
+
+        const handlePreviousPage = () => {
+            setCurrentPage((prev) => Math.max(prev - 1, 1));
+        };
+
+        const handleNextPage = () => {
+            setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+        };
+        
+        React.useEffect(() => {
+            setCurrentPage(1);
+        }, [templates]);
+
+        return (
+            <>
+                <div className="rounded-b-lg border-t">
+                    <Table>
+                        <TableHeader className="bg-muted/50">
+                            <TableRow>
+                                <TableHead>Nombre de la Plantilla</TableHead>
+                                <TableHead>Descripción</TableHead>
+                                <TableHead>Nº de Campos</TableHead>
+                                <TableHead className="text-right">Acciones</TableHead>
                             </TableRow>
-                        ))
-                    ) : (
-                        <TableRow>
-                            <TableCell colSpan={4} className="h-24 text-center">
-                                No se han creado plantillas de este tipo todavía.
-                            </TableCell>
-                        </TableRow>
-                    )}
-                </TableBody>
-            </Table>
-        </div>
-    );
+                        </TableHeader>
+                        <TableBody>
+                            {paginatedData.length > 0 ? (
+                                paginatedData.map((template) => (
+                                    <TableRow key={template.id}>
+                                        <TableCell className="font-medium">{template.name}</TableCell>
+                                        <TableCell>{template.description}</TableCell>
+                                        <TableCell>{template.fields.length}</TableCell>
+                                        <TableCell className="text-right">
+                                            <AlertDialog>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" className="h-8 w-8 p-0">
+                                                            <span className="sr-only">Abrir menú</span>
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem asChild>
+                                                            <Link href={`/settings/report-templates/${template.id}/edit`}>
+                                                                <Edit className="mr-2 h-4 w-4" /> Ver/Editar
+                                                            </Link>
+                                                        </DropdownMenuItem>
+                                                        <AlertDialogTrigger asChild>
+                                                            <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                                                <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                                                            </DropdownMenuItem>
+                                                        </AlertDialogTrigger>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Esta acción no se puede deshacer. Esto eliminará permanentemente la plantilla
+                                                            <span className="font-bold"> {template.name}</span>.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                        <AlertDialogAction
+                                                            className="bg-destructive hover:bg-destructive/90"
+                                                            onClick={() => deleteReportTemplate(template.id)}
+                                                        >
+                                                            Eliminar
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="h-24 text-center">
+                                        No se han creado plantillas de este tipo todavía.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
+                 {totalPages > 1 && (
+                    <div className="flex items-center justify-between p-4 text-sm text-muted-foreground border-t">
+                        <div>
+                             Mostrando {paginatedData.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} a {Math.min(currentPage * itemsPerPage, templates.length)} de {templates.length} plantillas.
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>Anterior</Button>
+                            <span>Página {currentPage} de {totalPages > 0 ? totalPages : 1}</span>
+                            <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages || totalPages === 0}>Siguiente</Button>
+                        </div>
+                    </div>
+                )}
+            </>
+        )
+    };
 
     return (
         <div className="flex flex-col gap-8">

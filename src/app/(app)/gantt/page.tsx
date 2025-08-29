@@ -30,6 +30,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function GanttPage() {
     const { ganttCharts, deleteGanttChart } = useWorkOrders();
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const itemsPerPage = 15;
+
+    const totalPages = Math.ceil(ganttCharts.length / itemsPerPage);
+    const paginatedData = ganttCharts.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    const handlePreviousPage = () => {
+        setCurrentPage((prev) => Math.max(prev - 1, 1));
+    };
+
+    const handleNextPage = () => {
+        setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+    };
 
     return (
         <div className="flex flex-col gap-8">
@@ -55,8 +71,8 @@ export default function GanttPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {ganttCharts.length > 0 ? (
-                                    ganttCharts.map((chart) => (
+                                {paginatedData.length > 0 ? (
+                                    paginatedData.map((chart) => (
                                         <TableRow key={chart.id}>
                                             <TableCell className="font-medium">
                                                 <Link href={`/gantt/${chart.id}/edit`} className="text-primary hover:underline">
@@ -119,6 +135,18 @@ export default function GanttPage() {
                             </TableBody>
                         </Table>
                     </div>
+                     {totalPages > 1 && (
+                        <div className="flex items-center justify-between p-4 text-sm text-muted-foreground border-t">
+                            <div>
+                                Mostrando {paginatedData.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} a {Math.min(currentPage * itemsPerPage, ganttCharts.length)} de {ganttCharts.length} cartas.
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>Anterior</Button>
+                                <span>Página {currentPage} de {totalPages > 0 ? totalPages : 1}</span>
+                                <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages || totalPages === 0}>Siguiente</Button>
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>

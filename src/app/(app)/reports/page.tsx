@@ -23,6 +23,9 @@ export default function ReportsPage() {
   const { activeWorkOrders, otCategories, submittedReports } = useWorkOrders();
   const [search, setSearch] = React.useState('');
   const [activeTab, setActiveTab] = React.useState('todos');
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const itemsPerPage = 15;
+
 
   const filterOrders = (categoryPrefix: string | null) => {
     setActiveTab(categoryPrefix || 'todos');
@@ -46,6 +49,24 @@ export default function ReportsPage() {
     return orders;
   }, [activeWorkOrders, activeTab, search, submittedOtIds]);
   
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const paginatedOrders = filteredOrders.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+  );
+
+  const handlePreviousPage = () => {
+      setCurrentPage((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+      setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
+
+  React.useEffect(() => {
+      setCurrentPage(1);
+  }, [activeTab, search]);
+
   const categories = [
     { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
     ...otCategories
@@ -100,8 +121,8 @@ export default function ReportsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {filteredOrders.length > 0 ? (
-                            filteredOrders.map((order: WorkOrder) => (
+                            {paginatedOrders.length > 0 ? (
+                            paginatedOrders.map((order: WorkOrder) => (
                                 <TableRow key={order.id}>
                                 <TableCell>{order.ot_number}</TableCell>
                                 <TableCell>{order.description}</TableCell>
@@ -128,8 +149,8 @@ export default function ReportsPage() {
                     </div>
                   </div>
                    <div className="md:hidden space-y-4">
-                    {filteredOrders.length > 0 ? (
-                        filteredOrders.map((order) => (
+                    {paginatedOrders.length > 0 ? (
+                        paginatedOrders.map((order) => (
                             <Card key={order.id}>
                                 <CardHeader>
                                     <CardTitle className="text-base">{order.ot_number}</CardTitle>
@@ -154,6 +175,18 @@ export default function ReportsPage() {
                         </div>
                     )}
                 </div>
+                 {totalPages > 1 && (
+                    <div className="flex items-center justify-between pt-4 text-sm text-muted-foreground">
+                        <div>
+                            Mostrando {paginatedOrders.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} a {Math.min(currentPage * itemsPerPage, filteredOrders.length)} de {filteredOrders.length} órdenes.
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>Anterior</Button>
+                            <span>Página {currentPage} de {totalPages > 0 ? totalPages : 1}</span>
+                            <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages || totalPages === 0}>Siguiente</Button>
+                        </div>
+                    </div>
+                )}
               </TabsContent>
             </Tabs>
         </CardContent>

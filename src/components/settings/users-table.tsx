@@ -45,6 +45,8 @@ export default function UsersTable() {
     const [editDialogOpen, setEditDialogOpen] = React.useState(false);
     const [passwordDialogOpen, setPasswordDialogOpen] = React.useState(false);
     const [deleteAlertOpen, setDeleteAlertOpen] = React.useState(false);
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const itemsPerPage = 15;
 
 
     const handleEditClick = (user: AppUser) => {
@@ -114,6 +116,21 @@ export default function UsersTable() {
             default: return 'outline';
         }
     }
+    
+    const totalPages = Math.ceil(users.length / itemsPerPage);
+    const paginatedData = users.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    const handlePreviousPage = () => {
+        setCurrentPage((prev) => Math.max(prev - 1, 1));
+    };
+
+    const handleNextPage = () => {
+        setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+    };
+
 
     return (
         <>
@@ -128,7 +145,7 @@ export default function UsersTable() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {users.length > 0 ? users.map((user) => (
+                        {paginatedData.length > 0 ? paginatedData.map((user) => (
                             <TableRow key={user.uid}>
                                 <TableCell className="font-medium">
                                     <div>{user.displayName}</div>
@@ -179,6 +196,18 @@ export default function UsersTable() {
                     </TableBody>
                 </Table>
             </div>
+             {totalPages > 1 && (
+                <div className="flex items-center justify-between pt-4 text-sm text-muted-foreground">
+                    <div>
+                        Mostrando {paginatedData.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} a {Math.min(currentPage * itemsPerPage, users.length)} de {users.length} usuarios.
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>Anterior</Button>
+                        <span>Página {currentPage} de {totalPages > 0 ? totalPages : 1}</span>
+                        <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages || totalPages === 0}>Siguiente</Button>
+                    </div>
+                </div>
+            )}
              <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>

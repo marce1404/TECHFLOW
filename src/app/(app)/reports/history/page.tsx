@@ -30,6 +30,9 @@ export default function ReportsHistoryPage() {
   const [activeTab, setActiveTab] = React.useState('todos');
   const [selectedReport, setSelectedReport] = React.useState<SubmittedReport | null>(null);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = React.useState(false);
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const itemsPerPage = 15;
+
 
   const categories = [
     { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
@@ -58,6 +61,25 @@ export default function ReportsHistoryPage() {
     
     return reports;
   }, [submittedReports, search, activeTab]);
+
+  const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
+  const paginatedReports = filteredReports.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handlePreviousPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, search]);
+
 
   const handleSendEmailClick = (report: SubmittedReport) => {
     setSelectedReport(report);
@@ -118,8 +140,8 @@ export default function ReportsHistoryPage() {
                                 </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                {filteredReports.length > 0 ? (
-                                    filteredReports.map((report: SubmittedReport) => (
+                                {paginatedReports.length > 0 ? (
+                                    paginatedReports.map((report: SubmittedReport) => (
                                     <TableRow key={report.id}>
                                         <TableCell className="font-medium">
                                             <Link href={`/reports/${report.id}/edit`} className="text-primary hover:underline">
@@ -161,8 +183,8 @@ export default function ReportsHistoryPage() {
                         </div>
                       </div>
                       <div className="md:hidden space-y-4">
-                        {filteredReports.length > 0 ? (
-                            filteredReports.map((report) => (
+                        {paginatedReports.length > 0 ? (
+                            paginatedReports.map((report) => (
                                 <Card key={report.id} className="relative">
                                     <CardHeader>
                                         <div className="flex justify-between items-center">
@@ -198,6 +220,18 @@ export default function ReportsHistoryPage() {
                             </div>
                         )}
                       </div>
+                       {totalPages > 1 && (
+                        <div className="flex items-center justify-between pt-4 text-sm text-muted-foreground">
+                            <div>
+                                Mostrando {paginatedReports.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} a {Math.min(currentPage * itemsPerPage, filteredReports.length)} de {filteredReports.length} informes.
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>Anterior</Button>
+                                <span>Página {currentPage} de {totalPages > 0 ? totalPages : 1}</span>
+                                <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages || totalPages === 0}>Siguiente</Button>
+                            </div>
+                        </div>
+                    )}
                   </TabsContent>
               </Tabs>
           </CardContent>
