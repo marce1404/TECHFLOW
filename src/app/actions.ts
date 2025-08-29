@@ -1,6 +1,10 @@
 
 'use server';
 
+import { config } from 'dotenv';
+config({ path: '.env.local' });
+config();
+
 import {
   SuggestOptimalResourceAssignmentInput,
   SuggestOptimalResourceAssignmentOutputWithError,
@@ -255,3 +259,5 @@ export async function sendReportEmailAction(
         return { success: false, message: `Error al enviar el correo: ${error.message}` };
     }
 }
+
+    
