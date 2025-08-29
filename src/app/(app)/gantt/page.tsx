@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { useWorkOrders } from "@/context/work-orders-context";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import GanttTable from '@/components/gantt/gantt-table';
 
 export default function GanttPage() {
@@ -24,10 +24,8 @@ export default function GanttPage() {
                         </Link>
                     </Button>
                 </CardHeader>
-                <CardContent className="p-0">
-                    <div className="border-t">
-                        <GanttTable charts={ganttCharts} deleteGanttChart={deleteGanttChart} />
-                    </div>
+                <CardContent>
+                   <GanttTable charts={ganttCharts} deleteGanttChart={deleteGanttChart} />
                 </CardContent>
             </Card>
         </div>

@@ -54,82 +54,84 @@ export default function GanttTable({ charts, deleteGanttChart }: GanttTableProps
     }, [charts]);
 
     return (
-        <div>
-            <Table>
-                <TableHeader className="bg-muted/50">
-                    <TableRow>
-                        <TableHead>Nombre</TableHead>
-                        <TableHead>Nº de Tareas</TableHead>
-                        <TableHead>OT Asociada</TableHead>
-                        <TableHead className="text-right">Acciones</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {paginatedData.length > 0 ? (
-                        paginatedData.map((chart) => (
-                            <TableRow key={chart.id}>
-                                <TableCell className="font-medium">
-                                    <Link href={`/gantt/${chart.id}/edit`} className="text-primary hover:underline">
-                                        {chart.name}
-                                    </Link>
-                                </TableCell>
-                                <TableCell>{chart.tasks.length}</TableCell>
-                                <TableCell>{chart.assignedOT || 'N/A'}</TableCell>
-                                <TableCell className="text-right">
-                                    <AlertDialog>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                                    <span className="sr-only">Abrir menú</span>
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem asChild>
-                                                    <Link href={`/gantt/${chart.id}/edit`}>
-                                                        <Edit className="mr-2 h-4 w-4" /> Ver/Editar
-                                                    </Link>
-                                                </DropdownMenuItem>
-                                                <AlertDialogTrigger asChild>
-                                                    <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                                        <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+        <div className="space-y-4">
+            <div className="rounded-md border">
+                <Table>
+                    <TableHeader className="bg-muted/50">
+                        <TableRow>
+                            <TableHead>Nombre</TableHead>
+                            <TableHead>Nº de Tareas</TableHead>
+                            <TableHead>OT Asociada</TableHead>
+                            <TableHead className="text-right">Acciones</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {paginatedData.length > 0 ? (
+                            paginatedData.map((chart) => (
+                                <TableRow key={chart.id}>
+                                    <TableCell className="font-medium">
+                                        <Link href={`/gantt/${chart.id}/edit`} className="text-primary hover:underline">
+                                            {chart.name}
+                                        </Link>
+                                    </TableCell>
+                                    <TableCell>{chart.tasks.length}</TableCell>
+                                    <TableCell>{chart.assignedOT || 'N/A'}</TableCell>
+                                    <TableCell className="text-right">
+                                        <AlertDialog>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                                        <span className="sr-only">Abrir menú</span>
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem asChild>
+                                                        <Link href={`/gantt/${chart.id}/edit`}>
+                                                            <Edit className="mr-2 h-4 w-4" /> Ver/Editar
+                                                        </Link>
                                                     </DropdownMenuItem>
-                                                </AlertDialogTrigger>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                            <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Esta acción no se puede deshacer. Esto eliminará permanentemente la carta gantt
-                                                <span className="font-bold"> {chart.name}</span>.
-                                            </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                            <AlertDialogAction
-                                                className="bg-destructive hover:bg-destructive/90"
-                                                onClick={() => deleteGanttChart(chart.id)}
-                                            >
-                                                Eliminar
-                                            </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                                            <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                                                        </DropdownMenuItem>
+                                                    </AlertDialogTrigger>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                                <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Esta acción no se puede deshacer. Esto eliminará permanentemente la carta gantt
+                                                    <span className="font-bold"> {chart.name}</span>.
+                                                </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                <AlertDialogAction
+                                                    className="bg-destructive hover:bg-destructive/90"
+                                                    onClick={() => deleteGanttChart(chart.id)}
+                                                >
+                                                    Eliminar
+                                                </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={4} className="h-24 text-center">
+                                    No se han creado cartas Gantt todavía.
                                 </TableCell>
                             </TableRow>
-                        ))
-                    ) : (
-                        <TableRow>
-                            <TableCell colSpan={4} className="h-24 text-center">
-                                No se han creado cartas Gantt todavía.
-                            </TableCell>
-                        </TableRow>
-                    )}
-                </TableBody>
-            </Table>
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
              {totalPages > 1 && (
-                <CardFooter className="flex items-center justify-between p-4 text-sm text-muted-foreground border-t">
+                <div className="flex items-center justify-between pt-4 text-sm text-muted-foreground">
                     <div>
                         Mostrando {paginatedData.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} a {Math.min(currentPage * itemsPerPage, charts.length)} de {charts.length} cartas.
                     </div>
@@ -138,7 +140,7 @@ export default function GanttTable({ charts, deleteGanttChart }: GanttTableProps
                         <span>Página {currentPage} de {totalPages > 0 ? totalPages : 1}</span>
                         <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages || totalPages === 0}>Siguiente</Button>
                     </div>
-                </CardFooter>
+                </div>
             )}
         </div>
     );
