@@ -1,7 +1,7 @@
 
 'use server';
 
-import 'dotenv/config';
+import { config } from 'dotenv';
 import {
   SuggestOptimalResourceAssignmentInput,
   SuggestOptimalResourceAssignmentOutputWithError,
@@ -17,18 +17,17 @@ import * as admin from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, Timestamp, doc, getDoc } from 'firebase-admin/firestore';
 import nodemailer from 'nodemailer';
-import { config } from 'dotenv';
 
 
 // This function ensures Firebase Admin is initialized, but only once.
 const initializeFirebaseAdmin = () => {
+    config(); // Explicitly load environment variables
+    
     if (admin.apps.length > 0) {
         return admin.app();
     }
 
     try {
-        // Explicitly load environment variables
-        config();
         const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
         if (!serviceAccountBase64) {
             throw new Error("Firebase service account JSON not found in environment variables. Please set FIREBASE_SERVICE_ACCOUNT_JSON.");
