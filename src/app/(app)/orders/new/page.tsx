@@ -256,6 +256,11 @@ export default function NewOrderPage() {
                                 placeholder="Seleccionar vehículos..."
                             />
                         </div>
+                        
+                        <div>
+                            <Label htmlFor="rented-vehicle">Vehículo Arrendado (Opcional)</Label>
+                            <Input id="rented-vehicle" placeholder="Ej: Hertz, PPU..." />
+                        </div>
 
                         <div>
                             <Label htmlFor="notes">Descripción / Notas Adicionales</Label>
@@ -346,11 +351,6 @@ export default function NewOrderPage() {
                                     onChange={(e) => setOcNumber(e.target.value)}
                                 />
                             </div>
-                        </div>
-                        
-                        <div>
-                            <Label htmlFor="rented-vehicle">Vehículo Arrendado (Opcional)</Label>
-                            <Input id="rented-vehicle" placeholder="Ej: Hertz, PPU..." />
                         </div>
 
                         <div>
