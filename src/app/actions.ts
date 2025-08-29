@@ -259,5 +259,3 @@ export async function sendReportEmailAction(
         return { success: false, message: `Error al enviar el correo: ${error.message}` };
     }
 }
-
-    
