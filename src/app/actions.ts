@@ -153,10 +153,8 @@ export async function sendReportEmailAction(
     subject: string,
     htmlBody: string,
 ): Promise<{ success: boolean; message: string }> {
-    // This action NO LONGER initializes Firebase Admin.
-    // It relies on the client to generate the HTML and pass it in.
-
-    const db = getFirestore(admin.apps.length > 0 ? admin.app() : undefined);
+    initializeFirebaseAdmin();
+    const db = getFirestore();
     
     const smtpSnap = await getDoc(doc(db, 'settings', 'smtpConfig'));
     if (!smtpSnap.exists()) {
