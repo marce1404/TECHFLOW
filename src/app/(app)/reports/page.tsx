@@ -179,17 +179,30 @@ export default function ReportsPage() {
             </Tabs>
         </CardContent>
         {totalPages > 1 && (
-            <CardFooter className="flex items-center justify-between text-sm text-muted-foreground pt-4 border-t">
-                <div>
-                    Mostrando {paginatedOrders.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} a {Math.min(currentPage * itemsPerPage, filteredOrders.length)} de {filteredOrders.length} órdenes.
-                </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>Anterior</Button>
-                    <span>Página {currentPage} de {totalPages > 0 ? totalPages : 1}</span>
-                    <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages || totalPages === 0}>Siguiente</Button>
-                </div>
+            <CardFooter>
+              <div className="text-xs text-muted-foreground">
+                Página {currentPage} de {totalPages}
+              </div>
+              <div className="flex items-center space-x-2 ml-auto">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePreviousPage}
+                  disabled={currentPage === 1}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                >
+                  Siguiente
+                </Button>
+              </div>
             </CardFooter>
-        )}
+          )}
       </Card>
     </div>
   );
