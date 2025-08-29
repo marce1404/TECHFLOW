@@ -325,7 +325,16 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
   const updateCollaborator = async (id: string, updatedCollaborator: Partial<Omit<Collaborator, 'id'>>) => {
     const docRef = doc(db, "collaborators", id);
-    await updateDoc(docRef, updatedCollaborator);
+    const cleanData = { ...updatedCollaborator };
+    
+    // Clean out undefined fields to prevent Firestore errors
+    Object.keys(cleanData).forEach(key => {
+        if (cleanData[key as keyof typeof cleanData] === undefined) {
+            delete cleanData[key as keyof typeof cleanData];
+        }
+    });
+
+    await updateDoc(docRef, cleanData);
     await fetchData();
   };
 
@@ -561,3 +570,5 @@ export const useWorkOrders = () => {
   }
   return context;
 };
+
+    
