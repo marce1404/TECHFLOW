@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useWorkOrders } from '@/context/work-orders-context';
@@ -10,9 +9,15 @@ import type { WorkOrder } from '@/lib/types';
 import { ClosedOrdersCard } from '@/components/dashboard/closed-orders-card';
 import React from 'react';
 import { normalizeString } from '@/lib/utils';
+import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
+
+const ITEMS_PER_PAGE = 11;
 
 export default function DashboardPage() {
   const { activeWorkOrders, historicalWorkOrders, loading, ganttCharts } = useWorkOrders();
+  const [api, setApi] = React.useState<CarouselApi>();
+  const [current, setCurrent] = React.useState(0);
+  const [count, setCount] = React.useState(0);
 
   const statusOrder: WorkOrder['status'][] = ['Atrasada', 'En Progreso', 'Pendiente', 'Por Iniciar'];
   
@@ -33,9 +38,15 @@ export default function DashboardPage() {
 
       return dateB - dateA;
     });
-
-  // Limit active orders to leave space for the fixed closed orders card
-  const ordersToShow = sortedOrders.slice(0, 11);
+  
+  const chunkedOrders = sortedOrders.reduce((resultArray, item, index) => { 
+    const chunkIndex = Math.floor(index / ITEMS_PER_PAGE)
+    if(!resultArray[chunkIndex]) {
+      resultArray[chunkIndex] = [] // start a new chunk
+    }
+    resultArray[chunkIndex].push(item)
+    return resultArray
+  }, [] as WorkOrder[][]);
 
   const getGanttProgress = (otNumber: string) => {
     const assignedGantt = ganttCharts.find(g => g.assignedOT === otNumber);
@@ -55,6 +66,30 @@ export default function DashboardPage() {
       return orderDate.getMonth() === today.getMonth() && orderDate.getFullYear() === today.getFullYear();
   });
 
+  React.useEffect(() => {
+    if (!api) {
+      return;
+    }
+
+    setCount(api.scrollSnapList().length);
+    setCurrent(api.selectedScrollSnap() + 1);
+
+    api.on("select", () => {
+      setCurrent(api.selectedScrollSnap() + 1);
+    });
+
+    const interval = setInterval(() => {
+        if (api.canScrollNext()) {
+            api.scrollNext();
+        } else {
+            api.scrollTo(0);
+        }
+    }, 15000); // Rotate every 15 seconds
+
+    return () => clearInterval(interval);
+
+  }, [api]);
+
 
   if (loading) {
     return (
@@ -71,18 +106,30 @@ export default function DashboardPage() {
   return (
     <>
       <div className="flex flex-1 flex-col gap-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {ordersToShow.length > 0 ? (
-            ordersToShow.map((order) => (
-              <OrderCard key={order.id} order={order} progress={getGanttProgress(order.ot_number)} />
-            ))
-          ) : (
+        {chunkedOrders.length > 0 ? (
+          <Carousel setApi={setApi} className="w-full">
+            <CarouselContent>
+              {chunkedOrders.map((page, index) => (
+                <CarouselItem key={index}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {page.map(order => (
+                      <OrderCard key={order.id} order={order} progress={getGanttProgress(order.ot_number)} />
+                    ))}
+                    {/* Render the closed orders card only on the first page of the carousel */}
+                    {index === 0 && <ClosedOrdersCard orders={closedOrdersThisMonth} />}
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
+        ) : (
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             <div className="col-span-full flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
               <p className="text-muted-foreground">No hay órdenes de trabajo activas.</p>
             </div>
-          )}
-          <ClosedOrdersCard orders={closedOrdersThisMonth} />
-        </div>
+            <ClosedOrdersCard orders={closedOrdersThisMonth} />
+          </div>
+        )}
       </div>
       <footer className="fixed bottom-0 left-0 right-0 z-20 w-full peer-data-[state=expanded]:peer-data-[side=left]:pl-[16rem] peer-data-[state=expanded]:peer-data-[side=right]:pr-[16rem] peer-data-[collapsible=icon]:peer-data-[state=expanded]:pl-[16rem] md:peer-data-[state=collapsed]:peer-data-[collapsible=icon]:pl-[3.5rem] transition-[padding] ease-linear">
         <MotivationalTicker />
