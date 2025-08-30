@@ -20,6 +20,7 @@ import type { CreateWorkOrderInput } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { ScrollArea } from '../ui/scroll-area';
 import { useWorkOrders } from '@/context/work-orders-context';
+import { format } from 'date-fns';
 
 interface ImportOrdersDialogProps {
   open: boolean;
@@ -32,7 +33,7 @@ const CreateWorkOrderInputSchemaForExcel = z.object({
   description: z.string().min(1, 'description no puede estar vacío.'),
   client: z.string().min(1, 'client no puede estar vacío.'),
   service: z.string().min(1, 'service no puede estar vacío.'),
-  date: z.string().min(1, 'date no puede estar vacío.'),
+  date: z.string().optional(),
   endDate: z.string().optional(),
   notes: z.string().optional(),
   status: z.enum(['Por Iniciar', 'En Progreso', 'En Proceso', 'Pendiente', 'Atrasada', 'Cerrada', 'CERRADA']),
@@ -108,6 +109,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         if (rowData.date instanceof Date) {
             rowData.date.setMinutes(rowData.date.getMinutes() + rowData.date.getTimezoneOffset());
             rowData.date = rowData.date.toISOString().split('T')[0];
+        } else {
+            rowData.date = format(new Date(), 'yyyy-MM-dd');
         }
          if (rowData.endDate instanceof Date) {
             rowData.endDate.setMinutes(rowData.endDate.getMinutes() + rowData.endDate.getTimezoneOffset());
