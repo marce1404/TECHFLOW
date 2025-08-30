@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -33,6 +34,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useWorkOrders } from '@/context/work-orders-context';
+import { normalizeString } from '@/lib/utils';
 
 interface HistoricalOrdersTableProps {
     orders: WorkOrder[];
@@ -47,24 +49,26 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
   const getStatusVariant = (
     status: WorkOrder['status']
   ): 'default' | 'secondary' | 'destructive' | 'outline' => {
-     switch (status.toLowerCase()) {
+     switch (normalizeString(status)) {
+      case 'atrasada':
+        return 'destructive';
       case 'cerrada':
       case 'facturado':
         return 'default';
-      case 'en progreso':
-        return 'secondary';
-      case 'atrasada':
-        return 'destructive';
+      case 'por iniciar':
+        return 'outline';
+      case 'suspendida':
       case 'pendiente':
         return 'secondary';
+      case 'en progreso':
+        return 'default';
       default:
         return 'outline';
     }
   };
 
   const getStatusBadgeStyle = (status: WorkOrder['status']) => {
-    const lowerCaseStatus = status.toLowerCase();
-    if (lowerCaseStatus === 'en progreso') {
+    if (normalizeString(status) === 'en progreso') {
       return { backgroundColor: 'hsl(142, 71%, 45%)', color: 'hsl(var(--primary-foreground))' };
     }
     return {};

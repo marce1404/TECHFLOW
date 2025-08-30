@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
+import { cn, normalizeString } from '@/lib/utils';
 import type { WorkOrder } from '@/lib/types';
 import Link from 'next/link';
 import { useWorkOrders } from '@/context/work-orders-context';
@@ -34,22 +34,26 @@ export default function AssignmentHistory({ title, description, filterKey, filte
   const getStatusVariant = (
     status: WorkOrder['status']
   ): 'default' | 'secondary' | 'destructive' | 'outline' => {
-     switch (status.toLowerCase()) {
-      case 'cerrada':
-       case 'facturado':
-        return 'default';
-      case 'en progreso':
-        return 'secondary'; 
+     switch (normalizeString(status)) {
       case 'atrasada':
         return 'destructive';
+      case 'cerrada':
+      case 'facturado':
+        return 'default';
+      case 'por iniciar':
+        return 'outline';
+      case 'suspendida':
+      case 'pendiente':
+        return 'secondary';
+      case 'en progreso':
+        return 'default';
       default:
         return 'outline';
     }
   };
   
   const getStatusBadgeStyle = (status: WorkOrder['status']) => {
-    const lowerCaseStatus = status.toLowerCase();
-    if (lowerCaseStatus === 'en progreso') {
+    if (normalizeString(status) === 'en progreso') {
       return { backgroundColor: 'hsl(142, 71%, 45%)', color: 'hsl(var(--primary-foreground))' };
     }
     return {};

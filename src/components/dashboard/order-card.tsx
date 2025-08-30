@@ -20,6 +20,7 @@ import type { WorkOrder, DonutChartData, DonutChartConfig } from '@/lib/types';
 import { DonutChartConfig as chartConfig } from '@/lib/types';
 import { Users, Calendar } from 'lucide-react';
 import Link from 'next/link';
+import { normalizeString } from '@/lib/utils';
 
 interface OrderCardProps {
   order: WorkOrder;
@@ -28,7 +29,7 @@ interface OrderCardProps {
 
 export function OrderCard({ order, progress }: OrderCardProps) {
   const getStatusVariant = (status: WorkOrder['status']) => {
-    switch (status.toLowerCase()) {
+    switch (normalizeString(status)) {
       case 'atrasada':
         return 'destructive';
       case 'cerrada':
@@ -36,6 +37,7 @@ export function OrderCard({ order, progress }: OrderCardProps) {
         return 'default';
       case 'por iniciar':
         return 'outline';
+      case 'suspendida':
       case 'pendiente':
         return 'secondary';
       case 'en progreso':
@@ -46,8 +48,7 @@ export function OrderCard({ order, progress }: OrderCardProps) {
   };
   
   const getStatusBadgeStyle = (status: WorkOrder['status']) => {
-    const lowerCaseStatus = status.toLowerCase();
-    if (lowerCaseStatus === 'en progreso') {
+    if (normalizeString(status) === 'en progreso') {
       return { backgroundColor: 'hsl(142, 71%, 45%)', color: 'hsl(var(--primary-foreground))' };
     }
     return {};
@@ -55,11 +56,11 @@ export function OrderCard({ order, progress }: OrderCardProps) {
 
   
   const getChartColor = (status: WorkOrder['status']) => {
-    const lowerCaseStatus = status.toLowerCase();
-    if (lowerCaseStatus === 'en progreso') {
+    const normalizedStatus = normalizeString(status);
+    if (normalizedStatus === 'en progreso') {
         return 'hsl(142, 71%, 45%)'; // Green
     }
-    if (lowerCaseStatus === 'atrasada') {
+    if (normalizedStatus === 'atrasada') {
         return 'hsl(var(--destructive))'; // Red
     }
     return 'hsl(var(--muted))'; // Gray for all other cases
