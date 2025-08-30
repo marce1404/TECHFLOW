@@ -30,7 +30,7 @@ export type WorkOrder = {
   service: string;
   assigned: string[];
   comercial: string;
-  status: 'Por Iniciar' | 'En Proceso' | 'Pendiente' | 'Atrasada' | 'Cerrada';
+  status: 'Por Iniciar' | 'En Progreso' | 'Pendiente' | 'Atrasada' | 'Cerrada';
   priority: 'Baja' | 'Media' | 'Alta';
   facturado: boolean;
   technicians: string[];
@@ -273,7 +273,7 @@ export const UpdateUserOutputSchema = z.object({
 export type UpdateUserOutput = z.infer<typeof UpdateUserOutputSchema>;
 
 // Excel Import Types & API Types
-const baseWorkOrderStatuses = ['Por Iniciar', 'En Proceso', 'Pendiente', 'Atrasada', 'Cerrada'];
+const baseWorkOrderStatuses = ['Por Iniciar', 'En Progreso', 'Pendiente', 'Atrasada', 'Cerrada'];
 
 export const CreateWorkOrderInputSchema = z.object({
   ot_number: z.string().describe("The unique work order number, including prefix. E.g., 'OT-1525'"),
@@ -286,7 +286,7 @@ export const CreateWorkOrderInputSchema = z.object({
   notes: z.string().optional().describe("Additional notes or a detailed description."),
   status: z.enum(baseWorkOrderStatuses as [string, ...string[]]).describe("The initial status of the work order."),
   priority: z.enum(['Baja', 'Media', 'Alta']).describe("The priority of the work order."),
-  netPrice: z.number().describe("The net price of the work order."),
+  netPrice: z.number().optional().default(0).describe("The net price of the work order."),
   ocNumber: z.string().optional().describe("The Purchase Order (OC) number, if available."),
   invoiceNumber: z.string().optional().describe("The invoice number, if available."),
   assigned: z.array(z.string()).optional().default([]).describe("A list of names for assigned supervisors/managers."),
