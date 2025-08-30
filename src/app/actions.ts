@@ -204,6 +204,7 @@ export async function exportOrdersToExcel(orders: WorkOrder[]): Promise<string> 
         'Técnicos': order.technicians.join(', '),
         'Vehículos': order.vehicles.join(', '),
         'Comercial': order.comercial,
+        'Facturado': order.facturado ? 'Sí' : 'No',
         'Precio Neto': order.netPrice,
         'Nº Factura': order.invoiceNumber || '',
         'Nº OC': order.ocNumber || '',
@@ -243,3 +244,4 @@ export async function importOrdersFromExcel(ordersData: CreateWorkOrderInput[]):
 
     return { successCount, errorCount, errors };
 }
+

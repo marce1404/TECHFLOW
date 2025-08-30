@@ -2,26 +2,20 @@
 
 'use client';
 import { Button } from "@/components/ui/button";
-import { PlusCircle, FileUp, FileDown, Loader2 } from "lucide-react";
+import { PlusCircle } from "lucide-react";
 import OrdersTable from "@/components/orders/orders-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { useWorkOrders } from "@/context/work-orders-context";
 import * as React from "react";
-import type { WorkOrder } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { exportOrdersToExcel } from "@/app/actions";
-import { useToast } from "@/hooks/use-toast";
-import { ImportOrdersDialog } from "@/components/orders/import-orders-dialog";
+import ExportCard from "@/components/orders/export-card";
 
 export default function ActiveOrdersPage() {
-    const { activeWorkOrders, otCategories, fetchData } = useWorkOrders();
-    const { toast } = useToast();
+    const { activeWorkOrders, otCategories, otStatuses, fetchData } = useWorkOrders();
     const [search, setSearch] = React.useState('');
     const [activeTab, setActiveTab] = React.useState('todos');
-    const [isExporting, setIsExporting] = React.useState(false);
-    const [isImporting, setIsImporting] = React.useState(false);
 
     const filterOrders = (categoryPrefix: string | null) => {
         setActiveTab(categoryPrefix || 'todos');
@@ -55,78 +49,39 @@ export default function ActiveOrdersPage() {
             }))
     ];
 
-    const handleExport = async () => {
-        setIsExporting(true);
-        try {
-            const base64 = await exportOrdersToExcel(filteredOrders);
-            const byteCharacters = atob(base64);
-            const byteNumbers = new Array(byteCharacters.length);
-            for (let i = 0; i < byteCharacters.length; i++) {
-                byteNumbers[i] = byteCharacters.charCodeAt(i);
-            }
-            const byteArray = new Uint8Array(byteNumbers);
-            const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = 'OT_Activas.xlsx';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            toast({ title: "Exportación Exitosa", description: `${filteredOrders.length} órdenes han sido exportadas.` });
-        } catch (error) {
-            console.error("Error exporting to Excel: ", error);
-            toast({ variant: "destructive", title: "Error de Exportación", description: "No se pudo generar el archivo de Excel." });
-        } finally {
-            setIsExporting(false);
-        }
-    };
-
     return (
-        <>
-            <div className="flex flex-col gap-8">
-                <Tabs value={activeTab} onValueChange={filterOrders}>
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
-                        <ScrollArea className="w-full sm:w-auto">
-                            <TabsList className="w-max">
-                                {categories.map(cat => (
-                                    <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
-                                ))}
-                            </TabsList>
-                            <ScrollBar orientation="horizontal" />
-                        </ScrollArea>
-                        <div className="flex w-full sm:w-auto items-center gap-2">
-                            <Input
-                                placeholder="Buscar por ID, cliente, servicio..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="w-full sm:max-w-sm"
-                            />
-                            <Button variant="outline" onClick={handleExport} disabled={isExporting}>
-                                {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileUp className="mr-2 h-4 w-4" />}
-                                Exportar
-                            </Button>
-                            <Button variant="outline" onClick={() => setIsImporting(true)}>
-                                <FileDown className="mr-2 h-4 w-4" />
-                                Importar
-                            </Button>
-                            <Button asChild>
-                            <Link href="/orders/new">
-                                <PlusCircle className="mr-2 h-4 w-4" />
-                                Nueva OT
-                            </Link>
-                            </Button>
-                        </div>
+        <div className="flex flex-col gap-8">
+            <Tabs value={activeTab} onValueChange={filterOrders}>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                    <ScrollArea className="w-full sm:w-auto">
+                        <TabsList className="w-max">
+                            {categories.map(cat => (
+                                <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
+                            ))}
+                        </TabsList>
+                        <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
+                    <div className="flex w-full sm:w-auto items-center gap-2">
+                        <Input
+                            placeholder="Buscar por ID, cliente, servicio..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full sm:max-w-sm"
+                        />
+                        <Button asChild>
+                        <Link href="/orders/new">
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Nueva OT
+                        </Link>
+                        </Button>
                     </div>
-                <TabsContent value={activeTab}>
-                    <OrdersTable orders={filteredOrders} />
-                </TabsContent>
-                </Tabs>
-            </div>
-            <ImportOrdersDialog
-                open={isImporting}
-                onOpenChange={setIsImporting}
-                onImportSuccess={() => fetchData()}
-            />
-        </>
+                </div>
+            <TabsContent value={activeTab}>
+                <OrdersTable orders={filteredOrders} />
+            </TabsContent>
+            </Tabs>
+
+            <ExportCard orders={filteredOrders} allStatuses={otStatuses} onImportSuccess={fetchData} />
+        </div>
     );
 }

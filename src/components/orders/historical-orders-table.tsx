@@ -14,25 +14,13 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { WorkOrder } from '@/lib/types';
-import { ArrowUpDown, MoreHorizontal, CheckCircle, Trash2 } from 'lucide-react';
+import { ArrowUpDown, CheckCircle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { cn, normalizeString } from '@/lib/utils';
 
@@ -44,7 +32,7 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
   const [sortConfig, setSortConfig] = useState<{ key: keyof WorkOrder | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
-  const { updateOrder, otStatuses, deleteOrder, promptToCloseOrder } = useWorkOrders();
+  const { updateOrder, otStatuses, promptToCloseOrder } = useWorkOrders();
 
    const getStatusVariant = (
     status: WorkOrder['status']
@@ -53,7 +41,7 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
       case 'atrasada':
         return 'destructive';
       case 'cerrada':
-        return 'default';
+        return 'outline';
       case 'suspendida':
       case 'pendiente':
         return 'secondary';
