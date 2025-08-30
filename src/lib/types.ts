@@ -262,6 +262,7 @@ export const UpdateUserInputSchema = z.object({
   uid: z.string().describe('The unique ID of the user to update.'),
   name: z.string().min(3).describe("The user's new full name."),
   role: z.enum(['Admin', 'Supervisor', 'Técnico', 'Visor']).describe('The new role for the user.'),
+  status: z.enum(['Activo', 'Inactivo']).describe('The new status for the user.'),
 });
 
 export type UpdateUserInput = z.infer<typeof UpdateUserInputSchema>;

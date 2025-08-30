@@ -63,11 +63,7 @@ export async function toggleUserStatusAction(uid: string, currentStatus: 'Activo
   try {
     const newStatus = currentStatus === 'Activo' ? 'Inactivo' : 'Activo';
     await auth.updateUser(uid, { disabled: newStatus === 'Inactivo' });
-    
-    // The user profile update should be done via `updateUserProfile` in the context
-    // which uses the client SDK and respects security rules. This admin action
-    // only toggles the auth state.
-    
+        
     return { success: true, message: 'Estado del usuario actualizado correctamente.' };
   } catch (error: any) {
     console.error('Error toggling user status:', error);

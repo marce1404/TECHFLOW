@@ -29,10 +29,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/auth-context';
 import { Loader2 } from 'lucide-react';
 import { useWorkOrders } from '@/context/work-orders-context';
+import { Switch } from '../ui/switch';
 
 const editFormSchema = z.object({
   displayName: z.string().min(3, { message: 'El nombre debe tener al menos 3 caracteres.' }),
   role: z.enum(['Admin', 'Supervisor', 'Técnico', 'Visor']),
+  status: z.enum(['Activo', 'Inactivo']),
 });
 
 type EditFormValues = z.infer<typeof editFormSchema>;
@@ -53,6 +55,7 @@ export function UserEditDialog({ open, onOpenChange, user }: UserEditDialogProps
     defaultValues: {
       displayName: '',
       role: 'Visor',
+      status: 'Activo',
     },
   });
 
@@ -61,6 +64,7 @@ export function UserEditDialog({ open, onOpenChange, user }: UserEditDialogProps
       form.reset({
         displayName: user.displayName,
         role: user.role,
+        status: user.status,
       });
     }
   }, [user, open, form]);
@@ -132,6 +136,24 @@ export function UserEditDialog({ open, onOpenChange, user }: UserEditDialogProps
                     </SelectContent>
                   </Select>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Estado</FormLabel>
+                     <FormMessage />
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value === 'Activo'}
+                      onCheckedChange={(checked) => field.onChange(checked ? 'Activo' : 'Inactivo')}
+                    />
+                  </FormControl>
                 </FormItem>
               )}
             />

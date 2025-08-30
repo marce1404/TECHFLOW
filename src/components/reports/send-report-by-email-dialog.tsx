@@ -31,6 +31,7 @@ import { sendReportEmailAction } from '@/app/actions';
 import { MultiSelect } from '../ui/multi-select';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { Timestamp } from 'firebase/firestore';
+import { useAuth } from '@/context/auth-context';
 
 const emailFormSchema = z.object({
   to: z.string().email({ message: 'El correo del cliente no es válido.' }),
@@ -54,6 +55,9 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
   const { toast } = useToast();
   const { collaborators, companyInfo, reportTemplates, smtpConfig } = useWorkOrders();
   const [loading, setLoading] = React.useState(false);
+  const { userProfile } = useAuth();
+  
+  const canSend = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor' || userProfile?.role === 'Técnico';
 
   const form = useForm<EmailFormValues>({
     resolver: zodResolver(emailFormSchema),
@@ -354,7 +358,7 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
                 <DialogClose asChild>
                     <Button type="button" variant="outline">Cancelar</Button>
                 </DialogClose>
-                <Button type="submit" disabled={loading}>
+                <Button type="submit" disabled={loading || !canSend}>
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     <Send className="mr-2 h-4 w-4" />
                     Enviar Correo
