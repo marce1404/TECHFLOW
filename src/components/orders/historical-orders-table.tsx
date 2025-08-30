@@ -52,8 +52,7 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
      switch (normalizeString(status)) {
       case 'atrasada':
         return 'destructive';
-      case 'cerrada':
-      case 'facturado':
+      case 'por iniciar':
         return 'default';
       case 'suspendida':
       case 'pendiente':
