@@ -12,6 +12,7 @@ import { predefinedReportTemplates } from '@/lib/predefined-templates';
 import { useAuth } from './auth-context';
 import { format } from 'date-fns';
 import { CloseWorkOrderDialog } from '@/components/orders/close-work-order-dialog';
+import { normalizeString } from '@/lib/utils';
 
 
 interface WorkOrdersContextType {
@@ -160,9 +161,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         
         const allOrders = workOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[];
         
-        const active = allOrders.filter(o => o.status.toLowerCase() !== 'cerrada' && !o.facturado);
-        const historical = allOrders.filter(o => o.status.toLowerCase() === 'cerrada' || o.facturado);
-        
+        const active = allOrders.filter(o => normalizeString(o.status) !== 'cerrada');
+        const historical = allOrders.filter(o => normalizeString(o.status) === 'cerrada');
+
         setActiveWorkOrders(active);
         setHistoricalWorkOrders(historical);
 
