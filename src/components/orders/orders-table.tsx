@@ -14,7 +14,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { WorkOrder, OTStatus } from '@/lib/types';
-import { ArrowUpDown, MoreHorizontal, Trash2 } from 'lucide-react';
+import { ArrowUpDown, MoreHorizontal, CheckCircle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,7 +57,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
       case 'suspendida':
       case 'pendiente':
         return 'secondary';
-      default: // Por Iniciar, En Proceso
+      default: // Por Iniciar
         return 'outline';
     }
   };
@@ -129,7 +129,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
   ];
 
   const handleStatusChange = async (order: WorkOrder, newStatus: WorkOrder['status']) => {
-    if (newStatus.toLowerCase() === 'cerrada') {
+    if (normalizeString(newStatus) === 'cerrada') {
         promptToCloseOrder(order);
     } else {
         await updateOrder(order.id, { ...order, status: newStatus });
@@ -150,6 +150,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                             </Button>
                         </TableHead>
                     ))}
+                    <TableHead className="text-center">Facturado</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
                 </TableHeader>
@@ -187,6 +188,9 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                                 </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
+                          <TableCell className="text-center">
+                            {order.facturado && <CheckCircle className="h-5 w-5 text-green-500 mx-auto" />}
+                          </TableCell>
                            <TableCell className="text-right">
                                 <Button variant="ghost" size="icon" asChild>
                                     <Link href={`/orders/${order.id}/edit`}>
@@ -198,7 +202,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={headerItems.length + 1} className="h-24 text-center">
+                        <TableCell colSpan={headerItems.length + 2} className="h-24 text-center">
                             No hay resultados.
                         </TableCell>
                     </TableRow>
