@@ -9,7 +9,9 @@ import type { WorkOrder } from '@/lib/types';
 import { ClosedOrdersCard } from '@/components/dashboard/closed-orders-card';
 import React from 'react';
 import { normalizeString } from '@/lib/utils';
-import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
+import { Carousel, CarouselContent, CarouselItem, type CarouselApi, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
+import { Button } from '@/components/ui/button';
+import { Expand, Shrink } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 11;
 
@@ -18,6 +20,8 @@ export default function DashboardPage() {
   const [api, setApi] = React.useState<CarouselApi>();
   const [current, setCurrent] = React.useState(0);
   const [count, setCount] = React.useState(0);
+  const [isFullscreen, setIsFullscreen] = React.useState(false);
+  const dashboardRef = React.useRef<HTMLDivElement>(null);
 
   const statusOrder: WorkOrder['status'][] = ['Atrasada', 'En Progreso', 'Pendiente', 'Por Iniciar'];
   
@@ -66,6 +70,27 @@ export default function DashboardPage() {
       return orderDate.getMonth() === today.getMonth() && orderDate.getFullYear() === today.getFullYear();
   });
 
+   const toggleFullscreen = () => {
+    if (!dashboardRef.current) return;
+
+    if (!document.fullscreenElement) {
+      dashboardRef.current.requestFullscreen().catch(err => {
+        alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+  React.useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+
   React.useEffect(() => {
     if (!api) {
       return;
@@ -78,17 +103,24 @@ export default function DashboardPage() {
       setCurrent(api.selectedScrollSnap() + 1);
     });
 
-    const interval = setInterval(() => {
-        if (api.canScrollNext()) {
-            api.scrollNext();
-        } else {
-            api.scrollTo(0);
+    let interval: NodeJS.Timeout;
+    if (isFullscreen) {
+        interval = setInterval(() => {
+            if (api.canScrollNext()) {
+                api.scrollNext();
+            } else {
+                api.scrollTo(0);
+            }
+        }, 15000); // Rotate every 15 seconds
+    }
+
+    return () => {
+        if (interval) {
+            clearInterval(interval);
         }
-    }, 15000); // Rotate every 15 seconds
+    }
 
-    return () => clearInterval(interval);
-
-  }, [api]);
+  }, [api, isFullscreen]);
 
 
   if (loading) {
@@ -105,7 +137,20 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="flex flex-1 flex-col gap-8">
+      <div ref={dashboardRef} className="flex flex-1 flex-col gap-8 bg-background p-1 fullscreen-container">
+        <div className="flex items-center justify-between pr-4">
+            <div className="flex items-center gap-4">
+                 {count > 1 && !isFullscreen && (
+                    <div className="text-sm text-muted-foreground ml-4">
+                        Página {current} de {count}
+                    </div>
+                 )}
+            </div>
+            <Button onClick={toggleFullscreen} variant="outline" size="icon">
+                {isFullscreen ? <Shrink className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
+                <span className="sr-only">{isFullscreen ? 'Salir de pantalla completa' : 'Ver en pantalla completa'}</span>
+            </Button>
+        </div>
         {chunkedOrders.length > 0 ? (
           <Carousel setApi={setApi} className="w-full">
             <CarouselContent>
@@ -115,12 +160,17 @@ export default function DashboardPage() {
                     {page.map(order => (
                       <OrderCard key={order.id} order={order} progress={getProgress(order)} />
                     ))}
-                    {/* Render the closed orders card only on the first page of the carousel */}
                     {index === 0 && <ClosedOrdersCard orders={closedOrdersThisMonth} />}
                   </div>
                 </CarouselItem>
               ))}
             </CarouselContent>
+             {count > 1 && !isFullscreen && (
+                <>
+                    <CarouselPrevious className="left-[-5px]" />
+                    <CarouselNext className="right-[-5px]" />
+                </>
+             )}
           </Carousel>
         ) : (
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -137,3 +187,4 @@ export default function DashboardPage() {
     </>
   );
 }
+
