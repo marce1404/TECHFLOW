@@ -174,16 +174,18 @@ export default function CollaboratorsTable({ collaborators, requestSort, sortCon
                     </TableBody>
                 </Table>
             </div>
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <div>
-                    Mostrando {paginatedData.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} a {Math.min(currentPage * itemsPerPage, collaborators.length)} de {collaborators.length} colaboradores.
+             {totalPages > 1 && (
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <div>
+                        Mostrando {paginatedData.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} a {Math.min(currentPage * itemsPerPage, collaborators.length)} de {collaborators.length} colaboradores.
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>Anterior</Button>
+                        <span>Página {currentPage} de {totalPages > 0 ? totalPages : 1}</span>
+                        <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages || totalPages === 0}>Siguiente</Button>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>Anterior</Button>
-                    <span>Página {currentPage} de {totalPages > 0 ? totalPages : 1}</span>
-                    <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages || totalPages === 0}>Siguiente</Button>
-                </div>
-            </div>
+            )}
         </div>
     );
 }
