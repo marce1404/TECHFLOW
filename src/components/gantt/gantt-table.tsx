@@ -131,7 +131,7 @@ export default function GanttTable({ charts, deleteGanttChart }: GanttTableProps
                 </Table>
             </div>
              {totalPages > 1 && (
-                <CardFooter>
+                <CardFooter className="px-0">
                     <div className="text-xs text-muted-foreground">
                         Página {currentPage} de {totalPages}
                     </div>
