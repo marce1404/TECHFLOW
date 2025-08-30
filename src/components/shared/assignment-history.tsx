@@ -40,22 +40,19 @@ export default function AssignmentHistory({ title, description, filterKey, filte
       case 'cerrada':
       case 'facturado':
         return 'default';
+      case 'en progreso':
+      case 'en proceso':
       case 'por iniciar':
         return 'outline';
       case 'suspendida':
       case 'pendiente':
         return 'secondary';
-      case 'en progreso':
-        return 'default';
       default:
         return 'outline';
     }
   };
   
   const getStatusBadgeStyle = (status: WorkOrder['status']) => {
-    if (normalizeString(status) === 'en progreso') {
-      return { backgroundColor: 'hsl(142, 71%, 45%)', color: 'hsl(var(--primary-foreground))' };
-    }
     return {};
   };
 

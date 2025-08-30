@@ -55,22 +55,19 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
       case 'cerrada':
       case 'facturado':
         return 'default';
+      case 'en progreso':
+      case 'en proceso':
       case 'por iniciar':
         return 'outline';
       case 'suspendida':
       case 'pendiente':
         return 'secondary';
-      case 'en progreso':
-        return 'default';
       default:
         return 'outline';
     }
   };
   
   const getStatusBadgeStyle = (status: WorkOrder['status']) => {
-    if (normalizeString(status) === 'en progreso') {
-      return { backgroundColor: 'hsl(142, 71%, 45%)', color: 'hsl(var(--primary-foreground))' };
-    }
     return {};
   };
 
@@ -187,19 +184,11 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                             </DropdownMenu>
                           </TableCell>
                            <TableCell className="text-right">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" className="h-8 w-8 p-0">
-                                            <span className="sr-only">Abrir menú</span>
-                                            <MoreHorizontal className="h-4 w-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <DropdownMenuItem asChild>
-                                            <Link href={`/orders/${order.id}/edit`}>Editar</Link>
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                                <Button variant="ghost" size="icon" asChild>
+                                    <Link href={`/orders/${order.id}/edit`}>
+                                        <MoreHorizontal className="h-4 w-4" />
+                                    </Link>
+                                </Button>
                             </TableCell>
                         </TableRow>
                     ))

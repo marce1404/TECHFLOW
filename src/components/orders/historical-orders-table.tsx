@@ -44,7 +44,7 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
   const [sortConfig, setSortConfig] = useState<{ key: keyof WorkOrder | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
-  const { updateOrder, otStatuses, deleteOrder } = useWorkOrders();
+  const { updateOrder, otStatuses, deleteOrder, promptToCloseOrder } = useWorkOrders();
 
   const getStatusVariant = (
     status: WorkOrder['status']
@@ -55,22 +55,19 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
       case 'cerrada':
       case 'facturado':
         return 'default';
+      case 'en progreso':
+      case 'en proceso':
       case 'por iniciar':
         return 'outline';
       case 'suspendida':
       case 'pendiente':
         return 'secondary';
-      case 'en progreso':
-        return 'default';
       default:
         return 'outline';
     }
   };
 
   const getStatusBadgeStyle = (status: WorkOrder['status']) => {
-    if (normalizeString(status) === 'en progreso') {
-      return { backgroundColor: 'hsl(142, 71%, 45%)', color: 'hsl(var(--primary-foreground))' };
-    }
     return {};
   };
 
@@ -126,7 +123,11 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
   ];
 
   const handleStatusChange = (order: WorkOrder, newStatus: WorkOrder['status']) => {
-    updateOrder(order.id, { ...order, status: newStatus });
+    if (newStatus.toLowerCase() === 'cerrada') {
+        promptToCloseOrder(order);
+    } else {
+        updateOrder(order.id, { ...order, status: newStatus });
+    }
   };
 
 
@@ -183,45 +184,11 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                             </DropdownMenu>
                           </TableCell>
                           <TableCell className="text-right">
-                                <AlertDialog>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                                <span className="sr-only">Abrir menú</span>
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem asChild>
-                                                <Link href={`/orders/${order.id}/edit`}>Editar</Link>
-                                            </DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                            <AlertDialogTrigger asChild>
-                                                <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                                  <Trash2 className="mr-2 h-4 w-4" /> Eliminar
-                                                </DropdownMenuItem>
-                                            </AlertDialogTrigger>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                        <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Esta acción no se puede deshacer. Esto eliminará permanentemente la OT
-                                            <span className="font-bold"> {order.ot_number}</span>.
-                                        </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction
-                                            className="bg-destructive hover:bg-destructive/90"
-                                            onClick={() => deleteOrder(order.id)}
-                                        >
-                                            Eliminar
-                                        </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
+                            <Button variant="ghost" size="icon" asChild>
+                                <Link href={`/orders/${order.id}/edit`}>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Link>
+                            </Button>
                             </TableCell>
                         </TableRow>
                     ))

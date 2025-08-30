@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -35,29 +34,26 @@ export function OrderCard({ order, progress }: OrderCardProps) {
       case 'cerrada':
       case 'facturado':
         return 'default';
+      case 'en progreso':
+      case 'en proceso':
       case 'por iniciar':
         return 'outline';
       case 'suspendida':
       case 'pendiente':
         return 'secondary';
-      case 'en progreso':
-        return 'default'; // Using default for a custom color background
       default:
         return 'default';
     }
   };
   
   const getStatusBadgeStyle = (status: WorkOrder['status']) => {
-    if (normalizeString(status) === 'en progreso') {
-      return { backgroundColor: 'hsl(142, 71%, 45%)', color: 'hsl(var(--primary-foreground))' };
-    }
     return {};
   };
 
   
   const getChartColor = (status: WorkOrder['status']) => {
     const normalizedStatus = normalizeString(status);
-    if (normalizedStatus === 'en progreso') {
+    if (normalizedStatus === 'en progreso' || normalizedStatus === 'en proceso') {
         return 'hsl(142, 71%, 45%)'; // Green
     }
     if (normalizedStatus === 'atrasada') {
@@ -81,7 +77,7 @@ export function OrderCard({ order, progress }: OrderCardProps) {
       <CardContent className="flex-1 flex flex-col justify-between">
         <div className="flex items-center justify-between gap-4">
           <div className="text-sm text-muted-foreground flex-1 space-y-2 min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between">
                 <p className="font-semibold text-foreground truncate">{order.service}</p>
                 <Badge variant={getStatusVariant(order.status)} style={getStatusBadgeStyle(order.status)} className="capitalize text-xs">{order.status}</Badge>
             </div>
