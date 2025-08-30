@@ -45,7 +45,7 @@ export default function GanttPage() {
     return (
         <div className="flex flex-col gap-8">
             <Card>
-                <CardHeader className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <CardHeader className="flex flex-row items-center justify-between gap-4">
                     <CardTitle>Cartas Gantt Creadas</CardTitle>
                     <div className="flex w-full sm:w-auto items-center gap-2">
                         <Input
