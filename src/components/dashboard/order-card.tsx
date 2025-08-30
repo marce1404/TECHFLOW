@@ -73,36 +73,36 @@ export function OrderCard({ order, progress }: OrderCardProps) {
   return (
     <Card className="flex flex-col relative">
       <Link href={`/orders/${order.id}/edit`} className="absolute inset-0 z-10"><span className="sr-only">Ver detalles de la orden</span></Link>
-      <CardHeader className="pb-2">
+      <CardHeader className="p-3 pb-1">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
-            <CardDescription>{order.ot_number} - {order.client}</CardDescription>
-            <CardTitle className="text-lg font-bold leading-tight mt-1 truncate">{order.description}</CardTitle>
+            <CardDescription className="text-xs">{order.ot_number} - {order.client}</CardDescription>
+            <CardTitle className="text-base font-bold leading-tight mt-1 truncate">{order.description}</CardTitle>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col justify-between">
-        <div className="flex items-center justify-between gap-4">
-          <div className="text-sm text-muted-foreground flex-1 space-y-2 min-w-0">
+      <CardContent className="flex-1 flex flex-col justify-between p-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-xs text-muted-foreground flex-1 space-y-1.5 min-w-0">
             <div className="flex items-center justify-between">
                 <p className="font-semibold text-foreground truncate">{order.service}</p>
                 <Badge 
                     variant={getStatusVariant(order.status)} 
-                    className={cn(getStatusBadgeClass(order.status), 'capitalize text-xs')}
+                    className={cn(getStatusBadgeClass(order.status), 'capitalize text-[10px] px-2 py-0.5')}
                 >
                     {order.status}
                 </Badge>
             </div>
-            <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 flex-shrink-0" />
+            <div className="flex items-center gap-1.5">
+                <Users className="h-3 w-3 flex-shrink-0" />
                 <span className="truncate">{order.assigned.join(', ')}</span>
             </div>
-             <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 flex-shrink-0" />
+             <div className="flex items-center gap-1.5">
+                <Calendar className="h-3 w-3 flex-shrink-0" />
                 <span className="truncate">{order.date}</span>
             </div>
           </div>
-          <div className="h-24 w-24 flex-shrink-0">
+          <div className="h-20 w-20 flex-shrink-0">
             <ChartContainer config={chartConfig} className="mx-auto aspect-square h-full">
               <PieChart>
                 <ChartTooltip
@@ -113,25 +113,25 @@ export function OrderCard({ order, progress }: OrderCardProps) {
                   data={[{ value: progress }, { value: 100 - progress }]}
                   dataKey="value"
                   nameKey="name"
-                  innerRadius={28}
-                  strokeWidth={5}
+                  innerRadius={22}
+                  strokeWidth={4}
                   startAngle={90}
                   endAngle={450}
                   label={({payload}) => {
-                      return <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="fill-foreground text-lg font-bold">{`${progress}%`}</text>
+                      return <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="fill-foreground text-base font-bold">{`${progress}%`}</text>
                   }}
                   labelLine={false}
                 >
                     <Cell 
                         key="progress" 
                         fill={getChartColor(order.status)}
-                        radius={[8, 8, 8, 8]}
+                        radius={[6, 6, 6, 6]}
                      />
                      <Cell 
                         key="background" 
                         fill="hsl(var(--muted))" 
                         opacity={0.3}
-                        radius={[8, 8, 8, 8]}
+                        radius={[6, 6, 6, 6]}
                      />
                 </Pie>
               </PieChart>
