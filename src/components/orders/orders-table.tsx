@@ -106,14 +106,14 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
   };
   
-  const headerItems: { key: keyof WorkOrder, label: string }[] = [
-      { key: 'ot_number', label: 'ID' },
-      { key: 'description', label: 'Descripción' },
-      { key: 'client', label: 'Cliente' },
-      { key: 'service', label: 'Servicio' },
-      { key: 'assigned', label: 'Encargado' },
-      { key: 'comercial', label: 'Comercial' },
-      { key: 'status', label: 'Estado' },
+  const headerItems: { key: keyof WorkOrder, label: string, className: string }[] = [
+      { key: 'ot_number', label: 'ID', className: 'w-[10%]' },
+      { key: 'description', label: 'Descripción', className: 'w-[25%]' },
+      { key: 'client', label: 'Cliente', className: 'w-[15%]' },
+      { key: 'service', label: 'Servicio', className: 'w-[10%]' },
+      { key: 'assigned', label: 'Encargado', className: 'w-[12%]' },
+      { key: 'comercial', label: 'Comercial', className: 'w-[12%]' },
+      { key: 'status', label: 'Estado', className: 'w-[10%]' },
   ];
 
   const handleStatusChange = async (order: WorkOrder, newStatus: WorkOrder['status']) => {
@@ -131,14 +131,14 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                 <TableHeader className="bg-muted/50">
                 <TableRow>
                     {headerItems.map((item) => (
-                         <TableHead key={item.key}>
+                         <TableHead key={item.key} className={item.className}>
                             <Button variant="ghost" onClick={() => requestSort(item.key)}>
                                 {item.label}
                                 <ArrowUpDown className="ml-2 h-4 w-4" />
                             </Button>
                         </TableHead>
                     ))}
-                    <TableHead className="text-center">Facturado</TableHead>
+                    <TableHead className="w-[6%] text-center">Facturado</TableHead>
                 </TableRow>
                 </TableHeader>
                 <TableBody>
