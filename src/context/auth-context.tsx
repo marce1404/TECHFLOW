@@ -77,11 +77,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
         
-        // Hard-coded override for the main admin user
-        if (profileData && profileData.email === 'msepulveda@osesa.cl') {
-            profileData.role = 'Admin';
-        }
-        
         setUserProfile(profileData);
 
       } else {
