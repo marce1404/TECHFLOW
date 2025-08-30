@@ -6,7 +6,7 @@ dotenv.config();
 
 const initializeFirebaseAdmin = () => {
     if (admin.apps.length > 0) {
-        return { auth: getAuth(), db: admin.firestore() };
+        return admin.app();
     }
 
     const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
@@ -18,18 +18,19 @@ const initializeFirebaseAdmin = () => {
         const serviceAccountString = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
         const serviceAccount = JSON.parse(serviceAccountString);
 
-        admin.initializeApp({
+        return admin.initializeApp({
             credential: admin.credential.cert(serviceAccount),
         });
-
-        return { auth: getAuth(), db: admin.firestore() };
     } catch (error) {
         console.error("Error parsing Firebase service account JSON:", error);
         throw new Error("Failed to initialize Firebase Admin SDK. Service account JSON is invalid.");
     }
 };
 
-const { auth, db } = initializeFirebaseAdmin();
+const adminApp = initializeFirebaseAdmin();
+const auth = getAuth(adminApp);
+const db = admin.firestore(adminApp);
+
 
 export { auth, db };
 

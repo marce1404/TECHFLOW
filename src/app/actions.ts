@@ -9,7 +9,7 @@ import {
   CreateWorkOrderInput,
 } from '@/lib/types';
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
-import { db } from '@/lib/firebase-admin'; // Import admin db
+import { db as adminDb } from '@/lib/firebase-admin';
 import nodemailer from 'nodemailer';
 import * as xlsx from 'xlsx';
 import {
@@ -31,10 +31,6 @@ export async function getResourceSuggestions(
     return { error: 'An unexpected error occurred. Please try again.' };
   }
 }
-
-// These user management actions require the Client SDK running on a server,
-// which is what Server Actions provide. But they need the Admin SDK for privileges.
-// The firebase-admin setup will handle this.
 
 export const deleteUserAction = deleteUserActionAdmin;
 export const changeUserPasswordAction = changeUserPasswordActionAdmin;
@@ -158,28 +154,26 @@ export async function exportOrdersToExcel(orders: WorkOrder[]): Promise<string> 
 }
 
 async function createOrUpdateWorkOrder(input: CreateWorkOrderInput) {
-    try {
-      const workOrderData = {
-        ...input,
-        facturado: !!input.invoiceNumber,
-      };
+  try {
+    const workOrderData = {
+      ...input,
+      facturado: !!input.invoiceNumber,
+    };
 
-      // Use the admin db instance for this operation
-      const docRef = await db.collection("work-orders").add(workOrderData);
-      return {
-        success: true,
-        orderId: docRef.id,
-        message: 'Work order created successfully.',
-      };
-
-    } catch (error) {
-      console.error('Error creating work order:', error);
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-      return {
-        success: false,
-        message: `Failed to process work order: ${errorMessage}`,
-      };
-    }
+    const docRef = await adminDb.collection("work-orders").add(workOrderData);
+    return {
+      success: true,
+      orderId: docRef.id,
+      message: 'Work order created successfully.',
+    };
+  } catch (error) {
+    console.error('Error creating work order:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+    return {
+      success: false,
+      message: `Failed to process work order: ${errorMessage}`,
+    };
+  }
 }
 
 
