@@ -1,11 +1,6 @@
 
 'use server';
 
-// Correctly load environment variables at the top of the server actions file.
-import { config } from 'dotenv';
-config();
-
-
 import {
   SuggestOptimalResourceAssignmentInput,
   SuggestOptimalResourceAssignmentOutputWithError,
@@ -17,14 +12,15 @@ import {
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
 import * as admin from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, addDoc, collection } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import nodemailer from 'nodemailer';
 import * as xlsx from 'xlsx';
 
 // This function ensures Firebase Admin is initialized, but only once.
 const initializeFirebaseAdmin = () => {
     if (admin.apps.length > 0) {
-        return { firestore: getFirestore(), auth: getAuth() };
+        return { auth: getAuth() };
     }
     const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
     if (!serviceAccountBase64) {
@@ -37,7 +33,7 @@ const initializeFirebaseAdmin = () => {
         credential: admin.credential.cert(serviceAccount),
     });
 
-    return { firestore: getFirestore(), auth: getAuth() };
+    return { auth: getAuth() };
 };
 
 
@@ -57,9 +53,9 @@ export async function getResourceSuggestions(
 
 export async function deleteUserAction(uid: string): Promise<{ success: boolean; message: string }> {
   try {
-    const { auth, firestore } = initializeFirebaseAdmin();
+    const { auth } = initializeFirebaseAdmin();
+    // No need for firestore here as user profile deletion is handled in context
     await auth.deleteUser(uid);
-    await firestore.collection('users').doc(uid).delete();
     return { success: true, message: 'Usuario eliminado correctamente.' };
   } catch (error: any) {
     console.error('Error deleting user:', error);
@@ -81,10 +77,12 @@ export async function changeUserPasswordAction(uid: string, newPassword: string)
 
 export async function toggleUserStatusAction(uid: string, currentStatus: 'Activo' | 'Inactivo'): Promise<{ success: boolean; message: string }> {
   try {
-    const { auth, firestore } = initializeFirebaseAdmin();
+    const { auth } = initializeFirebaseAdmin();
     const newStatus = currentStatus === 'Activo' ? 'Inactivo' : 'Activo';
     await auth.updateUser(uid, { disabled: newStatus === 'Inactivo' });
-    await firestore.collection('users').doc(uid).update({ status: newStatus });
+    
+    // The user profile update should be done via `updateUserProfile` in the context
+    // which uses the client SDK and respects security rules.
     
     return { success: true, message: 'Estado del usuario actualizado correctamente.' };
   } catch (error: any) {
@@ -209,6 +207,31 @@ export async function exportOrdersToExcel(orders: WorkOrder[]): Promise<string> 
     return buffer.toString('base64');
 }
 
+async function createOrUpdateWorkOrder(input: CreateWorkOrderInput) {
+    try {
+      const workOrderData = {
+        ...input,
+        facturado: !!input.invoiceNumber,
+      };
+
+      const docRef = await addDoc(collection(db, "work-orders"), workOrderData);
+      return {
+        success: true,
+        orderId: docRef.id,
+        message: 'Work order created successfully.',
+      };
+
+    } catch (error) {
+      console.error('Error creating work order:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+      return {
+        success: false,
+        message: `Failed to process work order: ${errorMessage}`,
+      };
+    }
+}
+
+
 export async function importOrdersFromExcel(ordersData: CreateWorkOrderInput[]): Promise<{ successCount: number; errorCount: number; errors: string[] }> {
     let successCount = 0;
     let errorCount = 0;
@@ -216,7 +239,6 @@ export async function importOrdersFromExcel(ordersData: CreateWorkOrderInput[]):
 
     for (const orderData of ordersData) {
         try {
-            // Directly call the new server action instead of the Genkit flow
             const result = await createOrUpdateWorkOrder(orderData);
             if (result.success) {
                 successCount++;
@@ -231,39 +253,4 @@ export async function importOrdersFromExcel(ordersData: CreateWorkOrderInput[]):
     }
 
     return { successCount, errorCount, errors };
-}
-
-// New, corrected server action for creating/updating work orders
-async function createOrUpdateWorkOrder(input: CreateWorkOrderInput) {
-    try {
-      const { firestore } = initializeFirebaseAdmin();
-      
-      let finalStatus = input.status;
-      if (input.status.toUpperCase() === 'CERRADA') {
-        finalStatus = 'Cerrada';
-      } else if (input.status === 'En Proceso') {
-        finalStatus = 'En Progreso';
-      }
-
-      const workOrderData = {
-        ...input,
-        status: finalStatus,
-        facturado: !!input.invoiceNumber,
-      };
-
-      const docRef = await firestore.collection('work-orders').add(workOrderData);
-      return {
-        success: true,
-        orderId: docRef.id,
-        message: 'Work order created successfully.',
-      };
-
-    } catch (error) {
-      console.error('Error creating work order from API:', error);
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-      return {
-        success: false,
-        message: `Failed to process work order: ${errorMessage}`,
-      };
-    }
 }
