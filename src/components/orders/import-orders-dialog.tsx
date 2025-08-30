@@ -35,7 +35,7 @@ const CreateWorkOrderInputSchemaForExcel = z.object({
   date: z.string().min(1, 'date no puede estar vacío.'),
   endDate: z.string().optional(),
   notes: z.string().optional(),
-  status: z.enum(['Por Iniciar', 'En Progreso', 'Pendiente', 'Atrasada', 'Cerrada', 'Facturado', 'CERRADA']),
+  status: z.enum(['Por Iniciar', 'En Progreso', 'Pendiente', 'Atrasada', 'Cerrada', 'Facturado', 'CERRADA', 'En Proceso']),
   priority: z.enum(['Baja', 'Media', 'Alta']),
   netPrice: z.number(),
   ocNumber: z.string().optional(),
