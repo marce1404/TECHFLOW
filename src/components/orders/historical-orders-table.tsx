@@ -67,6 +67,9 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
     if (normalizedStatus === 'en proceso') {
       return 'bg-green-500 text-white border-transparent';
     }
+     if (normalizedStatus === 'por iniciar') {
+        return 'bg-primary text-primary-foreground border-transparent'
+    }
      if (normalizedStatus === 'cerrada') {
         return 'bg-background text-foreground'
     }
@@ -149,7 +152,6 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                         </TableHead>
                     ))}
                     <TableHead className="text-center">Facturado</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -191,18 +193,11 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                           <TableCell className="text-center">
                             {order.facturado && <CheckCircle className="h-5 w-5 text-green-500 mx-auto" />}
                           </TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="ghost" size="icon" asChild>
-                                <Link href={`/orders/${order.id}/edit`}>
-                                    <MoreHorizontal className="h-4 w-4" />
-                                </Link>
-                            </Button>
-                            </TableCell>
                         </TableRow>
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={headerItems.length + 2} className="h-24 text-center">
+                        <TableCell colSpan={headerItems.length + 1} className="h-24 text-center">
                             No hay resultados.
                         </TableCell>
                     </TableRow>

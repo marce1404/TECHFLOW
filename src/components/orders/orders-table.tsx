@@ -94,10 +94,10 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
       const valA = Array.isArray(aValue) ? aValue.join(', ') : aValue;
       const valB = Array.isArray(bValue) ? bValue.join(', ') : bValue;
 
-      if (valA < valB) {
+      if (valA! < valB!) {
         return sortConfig.direction === 'ascending' ? -1 : 1;
       }
-      if (valA > valB) {
+      if (valA! > valB!) {
         return sortConfig.direction === 'ascending' ? 1 : -1;
       }
     }
@@ -151,7 +151,6 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                         </TableHead>
                     ))}
                     <TableHead className="text-center">Facturado</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -191,18 +190,11 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                           <TableCell className="text-center">
                             {order.facturado && <CheckCircle className="h-5 w-5 text-green-500 mx-auto" />}
                           </TableCell>
-                           <TableCell className="text-right">
-                                <Button variant="ghost" size="icon" asChild>
-                                    <Link href={`/orders/${order.id}/edit`}>
-                                        <MoreHorizontal className="h-4 w-4" />
-                                    </Link>
-                                </Button>
-                            </TableCell>
                         </TableRow>
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={headerItems.length + 2} className="h-24 text-center">
+                        <TableCell colSpan={headerItems.length + 1} className="h-24 text-center">
                             No hay resultados.
                         </TableCell>
                     </TableRow>
