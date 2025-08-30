@@ -1,14 +1,13 @@
+
 import * as admin from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const initializeFirebaseAdmin = () => {
-    if (admin.apps.length > 0) {
-        return admin.app();
-    }
+let adminApp: admin.app.App;
 
+if (admin.apps.length === 0) {
     const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
     if (!serviceAccountBase64) {
         throw new Error("Firebase service account JSON not found in environment variables. Please set FIREBASE_SERVICE_ACCOUNT_JSON.");
@@ -18,16 +17,18 @@ const initializeFirebaseAdmin = () => {
         const serviceAccountString = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
         const serviceAccount = JSON.parse(serviceAccountString);
 
-        return admin.initializeApp({
+        adminApp = admin.initializeApp({
             credential: admin.credential.cert(serviceAccount),
         });
     } catch (error) {
         console.error("Error parsing Firebase service account JSON:", error);
         throw new Error("Failed to initialize Firebase Admin SDK. Service account JSON is invalid.");
     }
-};
+} else {
+    adminApp = admin.apps[0]!;
+}
 
-const adminApp = initializeFirebaseAdmin();
+
 const auth = getAuth(adminApp);
 const db = admin.firestore(adminApp);
 
