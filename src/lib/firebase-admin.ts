@@ -2,6 +2,7 @@
 import * as admin from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
 import * as dotenv from 'dotenv';
+import { doc, getFirestore } from 'firebase-admin/firestore';
 
 dotenv.config();
 
@@ -30,7 +31,7 @@ if (admin.apps.length === 0) {
 
 
 const auth = getAuth(adminApp);
-const db = admin.firestore(adminApp);
+const db = getFirestore(adminApp);
 
 
 export { auth, db };
@@ -48,6 +49,26 @@ export async function deleteUserAction(uid: string): Promise<{ success: boolean;
     return { success: false, message: error.message || 'Error al eliminar el usuario.' };
   }
 }
+
+export async function updateUserAction(uid: string, data: { displayName: string; role: string; status: string }): Promise<{ success: boolean; message: string }> {
+    try {
+        await auth.updateUser(uid, {
+            displayName: data.displayName,
+            disabled: data.status === 'Inactivo',
+        });
+        const userDocRef = db.collection('users').doc(uid);
+        await userDocRef.update({
+            displayName: data.displayName,
+            role: data.role,
+            status: data.status,
+        });
+        return { success: true, message: 'Usuario actualizado correctamente.' };
+    } catch (error: any) {
+        console.error('Error updating user:', error);
+        return { success: false, message: error.message || 'Error al actualizar el usuario.' };
+    }
+}
+
 
 export async function changeUserPasswordAction(uid: string, newPassword: string): Promise<{ success: boolean; message: string }> {
   try {

@@ -30,6 +30,8 @@ import { useAuth } from '@/context/auth-context';
 import { Loader2 } from 'lucide-react';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { Switch } from '../ui/switch';
+import { updateUserAction } from '@/app/actions';
+
 
 const editFormSchema = z.object({
   displayName: z.string().min(3, { message: 'El nombre debe tener al menos 3 caracteres.' }),
@@ -47,7 +49,7 @@ interface UserEditDialogProps {
 
 export function UserEditDialog({ open, onOpenChange, user }: UserEditDialogProps) {
   const { toast } = useToast();
-  const { updateUserProfile } = useWorkOrders();
+  const { fetchUsers } = useAuth();
   const [loading, setLoading] = React.useState(false);
 
   const form = useForm<EditFormValues>({
@@ -74,12 +76,17 @@ export function UserEditDialog({ open, onOpenChange, user }: UserEditDialogProps
     setLoading(true);
 
     try {
-      await updateUserProfile(user.uid, data);
-      toast({
-        title: 'Usuario Actualizado',
-        description: `El perfil de ${data.displayName} ha sido actualizado.`,
-      });
-      onOpenChange(false);
+      const result = await updateUserAction(user.uid, data);
+      if (result.success) {
+        toast({
+            title: 'Usuario Actualizado',
+            description: `El perfil de ${data.displayName} ha sido actualizado.`,
+        });
+        await fetchUsers(); // Re-fetch users to update the UI
+        onOpenChange(false);
+      } else {
+        throw new Error(result.message);
+      }
     } catch (error: any) {
       toast({
         variant: 'destructive',

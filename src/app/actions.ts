@@ -16,6 +16,7 @@ import {
   deleteUserAction as deleteUserActionAdmin,
   changeUserPasswordAction as changeUserPasswordActionAdmin,
   toggleUserStatusAction as toggleUserStatusActionAdmin,
+  updateUserAction as updateUserActionAdmin,
 } from '@/lib/firebase-admin';
 
 // --- Server Actions ---
@@ -35,6 +36,7 @@ export async function getResourceSuggestions(
 export const deleteUserAction = deleteUserActionAdmin;
 export const changeUserPasswordAction = changeUserPasswordActionAdmin;
 export const toggleUserStatusAction = toggleUserStatusActionAdmin;
+export const updateUserAction = updateUserActionAdmin;
 
 
 export async function sendTestEmailAction(config: SmtpConfig, to: string): Promise<{ success: boolean; message: string }> {
