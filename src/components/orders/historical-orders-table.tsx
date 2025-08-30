@@ -14,7 +14,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { WorkOrder } from '@/lib/types';
-import { ArrowUpDown, MoreHorizontal, Trash2 } from 'lucide-react';
+import { ArrowUpDown, MoreHorizontal, CheckCircle, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,7 +46,7 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
   const itemsPerPage = 15;
   const { updateOrder, otStatuses, deleteOrder, promptToCloseOrder } = useWorkOrders();
 
-  const getStatusVariant = (
+   const getStatusVariant = (
     status: WorkOrder['status']
   ): 'default' | 'secondary' | 'destructive' | 'outline' => {
      switch (normalizeString(status)) {
@@ -61,13 +61,14 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
         return 'outline';
     }
   };
-
+  
   const getStatusBadgeClass = (status: WorkOrder['status']) => {
     if (normalizeString(status) === 'en proceso') {
       return 'bg-green-500 text-white border-transparent';
     }
     return '';
   };
+
 
   const requestSort = (key: keyof WorkOrder) => {
     let direction: 'ascending' | 'descending' = 'ascending';
@@ -86,10 +87,10 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
       const valA = Array.isArray(aValue) ? aValue.join(', ') : aValue;
       const valB = Array.isArray(bValue) ? bValue.join(', ') : bValue;
 
-      if (valA < valB) {
+      if (valA! < valB!) {
         return sortConfig.direction === 'ascending' ? -1 : 1;
       }
-      if (valA > valB) {
+      if (valA! > valB!) {
         return sortConfig.direction === 'ascending' ? 1 : -1;
       }
     }
@@ -143,6 +144,7 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                             </Button>
                         </TableHead>
                     ))}
+                    <TableHead className="text-center">Facturado</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
                 </TableHeader>
@@ -164,12 +166,14 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                           <TableCell>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Badge 
-                                        variant={getStatusVariant(order.status)} 
-                                        className={cn("cursor-pointer", getStatusBadgeClass(order.status))}
-                                    >
-                                        {order.status}
-                                    </Badge>
+                                    <Button variant="ghost" className="p-0 h-auto">
+                                        <Badge 
+                                            variant={getStatusVariant(order.status)} 
+                                            className={cn("cursor-pointer", getStatusBadgeClass(order.status))}
+                                        >
+                                            {order.status}
+                                        </Badge>
+                                    </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
                                     {otStatuses.map(status => (
@@ -179,6 +183,9 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                                     ))}
                                 </DropdownMenuContent>
                             </DropdownMenu>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {order.facturado && <CheckCircle className="h-5 w-5 text-green-500 mx-auto" />}
                           </TableCell>
                           <TableCell className="text-right">
                             <Button variant="ghost" size="icon" asChild>
@@ -191,7 +198,7 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={headerItems.length + 1} className="h-24 text-center">
+                        <TableCell colSpan={headerItems.length + 2} className="h-24 text-center">
                             No hay resultados.
                         </TableCell>
                     </TableRow>

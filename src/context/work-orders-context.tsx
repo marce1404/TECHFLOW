@@ -159,9 +159,8 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         
         const allOrders = workOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[];
         
-        const finalStatuses = ['cerrada', 'facturado'];
-        const active = allOrders.filter(o => !finalStatuses.includes(o.status.toLowerCase()));
-        const historical = allOrders.filter(o => finalStatuses.includes(o.status.toLowerCase()));
+        const active = allOrders.filter(o => o.status.toLowerCase() !== 'cerrada' && !o.facturado);
+        const historical = allOrders.filter(o => o.status.toLowerCase() === 'cerrada' || o.facturado);
         
         setActiveWorkOrders(active);
         setHistoricalWorkOrders(historical);

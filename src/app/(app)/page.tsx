@@ -15,7 +15,7 @@ export default function DashboardPage() {
 
   const statusOrder: WorkOrder['status'][] = ['Atrasada', 'En Progreso', 'Pendiente', 'Por Iniciar'];
   
-  const finalStatuses = ['cerrada', 'facturado'];
+  const finalStatuses = ['cerrada'];
   const filteredActiveOrders = activeWorkOrders.filter(o => !finalStatuses.includes(o.status.toLowerCase()));
 
   const sortedOrders = [...filteredActiveOrders]
@@ -46,6 +46,8 @@ export default function DashboardPage() {
   };
   
   const closedOrdersThisMonth = historicalWorkOrders.filter(order => {
+      if (order.facturado) return true;
+
       const closingDateStr = order.endDate || order.date;
       if (!closingDateStr) return false;
 

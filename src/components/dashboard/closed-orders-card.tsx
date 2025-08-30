@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import type { WorkOrder } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';
 import { Archive } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 
 interface ClosedOrdersCardProps {
   orders: WorkOrder[];
@@ -39,9 +40,12 @@ export function ClosedOrdersCard({ orders }: ClosedOrdersCardProps) {
           <ScrollArea className="h-48 pr-4">
             <div className="space-y-2">
               {orders.map((order) => (
-                 <div key={order.id} className="text-xs p-2 bg-background/50 rounded-md border">
-                    <p className="font-semibold truncate">{order.description}</p>
-                    <p className="text-muted-foreground">{order.ot_number} - {order.client}</p>
+                 <div key={order.id} className="text-xs p-2 bg-background/50 rounded-md border flex justify-between items-center">
+                    <div>
+                      <p className="font-semibold truncate">{order.description}</p>
+                      <p className="text-muted-foreground">{order.ot_number} - {order.client}</p>
+                    </div>
+                    {order.facturado && <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />}
                 </div>
               ))}
             </div>

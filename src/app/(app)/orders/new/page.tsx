@@ -91,6 +91,7 @@ export default function NewOrderPage() {
         notes,
         status,
         priority,
+        facturado: !!invoiceNumber,
         netPrice,
         invoiceNumber,
         ocNumber,
