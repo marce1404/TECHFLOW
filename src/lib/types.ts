@@ -273,7 +273,7 @@ export const UpdateUserOutputSchema = z.object({
 export type UpdateUserOutput = z.infer<typeof UpdateUserOutputSchema>;
 
 // Excel Import Types & API Types
-const baseWorkOrderStatuses = ['Por Iniciar', 'En Progreso', 'Pendiente', 'Atrasada', 'Cerrada'];
+const workOrderStatuses = z.enum(['Por Iniciar', 'En Progreso', 'En Proceso', 'Pendiente', 'Atrasada', 'Cerrada', 'CERRADA']);
 
 export const CreateWorkOrderInputSchema = z.object({
   ot_number: z.string().describe("The unique work order number, including prefix. E.g., 'OT-1525'"),
@@ -284,8 +284,8 @@ export const CreateWorkOrderInputSchema = z.object({
   date: z.string().describe("The start date of the work order in 'YYYY-MM-DD' format."),
   endDate: z.string().optional().describe("The potential end date in 'YYYY-MM-DD' format."),
   notes: z.string().optional().describe("Additional notes or a detailed description."),
-  status: z.enum(baseWorkOrderStatuses as [string, ...string[]]).describe("The initial status of the work order."),
-  priority: z.enum(['Baja', 'Media', 'Alta']).describe("The priority of the work order."),
+  status: workOrderStatuses.describe("The initial status of the work order."),
+  priority: z.enum(['Baja', 'Media', 'Alta']).optional().describe("The priority of the work order."),
   netPrice: z.number().optional().default(0).describe("The net price of the work order."),
   ocNumber: z.string().optional().describe("The Purchase Order (OC) number, if available."),
   invoiceNumber: z.string().optional().describe("The invoice number, if available."),
@@ -299,10 +299,7 @@ export const CreateWorkOrderInputSchema = z.object({
 });
 export type CreateWorkOrderInput = z.infer<typeof CreateWorkOrderInputSchema>;
 
-export const CreateWorkOrderInputSchemaForExcel = CreateWorkOrderInputSchema.extend({
-    status: z.enum(baseWorkOrderStatuses as [string, ...string[]])
-});
-
+export const CreateWorkOrderInputSchemaForExcel = CreateWorkOrderInputSchema;
 
 export const CreateWorkOrderOutputSchema = z.object({
   success: z.boolean(),

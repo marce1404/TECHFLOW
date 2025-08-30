@@ -9,7 +9,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { CreateWorkOrderInput, CreateWorkOrderInputSchema, CreateWorkOrderOutput, CreateWorkOrderOutputSchema } from '@/lib/types';
 
@@ -22,8 +22,17 @@ const createWorkOrderFlow = ai.defineFlow(
   },
   async (input) => {
     try {
+      
+      let finalStatus = input.status;
+      if (input.status.toUpperCase() === 'CERRADA') {
+        finalStatus = 'Cerrada';
+      } else if (input.status === 'En Proceso') {
+        finalStatus = 'En Progreso';
+      }
+
       const workOrderData = {
         ...input,
+        status: finalStatus,
         facturado: !!input.invoiceNumber,
       };
 
