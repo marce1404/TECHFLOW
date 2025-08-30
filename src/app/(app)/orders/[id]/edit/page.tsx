@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon, ArrowRight } from "lucide-react";
+import { Calendar as CalendarIcon, ArrowRight, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from 'date-fns/locale';
@@ -21,11 +21,22 @@ import { useToast } from "@/hooks/use-toast";
 import { useParams, useRouter } from "next/navigation";
 import type { WorkOrder } from "@/lib/types";
 import { useWorkOrders } from "@/context/work-orders-context";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function EditOrderPage() {
   const params = useParams();
   const router = useRouter();
-  const { getOrder, updateOrder, otCategories, services, collaborators, ganttCharts, otStatuses, vehicles, promptToCloseOrder } = useWorkOrders();
+  const { getOrder, updateOrder, otCategories, services, collaborators, ganttCharts, otStatuses, vehicles, promptToCloseOrder, deleteOrder } = useWorkOrders();
   const orderId = params.id as string;
   
   const initialOrder = getOrder(orderId);
@@ -112,6 +123,17 @@ export default function EditOrderPage() {
       router.push(`/orders`);
     }
   };
+  
+  const handleDeleteOrder = async () => {
+    if (!order) return;
+    await deleteOrder(order.id);
+    toast({
+        title: "Orden Eliminada",
+        description: `La OT "${order.description}" ha sido eliminada.`,
+        duration: 2000,
+    });
+    router.push('/orders');
+  }
 
   if (!order) {
       return <div>Cargando orden de trabajo...</div>
@@ -452,9 +474,33 @@ export default function EditOrderPage() {
             </div>
 
 
-            <div className="flex justify-end gap-2 mt-8">
-                <Button variant="outline" asChild><Link href="/orders">Cancelar</Link></Button>
-                <Button onClick={handleUpdateOrder}>Guardar Cambios</Button>
+            <div className="flex justify-between items-center mt-8">
+                 <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Eliminar OT
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>¿Está seguro de que desea eliminar esta Orden de Trabajo?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Esta acción es permanente y no se puede deshacer. Se eliminará la OT "{order.ot_number} - {order.description}".
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDeleteOrder} className="bg-destructive hover:bg-destructive/90">
+                                Sí, eliminar
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+                <div className="flex gap-2">
+                    <Button variant="outline" asChild><Link href="/orders">Cancelar</Link></Button>
+                    <Button onClick={handleUpdateOrder}>Guardar Cambios</Button>
+                </div>
             </div>
         </CardContent>
       </Card>

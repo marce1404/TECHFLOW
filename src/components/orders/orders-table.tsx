@@ -154,12 +154,26 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                           <TableCell>{order.assigned.join(', ')}</TableCell>
                           <TableCell>{order.comercial}</TableCell>
                           <TableCell>
-                            <Badge 
-                              variant={getStatusVariant(order.status)} 
-                              style={order.status.toLowerCase() === 'en progreso' ? { backgroundColor: 'hsl(142, 71%, 45%)', color: 'white' } : {}}
-                            >
-                                {order.status}
-                            </Badge>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="p-0 h-auto">
+                                        <Badge 
+                                        variant={getStatusVariant(order.status)} 
+                                        style={order.status.toLowerCase() === 'en progreso' ? { backgroundColor: 'hsl(142, 71%, 45%)', color: 'white' } : {}}
+                                        className="cursor-pointer"
+                                        >
+                                            {order.status}
+                                        </Badge>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    {otStatuses.map(status => (
+                                        <DropdownMenuItem key={status.id} onSelect={() => handleStatusChange(order, status.name as WorkOrder['status'])}>
+                                            Cambiar a {status.name}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                           </TableCell>
                            <TableCell className="text-right">
                                 <AlertDialog>
@@ -174,11 +188,6 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                                             <DropdownMenuItem asChild>
                                                 <Link href={`/orders/${order.id}/edit`}>Editar</Link>
                                             </DropdownMenuItem>
-                                            {otStatuses.map(status => (
-                                              <DropdownMenuItem key={status.id} onSelect={() => handleStatusChange(order, status.name as WorkOrder['status'])}>
-                                                Cambiar a {status.name}
-                                              </DropdownMenuItem>
-                                            ))}
                                             <DropdownMenuSeparator />
                                             <AlertDialogTrigger asChild>
                                                 <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
