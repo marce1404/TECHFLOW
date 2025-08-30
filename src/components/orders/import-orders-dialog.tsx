@@ -19,6 +19,7 @@ import { importOrdersFromExcel } from '@/app/actions';
 import type { CreateWorkOrderInput } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { ScrollArea } from '../ui/scroll-area';
+import { useWorkOrders } from '@/context/work-orders-context';
 
 interface ImportOrdersDialogProps {
   open: boolean;
@@ -34,23 +35,24 @@ const CreateWorkOrderInputSchemaForExcel = z.object({
   date: z.string().min(1, 'date no puede estar vacío.'),
   endDate: z.string().optional(),
   notes: z.string().optional(),
-  status: z.enum(['Por Iniciar', 'En Progreso', 'Pendiente', 'Atrasada', 'Cerrada']),
+  status: z.enum(['Por Iniciar', 'En Progreso', 'Pendiente', 'Atrasada', 'Cerrada', 'Facturado']),
   priority: z.enum(['Baja', 'Media', 'Alta']),
   netPrice: z.number(),
   ocNumber: z.string().optional(),
   invoiceNumber: z.string().optional(),
   assigned: z.string().optional(),
   technicians: z.string().optional(),
-  vehicles: z.string().optional(),
-  vendedor: z.string().optional(),
+  comercial: z.string().optional(),
   rut: z.string().optional(),
   saleNumber: z.string().optional(),
   hesEmMigo: z.string().optional(),
   rentedVehicle: z.string().optional(),
+  vehicles: z.string().optional(),
 });
 
 
 export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: ImportOrdersDialogProps) {
+  const { collaborators, vehicles: availableVehicles } = useWorkOrders();
   const [file, setFile] = React.useState<File | null>(null);
   const [parsedData, setParsedData] = React.useState<CreateWorkOrderInput[]>([]);
   const [errors, setErrors] = React.useState<string[]>([]);
@@ -65,6 +67,27 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
       parseFile(selectedFile);
     }
   };
+  
+  const normalizeString = (str: string) => {
+    return str.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  };
+  
+  const findMatchingCollaborator = (name: string, role?: 'Técnico' | 'Supervisor' | 'Comercial' | 'Encargado') => {
+    const normalizedName = normalizeString(name);
+    const collaboratorPool = role 
+        ? collaborators.filter(c => normalizeString(c.role) === normalizeString(role)) 
+        : collaborators;
+        
+    const found = collaboratorPool.find(c => normalizeString(c.name) === normalizedName);
+    return found?.name; // Return the correct, full name from the DB
+  };
+  
+  const findMatchingVehicle = (plate: string) => {
+    const normalizedPlate = normalizeString(plate);
+    const found = availableVehicles.find(v => normalizeString(v.plate) === normalizedPlate);
+    return found?.plate;
+  };
+
 
   const parseFile = (fileToParse: File) => {
     const reader = new FileReader();
@@ -94,12 +117,30 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         const result = CreateWorkOrderInputSchemaForExcel.safeParse(rowData);
 
         if (result.success) {
-          const { assigned, technicians, vehicles, ...rest } = result.data;
+          const { assigned, technicians, vehicles, comercial, ...rest } = result.data;
+          
+          const mappedAssigned = assigned 
+            ? assigned.split(',').map(name => findMatchingCollaborator(name) || name)
+            : [];
+
+          const mappedTechnicians = technicians 
+            ? technicians.split(',').map(name => findMatchingCollaborator(name, 'Técnico') || name)
+            : [];
+            
+          const mappedVehicles = vehicles
+            ? vehicles.split(',').map(plate => findMatchingVehicle(plate) || plate)
+            : [];
+
+          const mappedComercial = comercial
+            ? findMatchingCollaborator(comercial, 'Comercial') || comercial
+            : '';
+
           validData.push({
             ...rest,
-            assigned: assigned ? assigned.split(',').map(s => s.trim()) : [],
-            technicians: technicians ? technicians.split(',').map(s => s.trim()) : [],
-            vehicles: vehicles ? vehicles.split(',').map(s => s.trim()) : [],
+            assigned: mappedAssigned,
+            technicians: mappedTechnicians,
+            vehicles: mappedVehicles,
+            comercial: mappedComercial,
           });
         } else {
           const formattedErrors = result.error.issues.map(issue => `Fila ${index + 2}: ${issue.path.join('.')} - ${issue.message}`).join('; ');
@@ -153,10 +194,10 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         netPrice: 150000,
         ocNumber: "OC-12345",
         invoiceNumber: "F-6789",
-        assigned: "Supervisor 1, Supervisor 2",
-        technicians: "Técnico A, Técnico B",
+        assigned: "Juan Pérez, María García",
+        technicians: "Pedro Soto, Ana Torres",
         vehicles: "PPU-1111, PPU-2222",
-        vendedor: "Vendedor Ejemplo",
+        comercial: "Vendedor Ejemplo",
         saleNumber: 'VN-001',
         hesEmMigo: 'HES-9876',
         rentedVehicle: 'Hertz, PPU-RENT',
