@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -43,8 +42,6 @@ interface CollaboratorsTableProps {
 
 export default function CollaboratorsTable({ collaborators, requestSort, sortConfig }: CollaboratorsTableProps) {
     const { updateCollaborator, deleteCollaborator } = useWorkOrders();
-    const [currentPage, setCurrentPage] = React.useState(1);
-    const itemsPerPage = 15;
 
     const handleToggleStatus = (collaborator: Collaborator, status: Collaborator['status']) => {
         updateCollaborator(collaborator.id, { ...collaborator, status });
@@ -71,24 +68,6 @@ export default function CollaboratorsTable({ collaborators, requestSort, sortCon
         { key: 'status', label: 'Estado' },
     ];
     
-    const totalPages = Math.ceil(collaborators.length / itemsPerPage);
-    const paginatedData = collaborators.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
-
-    const handlePreviousPage = () => {
-        setCurrentPage((prev) => Math.max(prev - 1, 1));
-    };
-
-    const handleNextPage = () => {
-        setCurrentPage((prev) => Math.min(prev + 1, totalPages));
-    };
-    
-    React.useEffect(() => {
-        setCurrentPage(1);
-    }, [collaborators]);
-
     return (
         <div className="space-y-4">
             <div className="rounded-md border">
@@ -107,7 +86,7 @@ export default function CollaboratorsTable({ collaborators, requestSort, sortCon
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {paginatedData.length > 0 ? paginatedData.map((collaborator) => (
+                        {collaborators.length > 0 ? collaborators.map((collaborator) => (
                             <TableRow key={collaborator.id}>
                                 <TableCell className="font-medium">
                                     <Link href={`/collaborators/${collaborator.id}/edit`} className="text-primary hover:underline">
@@ -174,18 +153,6 @@ export default function CollaboratorsTable({ collaborators, requestSort, sortCon
                     </TableBody>
                 </Table>
             </div>
-             {totalPages > 1 && (
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <div>
-                        Mostrando {paginatedData.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} a {Math.min(currentPage * itemsPerPage, collaborators.length)} de {collaborators.length} colaboradores.
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>Anterior</Button>
-                        <span>Página {currentPage} de {totalPages > 0 ? totalPages : 1}</span>
-                        <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages || totalPages === 0}>Siguiente</Button>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

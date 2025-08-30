@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -11,14 +10,17 @@ import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { Collaborator } from '@/lib/types';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+
+const ITEMS_PER_PAGE = 15;
 
 export default function CollaboratorsPage() {
     const { collaborators } = useWorkOrders();
     const [search, setSearch] = React.useState('');
     const [roleFilter, setRoleFilter] = React.useState<Collaborator['role'] | 'Todos'>('Todos');
     const [sortConfig, setSortConfig] = React.useState<{ key: keyof Collaborator | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
+    const [currentPage, setCurrentPage] = React.useState(1);
 
     const requestSort = (key: keyof Collaborator) => {
         let direction: 'ascending' | 'descending' = 'ascending';
@@ -54,6 +56,24 @@ export default function CollaboratorsPage() {
         return matchesRole && matchesSearch;
     });
 
+    const totalPages = Math.ceil(filteredCollaborators.length / ITEMS_PER_PAGE);
+    const paginatedCollaborators = filteredCollaborators.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
+    
+    const handlePreviousPage = () => {
+        setCurrentPage((prev) => Math.max(prev - 1, 1));
+    };
+
+    const handleNextPage = () => {
+        setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+    };
+
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [roleFilter, search]);
+
     const collaboratorRoles: (Collaborator['role'] | 'Todos')[] = ['Todos', 'Técnico', 'Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado', 'Comercial'];
 
     return (
@@ -88,13 +108,38 @@ export default function CollaboratorsPage() {
                         
                         <TabsContent value={roleFilter}>
                             <CollaboratorsTable 
-                                collaborators={filteredCollaborators}
+                                collaborators={paginatedCollaborators}
                                 requestSort={requestSort}
                                 sortConfig={sortConfig}
                             />
                         </TabsContent>
                     </Tabs>
                 </CardContent>
+                {totalPages > 1 && (
+                    <CardFooter>
+                      <div className="text-xs text-muted-foreground">
+                        Página {currentPage} de {totalPages}
+                      </div>
+                      <div className="flex items-center space-x-2 ml-auto">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handlePreviousPage}
+                          disabled={currentPage === 1}
+                        >
+                          Anterior
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleNextPage}
+                          disabled={currentPage === totalPages}
+                        >
+                          Siguiente
+                        </Button>
+                      </div>
+                    </CardFooter>
+                  )}
             </Card>
         </div>
     );
