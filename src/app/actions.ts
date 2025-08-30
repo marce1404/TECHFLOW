@@ -2,6 +2,11 @@
 
 'use server';
 
+// Correctly load environment variables at the top of the server actions file.
+import { config } from 'dotenv';
+config();
+
+
 import {
   SuggestOptimalResourceAssignmentInput,
   SuggestOptimalResourceAssignmentOutputWithError,
