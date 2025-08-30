@@ -30,7 +30,7 @@ export type WorkOrder = {
   service: string;
   assigned: string[];
   comercial: string;
-  status: 'Por Iniciar' | 'En Progreso' | 'Pendiente' | 'Atrasada' | 'Cerrada';
+  status: 'Por Iniciar' | 'En Proceso' | 'Pendiente' | 'Atrasada' | 'Cerrada';
   priority: 'Baja' | 'Media' | 'Alta';
   facturado: boolean;
   technicians: string[];
@@ -273,8 +273,7 @@ export const UpdateUserOutputSchema = z.object({
 export type UpdateUserOutput = z.infer<typeof UpdateUserOutputSchema>;
 
 // Excel Import Types & API Types
-const baseWorkOrderStatuses = ['Por Iniciar', 'En Progreso', 'Pendiente', 'Atrasada', 'Cerrada'];
-const excelImportStatuses = [...baseWorkOrderStatuses, 'Facturado'] as const;
+const baseWorkOrderStatuses = ['Por Iniciar', 'En Proceso', 'Pendiente', 'Atrasada', 'Cerrada'];
 
 export const CreateWorkOrderInputSchema = z.object({
   ot_number: z.string().describe("The unique work order number, including prefix. E.g., 'OT-1525'"),
@@ -301,7 +300,7 @@ export const CreateWorkOrderInputSchema = z.object({
 export type CreateWorkOrderInput = z.infer<typeof CreateWorkOrderInputSchema>;
 
 export const CreateWorkOrderInputSchemaForExcel = CreateWorkOrderInputSchema.extend({
-    status: z.enum(excelImportStatuses)
+    status: z.enum(baseWorkOrderStatuses as [string, ...string[]])
 });
 
 
