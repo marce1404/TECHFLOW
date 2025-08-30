@@ -34,7 +34,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useWorkOrders } from '@/context/work-orders-context';
-import { normalizeString } from '@/lib/utils';
+import { cn, normalizeString } from '@/lib/utils';
 
 interface OrdersTableProps {
     orders: WorkOrder[];
@@ -55,10 +55,6 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
       case 'cerrada':
       case 'facturado':
         return 'default';
-      case 'en progreso':
-      case 'en proceso':
-      case 'por iniciar':
-        return 'outline';
       case 'suspendida':
       case 'pendiente':
         return 'secondary';
@@ -67,8 +63,11 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
     }
   };
   
-  const getStatusBadgeStyle = (status: WorkOrder['status']) => {
-    return {};
+  const getStatusBadgeClass = (status: WorkOrder['status']) => {
+    if (normalizeString(status) === 'en proceso') {
+      return 'bg-green-500 text-white border-transparent';
+    }
+    return '';
   };
 
   
@@ -168,8 +167,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                                 <DropdownMenuTrigger asChild>
                                     <Badge 
                                         variant={getStatusVariant(order.status)} 
-                                        style={getStatusBadgeStyle(order.status)}
-                                        className="cursor-pointer"
+                                        className={cn("cursor-pointer", getStatusBadgeClass(order.status))}
                                     >
                                         {order.status}
                                     </Badge>

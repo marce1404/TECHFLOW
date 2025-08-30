@@ -20,6 +20,7 @@ import { DonutChartConfig as chartConfig } from '@/lib/types';
 import { Users, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { normalizeString } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 interface OrderCardProps {
   order: WorkOrder;
@@ -34,26 +35,25 @@ export function OrderCard({ order, progress }: OrderCardProps) {
       case 'cerrada':
       case 'facturado':
         return 'default';
-      case 'en progreso':
-      case 'en proceso':
-      case 'por iniciar':
-        return 'outline';
       case 'suspendida':
       case 'pendiente':
         return 'secondary';
       default:
-        return 'default';
+        return 'outline';
     }
   };
   
-  const getStatusBadgeStyle = (status: WorkOrder['status']) => {
-    return {};
+   const getStatusBadgeClass = (status: WorkOrder['status']) => {
+    if (normalizeString(status) === 'en proceso') {
+      return 'bg-green-500 text-white border-transparent';
+    }
+    return '';
   };
 
   
   const getChartColor = (status: WorkOrder['status']) => {
     const normalizedStatus = normalizeString(status);
-    if (normalizedStatus === 'en progreso' || normalizedStatus === 'en proceso') {
+    if (normalizedStatus === 'en proceso') {
         return 'hsl(142, 71%, 45%)'; // Green
     }
     if (normalizedStatus === 'atrasada') {
@@ -79,7 +79,12 @@ export function OrderCard({ order, progress }: OrderCardProps) {
           <div className="text-sm text-muted-foreground flex-1 space-y-2 min-w-0">
             <div className="flex items-center justify-between">
                 <p className="font-semibold text-foreground truncate">{order.service}</p>
-                <Badge variant={getStatusVariant(order.status)} style={getStatusBadgeStyle(order.status)} className="capitalize text-xs">{order.status}</Badge>
+                <Badge 
+                    variant={getStatusVariant(order.status)} 
+                    className={cn(getStatusBadgeClass(order.status), 'capitalize text-xs')}
+                >
+                    {order.status}
+                </Badge>
             </div>
             <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 flex-shrink-0" />

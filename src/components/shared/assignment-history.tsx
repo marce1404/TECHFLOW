@@ -40,10 +40,6 @@ export default function AssignmentHistory({ title, description, filterKey, filte
       case 'cerrada':
       case 'facturado':
         return 'default';
-      case 'en progreso':
-      case 'en proceso':
-      case 'por iniciar':
-        return 'outline';
       case 'suspendida':
       case 'pendiente':
         return 'secondary';
@@ -52,8 +48,11 @@ export default function AssignmentHistory({ title, description, filterKey, filte
     }
   };
   
-  const getStatusBadgeStyle = (status: WorkOrder['status']) => {
-    return {};
+  const getStatusBadgeClass = (status: WorkOrder['status']) => {
+    if (normalizeString(status) === 'en proceso') {
+      return 'bg-green-500 text-white border-transparent';
+    }
+    return '';
   };
 
   const filteredOrders = React.useMemo(() => {
@@ -157,7 +156,7 @@ export default function AssignmentHistory({ title, description, filterKey, filte
                                 <TableCell>
                                     <Badge 
                                         variant={getStatusVariant(order.status)}
-                                        style={getStatusBadgeStyle(order.status)}
+                                        className={getStatusBadgeClass(order.status)}
                                     >
                                         {order.status}
                                     </Badge>
