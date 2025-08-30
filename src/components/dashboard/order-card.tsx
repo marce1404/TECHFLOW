@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -43,8 +44,15 @@ export function OrderCard({ order, progress }: OrderCardProps) {
   };
   
    const getStatusBadgeClass = (status: WorkOrder['status']) => {
-    if (normalizeString(status) === 'en proceso') {
+    const normalizedStatus = normalizeString(status);
+    if (normalizedStatus === 'en proceso') {
       return 'bg-green-500 text-white border-transparent';
+    }
+    if (normalizedStatus === 'por iniciar') {
+      return 'bg-primary text-primary-foreground border-transparent'
+    }
+    if (normalizedStatus === 'cerrada') {
+      return 'bg-background text-foreground'
     }
     return '';
   };

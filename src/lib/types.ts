@@ -273,6 +273,9 @@ export const UpdateUserOutputSchema = z.object({
 export type UpdateUserOutput = z.infer<typeof UpdateUserOutputSchema>;
 
 // Excel Import Types & API Types
+const baseWorkOrderStatuses = ['Por Iniciar', 'En Progreso', 'Pendiente', 'Atrasada', 'Cerrada'];
+const excelImportStatuses = [...baseWorkOrderStatuses, 'Facturado'] as const;
+
 export const CreateWorkOrderInputSchema = z.object({
   ot_number: z.string().describe("The unique work order number, including prefix. E.g., 'OT-1525'"),
   description: z.string().describe("The name or description of the work order."),
@@ -282,7 +285,7 @@ export const CreateWorkOrderInputSchema = z.object({
   date: z.string().describe("The start date of the work order in 'YYYY-MM-DD' format."),
   endDate: z.string().optional().describe("The potential end date in 'YYYY-MM-DD' format."),
   notes: z.string().optional().describe("Additional notes or a detailed description."),
-  status: z.enum(['Por Iniciar', 'En Progreso', 'Pendiente', 'Atrasada', 'Cerrada']).describe("The initial status of the work order."),
+  status: z.enum(baseWorkOrderStatuses as [string, ...string[]]).describe("The initial status of the work order."),
   priority: z.enum(['Baja', 'Media', 'Alta']).describe("The priority of the work order."),
   netPrice: z.number().describe("The net price of the work order."),
   ocNumber: z.string().optional().describe("The Purchase Order (OC) number, if available."),
@@ -296,6 +299,11 @@ export const CreateWorkOrderInputSchema = z.object({
   rentedVehicle: z.string().optional().describe("Details of a rented vehicle."),
 });
 export type CreateWorkOrderInput = z.infer<typeof CreateWorkOrderInputSchema>;
+
+export const CreateWorkOrderInputSchemaForExcel = CreateWorkOrderInputSchema.extend({
+    status: z.enum(excelImportStatuses)
+});
+
 
 export const CreateWorkOrderOutputSchema = z.object({
   success: z.boolean(),

@@ -38,7 +38,6 @@ export default function AssignmentHistory({ title, description, filterKey, filte
       case 'atrasada':
         return 'destructive';
       case 'cerrada':
-      case 'facturado':
         return 'default';
       case 'suspendida':
       case 'pendiente':
@@ -49,8 +48,15 @@ export default function AssignmentHistory({ title, description, filterKey, filte
   };
   
   const getStatusBadgeClass = (status: WorkOrder['status']) => {
-    if (normalizeString(status) === 'en proceso') {
+    const normalizedStatus = normalizeString(status);
+    if (normalizedStatus === 'en proceso') {
       return 'bg-green-500 text-white border-transparent';
+    }
+    if (normalizedStatus === 'por iniciar') {
+      return 'bg-primary text-primary-foreground border-transparent'
+    }
+    if (normalizedStatus === 'cerrada') {
+      return 'bg-background text-foreground'
     }
     return '';
   };
