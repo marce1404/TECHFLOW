@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
@@ -156,8 +157,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         
         const allOrders = workOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[];
         
-        const active = allOrders.filter(o => o.status.toLowerCase() !== 'cerrada');
-        const historical = allOrders.filter(o => o.status.toLowerCase() === 'cerrada');
+        const finalStatuses = ['cerrada', 'facturado'];
+        const active = allOrders.filter(o => !finalStatuses.includes(o.status.toLowerCase()));
+        const historical = allOrders.filter(o => finalStatuses.includes(o.status.toLowerCase()));
         
         setActiveWorkOrders(active);
         setHistoricalWorkOrders(historical);

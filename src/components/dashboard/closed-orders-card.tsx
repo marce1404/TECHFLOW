@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -24,7 +25,7 @@ export function ClosedOrdersCard({ orders }: ClosedOrdersCardProps) {
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="text-lg font-bold">OT Cerradas del Mes</CardTitle>
+            <CardTitle className="text-lg font-bold">OTs Finalizadas del Mes</CardTitle>
             <CardDescription>Resumen de OTs completadas.</CardDescription>
           </div>
           <div className="flex items-center gap-2">
@@ -48,7 +49,7 @@ export function ClosedOrdersCard({ orders }: ClosedOrdersCardProps) {
         ) : (
           <div className="flex-1 flex items-center justify-center h-full text-center">
             <p className="text-sm text-muted-foreground">
-              Aún no se han cerrado OTs este mes.
+              Aún no se han finalizado OTs este mes.
             </p>
           </div>
         )}

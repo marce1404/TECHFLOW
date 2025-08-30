@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import {
@@ -204,7 +205,6 @@ export async function exportOrdersToExcel(orders: WorkOrder[]): Promise<string> 
         'Vehículos': order.vehicles.join(', '),
         'Comercial': order.comercial,
         'Precio Neto': order.netPrice,
-        'Facturado': order.facturado ? 'Sí' : 'No',
         'Nº Factura': order.invoiceNumber || '',
         'Nº OC': order.ocNumber || '',
         'Nº Venta': order.saleNumber || '',

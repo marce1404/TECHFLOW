@@ -14,7 +14,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { WorkOrder, OTStatus } from '@/lib/types';
-import { ArrowUpDown, CheckCircle } from 'lucide-react';
+import { ArrowUpDown } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,6 +39,8 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
      switch (status.toLowerCase()) {
       case 'cerrada':
         return 'default';
+      case 'facturado':
+        return 'default';
       case 'en progreso':
         return 'default'; // Changed to default to allow custom bg
       case 'atrasada':
@@ -61,12 +63,6 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
     if (sortConfig.key) {
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
-      
-      if (sortConfig.key === 'facturado') {
-        const valA = aValue ? 1 : 0;
-        const valB = bValue ? 1 : 0;
-        return sortConfig.direction === 'ascending' ? valA - valB : valB - valA;
-      }
       
       const valA = Array.isArray(aValue) ? aValue.join(', ') : aValue;
       const valB = Array.isArray(bValue) ? bValue.join(', ') : bValue;
@@ -103,7 +99,6 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
       { key: 'assigned', label: 'Encargado' },
       { key: 'comercial', label: 'Comercial' },
       { key: 'status', label: 'Estado' },
-      { key: 'facturado', label: 'Facturado' },
   ];
 
   const handleStatusChange = async (order: WorkOrder, newStatus: WorkOrder['status']) => {
@@ -166,9 +161,6 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                                 ))}
                               </DropdownMenuContent>
                             </DropdownMenu>
-                        </TableCell>
-                        <TableCell>
-                          {order.facturado ? <CheckCircle className="h-5 w-5 text-green-500" /> : '-'}
                         </TableCell>
                         </TableRow>
                     ))

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -30,6 +31,8 @@ export function OrderCard({ order, progress }: OrderCardProps) {
       case 'atrasada':
         return 'destructive';
       case 'cerrada':
+        return 'default';
+       case 'facturado':
         return 'default';
       case 'por iniciar':
         return 'outline';

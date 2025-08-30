@@ -1,4 +1,5 @@
 
+
 import { z } from 'zod';
 import type { ChartConfig } from "@/components/ui/chart"
 import { Timestamp } from 'firebase/firestore';
@@ -29,9 +30,8 @@ export type WorkOrder = {
   service: string;
   assigned: string[];
   comercial: string;
-  status: 'Por Iniciar' | 'En Progreso' | 'Pendiente' | 'Atrasada' | 'Cerrada';
+  status: 'Por Iniciar' | 'En Progreso' | 'Pendiente' | 'Atrasada' | 'Cerrada' | 'Facturado';
   priority: 'Baja' | 'Media' | 'Alta';
-  facturado: boolean;
   technicians: string[];
   vehicles: string[];
   netPrice: number;
@@ -281,7 +281,7 @@ export const CreateWorkOrderInputSchema = z.object({
   date: z.string().describe("The start date of the work order in 'YYYY-MM-DD' format."),
   endDate: z.string().optional().describe("The potential end date in 'YYYY-MM-DD' format."),
   notes: z.string().optional().describe("Additional notes or a detailed description."),
-  status: z.enum(['Por Iniciar', 'En Progreso', 'Pendiente', 'Atrasada', 'Cerrada']).describe("The initial status of the work order."),
+  status: z.enum(['Por Iniciar', 'En Progreso', 'Pendiente', 'Atrasada', 'Cerrada', 'Facturado']).describe("The initial status of the work order."),
   priority: z.enum(['Baja', 'Media', 'Alta']).describe("The priority of the work order."),
   netPrice: z.number().describe("The net price of the work order."),
   ocNumber: z.string().optional().describe("The Purchase Order (OC) number, if available."),

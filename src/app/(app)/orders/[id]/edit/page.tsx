@@ -57,11 +57,7 @@ export default function EditOrderPage() {
 
   const handleInputChange = (field: keyof WorkOrder, value: any) => {
     if (order) {
-      const newOrder = { ...order, [field]: value };
-      if (field === 'invoiceNumber') {
-          newOrder.facturado = !!value;
-      }
-      setOrder(newOrder);
+      setOrder({ ...order, [field]: value });
     }
   };
   
@@ -110,7 +106,7 @@ export default function EditOrderPage() {
     
     // The context's fetchData will handle moving the order,
     // so we can reliably redirect.
-    if (order.status === 'Cerrada') {
+    if (order.status === 'Cerrada' || order.status === 'Facturado') {
       router.push(`/orders/history`);
     } else {
       router.push(`/orders`);

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useWorkOrders } from '@/context/work-orders-context';
@@ -14,7 +15,8 @@ export default function DashboardPage() {
 
   const statusOrder: WorkOrder['status'][] = ['Atrasada', 'En Progreso', 'Pendiente', 'Por Iniciar'];
   
-  const filteredActiveOrders = activeWorkOrders.filter(o => o.status.toLowerCase() !== 'cerrada');
+  const finalStatuses = ['cerrada', 'facturado'];
+  const filteredActiveOrders = activeWorkOrders.filter(o => !finalStatuses.includes(o.status.toLowerCase()));
 
   const sortedOrders = [...filteredActiveOrders]
     .sort((a, b) => {

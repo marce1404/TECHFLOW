@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -35,6 +36,8 @@ export default function AssignmentHistory({ title, description, filterKey, filte
   ): 'default' | 'secondary' | 'destructive' | 'outline' => {
      switch (status.toLowerCase()) {
       case 'cerrada':
+        return 'default';
+       case 'facturado':
         return 'default';
       case 'en progreso':
         return 'default'; 

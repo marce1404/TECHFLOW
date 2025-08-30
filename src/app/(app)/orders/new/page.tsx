@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -95,7 +96,6 @@ export default function NewOrderPage() {
         ocNumber,
         saleNumber,
         hesEmMigo,
-        facturado: !!invoiceNumber,
         assigned: assigned.map(id => collaborators.find(c => c.id === id)?.name || ''),
         comercial: collaborators.find(c => c.id === comercial)?.name || '',
     };
