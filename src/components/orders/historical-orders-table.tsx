@@ -55,9 +55,19 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
         return 'secondary';
       case 'atrasada':
         return 'destructive';
+      case 'pendiente':
+        return 'secondary';
       default:
         return 'outline';
     }
+  };
+
+  const getStatusBadgeStyle = (status: WorkOrder['status']) => {
+    const lowerCaseStatus = status.toLowerCase();
+    if (lowerCaseStatus === 'en progreso') {
+      return { backgroundColor: 'hsl(142, 71%, 45%)', color: 'hsl(var(--primary-foreground))' };
+    }
+    return {};
   };
 
   const requestSort = (key: keyof WorkOrder) => {
@@ -151,7 +161,11 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                           <TableCell>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Badge variant={getStatusVariant(order.status)} className="cursor-pointer">
+                                    <Badge 
+                                        variant={getStatusVariant(order.status)} 
+                                        style={getStatusBadgeStyle(order.status)}
+                                        className="cursor-pointer"
+                                    >
                                         {order.status}
                                     </Badge>
                                 </DropdownMenuTrigger>

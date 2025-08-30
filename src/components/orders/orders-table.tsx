@@ -55,6 +55,8 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
         return 'secondary';
       case 'atrasada':
         return 'destructive';
+      case 'pendiente':
+        return 'secondary';
       default:
         return 'outline';
     }
