@@ -40,6 +40,7 @@ interface WorkOrdersContextType {
   updateService: (id: string, service: Partial<Service>) => Promise<void>;
   deleteService: (id: string) => Promise<void>;
   addOrder: (order: Omit<WorkOrder, 'id'>) => Promise<WorkOrder>;
+  deleteOrder: (id: string) => Promise<void>;
   getNextOtNumber: (prefix: string) => string;
   addCollaborator: (collaborator: Omit<Collaborator, 'id'>) => Promise<Collaborator>;
   getCollaborator: (id: string) => Collaborator | undefined;
@@ -258,6 +259,11 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const updateOrder = async (id: string, updatedData: Partial<WorkOrder>) => {
     const orderRef = doc(db, 'work-orders', id);
     await updateDoc(orderRef, updatedData);
+    await fetchData();
+  };
+
+  const deleteOrder = async (id: string) => {
+    await deleteDoc(doc(db, 'work-orders', id));
     await fetchData();
   };
 
@@ -518,7 +524,8 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         smtpConfig,
         loading,
         fetchData,
-        updateOrder, 
+        updateOrder,
+        deleteOrder, 
         getOrder, 
         addCategory,
         updateCategory,

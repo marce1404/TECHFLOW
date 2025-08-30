@@ -14,13 +14,25 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { WorkOrder, OTStatus } from '@/lib/types';
-import { ArrowUpDown } from 'lucide-react';
+import { ArrowUpDown, MoreHorizontal, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useWorkOrders } from '@/context/work-orders-context';
 
 interface OrdersTableProps {
@@ -31,7 +43,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
   const [sortConfig, setSortConfig] = useState<{ key: keyof WorkOrder | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
-  const { updateOrder, otStatuses, promptToCloseOrder } = useWorkOrders();
+  const { updateOrder, otStatuses, promptToCloseOrder, deleteOrder } = useWorkOrders();
 
   const getStatusVariant = (
     status: WorkOrder['status']
@@ -123,50 +135,83 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                             </Button>
                         </TableHead>
                     ))}
+                    <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
                 </TableHeader>
                 <TableBody>
                 {paginatedData.length > 0 ? (
                     paginatedData.map((order) => (
                         <TableRow key={order.id}>
-                        <TableCell className="font-medium">
-                          <Link href={`/orders/${order.id}/edit`} className="text-primary hover:underline">
-                            {order.ot_number}
-                          </Link>
-                          <div className="text-xs text-muted-foreground">{order.date}</div>
-                        </TableCell>
-                        <TableCell>{order.description}</TableCell>
-                        <TableCell>{order.client}</TableCell>
-                        <TableCell>{order.service}</TableCell>
-                        <TableCell>{order.assigned.join(', ')}</TableCell>
-                        <TableCell>{order.comercial}</TableCell>
-                        <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="p-0 h-auto">
-                                  <Badge 
-                                    variant={getStatusVariant(order.status)} 
-                                    style={order.status.toLowerCase() === 'en progreso' ? { backgroundColor: 'hsl(142, 71%, 45%)', color: 'white' } : {}}
-                                    className="cursor-pointer"
-                                  >
-                                      {order.status}
-                                  </Badge>
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent>
-                                {otStatuses.map(status => (
-                                  <DropdownMenuItem key={status.id} onSelect={() => handleStatusChange(order, status.name as WorkOrder['status'])}>
-                                    {status.name}
-                                  </DropdownMenuItem>
-                                ))}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                        </TableCell>
+                          <TableCell className="font-medium">
+                            <Link href={`/orders/${order.id}/edit`} className="text-primary hover:underline">
+                              {order.ot_number}
+                            </Link>
+                            <div className="text-xs text-muted-foreground">{order.date}</div>
+                          </TableCell>
+                          <TableCell>{order.description}</TableCell>
+                          <TableCell>{order.client}</TableCell>
+                          <TableCell>{order.service}</TableCell>
+                          <TableCell>{order.assigned.join(', ')}</TableCell>
+                          <TableCell>{order.comercial}</TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={getStatusVariant(order.status)} 
+                              style={order.status.toLowerCase() === 'en progreso' ? { backgroundColor: 'hsl(142, 71%, 45%)', color: 'white' } : {}}
+                            >
+                                {order.status}
+                            </Badge>
+                          </TableCell>
+                           <TableCell className="text-right">
+                                <AlertDialog>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                                <span className="sr-only">Abrir menú</span>
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem asChild>
+                                                <Link href={`/orders/${order.id}/edit`}>Editar</Link>
+                                            </DropdownMenuItem>
+                                            {otStatuses.map(status => (
+                                              <DropdownMenuItem key={status.id} onSelect={() => handleStatusChange(order, status.name as WorkOrder['status'])}>
+                                                Cambiar a {status.name}
+                                              </DropdownMenuItem>
+                                            ))}
+                                            <DropdownMenuSeparator />
+                                            <AlertDialogTrigger asChild>
+                                                <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                                  <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                                                </DropdownMenuItem>
+                                            </AlertDialogTrigger>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                        <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Esta acción no se puede deshacer. Esto eliminará permanentemente la OT
+                                            <span className="font-bold"> {order.ot_number}</span>.
+                                        </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction
+                                            className="bg-destructive hover:bg-destructive/90"
+                                            onClick={() => deleteOrder(order.id)}
+                                        >
+                                            Eliminar
+                                        </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </TableCell>
                         </TableRow>
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={headerItems.length} className="h-24 text-center">
+                        <TableCell colSpan={headerItems.length + 1} className="h-24 text-center">
                             No hay resultados.
                         </TableCell>
                     </TableRow>
