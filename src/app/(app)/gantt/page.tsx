@@ -8,15 +8,24 @@ import Link from "next/link";
 import { useWorkOrders } from "@/context/work-orders-context";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import GanttTable from '@/components/gantt/gantt-table';
+import { Input } from '@/components/ui/input';
 
 const ITEMS_PER_PAGE = 15;
 
 export default function GanttPage() {
     const { ganttCharts, deleteGanttChart } = useWorkOrders();
+    const [search, setSearch] = React.useState('');
     const [currentPage, setCurrentPage] = React.useState(1);
 
-    const totalPages = Math.ceil(ganttCharts.length / ITEMS_PER_PAGE);
-    const paginatedCharts = ganttCharts.slice(
+    const filteredCharts = React.useMemo(() => {
+        return ganttCharts.filter(chart => 
+            chart.name.toLowerCase().includes(search.toLowerCase()) ||
+            (chart.assignedOT && chart.assignedOT.toLowerCase().includes(search.toLowerCase()))
+        );
+    }, [ganttCharts, search]);
+
+    const totalPages = Math.ceil(filteredCharts.length / ITEMS_PER_PAGE);
+    const paginatedCharts = filteredCharts.slice(
         (currentPage - 1) * ITEMS_PER_PAGE,
         currentPage * ITEMS_PER_PAGE
     );
@@ -29,17 +38,29 @@ export default function GanttPage() {
         setCurrentPage((prev) => Math.min(prev + 1, totalPages));
     };
 
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [search]);
+
     return (
         <div className="flex flex-col gap-8">
             <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+                <CardHeader className="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <CardTitle>Cartas Gantt Creadas</CardTitle>
-                    <Button asChild>
-                        <Link href="/gantt/new">
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Nueva Carta Gantt
-                        </Link>
-                    </Button>
+                    <div className="flex w-full sm:w-auto items-center gap-2">
+                        <Input
+                            placeholder="Buscar por nombre, OT..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full sm:max-w-xs"
+                        />
+                        <Button asChild>
+                            <Link href="/gantt/new">
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Nueva Carta Gantt
+                            </Link>
+                        </Button>
+                    </div>
                 </CardHeader>
                 <CardContent>
                    <GanttTable charts={paginatedCharts} deleteGanttChart={deleteGanttChart} />
