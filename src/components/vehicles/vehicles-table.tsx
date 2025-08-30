@@ -44,8 +44,6 @@ interface VehiclesTableProps {
 
 export default function VehiclesTable({ vehicles, requestSort, sortConfig }: VehiclesTableProps) {
     const { deleteVehicle, updateVehicle } = useWorkOrders();
-    const [currentPage, setCurrentPage] = React.useState(1);
-    const itemsPerPage = 15;
 
     const getStatusVariant = (status: Vehicle['status']): 'default' | 'secondary' | 'destructive' | 'outline' => {
         switch (status) {
@@ -74,25 +72,6 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
         }
         updateVehicle(vehicle.id, updatedVehicle);
     };
-    
-    const totalPages = Math.ceil(vehicles.length / itemsPerPage);
-    const paginatedData = vehicles.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
-
-    const handlePreviousPage = () => {
-        setCurrentPage((prev) => Math.max(prev - 1, 1));
-    };
-
-    const handleNextPage = () => {
-        setCurrentPage((prev) => Math.min(prev + 1, totalPages));
-    };
-
-    React.useEffect(() => {
-        setCurrentPage(1);
-    }, [vehicles]);
-
 
     return (
         <div className="space-y-4">
@@ -112,7 +91,7 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {paginatedData.length > 0 ? paginatedData.map((vehicle) => {
+                        {vehicles.length > 0 ? vehicles.map((vehicle) => {
                             return (
                             <TableRow key={vehicle.id}>
                                 <TableCell>
@@ -191,16 +170,6 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
                         )}
                     </TableBody>
                 </Table>
-            </div>
-             <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <div>
-                    Mostrando {paginatedData.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} a {Math.min(currentPage * itemsPerPage, vehicles.length)} de {vehicles.length} vehículos.
-                </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>Anterior</Button>
-                    <span>Página {currentPage} de {totalPages > 0 ? totalPages : 1}</span>
-                    <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages || totalPages === 0}>Siguiente</Button>
-                </div>
             </div>
         </div>
     );

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -11,7 +10,7 @@ import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import type { Vehicle } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 export default function VehiclesPage() {
@@ -19,6 +18,9 @@ export default function VehiclesPage() {
     const [search, setSearch] = React.useState('');
     const [statusFilter, setStatusFilter] = React.useState<Vehicle['status'] | 'Todos'>('Todos');
     const [sortConfig, setSortConfig] = React.useState<{ key: keyof Vehicle | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const itemsPerPage = 15;
+
 
     const requestSort = (key: keyof Vehicle) => {
         let direction: 'ascending' | 'descending' = 'ascending';
@@ -59,6 +61,25 @@ export default function VehiclesPage() {
     );
 
     const vehicleStatuses: (Vehicle['status'] | 'Todos')[] = ['Todos', 'Disponible', 'Asignado', 'En Mantenimiento'];
+    
+    const totalPages = Math.ceil(filteredVehicles.length / itemsPerPage);
+    const paginatedData = filteredVehicles.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    const handlePreviousPage = () => {
+        setCurrentPage((prev) => Math.max(prev - 1, 1));
+    };
+
+    const handleNextPage = () => {
+        setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+    };
+
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [statusFilter, search]);
+
 
     return (
         <div className="flex flex-col gap-8">
@@ -91,13 +112,38 @@ export default function VehiclesPage() {
                         </div>
                         <TabsContent value={statusFilter}>
                             <VehiclesTable 
-                                vehicles={filteredVehicles}
+                                vehicles={paginatedData}
                                 requestSort={requestSort}
                                 sortConfig={sortConfig}
                             />
                         </TabsContent>
                     </Tabs>
                 </CardContent>
+                 {totalPages > 1 && (
+                    <CardFooter>
+                        <div className="text-xs text-muted-foreground">
+                            Mostrando {paginatedData.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} a {Math.min(currentPage * itemsPerPage, filteredVehicles.length)} de {filteredVehicles.length} vehículos.
+                        </div>
+                        <div className="flex items-center space-x-2 ml-auto">
+                            <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handlePreviousPage}
+                            disabled={currentPage === 1}
+                            >
+                            Anterior
+                            </Button>
+                            <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleNextPage}
+                            disabled={currentPage === totalPages}
+                            >
+                            Siguiente
+                            </Button>
+                        </div>
+                    </CardFooter>
+                 )}
             </Card>
         </div>
     );
