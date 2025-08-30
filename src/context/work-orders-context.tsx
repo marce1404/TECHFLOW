@@ -36,6 +36,7 @@ interface WorkOrdersContextType {
   updateCategory: (id: string, category: Partial<OTCategory>) => Promise<void>;
   addStatus: (status: Omit<OTStatus, 'id'>) => Promise<OTStatus>;
   updateStatus: (id: string, status: Partial<OTStatus>) => Promise<void>;
+  deleteStatus: (id: string) => Promise<void>;
   addService: (service: Omit<Service, 'id' | 'status'> & { status: string }) => Promise<Service>;
   updateService: (id: string, service: Partial<Service>) => Promise<void>;
   deleteService: (id: string) => Promise<void>;
@@ -304,6 +305,11 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     await fetchData();
   };
 
+  const deleteStatus = async (id: string) => {
+    await deleteDoc(doc(db, "ot-statuses", id));
+    await fetchData();
+  };
+
   const addService = async (service: Omit<Service, 'id'>): Promise<Service> => {
     const docRef = await addDoc(collection(db, "services"), service);
     await fetchData();
@@ -536,6 +542,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         updateCategory,
         addStatus,
         updateStatus,
+        deleteStatus,
         addService,
         updateService,
         deleteService,
