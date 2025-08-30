@@ -46,7 +46,9 @@ export default function GanttPage() {
         <div className="flex flex-col gap-8">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between gap-4">
-                    <CardTitle>Cartas Gantt Creadas</CardTitle>
+                     <div>
+                        <CardTitle>Cartas Gantt Creadas</CardTitle>
+                    </div>
                     <div className="flex w-full sm:w-auto items-center gap-2">
                         <Input
                             placeholder="Buscar por nombre, OT..."
