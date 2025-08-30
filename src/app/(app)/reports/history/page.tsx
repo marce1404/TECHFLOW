@@ -1,5 +1,4 @@
 
-
 'use client';
 import {
   Table,
@@ -16,16 +15,27 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Printer, Mail, FilePenLine, ChevronRight } from 'lucide-react';
+import { Printer, Mail, FilePenLine, ChevronRight, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { SendReportByEmailDialog } from '@/components/reports/send-report-by-email-dialog';
 import { useAuth } from '@/context/auth-context';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 export default function ReportsHistoryPage() {
-  const { submittedReports, otCategories, loading } = useWorkOrders();
+  const { submittedReports, otCategories, loading, deleteSubmittedReport } = useWorkOrders();
   const { users, userProfile } = useAuth();
   const [search, setSearch] = React.useState('');
   const [activeTab, setActiveTab] = React.useState('todos');
@@ -153,22 +163,54 @@ export default function ReportsHistoryPage() {
                                         <TableCell>{report.templateName}</TableCell>
                                         <TableCell>{report.submittedAt ? format(report.submittedAt.toDate(), 'dd/MM/yyyy HH:mm', { locale: es }) : 'N/A'}</TableCell>
                                         <TableCell className="text-right space-x-2">
-                                            <Button size="icon" variant="outline" asChild>
-                                            <Link href={`/reports/${report.id}/edit`}>
-                                                <FilePenLine className="h-4 w-4" />
-                                                <span className="sr-only">Editar</span>
-                                            </Link>
-                                            </Button>
-                                            <Button size="icon" variant="outline" onClick={() => handleSendEmailClick(report)}>
-                                                <Mail className="h-4 w-4" />
-                                                <span className="sr-only">Enviar por correo</span>
-                                            </Button>
-                                            <Button size="icon" variant="outline" asChild>
-                                                <Link href={`/reports/${report.id}/print`} target="_blank">
-                                                <Printer className="h-4 w-4" />
-                                                <span className="sr-only">Ver / Imprimir</span>
-                                                </Link>
-                                            </Button>
+                                            <AlertDialog>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                                                            <span className="sr-only">Abrir menú</span>
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem asChild>
+                                                            <Link href={`/reports/${report.id}/edit`}>
+                                                                <FilePenLine className="mr-2 h-4 w-4" /> Editar
+                                                            </Link>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleSendEmailClick(report)}>
+                                                            <Mail className="mr-2 h-4 w-4" /> Enviar por correo
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem asChild>
+                                                            <Link href={`/reports/${report.id}/print`} target="_blank">
+                                                                <Printer className="mr-2 h-4 w-4" /> Ver/Imprimir
+                                                            </Link>
+                                                        </DropdownMenuItem>
+                                                        <AlertDialogTrigger asChild>
+                                                            <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                                                <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                                                            </DropdownMenuItem>
+                                                        </AlertDialogTrigger>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Esta acción no se puede deshacer. Esto eliminará permanentemente el informe para la OT
+                                                            <span className="font-bold"> {report.otDetails.ot_number}</span>.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                        <AlertDialogAction
+                                                            className="bg-destructive hover:bg-destructive/90"
+                                                            onClick={() => deleteSubmittedReport(report.id)}
+                                                        >
+                                                            Sí, eliminar
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
                                         </TableCell>
                                     </TableRow>
                                     ))

@@ -63,6 +63,7 @@ interface WorkOrdersContextType {
   deleteReportTemplate: (id: string) => Promise<void>;
   addSubmittedReport: (report: Omit<SubmittedReport, 'id' | 'submittedAt'>) => Promise<SubmittedReport>;
   updateSubmittedReport: (id: string, report: Partial<SubmittedReport>) => Promise<void>;
+  deleteSubmittedReport: (id: string) => Promise<void>;
   updateCompanyInfo: (info: CompanyInfo) => Promise<void>;
   updateSmtpConfig: (config: SmtpConfig) => Promise<void>;
   updateUserProfile: (uid: string, data: Partial<Pick<AppUser, 'displayName' | 'role'>>) => Promise<void>;
@@ -488,6 +489,11 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     await fetchData();
   };
 
+  const deleteSubmittedReport = async (id: string) => {
+    await deleteDoc(doc(db, "submitted-reports", id));
+    await fetchData();
+  };
+
   const updateCompanyInfo = async (info: CompanyInfo) => {
     const docRef = doc(db, 'settings', 'companyInfo');
     await setDoc(docRef, info, { merge: true });
@@ -557,6 +563,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         deleteReportTemplate,
         addSubmittedReport,
         updateSubmittedReport,
+        deleteSubmittedReport,
         updateCompanyInfo,
         updateSmtpConfig,
         updateUserProfile,
