@@ -16,33 +16,26 @@ import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import nodemailer from 'nodemailer';
 import * as xlsx from 'xlsx';
-import { createWorkOrderFromApi } from '@/ai/flows/create-ot-from-api';
+import { createWorkOrderFromApi as createWorkOrderFlow } from '@/ai/flows/create-ot-from-api';
 
 
 // This function ensures Firebase Admin is initialized, but only once.
 const initializeFirebaseAdmin = () => {
-    
     if (admin.apps.length > 0) {
-        return admin.app();
+        return { firestore: getFirestore(), auth: getAuth() };
     }
-
-    try {
-        const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-        if (!serviceAccountBase64) {
-            throw new Error("Firebase service account JSON not found in environment variables. Please set FIREBASE_SERVICE_ACCOUNT_JSON.");
-        }
-        
-        const serviceAccountString = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
-        const serviceAccount = JSON.parse(serviceAccountString);
-
-        return admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount),
-        });
-
-    } catch (error: any) {
-        console.error('Firebase Admin initialization error', error.message);
-        throw new Error('Failed to initialize Firebase Admin SDK: ' + error.message);
+    const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    if (!serviceAccountBase64) {
+        throw new Error("Firebase service account JSON not found in environment variables. Please set FIREBASE_SERVICE_ACCOUNT_JSON.");
     }
+    const serviceAccountString = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
+    const serviceAccount = JSON.parse(serviceAccountString);
+
+    admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+    });
+
+    return { firestore: getFirestore(), auth: getAuth() };
 };
 
 
@@ -62,13 +55,9 @@ export async function getResourceSuggestions(
 
 export async function deleteUserAction(uid: string): Promise<{ success: boolean; message: string }> {
   try {
-    initializeFirebaseAdmin();
-    const auth = getAuth();
-    const firestore = getFirestore();
-
+    const { auth, firestore } = initializeFirebaseAdmin();
     await auth.deleteUser(uid);
     await firestore.collection('users').doc(uid).delete();
-
     return { success: true, message: 'Usuario eliminado correctamente.' };
   } catch (error: any) {
     console.error('Error deleting user:', error);
@@ -78,8 +67,7 @@ export async function deleteUserAction(uid: string): Promise<{ success: boolean;
 
 export async function changeUserPasswordAction(uid: string, newPassword: string): Promise<{ success: boolean; message: string }> {
   try {
-    initializeFirebaseAdmin();
-    const auth = getAuth();
+    const { auth } = initializeFirebaseAdmin();
     await auth.updateUser(uid, { password: newPassword });
     return { success: true, message: `Contraseña actualizada correctamente.` };
   } catch (error: any) {
@@ -91,11 +79,8 @@ export async function changeUserPasswordAction(uid: string, newPassword: string)
 
 export async function toggleUserStatusAction(uid: string, currentStatus: 'Activo' | 'Inactivo'): Promise<{ success: boolean; message: string }> {
   try {
-    initializeFirebaseAdmin();
+    const { auth, firestore } = initializeFirebaseAdmin();
     const newStatus = currentStatus === 'Activo' ? 'Inactivo' : 'Activo';
-    const auth = getAuth();
-    const firestore = getFirestore();
-
     await auth.updateUser(uid, { disabled: newStatus === 'Inactivo' });
     await firestore.collection('users').doc(uid).update({ status: newStatus });
     
@@ -229,7 +214,8 @@ export async function importOrdersFromExcel(ordersData: CreateWorkOrderInput[]):
 
     for (const orderData of ordersData) {
         try {
-            const result = await createWorkOrderFromApi(orderData);
+            // Directly call the new server action instead of the Genkit flow
+            const result = await createOrUpdateWorkOrder(orderData);
             if (result.success) {
                 successCount++;
             } else {
@@ -245,3 +231,37 @@ export async function importOrdersFromExcel(ordersData: CreateWorkOrderInput[]):
     return { successCount, errorCount, errors };
 }
 
+// New, corrected server action for creating/updating work orders
+async function createOrUpdateWorkOrder(input: CreateWorkOrderInput) {
+    try {
+      const { firestore } = initializeFirebaseAdmin();
+      
+      let finalStatus = input.status;
+      if (input.status.toUpperCase() === 'CERRADA') {
+        finalStatus = 'Cerrada';
+      } else if (input.status === 'En Proceso') {
+        finalStatus = 'En Progreso';
+      }
+
+      const workOrderData = {
+        ...input,
+        status: finalStatus,
+        facturado: !!input.invoiceNumber,
+      };
+
+      const docRef = await firestore.collection('work-orders').add(workOrderData);
+      return {
+        success: true,
+        orderId: docRef.id,
+        message: 'Work order created successfully.',
+      };
+
+    } catch (error) {
+      console.error('Error creating work order from API:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+      return {
+        success: false,
+        message: `Failed to process work order: ${errorMessage}`,
+      };
+    }
+}
