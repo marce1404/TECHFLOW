@@ -8,44 +8,37 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'zod';
-import { collection, addDoc, query, where, getDocs, writeBatch } from 'firebase/firestore';
-import { db as clientDb } from '@/lib/firebase';
 import { CreateWorkOrderInput, CreateWorkOrderInputSchema, CreateWorkOrderOutput, CreateWorkOrderOutputSchema } from '@/lib/types';
 import * as admin from 'firebase-admin';
+import { z } from 'zod';
 
 // This function ensures Firebase Admin is initialized, but only once.
-const initializeFirebaseAdmin = () => {
+function initializeFirebaseAdmin() {
     if (admin.apps.length > 0) {
-        return {
-            firestore: admin.firestore(),
-            auth: admin.auth(),
-        };
+        return admin.firestore();
     }
 
+    const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    if (!serviceAccountBase64) {
+        const errorMsg = "Firebase service account JSON not found in environment variables. Please set FIREBASE_SERVICE_ACCOUNT_JSON.";
+        console.error(errorMsg);
+        throw new Error(errorMsg);
+    }
+    
     try {
-        const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-        if (!serviceAccountBase64) {
-            throw new Error("Firebase service account JSON not found in environment variables. Please set FIREBASE_SERVICE_ACCOUNT_JSON.");
-        }
-        
         const serviceAccountString = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
         const serviceAccount = JSON.parse(serviceAccountString);
 
-        const app = admin.initializeApp({
+        admin.initializeApp({
             credential: admin.credential.cert(serviceAccount),
         });
         
-        return {
-            firestore: app.firestore(),
-            auth: app.auth(),
-        };
-
+        return admin.firestore();
     } catch (error: any) {
-        console.error('Firebase Admin initialization error', error.message);
+        console.error('Firebase Admin initialization error:', error);
         throw new Error('Failed to initialize Firebase Admin SDK: ' + error.message);
     }
-};
+}
 
 
 const createWorkOrderFlow = ai.defineFlow(
@@ -56,7 +49,7 @@ const createWorkOrderFlow = ai.defineFlow(
   },
   async (input) => {
     try {
-      const { firestore } = initializeFirebaseAdmin();
+      const firestore = initializeFirebaseAdmin();
       
       let finalStatus = input.status;
       if (input.status.toUpperCase() === 'CERRADA') {
@@ -71,7 +64,6 @@ const createWorkOrderFlow = ai.defineFlow(
         facturado: !!input.invoiceNumber,
       };
 
-      // Always create a new work order for each imported row.
       const docRef = await firestore.collection('work-orders').add(workOrderData);
       return {
         success: true,
