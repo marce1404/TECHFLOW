@@ -19,6 +19,7 @@ import { Pie, PieChart, Cell } from 'recharts';
 import type { WorkOrder, DonutChartData, DonutChartConfig } from '@/lib/types';
 import { DonutChartConfig as chartConfig } from '@/lib/types';
 import { Users, Calendar } from 'lucide-react';
+import Link from 'next/link';
 
 interface OrderCardProps {
   order: WorkOrder;
@@ -56,11 +57,12 @@ export function OrderCard({ order, progress }: OrderCardProps) {
     return 'hsl(var(--muted))'; // Gray for all other cases
   }
   
-  const statusBadgeStyle = order.status.toLowerCase() === 'en progreso' ? { backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' } : {};
+  const statusBadgeStyle = order.status.toLowerCase() === 'en progreso' ? { backgroundColor: 'hsl(142, 71%, 45%)', color: 'hsl(var(--primary-foreground))' } : {};
 
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col relative">
+      <Link href={`/orders/${order.id}/edit`} className="absolute inset-0 z-10"><span className="sr-only">Ver detalles de la orden</span></Link>
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
