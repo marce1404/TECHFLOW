@@ -122,7 +122,13 @@
     color: hsl(var(--primary));
 }
 
+.fullscreen-container {
+    position: relative;
+    padding-bottom: 3rem; /* space for the footer */
+}
+
 .fullscreen-container:fullscreen {
     padding: 2rem;
     overflow-y: auto;
+    padding-bottom: 4rem; /* More space for the footer in fullscreen */
 }
