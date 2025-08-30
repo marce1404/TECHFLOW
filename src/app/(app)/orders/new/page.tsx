@@ -39,7 +39,7 @@ export default function NewOrderPage() {
     const [selectedVehicles, setSelectedVehicles] = React.useState<string[]>([]);
     const [rentedVehicle, setRentedVehicle] = React.useState('');
     const [notes, setNotes] = React.useState('');
-    const [status, setStatus] = React.useState<WorkOrder['status']>(otStatuses.length > 0 ? otStatuses[0].name as WorkOrder['status'] : 'Por Iniciar');
+    const [status, setStatus] = React.useState<WorkOrder['status']>('Por Iniciar');
     const [priority, setPriority] = React.useState<WorkOrder['priority']>('Baja');
     const [netPrice, setNetPrice] = React.useState(0);
     const [invoiceNumber, setInvoiceNumber] = React.useState('');
