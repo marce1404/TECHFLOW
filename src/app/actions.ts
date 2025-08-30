@@ -12,7 +12,11 @@ import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-as
 import { db } from '@/lib/firebase-admin'; // Import admin db
 import nodemailer from 'nodemailer';
 import * as xlsx from 'xlsx';
-import { collection, addDoc } from 'firebase/firestore';
+import {
+  deleteUserAction as deleteUserActionAdmin,
+  changeUserPasswordAction as changeUserPasswordActionAdmin,
+  toggleUserStatusAction as toggleUserStatusActionAdmin,
+} from '@/lib/firebase-admin';
 
 // --- Server Actions ---
 
@@ -31,11 +35,11 @@ export async function getResourceSuggestions(
 // These user management actions require the Client SDK running on a server,
 // which is what Server Actions provide. But they need the Admin SDK for privileges.
 // The firebase-admin setup will handle this.
-export {
-  deleteUserAction,
-  changeUserPasswordAction,
-  toggleUserStatusAction,
-} from '@/lib/firebase-admin';
+
+export const deleteUserAction = deleteUserActionAdmin;
+export const changeUserPasswordAction = changeUserPasswordActionAdmin;
+export const toggleUserStatusAction = toggleUserStatusActionAdmin;
+
 
 export async function sendTestEmailAction(config: SmtpConfig, to: string): Promise<{ success: boolean; message: string }> {
   const { host, port, secure, user, pass, fromName, fromEmail } = config;

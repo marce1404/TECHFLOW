@@ -1,7 +1,7 @@
 
 import * as admin from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
-require('dotenv').config({ path: '.env' });
+import 'dotenv/config';
 
 const initializeFirebaseAdmin = () => {
     if (admin.apps.length > 0) {
