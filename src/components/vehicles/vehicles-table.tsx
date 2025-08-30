@@ -35,6 +35,7 @@ import {
 import { useWorkOrders } from '@/context/work-orders-context';
 import type { Vehicle } from '@/lib/types';
 import Link from 'next/link';
+import { useAuth } from '@/context/auth-context';
 
 interface VehiclesTableProps {
     vehicles: Vehicle[];
@@ -44,6 +45,8 @@ interface VehiclesTableProps {
 
 export default function VehiclesTable({ vehicles, requestSort, sortConfig }: VehiclesTableProps) {
     const { deleteVehicle, updateVehicle } = useWorkOrders();
+    const { userProfile } = useAuth();
+    const canEdit = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
 
     const getStatusVariant = (status: Vehicle['status']): 'default' | 'secondary' | 'destructive' | 'outline' => {
         switch (status) {
@@ -105,9 +108,9 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
                                 </TableCell>
                                 <TableCell>
                                     <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
+                                        <DropdownMenuTrigger asChild disabled={!canEdit}>
                                             <Button variant="ghost" className="p-0 h-auto">
-                                                <Badge variant={getStatusVariant(vehicle.status)} className="cursor-pointer">
+                                                <Badge variant={getStatusVariant(vehicle.status)} className={canEdit ? 'cursor-pointer' : ''}>
                                                     {vehicle.status}
                                                 </Badge>
                                             </Button>
@@ -133,11 +136,13 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
                                                 <DropdownMenuItem asChild>
                                                     <Link href={`/vehicles/${vehicle.id}/edit`}>Editar</Link>
                                                 </DropdownMenuItem>
-                                                <AlertDialogTrigger asChild>
-                                                    <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                                        Eliminar
-                                                    </DropdownMenuItem>
-                                                </AlertDialogTrigger>
+                                                {canEdit && (
+                                                    <AlertDialogTrigger asChild>
+                                                        <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                                            Eliminar
+                                                        </DropdownMenuItem>
+                                                    </AlertDialogTrigger>
+                                                )}
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                         <AlertDialogContent>

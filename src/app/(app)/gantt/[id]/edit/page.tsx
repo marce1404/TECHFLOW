@@ -20,12 +20,16 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Trash2 } from 'lucide-react';
+import { useAuth } from '@/context/auth-context';
 
 export default function EditGanttPage() {
   const router = useRouter();
   const params = useParams();
   const { getGanttChart, updateGanttChart, deleteGanttChart } = useWorkOrders();
   const { toast } = useToast();
+  const { userProfile } = useAuth();
+  
+  const canEdit = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
 
   const ganttId = params.id as string;
   const initialGanttChart = React.useMemo(() => getGanttChart(ganttId), [ganttId, getGanttChart]);
@@ -81,6 +85,7 @@ export default function EditGanttPage() {
   }, [initialGanttChart]);
 
   const handleSave = (ganttChartData: Omit<GanttChart, 'id' | 'tasks'>, finalTasks: GanttTask[]) => {
+    if (!canEdit) return;
     const rawTasks = finalTasks.filter(t => !t.isPhase);
     const finalGantt = { ...ganttChartData, tasks: rawTasks };
     updateGanttChart(ganttId, finalGantt);
@@ -93,7 +98,7 @@ export default function EditGanttPage() {
   };
 
   const handleDelete = async () => {
-    if (!initialGanttChart) return;
+    if (!initialGanttChart || !canEdit) return;
     await deleteGanttChart(ganttId);
     toast({
         title: "Carta Gantt Eliminada",
@@ -114,18 +119,20 @@ export default function EditGanttPage() {
           Editar Carta Gantt
         </h1>
         <p className="text-muted-foreground">
-          Modifica los detalles de la Carta Gantt.
+          {canEdit ? 'Modifica los detalles de la Carta Gantt.' : 'No tienes permisos para editar esta Carta Gantt.'}
         </p>
       </div>
       <GanttForm 
         onSave={handleSave} 
         ganttChart={initialGanttChart} 
         initialTasks={processedTasks}
+        disabled={!canEdit}
       />
+      {canEdit && (
         <div className="flex justify-between items-center mt-4">
             <AlertDialog>
                 <AlertDialogTrigger asChild>
-                    <Button variant="destructive">
+                    <Button variant="destructive" disabled={!canEdit}>
                         <Trash2 className="mr-2 h-4 w-4" />
                         Eliminar Carta Gantt
                     </Button>
@@ -146,6 +153,7 @@ export default function EditGanttPage() {
                 </AlertDialogContent>
             </AlertDialog>
         </div>
+      )}
     </div>
   );
 }

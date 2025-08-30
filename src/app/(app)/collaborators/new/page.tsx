@@ -7,13 +7,19 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { useWorkOrders } from '@/context/work-orders-context';
 import CollaboratorForm, { type CollaboratorFormValues } from '@/components/collaborators/collaborator-form';
+import { useAuth } from '@/context/auth-context';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 export default function NewCollaboratorPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { addCollaborator, fetchData } = useWorkOrders();
+  const { userProfile } = useAuth();
+  
+  const canCreate = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
 
   const handleSave = async (data: CollaboratorFormValues) => {
+    if (!canCreate) return;
     await addCollaborator(data);
     toast({
       title: 'Colaborador Creado',
@@ -27,6 +33,17 @@ export default function NewCollaboratorPage() {
         fetchData();
     }, 100);
   };
+
+  if (!canCreate) {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Acceso Denegado</CardTitle>
+                <CardDescription>No tienes permisos para crear nuevos colaboradores.</CardDescription>
+            </CardHeader>
+        </Card>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-8">

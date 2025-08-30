@@ -12,15 +12,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { Collaborator } from '@/lib/types';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { useAuth } from '@/context/auth-context';
 
 const ITEMS_PER_PAGE = 15;
 
 export default function CollaboratorsPage() {
     const { collaborators } = useWorkOrders();
+    const { userProfile } = useAuth();
     const [search, setSearch] = React.useState('');
     const [roleFilter, setRoleFilter] = React.useState<Collaborator['role'] | 'Todos'>('Todos');
     const [sortConfig, setSortConfig] = React.useState<{ key: keyof Collaborator | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
     const [currentPage, setCurrentPage] = React.useState(1);
+
+    const canCreate = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
 
     const requestSort = (key: keyof Collaborator) => {
         let direction: 'ascending' | 'descending' = 'ascending';
@@ -97,12 +101,14 @@ export default function CollaboratorsPage() {
                                     onChange={(e) => setSearch(e.target.value)}
                                     className="w-full sm:max-w-sm"
                                 />
-                                <Button asChild>
-                                    <Link href="/collaborators/new">
-                                        <PlusCircle className="mr-2 h-4 w-4" />
-                                        Nuevo Colaborador
-                                    </Link>
-                                </Button>
+                                {canCreate && (
+                                    <Button asChild>
+                                        <Link href="/collaborators/new">
+                                            <PlusCircle className="mr-2 h-4 w-4" />
+                                            Nuevo Colaborador
+                                        </Link>
+                                    </Button>
+                                )}
                             </div>
                         </div>
                         

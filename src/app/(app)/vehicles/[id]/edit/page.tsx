@@ -21,15 +21,19 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Trash2 } from 'lucide-react';
+import { useAuth } from '@/context/auth-context';
 
 export default function EditVehiclePage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
   const { vehicles, collaborators, updateVehicle, deleteVehicle } = useWorkOrders();
+  const { userProfile } = useAuth();
   const vehicleId = params.id as string;
   
   const [vehicle, setVehicle] = React.useState<Vehicle | undefined>(undefined);
+  
+  const canEdit = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
 
   React.useEffect(() => {
     const foundVehicle = vehicles.find(t => t.id === vehicleId);
@@ -38,7 +42,7 @@ export default function EditVehiclePage() {
 
 
   const handleSave = (data: VehicleFormValues) => {
-    if (!vehicle) return;
+    if (!vehicle || !canEdit) return;
     updateVehicle(vehicle.id, { id: vehicle.id, ...data });
     toast({
       title: 'Vehículo Actualizado',
@@ -49,7 +53,7 @@ export default function EditVehiclePage() {
   };
   
   const handleDelete = async () => {
-    if (!vehicle) return;
+    if (!vehicle || !canEdit) return;
     await deleteVehicle(vehicle.id);
     toast({
         title: "Vehículo Eliminado",
@@ -70,35 +74,37 @@ export default function EditVehiclePage() {
           Editar Vehículo
         </h1>
         <p className="text-muted-foreground">
-          Modifica los detalles del vehículo y su historial de mantenimiento.
+          {canEdit ? 'Modifica los detalles del vehículo y su historial de mantenimiento.' : 'No tienes permisos para editar este vehículo.'}
         </p>
       </div>
-      <VehicleForm onSave={handleSave} vehicle={vehicle} collaborators={collaborators} />
+      <VehicleForm onSave={handleSave} vehicle={vehicle} collaborators={collaborators} disabled={!canEdit} />
         
-        <div className="flex justify-between items-center mt-4">
-            <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button variant="destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Eliminar Vehículo
-                    </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>¿Está seguro de que desea eliminar este vehículo?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Esta acción es permanente y no se puede deshacer. Se eliminará el vehículo "{vehicle.model} - {vehicle.plate}".
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-                            Sí, eliminar
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-        </div>
+        {canEdit && (
+            <div className="flex justify-between items-center mt-4">
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" disabled={!canEdit}>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Eliminar Vehículo
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>¿Está seguro de que desea eliminar este vehículo?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Esta acción es permanente y no se puede deshacer. Se eliminará el vehículo "{vehicle.model} - {vehicle.plate}".
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                                Sí, eliminar
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
+        )}
 
       <AssignmentHistory
         title="Historial de Asignaciones de OT"

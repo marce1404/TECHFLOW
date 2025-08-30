@@ -50,10 +50,11 @@ interface VehicleFormProps {
   onSave: (data: VehicleFormValues) => void;
   vehicle?: Vehicle | null;
   collaborators: Collaborator[];
+  disabled?: boolean;
 }
 
 
-export default function VehicleForm({ onSave, vehicle, collaborators }: VehicleFormProps) {
+export default function VehicleForm({ onSave, vehicle, collaborators, disabled = false }: VehicleFormProps) {
   const form = useForm<VehicleFormValues>({
     resolver: zodResolver(vehicleFormSchema),
     defaultValues: {
@@ -101,6 +102,15 @@ export default function VehicleForm({ onSave, vehicle, collaborators }: VehicleF
         });
     }
   }, [vehicle, form]);
+  
+  React.useEffect(() => {
+    if (disabled) {
+      form.disable();
+    } else {
+      form.enable();
+    }
+  }, [disabled, form]);
+
 
   const onSubmit = (data: VehicleFormValues) => {
     const dataToSave = {
@@ -116,166 +126,169 @@ export default function VehicleForm({ onSave, vehicle, collaborators }: VehicleF
   return (
     <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <Card>
-                <CardHeader><CardTitle>Información del Vehículo</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                            control={form.control}
-                            name="model"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Marca y Modelo</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="Ej: Chevrolet N400 Max" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                            />
-                        <FormField
-                            control={form.control}
-                            name="year"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Año</FormLabel>
-                                <FormControl>
-                                    <Input type="number" placeholder="Ej: 2021" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="plate"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Patente</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="Ej: PPU-1234" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="assignedTo"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Asignado A</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
+            <fieldset disabled={disabled} className="space-y-6">
+                <Card>
+                    <CardHeader><CardTitle>Información del Vehículo</CardTitle></CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="model"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Marca y Modelo</FormLabel>
                                     <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Seleccionar colaborador (opcional)" />
-                                        </SelectTrigger>
+                                        <Input placeholder="Ej: Chevrolet N400 Max" {...field} />
                                     </FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="none">N/A</SelectItem>
-                                        {collaborators.filter(t => t.status === 'Activo').map(t => (
-                                            <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="status"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Estado</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value} disabled={!statusIsOverridden && !!watchAssignedTo && watchAssignedTo !== 'none'}>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                                />
+                            <FormField
+                                control={form.control}
+                                name="year"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Año</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" placeholder="Ej: 2021" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="plate"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Patente</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="Ej: PPU-1234" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="assignedTo"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Asignado A</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value} disabled={disabled}>
                                         <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Seleccionar estado" />
-                                        </SelectTrigger>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Seleccionar colaborador (opcional)" />
+                                            </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            <SelectItem value="Disponible">Disponible</SelectItem>
-                                            <SelectItem value="Asignado">Asignado</SelectItem>
-                                            <SelectItem value="En Mantenimiento">En Mantenimiento</SelectItem>
+                                            <SelectItem value="none">N/A</SelectItem>
+                                            {collaborators.filter(t => t.status === 'Activo').map(t => (
+                                                <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                </CardContent>
-            </Card>
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="status"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Estado</FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value} disabled={disabled || (!statusIsOverridden && !!watchAssignedTo && watchAssignedTo !== 'none')}>
+                                            <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Seleccionar estado" />
+                                            </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="Disponible">Disponible</SelectItem>
+                                                <SelectItem value="Asignado">Asignado</SelectItem>
+                                                <SelectItem value="En Mantenimiento">En Mantenimiento</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
 
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle>Registro de Mantenimiento y Reparaciones</CardTitle>
-                         <Button type="button" size="sm" variant="outline" onClick={() => appendMaintenance({ id: crypto.randomUUID(), date: format(new Date(), 'yyyy-MM-dd'), description: '', cost: 0, mileage: 0 })}>
-                            <PlusCircle className="mr-2 h-4 w-4"/>
-                            Añadir Registro
-                        </Button>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-[150px]">Fecha</TableHead>
-                                <TableHead>Descripción</TableHead>
-                                <TableHead className="w-[120px]">Costo</TableHead>
-                                <TableHead className="w-[120px]">Kilometraje</TableHead>
-                                <TableHead className="w-[50px]"></TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {maintenanceFields.map((field, index) => (
-                                <TableRow key={field.id}>
-                                    <TableCell>
-                                        <FormField 
-                                            control={form.control} 
-                                            name={`maintenanceLog.${index}.date`}
-                                            render={({ field }) => (
-                                                <Popover>
-                                                    <PopoverTrigger asChild>
-                                                        <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}>
-                                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                                            {field.value ? format(new Date(field.value.replace(/-/g, '/')), "dd/MM/yy", { locale: es }) : <span>Elegir</span>}
-                                                        </Button>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={new Date(field.value.replace(/-/g, '/'))} onSelect={(d) => field.onChange(d ? format(d, 'yyyy-MM-dd') : '')} initialFocus locale={es} /></PopoverContent>
-                                                </Popover>
-                                            )} 
-                                        />
-                                    </TableCell>
-                                    <TableCell><FormField control={form.control} name={`maintenanceLog.${index}.description`} render={({ field }) => <Textarea {...field} placeholder="Cambio de aceite, revisión de frenos..."/>} /></TableCell>
-                                    <TableCell><FormField control={form.control} name={`maintenanceLog.${index}.cost`} render={({ field }) => <Input type="number" {...field} />} /></TableCell>
-                                    <TableCell><FormField control={form.control} name={`maintenanceLog.${index}.mileage`} render={({ field }) => <Input type="number" {...field} />} /></TableCell>
-                                    <TableCell>
-                                        <Button variant="ghost" size="icon" onClick={() => removeMaintenance(index)}>
-                                            <Trash2 className="h-4 w-4 text-destructive"/>
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                            {maintenanceFields.length === 0 && (
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <CardTitle>Registro de Mantenimiento y Reparaciones</CardTitle>
+                            <Button type="button" size="sm" variant="outline" onClick={() => appendMaintenance({ id: crypto.randomUUID(), date: format(new Date(), 'yyyy-MM-dd'), description: '', cost: 0, mileage: 0 })} disabled={disabled}>
+                                <PlusCircle className="mr-2 h-4 w-4"/>
+                                Añadir Registro
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center h-24">
-                                        No hay registros de mantenimiento.
-                                    </TableCell>
+                                    <TableHead className="w-[150px]">Fecha</TableHead>
+                                    <TableHead>Descripción</TableHead>
+                                    <TableHead className="w-[120px]">Costo</TableHead>
+                                    <TableHead className="w-[120px]">Kilometraje</TableHead>
+                                    <TableHead className="w-[50px]"></TableHead>
                                 </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+                            </TableHeader>
+                            <TableBody>
+                                {maintenanceFields.map((field, index) => (
+                                    <TableRow key={field.id}>
+                                        <TableCell>
+                                            <FormField 
+                                                control={form.control} 
+                                                name={`maintenanceLog.${index}.date`}
+                                                render={({ field }) => (
+                                                    <Popover>
+                                                        <PopoverTrigger asChild>
+                                                            <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")} disabled={disabled}>
+                                                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                                                {field.value ? format(new Date(field.value.replace(/-/g, '/')), "dd/MM/yy", { locale: es }) : <span>Elegir</span>}
+                                                            </Button>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={new Date(field.value.replace(/-/g, '/'))} onSelect={(d) => field.onChange(d ? format(d, 'yyyy-MM-dd') : '')} initialFocus locale={es} /></PopoverContent>
+                                                    </Popover>
+                                                )} 
+                                            />
+                                        </TableCell>
+                                        <TableCell><FormField control={form.control} name={`maintenanceLog.${index}.description`} render={({ field }) => <Textarea {...field} placeholder="Cambio de aceite, revisión de frenos..."/>} /></TableCell>
+                                        <TableCell><FormField control={form.control} name={`maintenanceLog.${index}.cost`} render={({ field }) => <Input type="number" {...field} />} /></TableCell>
+                                        <TableCell><FormField control={form.control} name={`maintenanceLog.${index}.mileage`} render={({ field }) => <Input type="number" {...field} />} /></TableCell>
+                                        <TableCell>
+                                            <Button variant="ghost" size="icon" onClick={() => removeMaintenance(index)} disabled={disabled}>
+                                                <Trash2 className="h-4 w-4 text-destructive"/>
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                                {maintenanceFields.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="text-center h-24">
+                                            No hay registros de mantenimiento.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            </fieldset>
 
-
-            <div className="flex justify-end gap-2">
-                <Button variant="outline" asChild><Link href="/vehicles">Cancelar</Link></Button>
-                <Button type="submit">Guardar Cambios</Button>
-            </div>
+            {!disabled && (
+                <div className="flex justify-end gap-2">
+                    <Button variant="outline" asChild><Link href="/vehicles">Cancelar</Link></Button>
+                    <Button type="submit">Guardar Cambios</Button>
+                </div>
+            )}
         </form>
     </Form>
   );

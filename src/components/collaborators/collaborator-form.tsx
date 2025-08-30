@@ -69,6 +69,7 @@ export type CollaboratorFormValues = z.infer<typeof collaboratorFormSchema>;
 interface CollaboratorFormProps {
   onSave: (data: CollaboratorFormValues) => void;
   collaborator?: Collaborator | null;
+  disabled?: boolean;
 }
 
 const defaultClothingItems = [
@@ -96,7 +97,7 @@ const defaultCertificationItems = [
     "Operador Elevador",
 ];
 
-export default function CollaboratorForm({ onSave, collaborator }: CollaboratorFormProps) {
+export default function CollaboratorForm({ onSave, collaborator, disabled = false }: CollaboratorFormProps) {
   const form = useForm<CollaboratorFormValues>({
     resolver: zodResolver(collaboratorFormSchema),
     defaultValues: {
@@ -172,6 +173,15 @@ export default function CollaboratorForm({ onSave, collaborator }: CollaboratorF
       });
     }
   }, [collaborator, form]);
+  
+  React.useEffect(() => {
+    if (disabled) {
+      form.disable();
+    } else {
+      form.enable();
+    }
+  }, [disabled, form]);
+
 
   const onSubmit = (data: CollaboratorFormValues) => {
     onSave(data);
@@ -206,6 +216,7 @@ export default function CollaboratorForm({ onSave, collaborator }: CollaboratorF
             <Button
             variant={"outline"}
             className={cn("w-[180px] justify-start text-left font-normal", !field.value && "text-muted-foreground")}
+            disabled={disabled}
             >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {field.value ? format(new Date(field.value.replace(/-/g, '/')), "PPP", { locale: es }) : <span>Elegir fecha</span>}
@@ -271,7 +282,7 @@ export default function CollaboratorForm({ onSave, collaborator }: CollaboratorF
                       render={({ field }) => (
                           <FormItem>
                               <FormLabel>Cargo</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
+                              <Select onValueChange={field.onChange} value={field.value} disabled={disabled}>
                                   <FormControl>
                                   <SelectTrigger>
                                       <SelectValue placeholder="Seleccionar cargo" />
@@ -306,7 +317,7 @@ export default function CollaboratorForm({ onSave, collaborator }: CollaboratorF
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Estado</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value} disabled={disabled}>
                                     <FormControl>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Seleccionar estado" />
@@ -343,7 +354,7 @@ export default function CollaboratorForm({ onSave, collaborator }: CollaboratorF
             <CardHeader>
                 <div className="flex items-center justify-between">
                     <CardTitle>Vestimenta de Trabajo</CardTitle>
-                    <Button type="button" size="sm" variant="outline" onClick={() => appendWorkClothing({ id: crypto.randomUUID(), item: '', size: '', quantity: 1, deliveryDate: '', expirationDate: '' })}>
+                    <Button type="button" size="sm" variant="outline" onClick={() => appendWorkClothing({ id: crypto.randomUUID(), item: '', size: '', quantity: 1, deliveryDate: '', expirationDate: '' })} disabled={disabled}>
                         <PlusCircle className="mr-2 h-4 w-4"/>
                         Añadir Fila
                     </Button>
@@ -382,7 +393,7 @@ export default function CollaboratorForm({ onSave, collaborator }: CollaboratorF
                                     />
                                 </TableCell>
                                 <TableCell>
-                                    <Button variant="ghost" size="icon" onClick={() => removeWorkClothing(index)}>
+                                    <Button variant="ghost" size="icon" onClick={() => removeWorkClothing(index)} disabled={disabled}>
                                         <Trash2 className="h-4 w-4 text-destructive"/>
                                     </Button>
                                 </TableCell>
@@ -397,7 +408,7 @@ export default function CollaboratorForm({ onSave, collaborator }: CollaboratorF
             <CardHeader>
                 <div className="flex items-center justify-between">
                     <CardTitle>Equipo de Protección Personal (EPP)</CardTitle>
-                    <Button type="button" size="sm" variant="outline" onClick={() => appendEpp({ id: crypto.randomUUID(), item: '', size: '', quantity: 1, deliveryDate: '', expirationDate: '' })}>
+                    <Button type="button" size="sm" variant="outline" onClick={() => appendEpp({ id: crypto.randomUUID(), item: '', size: '', quantity: 1, deliveryDate: '', expirationDate: '' })} disabled={disabled}>
                         <PlusCircle className="mr-2 h-4 w-4"/>
                         Añadir Fila
                     </Button>
@@ -436,7 +447,7 @@ export default function CollaboratorForm({ onSave, collaborator }: CollaboratorF
                                     />
                                 </TableCell>
                                 <TableCell>
-                                    <Button variant="ghost" size="icon" onClick={() => removeEpp(index)}>
+                                    <Button variant="ghost" size="icon" onClick={() => removeEpp(index)} disabled={disabled}>
                                         <Trash2 className="h-4 w-4 text-destructive"/>
                                     </Button>
                                 </TableCell>
@@ -451,7 +462,7 @@ export default function CollaboratorForm({ onSave, collaborator }: CollaboratorF
             <CardHeader>
                 <div className="flex items-center justify-between">
                     <CardTitle>Certificados</CardTitle>
-                    <Button type="button" size="sm" variant="outline" onClick={() => appendCertification({ id: crypto.randomUUID(), name: '', issuingOrganization: '', issueDate: '', expirationDate: '' })}>
+                    <Button type="button" size="sm" variant="outline" onClick={() => appendCertification({ id: crypto.randomUUID(), name: '', issuingOrganization: '', issueDate: '', expirationDate: '' })} disabled={disabled}>
                         <PlusCircle className="mr-2 h-4 w-4"/>
                         Añadir Fila
                     </Button>
@@ -488,7 +499,7 @@ export default function CollaboratorForm({ onSave, collaborator }: CollaboratorF
                                     />
                                 </TableCell>
                                 <TableCell>
-                                    <Button variant="ghost" size="icon" onClick={() => removeCertification(index)}>
+                                    <Button variant="ghost" size="icon" onClick={() => removeCertification(index)} disabled={disabled}>
                                         <Trash2 className="h-4 w-4 text-destructive"/>
                                     </Button>
                                 </TableCell>
@@ -499,10 +510,12 @@ export default function CollaboratorForm({ onSave, collaborator }: CollaboratorF
             </CardContent>
         </Card>
 
-        <div className="flex justify-end gap-2">
-            <Button variant="outline" asChild><Link href="/collaborators">Cancelar</Link></Button>
-            <Button type="submit">Guardar Cambios</Button>
-        </div>
+        {!disabled && (
+            <div className="flex justify-end gap-2">
+                <Button variant="outline" asChild><Link href="/collaborators">Cancelar</Link></Button>
+                <Button type="submit">Guardar Cambios</Button>
+            </div>
+        )}
         </form>
     </Form>
   );

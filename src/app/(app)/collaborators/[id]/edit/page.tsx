@@ -23,15 +23,19 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useAuth } from '@/context/auth-context';
 
 function EditCollaboratorComponent() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
   const { getCollaborator, updateCollaborator, loading, deleteCollaborator } = useWorkOrders();
+  const { userProfile } = useAuth();
   const collaboratorId = params.id as string;
   
   const [collaborator, setCollaborator] = React.useState<Collaborator | undefined | null>(undefined);
+  
+  const canEdit = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
 
   React.useEffect(() => {
     if (!loading) {
@@ -42,7 +46,7 @@ function EditCollaboratorComponent() {
 
 
   const handleSave = (data: CollaboratorFormValues) => {
-    if (!collaborator) return;
+    if (!collaborator || !canEdit) return;
     updateCollaborator(collaborator.id, { id: collaborator.id, ...data });
     toast({
       title: 'Colaborador Actualizado',
@@ -53,7 +57,7 @@ function EditCollaboratorComponent() {
   };
   
   const handleDelete = async () => {
-    if (!collaborator) return;
+    if (!collaborator || !canEdit) return;
     await deleteCollaborator(collaborator.id);
     toast({
         title: "Colaborador Eliminado",
@@ -83,7 +87,7 @@ function EditCollaboratorComponent() {
             Editar Colaborador
           </h1>
           <p className="text-muted-foreground">
-            Modifica los detalles del colaborador.
+            {canEdit ? 'Modifica los detalles del colaborador.' : 'No tienes permisos para editar este colaborador.'}
           </p>
         </div>
         <Button variant="outline" onClick={handlePrint}>
@@ -91,32 +95,34 @@ function EditCollaboratorComponent() {
             Imprimir Ficha
         </Button>
       </div>
-      <CollaboratorForm onSave={handleSave} collaborator={collaborator} />
+      <CollaboratorForm onSave={handleSave} collaborator={collaborator} disabled={!canEdit} />
 
-        <div className="flex justify-between items-center mt-4">
-            <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button variant="destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Eliminar Colaborador
-                    </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>¿Está seguro de que desea eliminar a este colaborador?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Esta acción es permanente y no se puede deshacer. Se eliminará a "{collaborator.name}".
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-                            Sí, eliminar
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-        </div>
+        {canEdit && (
+             <div className="flex justify-between items-center mt-4">
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" disabled={!canEdit}>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Eliminar Colaborador
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>¿Está seguro de que desea eliminar a este colaborador?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Esta acción es permanente y no se puede deshacer. Se eliminará a "{collaborator.name}".
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                                Sí, eliminar
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
+        )}
 
       <AssignmentHistory 
         title="Historial de Asignaciones"

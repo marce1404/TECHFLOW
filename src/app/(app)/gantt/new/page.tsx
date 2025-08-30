@@ -10,14 +10,19 @@ import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { useAuth } from '@/context/auth-context';
 
 export default function NewGanttPage() {
   const router = useRouter();
   const { addGanttChart, services, suggestedTasks } = useWorkOrders();
   const { toast } = useToast();
+  const { userProfile } = useAuth();
   const [tasks, setTasks] = React.useState<GanttTask[]>([]);
   
+  const canCreate = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
+
   const handleSave = (ganttChartData: Omit<GanttChart, 'id' | 'tasks'>, finalTasks: GanttTask[]) => {
+    if (!canCreate) return;
     // Filter out the pseudo-tasks (phase headers) before saving
     const rawTasks = finalTasks.filter(t => !t.isPhase);
     const finalGantt = { ...ganttChartData, tasks: rawTasks };
@@ -92,6 +97,17 @@ export default function NewGanttPage() {
       } else {
          setTasks([]);
       }
+  }
+  
+  if (!canCreate) {
+      return (
+          <Card>
+              <CardHeader>
+                  <CardTitle>Acceso Denegado</CardTitle>
+                  <CardDescription>No tienes permisos para crear nuevas Cartas Gantt.</CardDescription>
+              </CardHeader>
+          </Card>
+      )
   }
 
   return (

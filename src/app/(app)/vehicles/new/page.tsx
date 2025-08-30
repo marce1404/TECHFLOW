@@ -6,13 +6,19 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { useWorkOrders } from '@/context/work-orders-context';
 import VehicleForm, { type VehicleFormValues } from '@/components/vehicles/vehicle-form';
+import { useAuth } from '@/context/auth-context';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 export default function NewVehiclePage() {
   const router = useRouter();
   const { toast } = useToast();
   const { addVehicle, collaborators } = useWorkOrders();
+  const { userProfile } = useAuth();
+  
+  const canCreate = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
 
   const handleSave = async (data: VehicleFormValues) => {
+    if (!canCreate) return;
     await addVehicle(data);
     toast({
       title: 'Vehículo Creado',
@@ -21,6 +27,17 @@ export default function NewVehiclePage() {
     });
     setTimeout(() => router.push('/vehicles'), 1000);
   };
+  
+  if (!canCreate) {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Acceso Denegado</CardTitle>
+                <CardDescription>No tienes permisos para crear nuevos vehículos.</CardDescription>
+            </CardHeader>
+        </Card>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-8">

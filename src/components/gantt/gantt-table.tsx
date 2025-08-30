@@ -24,6 +24,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import type { GanttChart } from '@/lib/types';
+import { useAuth } from '@/context/auth-context';
 
 interface GanttTableProps {
     charts: GanttChart[];
@@ -31,6 +32,9 @@ interface GanttTableProps {
 }
 
 export default function GanttTable({ charts, deleteGanttChart }: GanttTableProps) {
+    const { userProfile } = useAuth();
+    const canEdit = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
+
     return (
         <div className="space-y-4">
             <div className="rounded-md border">
@@ -69,11 +73,13 @@ export default function GanttTable({ charts, deleteGanttChart }: GanttTableProps
                                                             <Edit className="mr-2 h-4 w-4" /> Ver/Editar
                                                         </Link>
                                                     </DropdownMenuItem>
-                                                    <AlertDialogTrigger asChild>
-                                                        <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                                            <Trash2 className="mr-2 h-4 w-4" /> Eliminar
-                                                        </DropdownMenuItem>
-                                                    </AlertDialogTrigger>
+                                                    {canEdit && (
+                                                        <AlertDialogTrigger asChild>
+                                                            <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                                                <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                                                            </DropdownMenuItem>
+                                                        </AlertDialogTrigger>
+                                                    )}
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                                 <AlertDialogContent>

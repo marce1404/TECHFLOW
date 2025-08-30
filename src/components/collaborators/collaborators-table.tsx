@@ -33,6 +33,7 @@ import {
 import { useWorkOrders } from '@/context/work-orders-context';
 import type { Collaborator } from '@/lib/types';
 import Link from 'next/link';
+import { useAuth } from '@/context/auth-context';
 
 interface CollaboratorsTableProps {
     collaborators: Collaborator[];
@@ -42,6 +43,9 @@ interface CollaboratorsTableProps {
 
 export default function CollaboratorsTable({ collaborators, requestSort, sortConfig }: CollaboratorsTableProps) {
     const { updateCollaborator, deleteCollaborator } = useWorkOrders();
+    const { userProfile } = useAuth();
+
+    const canEdit = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
 
     const handleToggleStatus = (collaborator: Collaborator, status: Collaborator['status']) => {
         updateCollaborator(collaborator.id, { ...collaborator, status });
@@ -100,47 +104,55 @@ export default function CollaboratorsTable({ collaborators, requestSort, sortCon
                                     <Badge variant={getStatusVariant(collaborator.status)}>{collaborator.status}</Badge>
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    <AlertDialog>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                                    <span className="sr-only">Abrir menú</span>
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem asChild>
-                                                    <Link href={`/collaborators/${collaborator.id}/edit`}>Editar</Link>
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => handleToggleStatus(collaborator, 'Activo')}>Marcar como Activo</DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => handleToggleStatus(collaborator, 'Licencia')}>Marcar como Licencia</DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => handleToggleStatus(collaborator, 'Vacaciones')}>Marcar como Vacaciones</DropdownMenuItem>
-                                                <AlertDialogTrigger asChild>
-                                                    <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                                        Eliminar
+                                    {canEdit ? (
+                                        <AlertDialog>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                                        <span className="sr-only">Abrir menú</span>
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem asChild>
+                                                        <Link href={`/collaborators/${collaborator.id}/edit`}>Editar</Link>
                                                     </DropdownMenuItem>
-                                                </AlertDialogTrigger>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Esta acción no se puede deshacer. Esto eliminará permanentemente al colaborador
-                                                <span className="font-bold"> {collaborator.name}</span>.
-                                            </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                            <AlertDialogAction
-                                                className="bg-destructive hover:bg-destructive/90"
-                                                onClick={() => deleteCollaborator(collaborator.id)}
-                                            >
-                                                Eliminar
-                                            </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
+                                                    <DropdownMenuItem onClick={() => handleToggleStatus(collaborator, 'Activo')}>Marcar como Activo</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleToggleStatus(collaborator, 'Licencia')}>Marcar como Licencia</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleToggleStatus(collaborator, 'Vacaciones')}>Marcar como Vacaciones</DropdownMenuItem>
+                                                    <AlertDialogTrigger asChild>
+                                                        <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                                            Eliminar
+                                                        </DropdownMenuItem>
+                                                    </AlertDialogTrigger>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Esta acción no se puede deshacer. Esto eliminará permanentemente al colaborador
+                                                    <span className="font-bold"> {collaborator.name}</span>.
+                                                </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                <AlertDialogAction
+                                                    className="bg-destructive hover:bg-destructive/90"
+                                                    onClick={() => deleteCollaborator(collaborator.id)}
+                                                >
+                                                    Eliminar
+                                                </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    ) : (
+                                        <Button variant="ghost" size="icon" asChild>
+                                            <Link href={`/collaborators/${collaborator.id}/edit`}>
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    )}
                                 </TableCell>
                             </TableRow>
                         )) : (

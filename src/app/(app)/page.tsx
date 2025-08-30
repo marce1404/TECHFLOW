@@ -12,6 +12,7 @@ import { normalizeString } from '@/lib/utils';
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 import { Button } from '@/components/ui/button';
 import { Expand, Shrink } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 
 const ITEMS_PER_PAGE = 11;
@@ -141,7 +142,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div ref={dashboardRef} className="flex flex-1 flex-col gap-8 bg-background p-1 fullscreen-container">
+      <div ref={dashboardRef} className={cn("flex flex-1 flex-col gap-8 bg-background p-1", isFullscreen && 'pb-12')}>
          <div className="flex items-center justify-between pr-4">
             <div className="flex items-center gap-4">
                  {count > 1 && !isFullscreen && (
@@ -185,7 +186,12 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
-      <footer className="fixed bottom-0 left-0 right-0 z-20 w-full peer-data-[state=expanded]:peer-data-[side=left]:pl-[16rem] peer-data-[state=expanded]:peer-data-[side=right]:pr-[16rem] peer-data-[collapsible=icon]:peer-data-[state=expanded]:pl-[16rem] md:peer-data-[state=collapsed]:peer-data-[collapsible=icon]:pl-[3.5rem] transition-[padding] ease-linear">
+       <footer className={cn(
+            "w-full bg-background", 
+            isFullscreen 
+                ? "fixed bottom-0 left-0 right-0 z-50 bg-background/90" 
+                : "fixed bottom-0 left-0 right-0 z-20 peer-data-[state=expanded]:peer-data-[side=left]:pl-[16rem] peer-data-[state=expanded]:peer-data-[side=right]:pr-[16rem] peer-data-[collapsible=icon]:peer-data-[state=expanded]:pl-[16rem] md:peer-data-[state=collapsed]:peer-data-[collapsible=icon]:pl-[3.5rem] transition-[padding] ease-linear"
+            )}>
         <MotivationalTicker />
       </footer>
     </>

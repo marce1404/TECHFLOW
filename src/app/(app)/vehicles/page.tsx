@@ -12,15 +12,18 @@ import type { Vehicle } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { useAuth } from '@/context/auth-context';
 
 export default function VehiclesPage() {
     const { vehicles } = useWorkOrders();
+    const { userProfile } = useAuth();
     const [search, setSearch] = React.useState('');
     const [statusFilter, setStatusFilter] = React.useState<Vehicle['status'] | 'Todos'>('Todos');
     const [sortConfig, setSortConfig] = React.useState<{ key: keyof Vehicle | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
     const [currentPage, setCurrentPage] = React.useState(1);
     const itemsPerPage = 15;
-
+    
+    const canCreate = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
 
     const requestSort = (key: keyof Vehicle) => {
         let direction: 'ascending' | 'descending' = 'ascending';
@@ -102,12 +105,14 @@ export default function VehiclesPage() {
                                     onChange={(e) => setSearch(e.target.value)}
                                     className="w-full sm:max-w-sm"
                                 />
-                                <Button asChild>
-                                    <Link href="/vehicles/new">
-                                        <PlusCircle className="mr-2 h-4 w-4" />
-                                        Nuevo Vehículo
-                                    </Link>
-                                </Button>
+                                {canCreate && (
+                                    <Button asChild>
+                                        <Link href="/vehicles/new">
+                                            <PlusCircle className="mr-2 h-4 w-4" />
+                                            Nuevo Vehículo
+                                        </Link>
+                                    </Button>
+                                )}
                             </div>
                         </div>
                         <TabsContent value={statusFilter}>

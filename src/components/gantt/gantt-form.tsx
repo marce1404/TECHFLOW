@@ -47,9 +47,10 @@ interface GanttFormProps {
   onSave: (data: Omit<GanttChart, 'id' | 'tasks'>, finalTasks: GanttTask[]) => void;
   ganttChart?: GanttChart;
   initialTasks: GanttTask[]; 
+  disabled?: boolean;
 }
 
-export default function GanttForm({ onSave, ganttChart, initialTasks }: GanttFormProps) {
+export default function GanttForm({ onSave, ganttChart, initialTasks, disabled = false }: GanttFormProps) {
   const { activeWorkOrders, ganttCharts } = useWorkOrders();
   const params = useParams();
   const ganttId = params.id as string;
@@ -71,9 +72,6 @@ export default function GanttForm({ onSave, ganttChart, initialTasks }: GanttFor
   });
 
   React.useEffect(() => {
-    // This is now the source of truth for the displayed tasks.
-    // The parent component (`new/page` or `edit/page`) is responsible
-    // for preparing `initialTasks` with phase headers.
     setTasks(initialTasks);
   }, [initialTasks]);
 
@@ -88,6 +86,14 @@ export default function GanttForm({ onSave, ganttChart, initialTasks }: GanttFor
       });
     }
   }, [ganttChart, form]);
+  
+  React.useEffect(() => {
+    if (disabled) {
+      form.disable();
+    } else {
+      form.enable();
+    }
+  }, [disabled, form]);
 
   const handleUpdateTask = (id: string, field: keyof GanttTask, value: any) => {
     setTasks(prevTasks => prevTasks.map(t => {
@@ -210,264 +216,268 @@ export default function GanttForm({ onSave, ganttChart, initialTasks }: GanttFor
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmitForm)} className="space-y-6">
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-                <CardTitle>Detalles del Cronograma</CardTitle>
-                {ganttId && (
-                <Button variant="outline" type="button" onClick={handlePrint}>
-                    <Printer className="mr-2 h-4 w-4" />
-                    Imprimir
-                </Button>
-                )}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
-                    <FormField
-                        control={form.control}
-                        name="name"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Nombre de la Carta Gantt</FormLabel>
-                            <FormControl>
-                                <Input placeholder="Ej: Instalación CCTV Cliente X" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
+        <fieldset disabled={disabled} className="space-y-6">
+            <Card>
+            <CardHeader>
+                <div className="flex justify-between items-center">
+                    <CardTitle>Detalles del Cronograma</CardTitle>
+                    {ganttId && (
+                    <Button variant="outline" type="button" onClick={handlePrint}>
+                        <Printer className="mr-2 h-4 w-4" />
+                        Imprimir
+                    </Button>
+                    )}
                 </div>
-                 <div className="flex-1">
-                    <FormField
-                        control={form.control}
-                        name="assignedOT"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Asociar a Orden de Trabajo</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1">
+                        <FormField
+                            control={form.control}
+                            name="name"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Nombre de la Carta Gantt</FormLabel>
                                 <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Seleccionar OT (Opcional)" />
-                                </SelectTrigger>
+                                    <Input placeholder="Ej: Instalación CCTV Cliente X" {...field} />
                                 </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                            />
+                    </div>
+                    <div className="flex-1">
+                        <FormField
+                            control={form.control}
+                            name="assignedOT"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Asociar a Orden de Trabajo</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value} disabled={disabled}>
+                                    <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Seleccionar OT (Opcional)" />
+                                    </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="none">Sin asociar</SelectItem>
+                                        {availableOTs.map(ot => (
+                                            <SelectItem key={ot.id} value={ot.ot_number}>{ot.ot_number} - {ot.description}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                            />
+                    </div>
+                    <div className="space-y-2">
+                        <FormLabel>Días Laborales</FormLabel>
+                        <div className="flex items-center gap-4 pt-2">
+                            <FormField
+                                control={form.control}
+                                name="workOnSaturdays"
+                                render={({ field }) => (
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                    <FormControl>
+                                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">Sábado</FormLabel>
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="workOnSundays"
+                                render={({ field }) => (
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                    <FormControl>
+                                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">Domingo</FormLabel>
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </CardContent>
+            </Card>
+            
+            <Card>
+                <CardHeader>
+                    <CardTitle>Tareas</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        <div className="hidden md:grid grid-cols-[1fr,150px,120px,120px,120px,auto] gap-2 items-center text-sm font-medium text-muted-foreground">
+                            <div>Nombre de la Tarea</div>
+                            <div className="text-center">Fecha Inicio</div>
+                            <div className="text-center">Duración (días)</div>
+                            <div className="text-center">Avance (%)</div>
+                            <div className="text-center">Fecha Término</div>
+                            <div></div>
+                        </div>
+                        {tasks.map((task) => {
+                            if (task.isPhase) {
+                            return (
+                                <div key={task.id} className="flex items-center gap-2 pt-4 pb-2">
+                                <h3 className="text-lg font-semibold text-primary flex-1">{task.name}</h3>
+                                </div>
+                            );
+                            }
+
+                            const startDate = task.startDate ? new Date(task.startDate) : new Date();
+                            const duration = task.duration || 1;
+                            const endDate = calculateEndDate(startDate, duration, watchedWorkdays[0], watchedWorkdays[1]);
+                            const isPastOrToday = isPast(startDate) || isToday(startDate);
+                            
+                            return (
+                            <div key={task.id} className="grid grid-cols-1 md:grid-cols-[1fr,150px,120px,120px,120px,auto] gap-2 items-center p-2 rounded-lg border">
+                                <Input value={task.name} onChange={(e) => handleUpdateTask(task.id, 'name', e.target.value)} />
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !task.startDate && 'text-muted-foreground')}>
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {task.startDate ? format(new Date(task.startDate), 'dd/MM/yy', { locale: es }) : <span>Elegir</span>}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0"><Calendar locale={es} mode="single" selected={task.startDate} onSelect={(date) => handleUpdateTask(task.id, 'startDate', date)} initialFocus /></PopoverContent>
+                                </Popover>
+                                <Input type="number" className="w-full text-center" value={task.duration} onChange={(e) => handleUpdateTask(task.id, 'duration', parseInt(e.target.value) || 0)} />
+                                <Input type="number" className="w-full text-center" value={task.progress} onChange={(e) => handleUpdateTask(task.id, 'progress', parseInt(e.target.value) || 0)} disabled={!isPastOrToday && !disabled} />
+                                <Input value={endDate ? format(endDate, 'dd/MM/yy', { locale: es }) : 'N/A'} readOnly className="bg-muted w-full text-center" />
+                                <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveTask(task.id)}>
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                            </div>
+                            )
+                        })}
+                        <div className="flex items-center gap-2 pt-4 border-t">
+                            <Input
+                                placeholder="Nombre de tarea personalizada"
+                                value={customTaskName}
+                                onChange={(e) => setCustomTaskName(e.target.value)}
+                                className="flex-1"
+                            />
+                            <Select onValueChange={setSelectedPhase} value={selectedPhase}>
+                                <SelectTrigger className="w-[300px]">
+                                    <SelectValue placeholder="Seleccionar fase..." />
+                                </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="none">Sin asociar</SelectItem>
-                                    {availableOTs.map(ot => (
-                                        <SelectItem key={ot.id} value={ot.ot_number}>{ot.ot_number} - {ot.description}</SelectItem>
+                                    {existingPhases.map(phase => (
+                                        <SelectItem key={phase} value={phase}>{phase}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-                </div>
-                <div className="space-y-2">
-                    <FormLabel>Días Laborales</FormLabel>
-                    <div className="flex items-center gap-4 pt-2">
-                        <FormField
-                            control={form.control}
-                            name="workOnSaturdays"
-                            render={({ field }) => (
-                                <FormItem className="flex items-center space-x-2 space-y-0">
-                                <FormControl>
-                                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                                </FormControl>
-                                <FormLabel className="font-normal">Sábado</FormLabel>
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="workOnSundays"
-                            render={({ field }) => (
-                                <FormItem className="flex items-center space-x-2 space-y-0">
-                                <FormControl>
-                                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                                </FormControl>
-                                <FormLabel className="font-normal">Domingo</FormLabel>
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-            <CardHeader>
-                <CardTitle>Tareas</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="space-y-4">
-                     <div className="hidden md:grid grid-cols-[1fr,150px,120px,120px,120px,auto] gap-2 items-center text-sm font-medium text-muted-foreground">
-                        <div>Nombre de la Tarea</div>
-                        <div className="text-center">Fecha Inicio</div>
-                        <div className="text-center">Duración (días)</div>
-                        <div className="text-center">Avance (%)</div>
-                        <div className="text-center">Fecha Término</div>
-                        <div></div>
-                    </div>
-                    {tasks.map((task) => {
-                        if (task.isPhase) {
-                          return (
-                            <div key={task.id} className="flex items-center gap-2 pt-4 pb-2">
-                              <h3 className="text-lg font-semibold text-primary flex-1">{task.name}</h3>
-                            </div>
-                          );
-                        }
-
-                        const startDate = task.startDate ? new Date(task.startDate) : new Date();
-                        const duration = task.duration || 1;
-                        const endDate = calculateEndDate(startDate, duration, watchedWorkdays[0], watchedWorkdays[1]);
-                        const isPastOrToday = isPast(startDate) || isToday(startDate);
-                        
-                        return (
-                          <div key={task.id} className="grid grid-cols-1 md:grid-cols-[1fr,150px,120px,120px,120px,auto] gap-2 items-center p-2 rounded-lg border">
-                              <Input value={task.name} onChange={(e) => handleUpdateTask(task.id, 'name', e.target.value)} />
-                              <Popover>
-                                  <PopoverTrigger asChild>
-                                      <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !task.startDate && 'text-muted-foreground')}>
-                                          <CalendarIcon className="mr-2 h-4 w-4" />
-                                          {task.startDate ? format(new Date(task.startDate), 'dd/MM/yy', { locale: es }) : <span>Elegir</span>}
-                                      </Button>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-auto p-0"><Calendar locale={es} mode="single" selected={task.startDate} onSelect={(date) => handleUpdateTask(task.id, 'startDate', date)} initialFocus /></PopoverContent>
-                              </Popover>
-                              <Input type="number" className="w-full text-center" value={task.duration} onChange={(e) => handleUpdateTask(task.id, 'duration', parseInt(e.target.value) || 0)} />
-                              <Input type="number" className="w-full text-center" value={task.progress} onChange={(e) => handleUpdateTask(task.id, 'progress', parseInt(e.target.value) || 0)} disabled={!isPastOrToday} />
-                              <Input value={endDate ? format(endDate, 'dd/MM/yy', { locale: es }) : 'N/A'} readOnly className="bg-muted w-full text-center" />
-                              <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveTask(task.id)}>
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                          </div>
-                        )
-                    })}
-                     <div className="flex items-center gap-2 pt-4 border-t">
-                        <Input
-                            placeholder="Nombre de tarea personalizada"
-                            value={customTaskName}
-                            onChange={(e) => setCustomTaskName(e.target.value)}
-                            className="flex-1"
-                        />
-                        <Select onValueChange={setSelectedPhase} value={selectedPhase}>
-                            <SelectTrigger className="w-[300px]">
-                                <SelectValue placeholder="Seleccionar fase..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {existingPhases.map(phase => (
-                                    <SelectItem key={phase} value={phase}>{phase}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <Button type="button" variant="outline" onClick={handleAddTask}>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Añadir Tarea
-                        </Button>
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-
-        <Card>
-            <CardHeader>
-                <CardTitle>Previsualización del Gráfico de Gantt</CardTitle>
-                <CardDescription>
-                    Una representación visual simple de tu cronograma.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="overflow-x-auto p-0">
-                 {tasks.length > 0 && ganttChartData.days.length > 0 && ganttChartData.earliestDate ? (
-                    <div className="min-w-[800px] p-6">
-                        <div className="grid" style={{ gridTemplateColumns: `12rem repeat(${ganttChartData.days.length}, 2rem)`}}>
-                           {/* Month Header */}
-                           <div className="sticky left-0 bg-card z-10"></div>
-                            {ganttChartData.months.map(([month, dayCount]) => (
-                                <div key={month} className="text-center text-sm font-semibold text-muted-foreground capitalize border-b" style={{ gridColumn: `span ${dayCount}` }}>
-                                    {month}
-                                </div>
-                            ))}
-                           {/* Day Header */}
-                           <div className="sticky left-0 bg-card z-10"></div>
-                            {ganttChartData.days.map((day) => (
-                                <div key={day.toString()} className="text-center text-xs text-muted-foreground border-r border-dashed h-6 flex items-center justify-center">
-                                    {format(day, 'd', { locale: es })}
-                                </div>
-                            ))}
-
-                           {/* Task Rows */}
-                           {tasks.map((task, index) => {
-                                const rowNumber = index + 3; // +3 to account for header rows
-                                if (task.isPhase) {
-                                    return (
-                                        <React.Fragment key={task.id || index}>
-                                            <div className="sticky left-0 bg-card z-10 text-sm truncate pr-2 py-1 border-t flex items-center font-bold text-primary">{task.name}</div>
-                                            <div className="relative border-t col-span-full h-8" style={{ gridColumnStart: 2, gridRowStart: rowNumber}}></div>
-                                        </React.Fragment>
-                                    );
-                                }
-                                
-                                if (!task.startDate || !task.duration || !ganttChartData.earliestDate) {
-                                    return <div key={task.id || index} style={{ gridRowStart: rowNumber, gridColumnStart: 1 }}></div>;
-                                }
-
-                                const startDate = new Date(task.startDate);
-                                const endDate = calculateEndDate(startDate, task.duration, watchedWorkdays[0], watchedWorkdays[1]);
-                                const offset = differenceInCalendarDays(startDate, ganttChartData.earliestDate);
-                                
-                                const totalWorkingDays = calculateWorkingDays(startDate, endDate, watchedWorkdays[0], watchedWorkdays[1]);
-                                if (totalWorkingDays <= 0) return <div key={task.id || index} style={{ gridRowStart: rowNumber, gridColumnStart: 1 }}></div>;
-
-                                let progressColor = 'bg-primary';
-                                if (isPast(endDate) && (task.progress || 0) < 100) {
-                                  progressColor = 'bg-destructive'; // Late and not finished
-                                } else if ((isPast(startDate) || isToday(startDate)) && !isPast(endDate)) {
-                                  const elapsedWorkingDays = calculateWorkingDays(startDate, today, watchedWorkdays[0], watchedWorkdays[1]);
-                                  const expectedProgress = Math.min(Math.round((elapsedWorkingDays / totalWorkingDays) * 100), 100);
-                                  
-                                  if ((task.progress || 0) < expectedProgress) {
-                                    progressColor = 'bg-destructive'; // Behind schedule
-                                  } else {
-                                    progressColor = 'bg-green-500'; // On schedule or ahead
-                                  }
-                                }
-                                if ((task.progress || 0) >= 100) {
-                                    progressColor = 'bg-primary'; // Completed
-                                }
-
-
-                                return (
-                                    <React.Fragment key={task.id || index}>
-                                        <div className="sticky left-0 bg-card z-10 text-sm truncate pr-2 py-1 border-t flex items-center">{task.name}</div>
-                                        <div className="relative border-t col-span-full h-8" style={{ gridColumnStart: 2, gridRowStart: rowNumber}}>
-                                            <div
-                                                className="absolute bg-secondary h-6 top-1 rounded"
-                                                style={{ left: `${offset * 2}rem`, width: `${(differenceInCalendarDays(endDate, startDate) + 1) * 2}rem` }}
-                                                title={`${task.name} - ${format(startDate, 'dd/MM', { locale: es })} a ${format(endDate, 'dd/MM', { locale: es })}`}
-                                            >
-                                                <div className={cn("h-full rounded", progressColor)} style={{ width: `${task.progress || 0}%`}}></div>
-                                            </div>
-                                        </div>
-                                    </React.Fragment>
-                                )
-                           })}
+                            <Button type="button" variant="outline" onClick={handleAddTask}>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Añadir Tarea
+                            </Button>
                         </div>
                     </div>
-                ) : (
-                    <div className="text-center text-muted-foreground p-8">
-                        Añade tareas para ver la previsualización del gráfico.
-                    </div>
-                )}
-            </CardContent>
-        </Card>
+                </CardContent>
+            </Card>
 
-        <div className="flex justify-end gap-2">
-            <Button variant="outline" asChild><Link href="/gantt">Cancelar</Link></Button>
-            <Button type="submit">Guardar Carta Gantt</Button>
-        </div>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Previsualización del Gráfico de Gantt</CardTitle>
+                    <CardDescription>
+                        Una representación visual simple de tu cronograma.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="overflow-x-auto p-0">
+                    {tasks.length > 0 && ganttChartData.days.length > 0 && ganttChartData.earliestDate ? (
+                        <div className="min-w-[800px] p-6">
+                            <div className="grid" style={{ gridTemplateColumns: `12rem repeat(${ganttChartData.days.length}, 2rem)`}}>
+                            {/* Month Header */}
+                            <div className="sticky left-0 bg-card z-10"></div>
+                                {ganttChartData.months.map(([month, dayCount]) => (
+                                    <div key={month} className="text-center text-sm font-semibold text-muted-foreground capitalize border-b" style={{ gridColumn: `span ${dayCount}` }}>
+                                        {month}
+                                    </div>
+                                ))}
+                            {/* Day Header */}
+                            <div className="sticky left-0 bg-card z-10"></div>
+                                {ganttChartData.days.map((day) => (
+                                    <div key={day.toString()} className="text-center text-xs text-muted-foreground border-r border-dashed h-6 flex items-center justify-center">
+                                        {format(day, 'd', { locale: es })}
+                                    </div>
+                                ))}
+
+                            {/* Task Rows */}
+                            {tasks.map((task, index) => {
+                                    const rowNumber = index + 3; // +3 to account for header rows
+                                    if (task.isPhase) {
+                                        return (
+                                            <React.Fragment key={task.id || index}>
+                                                <div className="sticky left-0 bg-card z-10 text-sm truncate pr-2 py-1 border-t flex items-center font-bold text-primary">{task.name}</div>
+                                                <div className="relative border-t col-span-full h-8" style={{ gridColumnStart: 2, gridRowStart: rowNumber}}></div>
+                                            </React.Fragment>
+                                        );
+                                    }
+                                    
+                                    if (!task.startDate || !task.duration || !ganttChartData.earliestDate) {
+                                        return <div key={task.id || index} style={{ gridRowStart: rowNumber, gridColumnStart: 1 }}></div>;
+                                    }
+
+                                    const startDate = new Date(task.startDate);
+                                    const endDate = calculateEndDate(startDate, task.duration, watchedWorkdays[0], watchedWorkdays[1]);
+                                    const offset = differenceInCalendarDays(startDate, ganttChartData.earliestDate);
+                                    
+                                    const totalWorkingDays = calculateWorkingDays(startDate, endDate, watchedWorkdays[0], watchedWorkdays[1]);
+                                    if (totalWorkingDays <= 0) return <div key={task.id || index} style={{ gridRowStart: rowNumber, gridColumnStart: 1 }}></div>;
+
+                                    let progressColor = 'bg-primary';
+                                    if (isPast(endDate) && (task.progress || 0) < 100) {
+                                    progressColor = 'bg-destructive'; // Late and not finished
+                                    } else if ((isPast(startDate) || isToday(startDate)) && !isPast(endDate)) {
+                                    const elapsedWorkingDays = calculateWorkingDays(startDate, today, watchedWorkdays[0], watchedWorkdays[1]);
+                                    const expectedProgress = Math.min(Math.round((elapsedWorkingDays / totalWorkingDays) * 100), 100);
+                                    
+                                    if ((task.progress || 0) < expectedProgress) {
+                                        progressColor = 'bg-destructive'; // Behind schedule
+                                    } else {
+                                        progressColor = 'bg-green-500'; // On schedule or ahead
+                                    }
+                                    }
+                                    if ((task.progress || 0) >= 100) {
+                                        progressColor = 'bg-primary'; // Completed
+                                    }
+
+
+                                    return (
+                                        <React.Fragment key={task.id || index}>
+                                            <div className="sticky left-0 bg-card z-10 text-sm truncate pr-2 py-1 border-t flex items-center">{task.name}</div>
+                                            <div className="relative border-t col-span-full h-8" style={{ gridColumnStart: 2, gridRowStart: rowNumber}}>
+                                                <div
+                                                    className="absolute bg-secondary h-6 top-1 rounded"
+                                                    style={{ left: `${offset * 2}rem`, width: `${(differenceInCalendarDays(endDate, startDate) + 1) * 2}rem` }}
+                                                    title={`${task.name} - ${format(startDate, 'dd/MM', { locale: es })} a ${format(endDate, 'dd/MM', { locale: es })}`}
+                                                >
+                                                    <div className={cn("h-full rounded", progressColor)} style={{ width: `${task.progress || 0}%`}}></div>
+                                                </div>
+                                            </div>
+                                        </React.Fragment>
+                                    )
+                            })}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="text-center text-muted-foreground p-8">
+                            Añade tareas para ver la previsualización del gráfico.
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            {!disabled && (
+                <div className="flex justify-end gap-2">
+                    <Button variant="outline" asChild><Link href="/gantt">Cancelar</Link></Button>
+                    <Button type="submit">Guardar Carta Gantt</Button>
+                </div>
+            )}
+        </fieldset>
       </form>
     </Form>
   );
