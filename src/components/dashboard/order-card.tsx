@@ -32,8 +32,7 @@ export function OrderCard({ order, progress }: OrderCardProps) {
       case 'atrasada':
         return 'destructive';
       case 'cerrada':
-        return 'default';
-       case 'facturado':
+      case 'facturado':
         return 'default';
       case 'por iniciar':
         return 'outline';
@@ -46,6 +45,15 @@ export function OrderCard({ order, progress }: OrderCardProps) {
     }
   };
   
+  const getStatusBadgeStyle = (status: WorkOrder['status']) => {
+    const lowerCaseStatus = status.toLowerCase();
+    if (lowerCaseStatus === 'en progreso') {
+      return { backgroundColor: 'hsl(142, 71%, 45%)', color: 'hsl(var(--primary-foreground))' };
+    }
+    return {};
+  };
+
+  
   const getChartColor = (status: WorkOrder['status']) => {
     const lowerCaseStatus = status.toLowerCase();
     if (lowerCaseStatus === 'en progreso') {
@@ -56,8 +64,6 @@ export function OrderCard({ order, progress }: OrderCardProps) {
     }
     return 'hsl(var(--muted))'; // Gray for all other cases
   }
-  
-  const statusBadgeStyle = order.status.toLowerCase() === 'en progreso' ? { backgroundColor: 'hsl(142, 71%, 45%)', color: 'hsl(var(--primary-foreground))' } : {};
 
 
   return (
@@ -76,7 +82,7 @@ export function OrderCard({ order, progress }: OrderCardProps) {
           <div className="text-sm text-muted-foreground flex-1 space-y-2 min-w-0">
             <div className="flex items-center gap-2">
                 <p className="font-semibold text-foreground truncate">{order.service}</p>
-                <Badge variant={getStatusVariant(order.status)} style={statusBadgeStyle} className="capitalize text-xs">{order.status}</Badge>
+                <Badge variant={getStatusVariant(order.status)} style={getStatusBadgeStyle(order.status)} className="capitalize text-xs">{order.status}</Badge>
             </div>
             <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 flex-shrink-0" />

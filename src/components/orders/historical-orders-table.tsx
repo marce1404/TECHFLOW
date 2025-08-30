@@ -49,7 +49,6 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
   ): 'default' | 'secondary' | 'destructive' | 'outline' => {
      switch (status.toLowerCase()) {
       case 'cerrada':
-        return 'default';
       case 'facturado':
         return 'default';
       case 'en progreso':

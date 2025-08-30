@@ -49,17 +49,25 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
   ): 'default' | 'secondary' | 'destructive' | 'outline' => {
      switch (status.toLowerCase()) {
       case 'cerrada':
-        return 'default';
       case 'facturado':
         return 'default';
       case 'en progreso':
-        return 'default'; // Changed to default to allow custom bg
+        return 'secondary';
       case 'atrasada':
         return 'destructive';
       default:
         return 'outline';
     }
   };
+  
+  const getStatusBadgeStyle = (status: WorkOrder['status']) => {
+    const lowerCaseStatus = status.toLowerCase();
+    if (lowerCaseStatus === 'en progreso') {
+      return { backgroundColor: 'hsl(142, 71%, 45%)', color: 'hsl(var(--primary-foreground))' };
+    }
+    return {};
+  };
+
   
   const requestSort = (key: keyof WorkOrder) => {
     let direction: 'ascending' | 'descending' = 'ascending';
@@ -157,9 +165,9 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" className="p-0 h-auto">
                                         <Badge 
-                                        variant={getStatusVariant(order.status)} 
-                                        style={order.status.toLowerCase() === 'en progreso' ? { backgroundColor: 'hsl(142, 71%, 45%)', color: 'white' } : {}}
-                                        className="cursor-pointer"
+                                          variant={getStatusVariant(order.status)} 
+                                          style={getStatusBadgeStyle(order.status)}
+                                          className="cursor-pointer"
                                         >
                                             {order.status}
                                         </Badge>
@@ -187,32 +195,8 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                                             <DropdownMenuItem asChild>
                                                 <Link href={`/orders/${order.id}/edit`}>Editar</Link>
                                             </DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                            <AlertDialogTrigger asChild>
-                                                <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                                  <Trash2 className="mr-2 h-4 w-4" /> Eliminar
-                                                </DropdownMenuItem>
-                                            </AlertDialogTrigger>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                        <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Esta acción no se puede deshacer. Esto eliminará permanentemente la OT
-                                            <span className="font-bold"> {order.ot_number}</span>.
-                                        </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction
-                                            className="bg-destructive hover:bg-destructive/90"
-                                            onClick={() => deleteOrder(order.id)}
-                                        >
-                                            Eliminar
-                                        </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
                                 </AlertDialog>
                             </TableCell>
                         </TableRow>

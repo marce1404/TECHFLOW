@@ -36,16 +36,23 @@ export default function AssignmentHistory({ title, description, filterKey, filte
   ): 'default' | 'secondary' | 'destructive' | 'outline' => {
      switch (status.toLowerCase()) {
       case 'cerrada':
-        return 'default';
        case 'facturado':
         return 'default';
       case 'en progreso':
-        return 'default'; 
+        return 'secondary'; 
       case 'atrasada':
         return 'destructive';
       default:
         return 'outline';
     }
+  };
+  
+  const getStatusBadgeStyle = (status: WorkOrder['status']) => {
+    const lowerCaseStatus = status.toLowerCase();
+    if (lowerCaseStatus === 'en progreso') {
+      return { backgroundColor: 'hsl(142, 71%, 45%)', color: 'hsl(var(--primary-foreground))' };
+    }
+    return {};
   };
 
   const filteredOrders = React.useMemo(() => {
@@ -149,7 +156,7 @@ export default function AssignmentHistory({ title, description, filterKey, filte
                                 <TableCell>
                                     <Badge 
                                         variant={getStatusVariant(order.status)}
-                                        style={order.status.toLowerCase() === 'en progreso' ? { backgroundColor: 'hsl(142, 71%, 45%)', color: 'white' } : {}}
+                                        style={getStatusBadgeStyle(order.status)}
                                     >
                                         {order.status}
                                     </Badge>
