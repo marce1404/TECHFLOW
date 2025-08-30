@@ -14,7 +14,7 @@ import { MultiSelect } from '../ui/multi-select';
 import { OTStatus, WorkOrder } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { exportOrdersToExcel } from '@/app/actions';
-import { ImportOrdersDialog } from './import-orders-dialog';
+import { ImportOrdersDialog } from '@/components/orders/import-orders-dialog';
 import { useWorkOrders } from '@/context/work-orders-context';
 
 export default function DataManagementCard() {
@@ -82,9 +82,9 @@ export default function DataManagementCard() {
         <>
             <Card>
                 <CardHeader>
-                    <CardTitle>Importar y Exportar Datos</CardTitle>
+                    <CardTitle>Importar y Exportar Órdenes de Trabajo</CardTitle>
                     <CardDescription>
-                        Gestiona tus órdenes de trabajo masivamente. Puedes aplicar filtros antes de exportar.
+                        Gestiona tus órdenes masivamente. Puedes aplicar filtros antes de exportar todas las órdenes del sistema (activas e históricas).
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">

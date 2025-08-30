@@ -1,7 +1,7 @@
 
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ChevronRight, Building, Users, Settings, BarChart2, Tag, ListChecks, ClipboardPenLine, GitBranch, Mail } from 'lucide-react';
+import { ChevronRight, Building, Users, Settings, BarChart2, Tag, ListChecks, ClipboardPenLine, GitBranch, Mail, ArrowRightLeft } from 'lucide-react';
 import packageJson from '@/../package.json';
 
 interface SettingsGroupProps {
@@ -66,6 +66,12 @@ export default function SettingsPage() {
                     icon={Mail}
                     title="Configuración de Correo"
                     description="Configura el servidor SMTP para el envío de correos electrónicos."
+                />
+                <SettingsLink 
+                    href="/settings/data-management"
+                    icon={ArrowRightLeft}
+                    title="Gestión de Datos"
+                    description="Importa y exporta órdenes de trabajo masivamente."
                 />
             </SettingsGroup>
 

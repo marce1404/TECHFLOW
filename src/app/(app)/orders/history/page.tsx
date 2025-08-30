@@ -9,7 +9,6 @@ import type { WorkOrder } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import ExportCard from "@/components/orders/export-card";
 
 
 export default function HistoryPage() {
@@ -79,9 +78,6 @@ export default function HistoryPage() {
                     </Tabs>
                 </CardContent>
             </Card>
-
-            <ExportCard orders={filteredOrders} allStatuses={otStatuses} />
         </div>
     );
 }
-

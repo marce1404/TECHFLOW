@@ -10,7 +10,6 @@ import { useWorkOrders } from "@/context/work-orders-context";
 import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import ExportCard from "@/components/orders/export-card";
 
 export default function ActiveOrdersPage() {
     const { activeWorkOrders, otCategories, otStatuses, fetchData } = useWorkOrders();
@@ -80,8 +79,6 @@ export default function ActiveOrdersPage() {
                 <OrdersTable orders={filteredOrders} />
             </TabsContent>
             </Tabs>
-
-            <ExportCard orders={filteredOrders} allStatuses={otStatuses} onImportSuccess={fetchData} />
         </div>
     );
 }
