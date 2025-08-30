@@ -151,16 +151,14 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                           <TableCell>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" className="p-0 h-auto">
-                                        <Badge variant={getStatusVariant(order.status)} className="cursor-pointer">
-                                            {order.status}
-                                        </Badge>
-                                    </Button>
+                                    <Badge variant={getStatusVariant(order.status)} className="cursor-pointer">
+                                        {order.status}
+                                    </Badge>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
                                     {otStatuses.map(status => (
                                         <DropdownMenuItem key={status.id} onSelect={() => handleStatusChange(order, status.name as WorkOrder['status'])}>
-                                            Cambiar a {status.name}
+                                            {status.name}
                                         </DropdownMenuItem>
                                     ))}
                                 </DropdownMenuContent>
