@@ -214,10 +214,12 @@ export default function GanttForm({ onSave, ganttChart, initialTasks }: GanttFor
           <CardHeader>
             <div className="flex justify-between items-center">
                 <CardTitle>Detalles del Cronograma</CardTitle>
-                <Button variant="outline" type="button" onClick={handlePrint} disabled={!ganttId}>
+                {ganttId && (
+                <Button variant="outline" type="button" onClick={handlePrint}>
                     <Printer className="mr-2 h-4 w-4" />
                     Imprimir
                 </Button>
+                )}
             </div>
           </CardHeader>
           <CardContent className="space-y-4">

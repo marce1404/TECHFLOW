@@ -10,14 +10,25 @@ import type { Collaborator } from '@/lib/types';
 import CollaboratorForm, { type CollaboratorFormValues } from '@/components/collaborators/collaborator-form';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Printer } from 'lucide-react';
+import { Printer, Trash2 } from 'lucide-react';
 import AssignmentHistory from '@/components/shared/assignment-history';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 function EditCollaboratorComponent() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
-  const { getCollaborator, updateCollaborator, loading } = useWorkOrders();
+  const { getCollaborator, updateCollaborator, loading, deleteCollaborator } = useWorkOrders();
   const collaboratorId = params.id as string;
   
   const [collaborator, setCollaborator] = React.useState<Collaborator | undefined | null>(undefined);
@@ -41,6 +52,17 @@ function EditCollaboratorComponent() {
     setTimeout(() => router.push('/collaborators'), 2000);
   };
   
+  const handleDelete = async () => {
+    if (!collaborator) return;
+    await deleteCollaborator(collaborator.id);
+    toast({
+        title: "Colaborador Eliminado",
+        description: `El colaborador "${collaborator.name}" ha sido eliminado.`,
+        duration: 2000,
+    });
+    router.push('/collaborators');
+  }
+
   const handlePrint = () => {
     window.open(`/collaborators/${collaboratorId}/print`, '_blank');
   };
@@ -70,6 +92,31 @@ function EditCollaboratorComponent() {
         </Button>
       </div>
       <CollaboratorForm onSave={handleSave} collaborator={collaborator} />
+
+        <div className="flex justify-between items-center mt-4">
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="destructive">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Eliminar Colaborador
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>¿Está seguro de que desea eliminar a este colaborador?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta acción es permanente y no se puede deshacer. Se eliminará a "{collaborator.name}".
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                            Sí, eliminar
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
 
       <AssignmentHistory 
         title="Historial de Asignaciones"

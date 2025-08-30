@@ -7,11 +7,24 @@ import { useRouter, useParams } from 'next/navigation';
 import type { GanttChart, GanttTask, SuggestedTask } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import * as React from 'react';
+import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Trash2 } from 'lucide-react';
 
 export default function EditGanttPage() {
   const router = useRouter();
   const params = useParams();
-  const { getGanttChart, updateGanttChart } = useWorkOrders();
+  const { getGanttChart, updateGanttChart, deleteGanttChart } = useWorkOrders();
   const { toast } = useToast();
 
   const ganttId = params.id as string;
@@ -79,6 +92,17 @@ export default function EditGanttPage() {
     router.push('/gantt');
   };
 
+  const handleDelete = async () => {
+    if (!initialGanttChart) return;
+    await deleteGanttChart(ganttId);
+    toast({
+        title: "Carta Gantt Eliminada",
+        description: `La carta Gantt "${initialGanttChart.name}" ha sido eliminada.`,
+        duration: 2000,
+    });
+    router.push('/gantt');
+  }
+
   if (!initialGanttChart) {
     return <div>Cargando Carta Gantt...</div>;
   }
@@ -98,6 +122,30 @@ export default function EditGanttPage() {
         ganttChart={initialGanttChart} 
         initialTasks={processedTasks}
       />
+        <div className="flex justify-between items-center mt-4">
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="destructive">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Eliminar Carta Gantt
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>¿Está seguro de que desea eliminar esta Carta Gantt?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta acción es permanente y no se puede deshacer. Se eliminará la carta gantt "{initialGanttChart.name}".
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                            Sí, eliminar
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
     </div>
   );
 }
