@@ -8,34 +8,11 @@ import {
   WorkOrder,
   CreateWorkOrderInput,
 } from '@/lib/types';
-
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
-import * as admin from 'firebase-admin';
-import { getAuth } from 'firebase-admin/auth';
-import { getFirestore, addDoc, collection } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db } from '@/lib/firebase-admin'; // Import admin db
 import nodemailer from 'nodemailer';
 import * as xlsx from 'xlsx';
-
-// This function ensures Firebase Admin is initialized, but only once.
-const initializeFirebaseAdmin = () => {
-    if (admin.apps.length > 0) {
-        return { auth: getAuth() };
-    }
-    const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-    if (!serviceAccountBase64) {
-        throw new Error("Firebase service account JSON not found in environment variables. Please set FIREBASE_SERVICE_ACCOUNT_JSON.");
-    }
-    const serviceAccountString = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
-    const serviceAccount = JSON.parse(serviceAccountString);
-
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-    });
-
-    return { auth: getAuth() };
-};
-
+import { collection, addDoc } from 'firebase/firestore';
 
 // --- Server Actions ---
 
@@ -51,45 +28,14 @@ export async function getResourceSuggestions(
   }
 }
 
-export async function deleteUserAction(uid: string): Promise<{ success: boolean; message: string }> {
-  try {
-    const { auth } = initializeFirebaseAdmin();
-    // No need for firestore here as user profile deletion is handled in context
-    await auth.deleteUser(uid);
-    return { success: true, message: 'Usuario eliminado correctamente.' };
-  } catch (error: any) {
-    console.error('Error deleting user:', error);
-    return { success: false, message: error.message || 'Error al eliminar el usuario.' };
-  }
-}
-
-export async function changeUserPasswordAction(uid: string, newPassword: string): Promise<{ success: boolean; message: string }> {
-  try {
-    const { auth } = initializeFirebaseAdmin();
-    await auth.updateUser(uid, { password: newPassword });
-    return { success: true, message: `Contraseña actualizada correctamente.` };
-  } catch (error: any) {
-    console.error('Error changing password:', error);
-    return { success: false, message: error.message || 'Error al cambiar la contraseña.' };
-  }
-}
-
-
-export async function toggleUserStatusAction(uid: string, currentStatus: 'Activo' | 'Inactivo'): Promise<{ success: boolean; message: string }> {
-  try {
-    const { auth } = initializeFirebaseAdmin();
-    const newStatus = currentStatus === 'Activo' ? 'Inactivo' : 'Activo';
-    await auth.updateUser(uid, { disabled: newStatus === 'Inactivo' });
-    
-    // The user profile update should be done via `updateUserProfile` in the context
-    // which uses the client SDK and respects security rules.
-    
-    return { success: true, message: 'Estado del usuario actualizado correctamente.' };
-  } catch (error: any) {
-    console.error('Error toggling user status:', error);
-    return { success: false, message: error.message || 'Error al cambiar el estado del usuario.' };
-  }
-}
+// These user management actions require the Client SDK running on a server,
+// which is what Server Actions provide. But they need the Admin SDK for privileges.
+// The firebase-admin setup will handle this.
+export {
+  deleteUserAction,
+  changeUserPasswordAction,
+  toggleUserStatusAction,
+} from '@/lib/firebase-admin';
 
 export async function sendTestEmailAction(config: SmtpConfig, to: string): Promise<{ success: boolean; message: string }> {
   const { host, port, secure, user, pass, fromName, fromEmail } = config;
@@ -214,7 +160,8 @@ async function createOrUpdateWorkOrder(input: CreateWorkOrderInput) {
         facturado: !!input.invoiceNumber,
       };
 
-      const docRef = await addDoc(collection(db, "work-orders"), workOrderData);
+      // Use the admin db instance for this operation
+      const docRef = await db.collection("work-orders").add(workOrderData);
       return {
         success: true,
         orderId: docRef.id,
