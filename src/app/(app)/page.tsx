@@ -48,13 +48,13 @@ export default function DashboardPage() {
     return resultArray
   }, [] as WorkOrder[][]);
 
-  const getGanttProgress = (otNumber: string) => {
-    const assignedGantt = ganttCharts.find(g => g.assignedOT === otNumber);
-    if (!assignedGantt || assignedGantt.tasks.length === 0) {
-      return 0;
+  const getProgress = (order: WorkOrder) => {
+    const assignedGantt = ganttCharts.find(g => g.assignedOT === order.ot_number);
+    if (assignedGantt && assignedGantt.tasks.length > 0) {
+      const totalProgress = assignedGantt.tasks.reduce((sum, task) => sum + (task.progress || 0), 0);
+      return Math.round(totalProgress / assignedGantt.tasks.length);
     }
-    const totalProgress = assignedGantt.tasks.reduce((sum, task) => sum + (task.progress || 0), 0);
-    return Math.round(totalProgress / assignedGantt.tasks.length);
+    return order.manualProgress || 0;
   };
   
   const closedOrdersThisMonth = historicalWorkOrders.filter(order => {
@@ -115,7 +115,7 @@ export default function DashboardPage() {
                 <CarouselItem key={index}>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {page.map(order => (
-                      <OrderCard key={order.id} order={order} progress={getGanttProgress(order.ot_number)} />
+                      <OrderCard key={order.id} order={order} progress={getProgress(order)} />
                     ))}
                     {index === 0 && <ClosedOrdersCard orders={closedOrdersThisMonth} />}
                   </div>

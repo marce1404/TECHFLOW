@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useWorkOrders } from "@/context/work-orders-context";
 import type { WorkOrder } from "@/lib/types";
 import { useRouter } from "next/navigation";
+import { Slider } from "@/components/ui/slider";
 
 export default function NewOrderPage() {
     const router = useRouter();
@@ -47,6 +48,7 @@ export default function NewOrderPage() {
     const [hesEmMigo, setHesEmMigo] = React.useState('');
     const [assigned, setAssigned] = React.useState<string[]>([]);
     const [comercial, setComercial] = React.useState('');
+    const [manualProgress, setManualProgress] = React.useState(0);
     
 
     const technicians = collaborators
@@ -99,6 +101,7 @@ export default function NewOrderPage() {
         hesEmMigo,
         assigned: assigned.map(id => collaborators.find(c => c.id === id)?.name || ''),
         comercial: collaborators.find(c => c.id === comercial)?.name || '',
+        manualProgress,
     };
     
     addOrder(newOrder);
@@ -416,6 +419,17 @@ export default function NewOrderPage() {
                                 </SelectContent>
                             </Select>
                         </div>
+                        
+                        <div className="pt-2">
+                            <Label>Avance Manual ({manualProgress}%)</Label>
+                             <Slider
+                                value={[manualProgress]}
+                                onValueChange={(value) => setManualProgress(value[0])}
+                                max={100}
+                                step={5}
+                            />
+                        </div>
+
                     </div>
                 </div>
             </div>

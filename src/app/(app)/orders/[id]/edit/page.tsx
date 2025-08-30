@@ -32,6 +32,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Slider } from "@/components/ui/slider";
 
 export default function EditOrderPage() {
   const params = useParams();
@@ -151,6 +152,7 @@ export default function EditOrderPage() {
   const currentPrefix = order.ot_number.split('-')[0];
   
   const assignedGantt = ganttCharts.find(g => g.assignedOT === order.ot_number);
+  const isGanttAssigned = !!assignedGantt;
 
   return (
     <div className="flex flex-col gap-8">
@@ -453,7 +455,7 @@ export default function EditOrderPage() {
                         </div>
                     </div>
 
-                     {assignedGantt && (
+                     {isGanttAssigned ? (
                         <div>
                             <Label>Carta Gantt Asignada</Label>
                             <div className="flex items-center gap-2">
@@ -464,6 +466,16 @@ export default function EditOrderPage() {
                                     </Link>
                                 </Button>
                             </div>
+                        </div>
+                    ) : (
+                        <div>
+                            <Label>Avance Manual ({order.manualProgress || 0}%)</Label>
+                            <Slider
+                                value={[order.manualProgress || 0]}
+                                onValueChange={(value) => handleInputChange('manualProgress', value[0])}
+                                max={100}
+                                step={5}
+                            />
                         </div>
                     )}
                     

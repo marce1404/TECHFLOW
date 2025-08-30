@@ -42,6 +42,7 @@ export type WorkOrder = {
   saleNumber?: string;
   hesEmMigo?: string;
   rentedVehicle?: string;
+  manualProgress?: number;
 };
 
 export type WorkClothingItem = {
@@ -296,6 +297,7 @@ export const CreateWorkOrderInputSchema = z.object({
   saleNumber: z.string().optional().describe("The sale number."),
   hesEmMigo: z.string().optional().describe("The HES/EM/MIGO number."),
   rentedVehicle: z.string().optional().describe("Details of a rented vehicle."),
+  manualProgress: z.number().optional().default(0).describe("Manual progress percentage for the work order."),
 });
 export type CreateWorkOrderInput = z.infer<typeof CreateWorkOrderInputSchema>;
 
