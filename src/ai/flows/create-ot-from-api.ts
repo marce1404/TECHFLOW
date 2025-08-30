@@ -9,6 +9,8 @@
 
 import { ai } from '@/ai/genkit';
 import { CreateWorkOrderInput, CreateWorkOrderInputSchema, CreateWorkOrderOutput, CreateWorkOrderOutputSchema } from '@/lib/types';
+import { importOrdersFromExcel } from '@/app/actions';
+
 
 // This flow now acts as a simple pass-through. The actual database logic is in actions.ts.
 const createWorkOrderFlow = ai.defineFlow(
