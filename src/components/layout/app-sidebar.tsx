@@ -70,7 +70,7 @@ export default function AppSidebar() {
       href: '/orders',
       label: 'OTs Activas',
       icon: File,
-      exact: false, // This is a parent item
+      exact: true, // Treat as exact to avoid highlighting for sub-routes
       subItems: [
         { href: '/orders/history', label: 'Historial', icon: History }
       ]
@@ -125,10 +125,12 @@ export default function AppSidebar() {
     if (isExact) {
         return pathname === href;
     }
-    // For parent items, check if the current path starts with the href,
-    // but also check that it's not a more specific different page.
+    // For non-exact matches
     if (href === '/reports') {
         return pathname.startsWith('/reports') && !pathname.startsWith('/reports/history');
+    }
+    if (href === '/orders') {
+        return pathname.startsWith('/orders');
     }
     return pathname.startsWith(href);
   };
@@ -243,7 +245,7 @@ export default function AppSidebar() {
                     <span>{item.label}</span>
                   </Link>
                 </SidebarMenuButton>
-                 {item.subItems && isActive(item.href, false) && (
+                 {item.subItems && isActive('/orders', false) && (
                     <SidebarMenuSub>
                         {item.subItems.map(subItem => (
                             <SidebarMenuSubItem key={subItem.href}>
