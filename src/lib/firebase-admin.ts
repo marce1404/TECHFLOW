@@ -8,28 +8,22 @@ dotenv.config();
 
 let adminApp: admin.app.App;
 
-const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-
 if (!admin.apps.length) {
-    if (serviceAccountBase64) {
-        try {
-            const serviceAccountString = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
-            const serviceAccount = JSON.parse(serviceAccountString);
-            adminApp = admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount),
-            });
-        } catch (e) {
-            console.error("Failed to initialize Firebase Admin with service account from ENV var.", e);
-            throw new Error("Firebase Admin SDK initialization failed due to a malformed or missing service account JSON.");
-        }
-    } else {
-        // Fallback for environments where ADC are expected to work (like Google Cloud Run)
-        try {
-            adminApp = admin.initializeApp();
-        } catch (e) {
-            console.error("Firebase admin initialization error using Application Default Credentials.", e);
-            throw new Error("Firebase Admin SDK initialization failed. No service account JSON found in environment variables and Application Default Credentials could not be used.");
-        }
+    const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+
+    if (!serviceAccountBase64) {
+        throw new Error("Firebase Admin SDK initialization failed: FIREBASE_SERVICE_ACCOUNT_JSON environment variable is not set.");
+    }
+
+    try {
+        const serviceAccountString = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
+        const serviceAccount = JSON.parse(serviceAccountString);
+        adminApp = admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount),
+        });
+    } catch (e: any) {
+        console.error("Failed to initialize Firebase Admin with service account from ENV var.", e);
+        throw new Error(`Firebase Admin SDK initialization failed due to a malformed service account JSON: ${e.message}`);
     }
 } else {
     adminApp = admin.apps[0]!;
