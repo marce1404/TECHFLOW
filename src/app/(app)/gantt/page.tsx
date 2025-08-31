@@ -24,7 +24,7 @@ export default function GanttPage() {
         );
     }, [ganttCharts, search]);
 
-    const totalPages = Math.ceil(filteredCharts.length / ITEMS_PER_PAGE);
+    const totalPages = Math.ceil(filteredCharts.length / ITEMS_PER_PAGE) || 1;
     const paginatedCharts = filteredCharts.slice(
         (currentPage - 1) * ITEMS_PER_PAGE,
         currentPage * ITEMS_PER_PAGE
@@ -68,31 +68,29 @@ export default function GanttPage() {
                 <CardContent>
                    <GanttTable charts={paginatedCharts} deleteGanttChart={deleteGanttChart} />
                 </CardContent>
-                 {totalPages > 1 && (
-                    <CardFooter>
-                      <div className="text-xs text-muted-foreground">
-                        Página {currentPage} de {totalPages}
-                      </div>
-                      <div className="flex items-center space-x-2 ml-auto">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handlePreviousPage}
-                          disabled={currentPage === 1}
-                        >
-                          Anterior
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleNextPage}
-                          disabled={currentPage === totalPages}
-                        >
-                          Siguiente
-                        </Button>
-                      </div>
-                    </CardFooter>
-                  )}
+                <CardFooter>
+                  <div className="text-xs text-muted-foreground">
+                    Página {currentPage} de {totalPages}
+                  </div>
+                  <div className="flex items-center space-x-2 ml-auto">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handlePreviousPage}
+                      disabled={currentPage === 1}
+                    >
+                      Anterior
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleNextPage}
+                      disabled={currentPage === totalPages}
+                    >
+                      Siguiente
+                    </Button>
+                  </div>
+                </CardFooter>
             </Card>
         </div>
     );

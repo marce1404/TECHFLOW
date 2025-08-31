@@ -79,7 +79,7 @@ export default function ReportsHistoryPage() {
     return reports.sort((a, b) => b.submittedAt.toMillis() - a.submittedAt.toMillis());
   }, [submittedReports, search, activeTab]);
 
-  const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredReports.length / itemsPerPage) || 1;
   const paginatedReports = filteredReports.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
@@ -272,31 +272,29 @@ export default function ReportsHistoryPage() {
                   </TabsContent>
               </Tabs>
           </CardContent>
-           {totalPages > 1 && (
-            <CardFooter>
-              <div className="text-xs text-muted-foreground">
-                Página {currentPage} de {totalPages}
-              </div>
-              <div className="flex items-center space-x-2 ml-auto">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handlePreviousPage}
-                  disabled={currentPage === 1}
-                >
-                  Anterior
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleNextPage}
-                  disabled={currentPage === totalPages}
-                >
-                  Siguiente
-                </Button>
-              </div>
-            </CardFooter>
-          )}
+          <CardFooter>
+            <div className="text-xs text-muted-foreground">
+              Página {currentPage} de {totalPages}
+            </div>
+            <div className="flex items-center space-x-2 ml-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePreviousPage}
+                disabled={currentPage === 1}
+              >
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+              >
+                Siguiente
+              </Button>
+            </div>
+          </CardFooter>
         </Card>
       </div>
       <SendReportByEmailDialog
