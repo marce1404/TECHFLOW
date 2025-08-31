@@ -5,7 +5,7 @@ import { useWorkOrders } from "@/context/work-orders-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import * as React from "react";
 import type { WorkOrder } from "@/lib/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import AdvancedFilters, { type Filters } from '@/components/orders/advanced-filters';
 
@@ -83,7 +83,8 @@ export default function HistoryPage() {
         <div className="flex flex-col gap-8">
             <Card>
                 <CardHeader>
-                    <CardTitle>Historial de Órdenes de Trabajo</CardTitle>
+                    <CardTitle>Filtros Avanzados del Historial</CardTitle>
+                    <CardDescription>Usa los filtros para encontrar órdenes de trabajo antiguas.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <AdvancedFilters onFilterChange={setFilters} />

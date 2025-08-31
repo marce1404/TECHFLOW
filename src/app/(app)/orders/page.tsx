@@ -88,7 +88,7 @@ export default function ActiveOrdersPage() {
             <Card>
                 <CardHeader>
                     <div className="flex items-center justify-between">
-                         <CardTitle>Órdenes de Trabajo Activas</CardTitle>
+                         <CardTitle>Filtros Avanzados</CardTitle>
                          {canCreate && (
                              <Button asChild>
                                 <Link href="/orders/new">

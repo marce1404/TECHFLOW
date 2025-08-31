@@ -71,10 +71,10 @@ export default function AppSidebar() {
       exact: true,
     },
     {
-      href: '/',
+      href: '/orders',
       label: 'OTs Activas',
       icon: File,
-      exact: true, 
+      exact: false, // Match /orders and /orders/new, etc.
       subItems: [
         { href: '/orders/history', label: 'Historial', icon: History }
       ]
@@ -127,6 +127,7 @@ export default function AppSidebar() {
 
   const isActive = (href: string, isExact: boolean = true) => {
     if (isExact) {
+        // Exact match for root should only be active on root
         if (href === '/') return pathname === '/';
         return pathname === href;
     }
@@ -134,8 +135,9 @@ export default function AppSidebar() {
     if (href === '/reports') {
         return pathname.startsWith('/reports') && !pathname.startsWith('/reports/history');
     }
-    if (href === '/') {
-        return pathname.startsWith('/orders');
+    if (href === '/orders') {
+        // Make this active for /orders, /orders/new, /orders/[id]/edit, but not for /orders/history
+        return pathname.startsWith('/orders') && !pathname.startsWith('/orders/history');
     }
     return pathname.startsWith(href);
   };
@@ -257,7 +259,7 @@ export default function AppSidebar() {
                     <span>{item.label}</span>
                   </Link>
                 </SidebarMenuButton>
-                 {item.subItems && isActive('/', false) && (
+                 {item.subItems && isActive('/orders', false) && (
                     <SidebarMenuSub>
                         {item.subItems.map(subItem => (
                             <SidebarMenuSubItem key={subItem.href}>
