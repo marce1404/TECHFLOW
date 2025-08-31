@@ -26,7 +26,7 @@ async function getGanttForPrint(ganttId: string): Promise<GanttChart | null> {
             if (task.startDate && task.startDate.seconds) { 
                 convertedDate = new Timestamp(task.startDate.seconds, task.startDate.nanoseconds).toDate();
             } else if (task.startDate && typeof task.startDate === 'string') {
-                convertedDate = new Date(task.startDate.includes('T') ? task.startDate : task.startDate.replace(/-/g, '/'));
+                convertedDate = new Date(task.startDate.replace(/-/g, '/'));
             } else if (task.startDate) {
                 convertedDate = new Date(task.startDate)
             }

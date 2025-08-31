@@ -141,57 +141,54 @@ export default function DashboardPage() {
   }
 
   return (
-    <div ref={dashboardRef} className={cn("flex flex-1 flex-col bg-background", isFullscreen && "h-screen")}>
-      <div className={cn("flex flex-1 flex-col gap-8 p-1", isFullscreen && "overflow-y-auto")}>
-         <div className="flex items-center justify-between pr-4">
-            <div className="flex items-center gap-4">
-                 {count > 1 && !isFullscreen && (
-                    <div className="text-sm text-muted-foreground ml-4">
-                        Página {current} de {count}
+     <div ref={dashboardRef} className={cn("flex flex-1 flex-col bg-background", isFullscreen && "h-screen")}>
+        <div className={cn("flex-1 p-4 sm:p-6 lg:p-8", isFullscreen && "overflow-y-auto")}>
+            <div className="flex items-center justify-between pr-4">
+                <div className="flex items-center gap-4">
+                    {count > 1 && !isFullscreen && (
+                        <div className="text-sm text-muted-foreground ml-4">
+                            Página {current} de {count}
+                        </div>
+                    )}
+                </div>
+                <Button onClick={toggleFullscreen} variant="outline" size="icon">
+                    {isFullscreen ? <Shrink className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
+                    <span className="sr-only">{isFullscreen ? 'Salir de pantalla completa' : 'Ver en pantalla completa'}</span>
+                </Button>
+            </div>
+            {chunkedOrders.length > 0 ? (
+            <Carousel setApi={setApi} className="w-full mt-4">
+                <CarouselContent>
+                {chunkedOrders.map((page, index) => (
+                    <CarouselItem key={index}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {page.map(order => (
+                        <OrderCard key={order.id} order={order} progress={getProgress(order)} />
+                        ))}
+                        {index === 0 && <ClosedOrdersCard orders={closedOrdersThisMonth} />}
                     </div>
-                 )}
+                    </CarouselItem>
+                ))}
+                </CarouselContent>
+                {count > 1 && !isFullscreen && (
+                    <>
+                        <CarouselPrevious className="left-[-5px]" />
+                        <CarouselNext className="right-[-5px]" />
+                    </>
+                )}
+            </Carousel>
+            ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
+                <div className="col-span-full flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
+                <p className="text-muted-foreground">No hay órdenes de trabajo activas.</p>
+                </div>
+                <ClosedOrdersCard orders={closedOrdersThisMonth} />
             </div>
-            <Button onClick={toggleFullscreen} variant="outline" size="icon">
-                {isFullscreen ? <Shrink className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
-                <span className="sr-only">{isFullscreen ? 'Salir de pantalla completa' : 'Ver en pantalla completa'}</span>
-            </Button>
+            )}
         </div>
-        {chunkedOrders.length > 0 ? (
-          <Carousel setApi={setApi} className="w-full">
-            <CarouselContent>
-              {chunkedOrders.map((page, index) => (
-                <CarouselItem key={index}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {page.map(order => (
-                      <OrderCard key={order.id} order={order} progress={getProgress(order)} />
-                    ))}
-                    {index === 0 && <ClosedOrdersCard orders={closedOrdersThisMonth} />}
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-             {count > 1 && !isFullscreen && (
-                <>
-                    <CarouselPrevious className="left-[-5px]" />
-                    <CarouselNext className="right-[-5px]" />
-                </>
-             )}
-          </Carousel>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            <div className="col-span-full flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
-              <p className="text-muted-foreground">No hay órdenes de trabajo activas.</p>
-            </div>
-            <ClosedOrdersCard orders={closedOrdersThisMonth} />
-          </div>
-        )}
-      </div>
-       <footer className={cn(
-            "w-full bg-background shrink-0", 
-            !isFullscreen && "fixed bottom-0 left-0 right-0 z-20 peer-data-[state=expanded]:peer-data-[side=left]:pl-[16rem] peer-data-[state=expanded]:peer-data-[side=right]:pr-[16rem] peer-data-[collapsible=icon]:peer-data-[state=expanded]:pl-[16rem] md:peer-data-[state=collapsed]:peer-data-[collapsible=icon]:pl-[3.5rem] transition-[padding] ease-linear"
-        )}>
-        <MotivationalTicker />
-      </footer>
+        <footer className={cn("w-full bg-background shrink-0")}>
+            <MotivationalTicker />
+        </footer>
     </div>
   );
 }
