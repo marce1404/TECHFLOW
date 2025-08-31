@@ -38,50 +38,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
   
-  const syncFirebaseAuthToFirestore = useCallback(async () => {
-    try {
-      const authUsersResult = await listUsers();
-      if (!authUsersResult.success) {
-        console.error("Failed to list Auth users:", authUsersResult.message);
-        return;
-      }
-
-      const authUsers = authUsersResult.users || [];
-      const firestoreUsersSnapshot = await getDocs(collection(db, 'users'));
-      const firestoreUsersMap = new Map(firestoreUsersSnapshot.docs.map(doc => [doc.id, doc.data() as AppUser]));
-
-      const batch = writeBatch(db);
-      let writes = 0;
-
-      for (const authUser of authUsers) {
-        if (!firestoreUsersMap.has(authUser.uid)) {
-          console.log(`Creating missing Firestore profile for UID: ${authUser.uid}`);
-          const newUserProfile: AppUser = {
-            uid: authUser.uid,
-            email: authUser.email!,
-            displayName: authUser.displayName || authUser.email!.split('@')[0],
-            role: 'Visor',
-            status: authUser.disabled ? 'Inactivo' : 'Activo',
-          };
-          const userDocRef = doc(db, "users", authUser.uid);
-          batch.set(userDocRef, newUserProfile);
-          writes++;
-        }
-      }
-
-      if (writes > 0) {
-        await batch.commit();
-        console.log(`Batch committed. ${writes} new user profiles created in Firestore.`);
-      }
-    } catch (error) {
-      console.error("Error during FirebaseAuth to Firestore sync:", error);
-    }
-  }, []);
-
   useEffect(() => {
     const initializeApp = async () => {
         setLoading(true);
-        await syncFirebaseAuthToFirestore();
+        // Fetch users from Firestore. Server actions will handle auth users separately.
         await fetchUsers();
         // The onAuthStateChanged listener will handle setting the current user.
         // We set loading to false in the auth state listener.
@@ -97,9 +57,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (userDocSnap.exists()) {
           setUserProfile(userDocSnap.data() as AppUser);
         } else {
-          // This case might happen if Firestore profile creation failed.
-          // It's already handled by the sync logic, but as a fallback:
-          setUserProfile(null);
+          // If profile doesn't exist, create it.
+          // This happens for the first login of a user created via Admin SDK.
+          try {
+            const newUserProfile: AppUser = {
+              uid: currentUser.uid,
+              email: currentUser.email!,
+              displayName: currentUser.displayName || currentUser.email!.split('@')[0],
+              role: 'Visor', 
+              status: 'Activo',
+            };
+            await setDoc(userDocRef, newUserProfile);
+            setUserProfile(newUserProfile);
+            await fetchUsers(); // Re-fetch users list after creating a new profile
+          } catch (error) {
+             console.error("Error creating user profile in Firestore:", error);
+             setUserProfile(null);
+          }
         }
       } else {
         setUserProfile(null);
@@ -109,7 +83,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => unsubscribe();
-  }, [fetchUsers, syncFirebaseAuthToFirestore]);
+  }, [fetchUsers]);
 
   if (loading) {
     return (
