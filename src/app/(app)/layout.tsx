@@ -15,7 +15,7 @@ export default function AppProtectedLayout({
   return (
     <div className="flex flex-col min-h-screen">
         <AppLayout>
-            <div className={`flex-1 ${isDashboard ? '' : 'pb-8'}`}>
+            <div className={`flex-1 ${isDashboard ? '' : 'p-4 sm:p-6 lg:p-8'}`}>
              {children}
             </div>
         </AppLayout>

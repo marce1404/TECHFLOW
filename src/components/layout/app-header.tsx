@@ -61,7 +61,7 @@ export default function AppHeader() {
     if (pathname.startsWith('/vehicles')) return 'Vehículos';
     if (pathname.startsWith('/ai-tools')) return 'Asistente IA';
     if (pathname.startsWith('/settings')) return 'Configuración';
-    return 'Dashboard';
+    return 'Órdenes de Trabajo';
   };
 
   return (

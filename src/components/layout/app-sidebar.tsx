@@ -121,7 +121,7 @@ export default function AppSidebar() {
     href: '/settings',
     label: 'Configuración',
     icon: Settings,
-    exact: true
+    exact: false
   };
 
 
