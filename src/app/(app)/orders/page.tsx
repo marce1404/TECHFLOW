@@ -1,7 +1,7 @@
 
 'use client';
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, ChevronsUpDown } from "lucide-react";
 import OrdersTable from "@/components/orders/orders-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
@@ -11,6 +11,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useAuth } from "@/context/auth-context";
 import AdvancedFilters, { type Filters } from '@/components/orders/advanced-filters';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export default function ActiveOrdersPage() {
     const { activeWorkOrders, otCategories } = useWorkOrders();
@@ -25,6 +26,7 @@ export default function ActiveOrdersPage() {
       priority: '',
       dateRange: { from: undefined, to: undefined },
     });
+    const [isFilterOpen, setIsFilterOpen] = React.useState(false);
     
     const canCreate = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
 
@@ -86,22 +88,34 @@ export default function ActiveOrdersPage() {
     return (
         <div className="flex flex-col gap-8">
             <Card>
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                         <CardTitle>Filtros Avanzados</CardTitle>
-                         {canCreate && (
-                             <Button asChild>
-                                <Link href="/orders/new">
-                                    <PlusCircle className="mr-2 h-4 w-4" />
-                                    Nueva OT
-                                </Link>
-                            </Button>
-                        )}
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <AdvancedFilters onFilterChange={setFilters} />
-                </CardContent>
+                <Collapsible open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <CollapsibleTrigger asChild>
+                                    <Button variant="ghost" size="sm">
+                                        <ChevronsUpDown className="h-4 w-4" />
+                                        <span className="sr-only">Toggle</span>
+                                    </Button>
+                                </CollapsibleTrigger>
+                                <CardTitle>Filtros Avanzados</CardTitle>
+                            </div>
+                            {canCreate && (
+                                <Button asChild>
+                                    <Link href="/orders/new">
+                                        <PlusCircle className="mr-2 h-4 w-4" />
+                                        Nueva OT
+                                    </Link>
+                                </Button>
+                            )}
+                        </div>
+                    </CardHeader>
+                    <CollapsibleContent>
+                        <CardContent>
+                            <AdvancedFilters onFilterChange={setFilters} />
+                        </CardContent>
+                    </CollapsibleContent>
+                </Collapsible>
             </Card>
             
             <Tabs value={activeTab} onValueChange={filterOrders}>

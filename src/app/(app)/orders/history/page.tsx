@@ -8,6 +8,9 @@ import type { WorkOrder } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import AdvancedFilters, { type Filters } from '@/components/orders/advanced-filters';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Button } from "@/components/ui/button";
+import { ChevronsUpDown } from "lucide-react";
 
 
 export default function HistoryPage() {
@@ -22,6 +25,7 @@ export default function HistoryPage() {
       priority: '',
       dateRange: { from: undefined, to: undefined },
     });
+    const [isFilterOpen, setIsFilterOpen] = React.useState(false);
 
 
     const filterOrders = (categoryPrefix: string | null) => {
@@ -81,14 +85,28 @@ export default function HistoryPage() {
 
     return (
         <div className="flex flex-col gap-8">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Filtros Avanzados del Historial</CardTitle>
-                    <CardDescription>Usa los filtros para encontrar órdenes de trabajo antiguas.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <AdvancedFilters onFilterChange={setFilters} />
-                </CardContent>
+             <Card>
+                <Collapsible open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                    <CardHeader>
+                         <div className="flex items-center gap-2">
+                            <CollapsibleTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                    <ChevronsUpDown className="h-4 w-4" />
+                                    <span className="sr-only">Toggle</span>
+                                </Button>
+                            </CollapsibleTrigger>
+                            <div>
+                                <CardTitle>Filtros Avanzados del Historial</CardTitle>
+                                <CardDescription>Usa los filtros para encontrar órdenes de trabajo antiguas.</CardDescription>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CollapsibleContent>
+                        <CardContent>
+                            <AdvancedFilters onFilterChange={setFilters} />
+                        </CardContent>
+                    </CollapsibleContent>
+                </Collapsible>
             </Card>
 
             <Tabs value={activeTab} onValueChange={filterOrders}>
