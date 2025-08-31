@@ -2,39 +2,39 @@
 import * as admin from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
 import * as dotenv from 'dotenv';
-import { doc, getFirestore } from 'firebase-admin/firestore';
-import { GoogleAuth } from 'google-auth-library';
+import { getFirestore } from 'firebase-admin/firestore';
 
 dotenv.config();
 
 let adminApp: admin.app.App;
 
-if (admin.apps.length === 0) {
-    // Try to initialize with application default credentials first
+if (!admin.apps.length) {
+    // In a managed environment like Cloud Run, App Engine, or Firebase Hosting with server-side functions,
+    // initializeApp() with no arguments will use Application Default Credentials.
     try {
         adminApp = admin.initializeApp();
-    } catch (e) {
-        console.log('Could not initialize with default credentials, trying service account from ENV.', e);
-        // Fallback to service account from environment variable if default fails
+    } catch (error) {
+        console.error("Firebase admin initialization error", error);
+        // Fallback for local development if GOOGLE_APPLICATION_CREDENTIALS is set
         const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-        if (!serviceAccountBase64) {
-            throw new Error("Firebase service account JSON not found in environment variables. Please set FIREBASE_SERVICE_ACCOUNT_JSON.");
-        }
-        try {
-            const serviceAccountString = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
-            const serviceAccount = JSON.parse(serviceAccountString);
-            adminApp = admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount),
-            });
-        } catch (error) {
-            console.error("Error parsing Firebase service account JSON:", error);
-            throw new Error("Failed to initialize Firebase Admin SDK. Service account JSON is invalid.");
+        if (serviceAccountBase64) {
+             try {
+                const serviceAccountString = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
+                const serviceAccount = JSON.parse(serviceAccountString);
+                adminApp = admin.initializeApp({
+                    credential: admin.credential.cert(serviceAccount),
+                });
+             } catch (e) {
+                console.error("Failed to initialize Firebase Admin with service account from ENV var.", e);
+                throw new Error("Firebase Admin SDK initialization failed.");
+             }
+        } else {
+             throw new Error("Firebase Admin SDK initialization failed. No Application Default Credentials or service account found.");
         }
     }
 } else {
     adminApp = admin.apps[0]!;
 }
-
 
 const auth = getAuth(adminApp);
 const db = getFirestore(adminApp);
