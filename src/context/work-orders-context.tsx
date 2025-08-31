@@ -91,14 +91,13 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
   const [smtpConfig, setSmtpConfig] = useState<SmtpConfig | null>(null);
   const [loading, setLoading] = useState(true);
-  const { user, loading: authLoading, fetchUsers } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [orderToClose, setOrderToClose] = useState<WorkOrder | null>(null);
 
 
   const fetchData = useCallback(async () => {
-    // Prevent fetching if we are still in the auth loading phase or if there's no user
-    if (authLoading || !user) return;
-    
+    // This provider will only be rendered when the user is authenticated.
+    // So we can safely assume `user` is present.
     setLoading(true);
     try {
         const fetchAndSetSuggestedTasks = async () => {
@@ -236,8 +235,14 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    // Only fetch data if a user is authenticated
+    if (user && !authLoading) {
+      fetchData();
+    } else if (!authLoading) {
+      // If not loading and no user, set loading to false for this context too.
+      setLoading(false);
+    }
+  }, [user, authLoading, fetchData]);
 
   const getNextOtNumber = (prefix: string) => {
     const allOrders = [...activeWorkOrders, ...historicalWorkOrders];
@@ -515,7 +520,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const updateUserProfile = async (uid: string, data: Partial<Pick<AppUser, 'displayName' | 'role'>>) => {
     const userRef = doc(db, 'users', uid);
     await updateDoc(userRef, data);
-    await fetchUsers(); // Re-fetch all users to update the UI
+    // await fetchUsers(); // Re-fetch all users to update the UI
   };
 
 

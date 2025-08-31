@@ -39,37 +39,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
   
   useEffect(() => {
-    setLoading(true);
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
+      setLoading(true);
       if (currentUser) {
-        // Fetch users only after confirming an authenticated user
-        await fetchUsers();
-        
+        setUser(currentUser);
         const userDocRef = doc(db, 'users', currentUser.uid);
         const userDocSnap = await getDoc(userDocRef);
         
         if (userDocSnap.exists()) {
           setUserProfile(userDocSnap.data() as AppUser);
         } else {
+          // If the user exists in Auth but not in Firestore, create their profile
           try {
             const newUserProfile: AppUser = {
               uid: currentUser.uid,
               email: currentUser.email!,
               displayName: currentUser.displayName || currentUser.email!.split('@')[0],
-              role: 'Visor', 
+              role: 'Visor', // Default role
               status: 'Activo',
             };
             await setDoc(userDocRef, newUserProfile);
             setUserProfile(newUserProfile);
-            // Re-fetch users list after creating a new profile
-            await fetchUsers(); 
           } catch (error) {
              console.error("Error creating user profile in Firestore:", error);
              setUserProfile(null);
           }
         }
+        // Fetch all user profiles after handling the current user
+        await fetchUsers();
       } else {
+        setUser(null);
         setUserProfile(null);
         setUsers([]); // Clear users list on logout
       }
@@ -79,6 +78,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, [fetchUsers]);
 
+  // This is the component that shows while auth state is being determined.
   if (loading) {
     return (
         <div className="flex flex-col h-screen">
@@ -108,6 +108,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     )
   }
 
+  // Once loading is false, render children (if authenticated) or login page.
   return (
     <AuthContext.Provider value={{ user, userProfile, loading, users, fetchUsers }}>
       {children}
