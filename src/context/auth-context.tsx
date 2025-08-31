@@ -79,29 +79,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setUser(user);
-      if (user) {
-        // Sync Auth users to Firestore first
+    // This effect runs once on component mount to sync and fetch all users.
+    const initializeApp = async () => {
+        setLoading(true);
         await syncFirebaseAuthToFirestore();
-        
-        // Now fetch all users from Firestore
         await fetchUsers();
-        
-        // Get the current user's profile
-        const userDocRef = doc(db, 'users', user.uid);
+        // The onAuthStateChanged listener will handle setting the current user.
+        // We set loading to false in the auth state listener.
+    };
+    initializeApp();
+
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        const userDocRef = doc(db, 'users', currentUser.uid);
         const userDocSnap = await getDoc(userDocRef);
         
         if (userDocSnap.exists()) {
           setUserProfile(userDocSnap.data() as AppUser);
         } else {
-          // This case should be less frequent now, but kept as a fallback.
+          // This case might happen if Firestore profile creation failed.
+          // It's already handled by the sync logic, but as a fallback:
           setUserProfile(null);
         }
-
       } else {
         setUserProfile(null);
-        setUsers([]);
+        setUsers([]); // Clear users list on logout
       }
       setLoading(false);
     });
