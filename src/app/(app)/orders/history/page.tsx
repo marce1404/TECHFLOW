@@ -1,12 +1,11 @@
 
-
 'use client';
 import HistoricalOrdersTable from "@/components/orders/historical-orders-table";
 import { useWorkOrders } from "@/context/work-orders-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import * as React from "react";
 import type { WorkOrder } from "@/lib/types";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import AdvancedFilters, { type Filters } from '@/components/orders/advanced-filters';
 
@@ -83,10 +82,12 @@ export default function HistoryPage() {
     return (
         <div className="flex flex-col gap-8">
             <Card>
-                 <CardContent className="p-4 space-y-4">
-                    <h1 className="text-2xl font-semibold">Historial de Órdenes de Trabajo</h1>
+                <CardHeader>
+                    <CardTitle>Historial de Órdenes de Trabajo</CardTitle>
+                </CardHeader>
+                <CardContent>
                     <AdvancedFilters onFilterChange={setFilters} />
-                 </CardContent>
+                </CardContent>
             </Card>
 
             <Tabs value={activeTab} onValueChange={filterOrders}>

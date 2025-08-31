@@ -1,5 +1,4 @@
 
-
 'use client';
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
@@ -8,11 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { useWorkOrders } from "@/context/work-orders-context";
 import * as React from "react";
-import { Input } from "@/components/ui/input";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useAuth } from "@/context/auth-context";
 import AdvancedFilters, { type Filters } from '@/components/orders/advanced-filters';
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function ActiveOrdersPage() {
     const { activeWorkOrders, otCategories } = useWorkOrders();
@@ -88,9 +86,9 @@ export default function ActiveOrdersPage() {
     return (
         <div className="flex flex-col gap-8">
             <Card>
-                <CardContent className="p-4 space-y-4">
+                <CardHeader>
                     <div className="flex items-center justify-between">
-                         <h1 className="text-2xl font-semibold">Órdenes de Trabajo Activas</h1>
+                         <CardTitle>Órdenes de Trabajo Activas</CardTitle>
                          {canCreate && (
                              <Button asChild>
                                 <Link href="/orders/new">
@@ -100,7 +98,9 @@ export default function ActiveOrdersPage() {
                             </Button>
                         )}
                     </div>
-                     <AdvancedFilters onFilterChange={setFilters} />
+                </CardHeader>
+                <CardContent>
+                    <AdvancedFilters onFilterChange={setFilters} />
                 </CardContent>
             </Card>
             

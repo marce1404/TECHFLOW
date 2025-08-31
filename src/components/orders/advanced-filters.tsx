@@ -72,13 +72,13 @@ export default function AdvancedFilters({ onFilterChange }: AdvancedFiltersProps
     });
   };
 
-  const clients = React.useMemo(() => Array.from(new Set(allOrders.map(o => o.client))).sort(), [allOrders]);
+  const clients = React.useMemo(() => Array.from(new Set(allOrders.map(o => o.client).filter(Boolean))).sort(), [allOrders]);
   const technicians = React.useMemo(() => collaborators.filter(c => c.role === 'Técnico'), [collaborators]);
   const supervisors = React.useMemo(() => collaborators.filter(c => ['Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado'].includes(c.role)), [collaborators]);
   const priorities: WorkOrder['priority'][] = ['Baja', 'Media', 'Alta'];
 
   return (
-    <div className="flex flex-col gap-4 p-4 border rounded-lg bg-card">
+    <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Input
           placeholder="Buscar por Nº OT, descripción..."
