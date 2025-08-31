@@ -33,11 +33,13 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Slider } from "@/components/ui/slider";
+import { useAuth } from "@/context/auth-context";
 
 export default function EditOrderPage() {
   const params = useParams();
   const router = useRouter();
   const { getOrder, updateOrder, otCategories, services, collaborators, ganttCharts, otStatuses, vehicles, promptToCloseOrder, deleteOrder } = useWorkOrders();
+  const { userProfile } = useAuth();
   const orderId = params.id as string;
   
   const initialOrder = getOrder(orderId);
@@ -45,6 +47,8 @@ export default function EditOrderPage() {
   const [order, setOrder] = React.useState<WorkOrder | undefined>(initialOrder);
 
   const { toast } = useToast();
+  
+  const canEdit = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
 
   React.useEffect(() => {
     setOrder(initialOrder);
@@ -110,7 +114,7 @@ export default function EditOrderPage() {
 
 
   const handleUpdateOrder = async () => {
-    if (!order) return;
+    if (!order || !canEdit) return;
 
     await updateOrder(order.id, order);
 
@@ -130,7 +134,7 @@ export default function EditOrderPage() {
   };
   
   const handleDeleteOrder = async () => {
-    if (!order) return;
+    if (!order || !canEdit) return;
     await deleteOrder(order.id);
     toast({
         title: "Orden Eliminada",
@@ -156,11 +160,15 @@ export default function EditOrderPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <h1 className="text-2xl font-headline font-bold tracking-tight">
-        Editar Orden de Trabajo
-      </h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-headline font-bold tracking-tight">
+            Editar Orden de Trabajo
+        </h1>
+        {!canEdit && <p className="text-sm text-destructive font-medium">Modo de solo lectura.</p>}
+      </div>
 
       <Card>
+        <fieldset disabled={!canEdit}>
         <CardContent className="p-6">
           <div className="space-y-6">
             <div>
@@ -488,37 +496,40 @@ export default function EditOrderPage() {
                 </div>
             </div>
             </div>
+            </CardContent>
+            </fieldset>
 
-
-            <div className="flex justify-between items-center mt-8">
-                 <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="destructive">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Eliminar OT
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>¿Está seguro de que desea eliminar esta Orden de Trabajo?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Esta acción es permanente y no se puede deshacer. Se eliminará la OT "{order.ot_number} - {order.description}".
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDeleteOrder} className="bg-destructive hover:bg-destructive/90">
-                                Sí, eliminar
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-                <div className="flex gap-2">
-                    <Button variant="outline" asChild><Link href="/orders">Cancelar</Link></Button>
-                    <Button onClick={handleUpdateOrder}>Guardar Cambios</Button>
+            {canEdit && (
+                <div className="flex justify-between items-center mt-8">
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Eliminar OT
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>¿Está seguro de que desea eliminar esta Orden de Trabajo?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Esta acción es permanente y no se puede deshacer. Se eliminará la OT "{order.ot_number} - {order.description}".
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteOrder} className="bg-destructive hover:bg-destructive/90">
+                                    Sí, eliminar
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                    <div className="flex gap-2">
+                        <Button variant="outline" asChild><Link href="/orders">Cancelar</Link></Button>
+                        <Button onClick={handleUpdateOrder}>Guardar Cambios</Button>
+                    </div>
                 </div>
-            </div>
-        </CardContent>
+            )}
+        
       </Card>
     </div>
   );

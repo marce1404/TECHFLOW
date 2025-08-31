@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { cn, normalizeString } from '@/lib/utils';
+import { useAuth } from '@/context/auth-context';
 
 interface HistoricalOrdersTableProps {
     orders: WorkOrder[];
@@ -33,6 +34,9 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
   const { updateOrder, otStatuses, promptToCloseOrder } = useWorkOrders();
+  const { userProfile } = useAuth();
+
+  const canChangeStatus = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
 
    const getStatusVariant = (
     status: WorkOrder['status']
@@ -159,15 +163,13 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                           <TableCell>{order.comercial}</TableCell>
                           <TableCell>
                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" className="p-0 h-auto">
-                                        <Badge 
-                                            variant={getStatusVariant(order.status)} 
-                                            className={cn("cursor-pointer", getStatusBadgeClass(order.status))}
-                                        >
-                                            {order.status}
-                                        </Badge>
-                                    </Button>
+                                <DropdownMenuTrigger asChild disabled={!canChangeStatus}>
+                                    <Badge 
+                                        variant={getStatusVariant(order.status)} 
+                                        className={cn(canChangeStatus && "cursor-pointer", getStatusBadgeClass(order.status))}
+                                    >
+                                        {order.status}
+                                    </Badge>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
                                     {otStatuses.map(status => (

@@ -10,11 +10,15 @@ import { useWorkOrders } from "@/context/work-orders-context";
 import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { useAuth } from "@/context/auth-context";
 
 export default function ActiveOrdersPage() {
     const { activeWorkOrders, otCategories, otStatuses, fetchData } = useWorkOrders();
+    const { userProfile } = useAuth();
     const [search, setSearch] = React.useState('');
     const [activeTab, setActiveTab] = React.useState('todos');
+    
+    const canCreate = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
 
     const filterOrders = (categoryPrefix: string | null) => {
         setActiveTab(categoryPrefix || 'todos');
@@ -67,12 +71,14 @@ export default function ActiveOrdersPage() {
                             onChange={(e) => setSearch(e.target.value)}
                             className="w-full sm:max-w-sm"
                         />
-                        <Button asChild>
-                        <Link href="/orders/new">
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Nueva OT
-                        </Link>
-                        </Button>
+                        {canCreate && (
+                             <Button asChild>
+                                <Link href="/orders/new">
+                                    <PlusCircle className="mr-2 h-4 w-4" />
+                                    Nueva OT
+                                </Link>
+                            </Button>
+                        )}
                     </div>
                 </div>
             <TabsContent value={activeTab}>

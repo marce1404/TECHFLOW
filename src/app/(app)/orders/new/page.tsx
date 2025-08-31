@@ -3,7 +3,7 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -22,11 +22,15 @@ import { useWorkOrders } from "@/context/work-orders-context";
 import type { WorkOrder } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { Slider } from "@/components/ui/slider";
+import { useAuth } from "@/context/auth-context";
 
 export default function NewOrderPage() {
     const router = useRouter();
     const { toast } = useToast();
     const { otCategories, services, addOrder, getNextOtNumber, collaborators, otStatuses, vehicles } = useWorkOrders();
+    const { userProfile } = useAuth();
+    
+    const canCreate = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
 
     const [description, setDescription] = React.useState('');
     const [categoryPrefix, setCategoryPrefix] = React.useState('');
@@ -133,6 +137,17 @@ export default function NewOrderPage() {
   };
   
   const totalPrice = Math.round(netPrice * 1.19);
+  
+  if (!canCreate) {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Acceso Denegado</CardTitle>
+                <CardDescription>No tienes permisos para crear nuevas Órdenes de Trabajo.</CardDescription>
+            </CardHeader>
+        </Card>
+    )
+  }
 
 
   return (
