@@ -5,8 +5,9 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { collection, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, writeBatch } from 'firebase/firestore';
 import type { AppUser } from '@/lib/types';
+import { listUsers } from '@/app/actions';
 
 
 interface AuthContextType {
@@ -36,48 +37,67 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUsers([]);
     }
   }, []);
+  
+  const syncFirebaseAuthToFirestore = useCallback(async () => {
+    try {
+      const authUsersResult = await listUsers();
+      if (!authUsersResult.success) {
+        console.error("Failed to list Auth users:", authUsersResult.message);
+        return;
+      }
+
+      const authUsers = authUsersResult.users || [];
+      const firestoreUsersSnapshot = await getDocs(collection(db, 'users'));
+      const firestoreUsersMap = new Map(firestoreUsersSnapshot.docs.map(doc => [doc.id, doc.data() as AppUser]));
+
+      const batch = writeBatch(db);
+      let writes = 0;
+
+      for (const authUser of authUsers) {
+        if (!firestoreUsersMap.has(authUser.uid)) {
+          console.log(`Creating missing Firestore profile for UID: ${authUser.uid}`);
+          const newUserProfile: AppUser = {
+            uid: authUser.uid,
+            email: authUser.email!,
+            displayName: authUser.displayName || authUser.email!.split('@')[0],
+            role: 'Visor',
+            status: authUser.disabled ? 'Inactivo' : 'Activo',
+          };
+          const userDocRef = doc(db, "users", authUser.uid);
+          batch.set(userDocRef, newUserProfile);
+          writes++;
+        }
+      }
+
+      if (writes > 0) {
+        await batch.commit();
+        console.log(`Batch committed. ${writes} new user profiles created in Firestore.`);
+      }
+    } catch (error) {
+      console.error("Error during FirebaseAuth to Firestore sync:", error);
+    }
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (user) {
-        // Fetch existing users first
-        const usersCollection = collection(db, 'users');
-        const initialUsersSnapshot = await getDocs(usersCollection);
-        const initialUsersList = initialUsersSnapshot.docs.map(doc => doc.data() as AppUser);
-        setUsers(initialUsersList);
-
+        // Sync Auth users to Firestore first
+        await syncFirebaseAuthToFirestore();
+        
+        // Now fetch all users from Firestore
+        await fetchUsers();
+        
+        // Get the current user's profile
         const userDocRef = doc(db, 'users', user.uid);
         const userDocSnap = await getDoc(userDocRef);
         
-        let profileData: AppUser | null = null;
-
         if (userDocSnap.exists()) {
-          profileData = userDocSnap.data() as AppUser;
+          setUserProfile(userDocSnap.data() as AppUser);
         } else {
-          // If the user is authenticated but doesn't have a profile in Firestore,
-          // create a default one. This is crucial for users created manually in Firebase Auth.
-          console.log(`No profile found for UID ${user.uid}, creating one.`);
-          const newProfile: AppUser = {
-            uid: user.uid,
-            email: user.email!,
-            displayName: user.displayName || user.email!.split('@')[0],
-            // Default to 'Visor' role for safety. First user should be made Admin manually or via setup script.
-            role: 'Visor', 
-            status: 'Activo',
-          };
-          try {
-            await setDoc(userDocRef, newProfile);
-            profileData = newProfile;
-            // Add the new profile to the local users list to update UI immediately
-            setUsers(prev => [...prev.filter(p => p.uid !== newProfile.uid), newProfile]);
-          } catch (error) {
-             console.error("Error creating Firestore user profile:", error);
-             profileData = null;
-          }
+          // This case should be less frequent now, but kept as a fallback.
+          setUserProfile(null);
         }
-        
-        setUserProfile(profileData);
 
       } else {
         setUserProfile(null);
@@ -87,7 +107,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [fetchUsers, syncFirebaseAuthToFirestore]);
 
   if (loading) {
     return (

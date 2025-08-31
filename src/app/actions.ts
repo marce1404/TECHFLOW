@@ -9,7 +9,7 @@ import {
   CreateWorkOrderInput,
 } from '@/lib/types';
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
-import { db as adminDb } from '@/lib/firebase-admin';
+import { db as adminDb, auth as adminAuth } from '@/lib/firebase-admin';
 import nodemailer from 'nodemailer';
 import * as xlsx from 'xlsx';
 import {
@@ -18,8 +18,19 @@ import {
   toggleUserStatusAction as toggleUserStatusActionAdmin,
   updateUserAction as updateUserActionAdmin,
 } from '@/lib/firebase-admin';
+import type { UserRecord } from 'firebase-admin/auth';
 
 // --- Server Actions ---
+
+export async function listUsers(): Promise<{ success: boolean; users?: UserRecord[]; message?: string }> {
+  try {
+    const userRecords = await adminAuth.listUsers();
+    return { success: true, users: userRecords.users };
+  } catch (error: any) {
+    console.error('Error listing users:', error);
+    return { success: false, message: error.message || 'Error al listar los usuarios.' };
+  }
+}
 
 export async function getResourceSuggestions(
   input: SuggestOptimalResourceAssignmentInput
