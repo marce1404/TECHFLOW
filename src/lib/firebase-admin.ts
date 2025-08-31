@@ -62,12 +62,26 @@ export async function updateUserAction(uid: string, data: { displayName: string;
             displayName: data.displayName,
             disabled: data.status === 'Inactivo',
         });
+
         const userDocRef = db.collection('users').doc(uid);
         await userDocRef.update({
             displayName: data.displayName,
             role: data.role,
             status: data.status,
         });
+
+        const collaboratorsQuery = db.collection('collaborators').where('email', '==', (await auth.getUser(uid)).email);
+        const collaboratorsSnapshot = await collaboratorsQuery.get();
+        
+        if (!collaboratorsSnapshot.empty) {
+            const collaboratorDocRef = collaboratorsSnapshot.docs[0].ref;
+            await collaboratorDocRef.update({
+                name: data.displayName,
+                role: data.role,
+                status: data.status,
+            });
+        }
+        
         return { success: true, message: 'Usuario actualizado correctamente.' };
     } catch (error: any) {
         console.error('Error updating user:', error);
@@ -90,6 +104,9 @@ export async function toggleUserStatusAction(uid: string, currentStatus: 'Activo
   try {
     const newStatus = currentStatus === 'Activo' ? 'Inactivo' : 'Activo';
     await auth.updateUser(uid, { disabled: newStatus === 'Inactivo' });
+    
+    const userDocRef = db.collection('users').doc(uid);
+    await userDocRef.update({ status: newStatus });
         
     return { success: true, message: 'Estado del usuario actualizado correctamente.' };
   } catch (error: any) {

@@ -42,7 +42,6 @@ import { useWorkOrders } from '@/context/work-orders-context';
 
 export default function UsersTable() {
     const { user: currentUser, users, loading, fetchUsers } = useAuth();
-    const { updateUserProfile } = useWorkOrders();
     const { toast } = useToast();
     const [selectedUser, setSelectedUser] = React.useState<AppUser | null>(null);
     const [editDialogOpen, setEditDialogOpen] = React.useState(false);
@@ -87,14 +86,14 @@ export default function UsersTable() {
     }
 
     const handleToggleStatus = async (user: AppUser) => {
-        const newStatus = user.status === 'Activo' ? 'Inactivo' : 'Activo';
+        const result = await toggleUserStatusAction(user.uid, user.status);
         
-        await toggleUserStatusAction(user.uid, user.status);
-        await updateUserProfile(user.uid, { status: newStatus });
-        
-        toast({ title: 'Éxito', description: `El estado de ${user.displayName} ha sido actualizado.` });
-        
-        // No need to call fetchUsers manually, context will update
+        if(result.success) {
+            toast({ title: 'Éxito', description: `El estado de ${user.displayName} ha sido actualizado.` });
+            await fetchUsers(); // Re-fetch all users to update the UI
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: result.message });
+        }
     }
 
     if (loading) {
