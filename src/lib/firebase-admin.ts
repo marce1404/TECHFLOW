@@ -9,27 +9,25 @@ dotenv.config();
 let adminApp: admin.app.App;
 
 if (!admin.apps.length) {
-    // In a managed environment like Cloud Run, App Engine, or Firebase Hosting with server-side functions,
-    // initializeApp() with no arguments will use Application Default Credentials.
-    try {
-        adminApp = admin.initializeApp();
-    } catch (error) {
-        console.error("Firebase admin initialization error", error);
-        // Fallback for local development if GOOGLE_APPLICATION_CREDENTIALS is set
-        const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-        if (serviceAccountBase64) {
-             try {
-                const serviceAccountString = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
-                const serviceAccount = JSON.parse(serviceAccountString);
-                adminApp = admin.initializeApp({
-                    credential: admin.credential.cert(serviceAccount),
-                });
-             } catch (e) {
-                console.error("Failed to initialize Firebase Admin with service account from ENV var.", e);
-                throw new Error("Firebase Admin SDK initialization failed.");
-             }
-        } else {
-             throw new Error("Firebase Admin SDK initialization failed. No Application Default Credentials or service account found.");
+    const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    if (serviceAccountBase64) {
+        try {
+            const serviceAccountString = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
+            const serviceAccount = JSON.parse(serviceAccountString);
+            adminApp = admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount),
+            });
+        } catch (e) {
+            console.error("Failed to initialize Firebase Admin with service account from ENV var.", e);
+            throw new Error("Firebase Admin SDK initialization failed due to a malformed service account JSON.");
+        }
+    } else {
+        // Fallback for environments with Application Default Credentials
+        try {
+            adminApp = admin.initializeApp();
+        } catch (error) {
+            console.error("Firebase admin initialization error", error);
+            throw new Error("Firebase Admin SDK initialization failed. No Application Default Credentials or service account JSON found.");
         }
     }
 } else {
