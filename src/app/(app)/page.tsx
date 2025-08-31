@@ -141,7 +141,7 @@ export default function DashboardPage() {
   }
 
   return (
-     <div ref={dashboardRef} className={cn("flex flex-1 flex-col bg-background", isFullscreen && "h-screen")}>
+     <div ref={dashboardRef} className={cn("flex flex-1 flex-col bg-background h-full", isFullscreen && "h-screen")}>
         <div className={cn("flex-1 p-4 sm:p-6 lg:p-8", isFullscreen && "overflow-y-auto")}>
             <div className="flex items-center justify-between pr-4">
                 <div className="flex items-center gap-4">
