@@ -39,26 +39,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
   
   useEffect(() => {
-    const initializeApp = async () => {
-        setLoading(true);
-        // Fetch users from Firestore. Server actions will handle auth users separately.
-        await fetchUsers();
-        // The onAuthStateChanged listener will handle setting the current user.
-        // We set loading to false in the auth state listener.
-    };
-    initializeApp();
-
+    setLoading(true);
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
+        // Fetch users only after confirming an authenticated user
+        await fetchUsers();
+        
         const userDocRef = doc(db, 'users', currentUser.uid);
         const userDocSnap = await getDoc(userDocRef);
         
         if (userDocSnap.exists()) {
           setUserProfile(userDocSnap.data() as AppUser);
         } else {
-          // If profile doesn't exist, create it.
-          // This happens for the first login of a user created via Admin SDK.
           try {
             const newUserProfile: AppUser = {
               uid: currentUser.uid,
@@ -69,7 +62,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             };
             await setDoc(userDocRef, newUserProfile);
             setUserProfile(newUserProfile);
-            await fetchUsers(); // Re-fetch users list after creating a new profile
+            // Re-fetch users list after creating a new profile
+            await fetchUsers(); 
           } catch (error) {
              console.error("Error creating user profile in Firestore:", error);
              setUserProfile(null);
