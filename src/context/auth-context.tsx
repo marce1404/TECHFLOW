@@ -49,13 +49,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (userDocSnap.exists()) {
           setUserProfile(userDocSnap.data() as AppUser);
         } else {
-          // If the user exists in Auth but not in Firestore, create their profile
           try {
             const newUserProfile: AppUser = {
               uid: currentUser.uid,
               email: currentUser.email!,
               displayName: currentUser.displayName || currentUser.email!.split('@')[0],
-              role: 'Visor', // Default role
+              role: 'Visor',
               status: 'Activo',
             };
             await setDoc(userDocRef, newUserProfile);
@@ -65,12 +64,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
              setUserProfile(null);
           }
         }
-        // Fetch all user profiles after handling the current user
         await fetchUsers();
       } else {
         setUser(null);
         setUserProfile(null);
-        setUsers([]); // Clear users list on logout
+        setUsers([]);
       }
       setLoading(false);
     });
@@ -78,37 +76,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, [fetchUsers]);
 
-  // This is the component that shows while auth state is being determined.
-  if (loading) {
-    return (
-        <div className="flex flex-col h-screen">
-            <div className="flex items-center justify-between p-4 border-b">
-                <Skeleton className="h-8 w-32" />
-                <Skeleton className="h-10 w-10 rounded-full" />
-            </div>
-            <div className="flex flex-1">
-                <div className="w-64 p-4 border-r">
-                    <div className="space-y-4">
-                        {[...Array(6)].map((_, i) => (
-                            <Skeleton key={i} className="h-10 w-full" />
-                        ))}
-                    </div>
-                </div>
-                <div className="flex-1 p-8">
-                    <Skeleton className="h-12 w-1/2 mb-8" />
-                    <div className="grid grid-cols-5 gap-4">
-                         {[...Array(5)].map((_, i) => (
-                            <Skeleton key={i} className="h-28 w-full" />
-                        ))}
-                    </div>
-                     <Skeleton className="h-96 w-full mt-8" />
-                </div>
-            </div>
-        </div>
-    )
-  }
 
-  // Once loading is false, render children (if authenticated) or login page.
   return (
     <AuthContext.Provider value={{ user, userProfile, loading, users, fetchUsers }}>
       {children}
