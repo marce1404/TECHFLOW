@@ -19,11 +19,12 @@ export default function ActiveOrdersPage() {
     const [activeTab, setActiveTab] = React.useState('todos');
     const [filters, setFilters] = React.useState<Filters>({
       search: '',
-      client: '',
-      service: '',
-      technician: '',
-      supervisor: '',
-      priority: '',
+      clients: [],
+      services: [],
+      technicians: [],
+      supervisors: [],
+      priorities: [],
+      statuses: [],
       dateRange: { from: undefined, to: undefined },
     });
     const [isFilterOpen, setIsFilterOpen] = React.useState(false);
@@ -48,20 +49,23 @@ export default function ActiveOrdersPage() {
                 order.description.toLowerCase().includes(filters.search.toLowerCase())
             );
         }
-        if (filters.client && filters.client !== 'all') {
-            orders = orders.filter(order => order.client === filters.client);
+        if (filters.clients.length > 0) {
+            orders = orders.filter(order => filters.clients.includes(order.client));
         }
-        if (filters.service && filters.service !== 'all') {
-            orders = orders.filter(order => order.service === filters.service);
+        if (filters.services.length > 0) {
+            orders = orders.filter(order => filters.services.includes(order.service));
         }
-        if (filters.technician && filters.technician !== 'all') {
-            orders = orders.filter(order => order.technicians.includes(filters.technician));
+        if (filters.technicians.length > 0) {
+            orders = orders.filter(order => order.technicians.some(t => filters.technicians.includes(t)));
         }
-        if (filters.supervisor && filters.supervisor !== 'all') {
-            orders = orders.filter(order => order.assigned.includes(filters.supervisor));
+        if (filters.supervisors.length > 0) {
+            orders = orders.filter(order => order.assigned.some(s => filters.supervisors.includes(s)));
         }
-        if (filters.priority && filters.priority !== 'all') {
-            orders = orders.filter(order => order.priority === filters.priority);
+        if (filters.priorities.length > 0) {
+            orders = orders.filter(order => filters.priorities.includes(order.priority));
+        }
+        if (filters.statuses.length > 0) {
+            orders = orders.filter(order => filters.statuses.includes(order.status));
         }
         if (filters.dateRange.from) {
             orders = orders.filter(order => new Date(order.date.replace(/-/g, '/')) >= filters.dateRange.from!);

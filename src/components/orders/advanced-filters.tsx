@@ -4,17 +4,9 @@
 import * as React from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { MixerHorizontalIcon, CalendarIcon } from '@radix-ui/react-icons';
+import { CalendarIcon } from '@radix-ui/react-icons';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { DateRange } from 'react-day-picker';
 import { format } from 'date-fns';
@@ -22,37 +14,44 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';
 import type { WorkOrder } from '@/lib/types';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { MultiSelect } from '../ui/multi-select';
 
 export type Filters = {
   search: string;
-  client: string;
-  service: string;
-  technician: string;
-  supervisor: string;
-  priority: WorkOrder['priority'] | '' | 'all';
+  clients: string[];
+  services: string[];
+  technicians: string[];
+  supervisors: string[];
+  priorities: string[];
+  statuses: string[];
   dateRange: DateRange;
 };
 
 interface AdvancedFiltersProps {
   onFilterChange: (filters: Filters) => void;
+  isHistory?: boolean;
 }
 
-export default function AdvancedFilters({ onFilterChange }: AdvancedFiltersProps) {
-  const { services, collaborators, activeWorkOrders, historicalWorkOrders } = useWorkOrders();
+export default function AdvancedFilters({ onFilterChange, isHistory = false }: AdvancedFiltersProps) {
+  const { services, collaborators, activeWorkOrders, historicalWorkOrders, otStatuses } = useWorkOrders();
   const allOrders = [...activeWorkOrders, ...historicalWorkOrders];
   
   const [filters, setFilters] = React.useState<Filters>({
     search: '',
-    client: 'all',
-    service: 'all',
-    technician: 'all',
-    supervisor: 'all',
-    priority: 'all',
+    clients: [],
+    services: [],
+    technicians: [],
+    supervisors: [],
+    priorities: [],
+    statuses: [],
     dateRange: { from: undefined, to: undefined },
   });
 
-  const handleInputChange = <K extends keyof Filters>(key: K, value: Filters[K]) => {
+  const handleMultiSelectChange = (key: keyof Filters, value: string[]) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleInputChange = (key: keyof Filters, value: any) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
@@ -63,19 +62,23 @@ export default function AdvancedFilters({ onFilterChange }: AdvancedFiltersProps
   const clearFilters = () => {
     setFilters({
       search: '',
-      client: 'all',
-      service: 'all',
-      technician: 'all',
-      supervisor: 'all',
-      priority: 'all',
+      clients: [],
+      services: [],
+      technicians: [],
+      supervisors: [],
+      priorities: [],
+      statuses: [],
       dateRange: { from: undefined, to: undefined },
     });
   };
 
-  const clients = React.useMemo(() => Array.from(new Set(allOrders.map(o => o.client).filter(Boolean))).sort(), [allOrders]);
-  const technicians = React.useMemo(() => collaborators.filter(c => c.role === 'Técnico'), [collaborators]);
-  const supervisors = React.useMemo(() => collaborators.filter(c => ['Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado'].includes(c.role)), [collaborators]);
-  const priorities: WorkOrder['priority'][] = ['Baja', 'Media', 'Alta'];
+  const clientOptions = React.useMemo(() => Array.from(new Set(allOrders.map(o => o.client).filter(Boolean))).sort().map(c => ({ value: c, label: c })), [allOrders]);
+  const serviceOptions = React.useMemo(() => services.map(s => ({ value: s.name, label: s.name })), [services]);
+  const technicianOptions = React.useMemo(() => collaborators.filter(c => c.role === 'Técnico').map(t => ({ value: t.name, label: t.name })), [collaborators]);
+  const supervisorOptions = React.useMemo(() => collaborators.filter(c => ['Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado'].includes(c.role)).map(s => ({ value: s.name, label: s.name })), [collaborators]);
+  const priorityOptions: { value: WorkOrder['priority'], label: string }[] = [{value: 'Baja', label: 'Baja'}, {value: 'Media', label: 'Media'}, {value: 'Alta', label: 'Alta'}];
+  const statusOptions = React.useMemo(() => otStatuses.map(s => ({ value: s.name, label: s.name })), [otStatuses]);
+
 
   return (
     <div className="space-y-4">
@@ -85,21 +88,7 @@ export default function AdvancedFilters({ onFilterChange }: AdvancedFiltersProps
           value={filters.search}
           onChange={(e) => handleInputChange('search', e.target.value)}
         />
-        <Select value={filters.client} onValueChange={(value) => handleInputChange('client', value)}>
-          <SelectTrigger><SelectValue placeholder="Filtrar por cliente..." /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los clientes</SelectItem>
-            {clients.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={filters.service} onValueChange={(value) => handleInputChange('service', value)}>
-          <SelectTrigger><SelectValue placeholder="Filtrar por servicio..." /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los servicios</SelectItem>
-            {services.map(s => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
-         <Popover>
+        <Popover>
             <PopoverTrigger asChild>
                 <Button
                     id="date"
@@ -132,33 +121,50 @@ export default function AdvancedFilters({ onFilterChange }: AdvancedFiltersProps
                 />
             </PopoverContent>
         </Popover>
+         <MultiSelect
+          options={clientOptions}
+          selected={filters.clients}
+          onChange={(value) => handleMultiSelectChange('clients', value)}
+          placeholder="Filtrar por cliente..."
+        />
+        <MultiSelect
+          options={serviceOptions}
+          selected={filters.services}
+          onChange={(value) => handleMultiSelectChange('services', value)}
+          placeholder="Filtrar por servicio..."
+        />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Select value={filters.technician} onValueChange={(value) => handleInputChange('technician', value)}>
-          <SelectTrigger><SelectValue placeholder="Filtrar por técnico..." /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los técnicos</SelectItem>
-            {technicians.map(t => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={filters.supervisor} onValueChange={(value) => handleInputChange('supervisor', value)}>
-          <SelectTrigger><SelectValue placeholder="Filtrar por encargado..." /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los encargados</SelectItem>
-            {supervisors.map(s => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={filters.priority} onValueChange={(value) => handleInputChange('priority', value as WorkOrder['priority'])}>
-          <SelectTrigger><SelectValue placeholder="Filtrar por prioridad..." /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas las prioridades</SelectItem>
-            {priorities.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Button variant="ghost" onClick={clearFilters}>
-          <X className="mr-2 h-4 w-4" />
-          Limpiar Filtros
-        </Button>
+        <MultiSelect
+          options={technicianOptions}
+          selected={filters.technicians}
+          onChange={(value) => handleMultiSelectChange('technicians', value)}
+          placeholder="Filtrar por técnico..."
+        />
+        <MultiSelect
+          options={supervisorOptions}
+          selected={filters.supervisors}
+          onChange={(value) => handleMultiSelectChange('supervisors', value)}
+          placeholder="Filtrar por encargado..."
+        />
+         <MultiSelect
+          options={priorityOptions}
+          selected={filters.priorities}
+          onChange={(value) => handleMultiSelectChange('priorities', value)}
+          placeholder="Filtrar por prioridad..."
+        />
+        <MultiSelect
+          options={statusOptions}
+          selected={filters.statuses}
+          onChange={(value) => handleMultiSelectChange('statuses', value)}
+          placeholder="Filtrar por estado..."
+        />
+      </div>
+      <div className="flex justify-end">
+          <Button variant="ghost" onClick={clearFilters}>
+            <X className="mr-2 h-4 w-4" />
+            Limpiar Todos los Filtros
+          </Button>
       </div>
     </div>
   );
