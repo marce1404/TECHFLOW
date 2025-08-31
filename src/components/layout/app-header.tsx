@@ -15,10 +15,31 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useSidebar } from './sidebar';
+import { signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AppHeader() {
   const pathname = usePathname();
   const { userProfile } = useAuth();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      toast({
+        title: 'Sesión Cerrada',
+        description: 'Has cerrado sesión exitosamente.',
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo cerrar la sesión. Inténtalo de nuevo.',
+      });
+    }
+  };
   
   const getInitials = (name?: string) => {
     if (!name) return 'U';
@@ -28,7 +49,7 @@ export default function AppHeader() {
   };
 
   const getPageTitle = () => {
-    if (pathname === '/') return 'OT ACTIVAS';
+    if (pathname === '/') return 'Dashboard';
     if (pathname.startsWith('/orders/history')) return 'Historial de Órdenes';
     if (pathname.startsWith('/orders/new')) return 'Nueva Orden de Trabajo';
     if (pathname.startsWith('/orders/')) return 'Detalle Orden de Trabajo';
@@ -60,7 +81,7 @@ export default function AppHeader() {
                     <Avatar className="h-8 w-8">
                         <AvatarFallback>{getInitials(userProfile?.displayName)}</AvatarFallback>
                     </Avatar>
-                    <div className="flex flex-col items-start min-w-0">
+                    <div className="hidden md:flex flex-col items-start min-w-0">
                         <span className="font-semibold text-sm leading-tight truncate max-w-[150px]">{userProfile?.displayName}</span>
                         <span className="text-xs text-muted-foreground leading-tight">{userProfile?.role}</span>
                     </div>
@@ -69,11 +90,7 @@ export default function AppHeader() {
             <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem disabled>Perfil</DropdownMenuItem>
-                <DropdownMenuItem disabled>Facturación</DropdownMenuItem>
-                <DropdownMenuItem disabled>Configuración</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>Cerrar Sesión</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>Cerrar Sesión</DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
       </div>
