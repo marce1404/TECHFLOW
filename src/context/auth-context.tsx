@@ -79,7 +79,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    // This effect runs once on component mount to sync and fetch all users.
     const initializeApp = async () => {
         setLoading(true);
         await syncFirebaseAuthToFirestore();
