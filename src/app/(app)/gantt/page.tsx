@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { useWorkOrders } from "@/context/work-orders-context";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import GanttTable from '@/components/gantt/gantt-table';
 import { Input } from '@/components/ui/input';
 
@@ -45,11 +45,12 @@ export default function GanttPage() {
     return (
         <div className="flex flex-col gap-8">
             <Card>
-                <CardHeader className="flex flex-row items-center justify-between gap-4">
-                     <div>
+                <CardHeader className="flex flex-col md:flex-row items-center justify-between gap-4">
+                     <div className="flex-1">
                         <CardTitle>Cartas Gantt Creadas</CardTitle>
+                        <CardDescription>Planifica y visualiza tus proyectos.</CardDescription>
                     </div>
-                    <div className="flex w-full sm:w-auto items-center gap-2">
+                    <div className="flex w-full md:w-auto items-center gap-2">
                         <Input
                             placeholder="Buscar por nombre, OT..."
                             value={search}
