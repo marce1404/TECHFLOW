@@ -12,6 +12,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
     const pathname = usePathname();
     const isPrintView = pathname.includes('/print');
+    const isDashboard = pathname === '/dashboard';
 
     if (!user) {
         return <LoginPage />;
@@ -29,7 +30,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </Sidebar>
             <SidebarInset>
                 <AppHeader />
-                <main className="p-4 sm:p-6 lg:p-8">{children}</main>
+                <main className={isDashboard ? '' : 'p-4 sm:p-6 lg:p-8'}>{children}</main>
             </SidebarInset>
         </SidebarProvider>
     );

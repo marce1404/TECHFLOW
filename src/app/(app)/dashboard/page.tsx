@@ -142,7 +142,7 @@ export default function DashboardPage() {
 
   return (
      <div ref={dashboardRef} className={cn("flex flex-1 flex-col bg-background h-full", isFullscreen && "h-screen")}>
-        <div className={cn("flex-1 p-4 sm:p-6 lg:p-8", isFullscreen && "overflow-y-auto")}>
+        <div className={cn("flex-1", isFullscreen ? "p-4 sm:p-6 lg:p-8 overflow-y-auto" : "")}>
             <div className="flex items-center justify-between pr-4">
                 <div className="flex items-center gap-4">
                     {count > 1 && !isFullscreen && (
@@ -186,7 +186,7 @@ export default function DashboardPage() {
             </div>
             )}
         </div>
-        <footer className={cn("w-full bg-background shrink-0")}>
+        <footer className={cn("w-full bg-background shrink-0", !isFullscreen && 'hidden')}>
             <MotivationalTicker />
         </footer>
     </div>
