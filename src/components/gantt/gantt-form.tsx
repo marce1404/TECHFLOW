@@ -198,7 +198,7 @@ export default function GanttForm({ onSave, ganttChart, initialTasks, disabled =
     onSave(data, tasks);
   };
   
-  const availableOTs = activeWorkOrders.filter(ot => !ganttCharts.some(g => g.assignedOT === ot.ot_number && g.id !== ganttId) || (ganttChart && ganttChart.assignedOT === ot.ot_number));
+  const availableOTs = activeWorkOrders.filter(ot => !ganttCharts.some(g => g.assignedOT === ot.id && g.id !== ganttId) || (ganttChart && ganttChart.assignedOT === ot.id));
 
   const existingPhases = React.useMemo(() => {
     const phases = new Set(tasks.filter(t => !t.isPhase).map(t => t.phase).filter(Boolean));
@@ -254,7 +254,7 @@ export default function GanttForm({ onSave, ganttChart, initialTasks, disabled =
                                     <SelectContent>
                                         <SelectItem value="none">Sin asociar</SelectItem>
                                         {availableOTs.map(ot => (
-                                            <SelectItem key={ot.id} value={ot.ot_number}>{ot.ot_number} - {ot.description}</SelectItem>
+                                            <SelectItem key={ot.id} value={ot.id}>{ot.ot_number} - {ot.description}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
@@ -474,5 +474,3 @@ export default function GanttForm({ onSave, ganttChart, initialTasks, disabled =
     </Form>
   );
 }
-
-    
