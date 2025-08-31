@@ -1,3 +1,4 @@
+
 'use client';
 
 import AppLayout from '@/components/layout/app-layout';
@@ -9,7 +10,7 @@ export default function AppProtectedLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const isDashboard = pathname === '/';
+  const isDashboard = pathname === '/dashboard';
 
   return (
     <div className="flex flex-col min-h-screen">

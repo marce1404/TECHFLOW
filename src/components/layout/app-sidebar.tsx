@@ -65,16 +65,16 @@ export default function AppSidebar() {
 
   const menuItems = [
     {
-      href: '/',
+      href: '/dashboard',
       label: 'Dashboard',
       icon: LayoutGrid,
       exact: true,
     },
     {
-      href: '/orders',
+      href: '/',
       label: 'OTs Activas',
       icon: File,
-      exact: true, // Treat as exact to avoid highlighting for sub-routes
+      exact: true, 
       subItems: [
         { href: '/orders/history', label: 'Historial', icon: History }
       ]
@@ -127,13 +127,14 @@ export default function AppSidebar() {
 
   const isActive = (href: string, isExact: boolean = true) => {
     if (isExact) {
+        if (href === '/') return pathname === '/';
         return pathname === href;
     }
     // For non-exact matches
     if (href === '/reports') {
         return pathname.startsWith('/reports') && !pathname.startsWith('/reports/history');
     }
-    if (href === '/orders') {
+    if (href === '/') {
         return pathname.startsWith('/orders');
     }
     return pathname.startsWith(href);
@@ -158,7 +159,7 @@ export default function AppSidebar() {
                         variant={isActive(menuItems[0].href, menuItems[0].exact) ? 'default' : 'ghost'}
                         className="h-10 w-10"
                     >
-                        <Link href="/">
+                        <Link href="/dashboard">
                             <LayoutGrid className="h-5 w-5" />
                         </Link>
                     </SidebarMenuButton>
@@ -256,7 +257,7 @@ export default function AppSidebar() {
                     <span>{item.label}</span>
                   </Link>
                 </SidebarMenuButton>
-                 {item.subItems && isActive('/orders', false) && (
+                 {item.subItems && isActive('/', false) && (
                     <SidebarMenuSub>
                         {item.subItems.map(subItem => (
                             <SidebarMenuSubItem key={subItem.href}>

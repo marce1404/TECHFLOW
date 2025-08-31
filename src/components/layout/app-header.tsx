@@ -49,11 +49,11 @@ export default function AppHeader() {
   };
 
   const getPageTitle = () => {
-    if (pathname === '/') return 'Dashboard';
+    if (pathname === '/dashboard') return 'Dashboard';
     if (pathname.startsWith('/orders/history')) return 'Historial de Órdenes';
     if (pathname.startsWith('/orders/new')) return 'Nueva Orden de Trabajo';
     if (pathname.startsWith('/orders/')) return 'Detalle Orden de Trabajo';
-    if (pathname.startsWith('/orders')) return 'Órdenes de Trabajo';
+    if (pathname.startsWith('/orders') || pathname === '/') return 'Órdenes de Trabajo';
     if (pathname.startsWith('/gantt')) return 'Cartas Gantt';
     if (pathname.startsWith('/reports/history')) return 'Historial de Informes';
     if (pathname.startsWith('/reports')) return 'Llenar Informe';
@@ -75,24 +75,6 @@ export default function AppHeader() {
       <div className="flex items-center gap-4">
         <DateTime />
         <ThemeToggle />
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 rounded-full border p-1 pr-3 hover:bg-muted transition-colors">
-                    <Avatar className="h-8 w-8">
-                        <AvatarFallback>{getInitials(userProfile?.displayName)}</AvatarFallback>
-                    </Avatar>
-                    <div className="hidden md:flex flex-col items-start min-w-0">
-                        <span className="font-semibold text-sm leading-tight truncate max-w-[150px]">{userProfile?.displayName}</span>
-                        <span className="text-xs text-muted-foreground leading-tight">{userProfile?.role}</span>
-                    </div>
-                </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>Cerrar Sesión</DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
       </div>
     </header>
   );
