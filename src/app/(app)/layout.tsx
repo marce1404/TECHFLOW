@@ -2,6 +2,7 @@
 'use client';
 
 import AppLayout from '@/components/layout/app-layout';
+import { WorkOrdersProvider } from '@/context/work-orders-context';
 
 export default function AppProtectedLayout({
   children,
@@ -10,10 +11,10 @@ export default function AppProtectedLayout({
 }) {
   
   return (
-    <div className="flex flex-col min-h-screen">
+    <WorkOrdersProvider>
         <AppLayout>
           {children}
         </AppLayout>
-    </div>
+    </WorkOrdersProvider>
   );
 }
