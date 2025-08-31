@@ -9,20 +9,28 @@ dotenv.config();
 let adminApp: admin.app.App;
 
 if (!admin.apps.length) {
-    const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-    if (!serviceAccountBase64) {
-        throw new Error("Firebase service account JSON not found in environment variables. Please set FIREBASE_SERVICE_ACCOUNT_JSON.");
-    }
-    
     try {
-        const serviceAccountString = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
-        const serviceAccount = JSON.parse(serviceAccountString);
-        adminApp = admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount),
-        });
-    } catch (e) {
-        console.error("Failed to initialize Firebase Admin with service account from ENV var.", e);
-        throw new Error("Firebase Admin SDK initialization failed due to a malformed service account JSON.");
+        // When running in a Google Cloud environment, the SDK will automatically
+        // use the Application Default Credentials.
+        adminApp = admin.initializeApp();
+    } catch (error) {
+        console.error("Firebase admin initialization error. This likely means it's not running in a configured Google Cloud environment or the service account is not set up correctly.", error);
+        // Fallback for local development or other environments if the service account JSON is provided.
+        const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+        if (serviceAccountBase64) {
+             try {
+                const serviceAccountString = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
+                const serviceAccount = JSON.parse(serviceAccountString);
+                adminApp = admin.initializeApp({
+                    credential: admin.credential.cert(serviceAccount),
+                });
+             } catch (e) {
+                 console.error("Failed to initialize Firebase Admin with service account from ENV var.", e);
+                 throw new Error("Firebase Admin SDK initialization failed due to a malformed service account JSON.");
+             }
+        } else {
+             throw new Error("Firebase Admin SDK initialization failed. No Application Default Credentials or service account JSON found.");
+        }
     }
 } else {
     adminApp = admin.apps[0]!;
