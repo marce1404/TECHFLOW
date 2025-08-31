@@ -35,13 +35,17 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useWorkOrders } from '@/context/work-orders-context';
-
+import { useAuth } from '@/context/auth-context';
+import { Avatar, AvatarFallback } from '../ui/avatar';
+import { Separator } from '../ui/separator';
 
 export default function AppSidebar() {
   const pathname = usePathname();
   const { state } = useSidebar();
   const { toast } = useToast();
   const { companyInfo } = useWorkOrders();
+  const { userProfile } = useAuth();
+
 
   const handleLogout = async () => {
     try {
@@ -135,6 +139,13 @@ export default function AppSidebar() {
     return pathname.startsWith(href);
   };
   
+    const getInitials = (name?: string) => {
+        if (!name) return 'U';
+        const names = name.split(' ');
+        const initials = names.map(n => n[0]).join('');
+        return initials.slice(0, 2).toUpperCase();
+    };
+
   if (state === 'collapsed') {
     return (
         <>
@@ -277,15 +288,24 @@ export default function AppSidebar() {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
-           <SidebarMenuItem>
-            <SidebarMenuButton 
+          <Separator className="my-1 bg-sidebar-border" />
+          <div className="flex items-center gap-3 p-2">
+            <Avatar className="h-9 w-9">
+                <AvatarFallback>{getInitials(userProfile?.displayName)}</AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col flex-1 min-w-0">
+                <span className="font-semibold text-sm leading-tight truncate">{userProfile?.displayName}</span>
+                <span className="text-xs text-muted-foreground leading-tight">{userProfile?.role}</span>
+            </div>
+            <SidebarMenuButton
                 onClick={handleLogout}
+                tooltip="Cerrar Sesión"
                 variant='ghost'
+                className="h-9 w-9 p-2 shrink-0"
             >
-              <LogOut className="h-5 w-5" />
-              <span>Cerrar Sesión</span>
+                <LogOut className="h-5 w-5" />
             </SidebarMenuButton>
-          </SidebarMenuItem>
+          </div>
         </SidebarMenu>
       </SidebarFooter>
     </>
