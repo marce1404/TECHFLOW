@@ -6,15 +6,23 @@ import { useWorkOrders } from "@/context/work-orders-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import * as React from "react";
 import type { WorkOrder } from "@/lib/types";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import AdvancedFilters, { type Filters } from '@/components/orders/advanced-filters';
 
 
 export default function HistoryPage() {
-    const { historicalWorkOrders, otCategories, otStatuses } = useWorkOrders();
-    const [search, setSearch] = React.useState('');
+    const { historicalWorkOrders, otCategories } = useWorkOrders();
     const [activeTab, setActiveTab] = React.useState('todos');
+    const [filters, setFilters] = React.useState<Filters>({
+      search: '',
+      client: '',
+      service: '',
+      technician: '',
+      supervisor: '',
+      priority: '',
+      dateRange: { from: undefined, to: undefined },
+    });
 
 
     const filterOrders = (categoryPrefix: string | null) => {
@@ -23,19 +31,42 @@ export default function HistoryPage() {
     
     const filteredOrders = React.useMemo(() => {
         let orders = historicalWorkOrders;
+
         if (activeTab !== 'todos') {
             orders = orders.filter(order => order.ot_number.startsWith(activeTab));
         }
-        if (search) {
+        
+        // Apply advanced filters
+        if (filters.search) {
             orders = orders.filter(order =>
-                order.ot_number.toLowerCase().includes(search.toLowerCase()) ||
-                order.description.toLowerCase().includes(search.toLowerCase()) ||
-                order.client.toLowerCase().includes(search.toLowerCase()) ||
-                order.service.toLowerCase().includes(search.toLowerCase())
+                order.ot_number.toLowerCase().includes(filters.search.toLowerCase()) ||
+                order.description.toLowerCase().includes(filters.search.toLowerCase())
             );
         }
+        if (filters.client) {
+            orders = orders.filter(order => order.client === filters.client);
+        }
+        if (filters.service) {
+            orders = orders.filter(order => order.service === filters.service);
+        }
+        if (filters.technician) {
+            orders = orders.filter(order => order.technicians.includes(filters.technician));
+        }
+        if (filters.supervisor) {
+            orders = orders.filter(order => order.assigned.includes(filters.supervisor));
+        }
+        if (filters.priority) {
+            orders = orders.filter(order => order.priority === filters.priority);
+        }
+        if (filters.dateRange.from) {
+            orders = orders.filter(order => new Date(order.date.replace(/-/g, '/')) >= filters.dateRange.from!);
+        }
+        if (filters.dateRange.to) {
+            orders = orders.filter(order => new Date(order.date.replace(/-/g, '/')) <= filters.dateRange.to!);
+        }
+
         return orders;
-    }, [historicalWorkOrders, activeTab, search]);
+    }, [historicalWorkOrders, activeTab, filters]);
 
 
     const categories = [
@@ -52,32 +83,25 @@ export default function HistoryPage() {
     return (
         <div className="flex flex-col gap-8">
             <Card>
-                <CardContent className="p-4">
-                    <Tabs value={activeTab} onValueChange={filterOrders}>
-                         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
-                            <ScrollArea className="w-full sm:w-auto">
-                                <TabsList className="w-max">
-                                    {categories.map(cat => (
-                                        <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
-                                    ))}
-                                </TabsList>
-                                <ScrollBar orientation="horizontal" />
-                            </ScrollArea>
-                             <div className="flex w-full sm:w-auto items-center gap-2">
-                                <Input
-                                    placeholder="Buscar por ID, cliente, servicio..."
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    className="w-full sm:max-w-sm"
-                                />
-                            </div>
-                        </div>
-                        <TabsContent value={activeTab} className="mt-4">
-                            <HistoricalOrdersTable orders={filteredOrders} />
-                        </TabsContent>
-                    </Tabs>
-                </CardContent>
+                 <CardContent className="p-4 space-y-4">
+                    <h1 className="text-2xl font-semibold">Historial de Órdenes de Trabajo</h1>
+                    <AdvancedFilters onFilterChange={setFilters} />
+                 </CardContent>
             </Card>
+
+            <Tabs value={activeTab} onValueChange={filterOrders}>
+                    <ScrollArea className="w-full">
+                        <TabsList className="w-max">
+                            {categories.map(cat => (
+                                <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
+                            ))}
+                        </TabsList>
+                        <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
+                <TabsContent value={activeTab} className="mt-4">
+                    <HistoricalOrdersTable orders={filteredOrders} />
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }
