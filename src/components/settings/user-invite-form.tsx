@@ -18,11 +18,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, Eye, EyeOff } from 'lucide-react';
+import { Loader2, UserPlus, Eye, EyeOff, Send } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import type { AppUser } from '@/lib/types';
 import { doc, setDoc } from 'firebase/firestore';
+import { useWorkOrders } from '@/context/work-orders-context';
+import { sendInvitationEmailAction } from '@/app/actions';
 
 const inviteFormSchema = z.object({
   name: z.string().min(3, { message: 'El nombre debe tener al menos 3 caracteres.' }),
@@ -30,6 +32,7 @@ const inviteFormSchema = z.object({
   password: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres.' }),
   confirmPassword: z.string().min(6, { message: 'La confirmación de contraseña debe tener al menos 6 caracteres.' }),
   role: z.enum(['Admin', 'Supervisor', 'Técnico', 'Visor'], { required_error: 'Debe seleccionar un rol.'}),
+  sendInvitation: z.boolean().default(true),
 }).refine(data => data.password === data.confirmPassword, {
     message: "Las contraseñas no coinciden.",
     path: ["confirmPassword"],
@@ -39,6 +42,7 @@ type InviteFormValues = z.infer<typeof inviteFormSchema>;
 
 export function UserInviteForm() {
   const { toast } = useToast();
+  const { smtpConfig } = useWorkOrders();
   const [loading, setLoading] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
   const { fetchUsers } = useAuth();
@@ -51,6 +55,7 @@ export function UserInviteForm() {
       password: '',
       confirmPassword: '',
       role: 'Visor',
+      sendInvitation: true,
     },
   });
 
@@ -78,6 +83,21 @@ export function UserInviteForm() {
         title: 'Usuario Creado con Éxito',
         description: `El usuario ${data.name} ha sido creado y su perfil guardado.`,
       });
+
+      if (data.sendInvitation) {
+        if (!smtpConfig) {
+            toast({ variant: 'destructive', title: 'Advertencia', description: 'No se puede enviar la invitación. La configuración SMTP no está establecida.'});
+        } else {
+            const appUrl = window.location.origin + '/login';
+            const result = await sendInvitationEmailAction(userProfile, data.password, appUrl, smtpConfig);
+            if (result.success) {
+                toast({ title: 'Invitación Enviada', description: result.message });
+            } else {
+                toast({ variant: 'destructive', title: 'Error al Enviar Invitación', description: result.message });
+            }
+        }
+      }
+      
       form.reset();
       await fetchUsers();
         
@@ -199,6 +219,21 @@ export function UserInviteForm() {
                     )}
                 />
             </div>
+            
+             <FormField
+                control={form.control}
+                name="sendInvitation"
+                render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-start gap-2 pt-2">
+                        <FormControl>
+                            <Input type="checkbox" checked={field.value} onChange={field.onChange} className="h-4 w-4" />
+                        </FormControl>
+                        <FormLabel>
+                            Enviar correo de invitación con los datos de acceso
+                        </FormLabel>
+                    </FormItem>
+                )}
+            />
 
             <div className="flex justify-end">
                 <Button type="submit" disabled={loading}>

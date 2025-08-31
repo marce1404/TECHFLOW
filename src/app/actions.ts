@@ -7,6 +7,7 @@ import {
   SmtpConfig,
   WorkOrder,
   CreateWorkOrderInput,
+  AppUser,
 } from '@/lib/types';
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
 import { db as adminDb, auth as adminAuth } from '@/lib/firebase-admin';
@@ -19,6 +20,7 @@ import {
   updateUserAction as updateUserActionAdmin,
 } from '@/lib/firebase-admin';
 import type { UserRecord } from 'firebase-admin/auth';
+import { generatePassword } from '@/lib/password-generator';
 
 // --- Server Actions ---
 
@@ -211,4 +213,84 @@ export async function importOrdersFromExcel(ordersData: CreateWorkOrderInput[]):
     }
 
     return { successCount, errorCount, errors };
+}
+
+export async function sendInvitationEmailAction(
+    user: AppUser,
+    password_clear: string,
+    appUrl: string,
+    config: SmtpConfig | null,
+): Promise<{ success: boolean; message: string }> {
+    if (!config) {
+        return { success: false, message: 'La configuración SMTP no ha sido establecida.' };
+    }
+    const { host, port, secure, user: smtpUser, pass, fromName, fromEmail } = config;
+
+    let transporter;
+    try {
+        transporter = nodemailer.createTransport({
+            host, port, secure: secure === 'ssl', auth: { user: smtpUser, pass },
+             ...(secure === 'starttls' && { tls: { ciphers: 'SSLv3' }})
+        });
+        await transporter.verify();
+    } catch (error: any) {
+        console.error("Error verifying SMTP transporter:", error);
+        return { success: false, message: `Error de conexión SMTP: ${error.message}` };
+    }
+
+    const subject = `¡Bienvenido a TechFlow! Tus credenciales de acceso.`;
+    const htmlBody = `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f4; color: #333; margin: 0; padding: 20px; }
+            .container { max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; }
+            .header { background-color: #3CA7FA; color: #ffffff; padding: 24px; text-align: center; }
+            .header h1 { margin: 0; font-size: 24px; }
+            .content { padding: 24px; }
+            .content p { line-height: 1.6; font-size: 16px; }
+            .credentials { background-color: #f1f5f9; border: 1px dashed #cbd5e1; padding: 16px; border-radius: 8px; margin: 20px 0; }
+            .credentials strong { color: #3CA7FA; }
+            .button { display: inline-block; background-color: #3CA7FA; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 20px; }
+            .footer { background-color: #f8fafc; color: #64748b; padding: 20px; text-align: center; font-size: 12px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header"><h1>¡Bienvenido a TechFlow!</h1></div>
+            <div class="content">
+                <p>Hola ${user.displayName},</p>
+                <p>Has sido invitado a unirte a la plataforma de gestión de operaciones TechFlow. A continuación encontrarás tus credenciales para acceder al sistema.</p>
+                <div class="credentials">
+                    <p><strong>Usuario:</strong> ${user.email}</p>
+                    <p><strong>Contraseña:</strong> ${password_clear}</p>
+                </div>
+                <p>Te recomendamos cambiar tu contraseña después de iniciar sesión por primera vez.</p>
+                <a href="${appUrl}" class="button">Iniciar Sesión en TechFlow</a>
+            </div>
+            <div class="footer">
+                <p>Si tienes problemas para acceder, por favor contacta a tu administrador.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+    
+    const mailOptions = {
+        from: `"${fromName}" <${fromEmail}>`,
+        to: user.email,
+        subject,
+        html: htmlBody,
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        return { success: true, message: '¡Correo de invitación enviado con éxito!' };
+    } catch (error: any) {
+        console.error("Error sending invitation email:", error);
+        return { success: false, message: `Error al enviar el correo: ${error.message}` };
+    }
 }

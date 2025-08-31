@@ -37,6 +37,7 @@ import { useToast } from '@/hooks/use-toast';
 import { UserEditDialog } from './user-edit-dialog';
 import { deleteUserAction, toggleUserStatusAction } from '@/app/actions';
 import { UserChangePasswordDialog } from './user-change-password-dialog';
+import { UserSendInvitationDialog } from './user-send-invitation-dialog';
 import { useWorkOrders } from '@/context/work-orders-context';
 
 export default function UsersTable() {
@@ -47,6 +48,7 @@ export default function UsersTable() {
     const [editDialogOpen, setEditDialogOpen] = React.useState(false);
     const [passwordDialogOpen, setPasswordDialogOpen] = React.useState(false);
     const [deleteAlertOpen, setDeleteAlertOpen] = React.useState(false);
+    const [invitationDialogOpen, setInvitationDialogOpen] = React.useState(false);
     const [currentPage, setCurrentPage] = React.useState(1);
     const itemsPerPage = 15;
 
@@ -64,6 +66,11 @@ export default function UsersTable() {
     const handleChangePasswordClick = (user: AppUser) => {
         setSelectedUser(user);
         setPasswordDialogOpen(true);
+    }
+    
+    const handleSendInvitationClick = (user: AppUser) => {
+        setSelectedUser(user);
+        setInvitationDialogOpen(true);
     }
 
     const confirmDelete = async () => {
@@ -175,6 +182,9 @@ export default function UsersTable() {
                                              <DropdownMenuItem onSelect={() => handleChangePasswordClick(user)}>
                                                 Cambiar Contraseña
                                             </DropdownMenuItem>
+                                             <DropdownMenuItem onSelect={() => handleSendInvitationClick(user)}>
+                                                Enviar/Reenviar Invitación
+                                            </DropdownMenuItem>
                                             <DropdownMenuItem onSelect={() => handleToggleStatus(user)}>
                                                 {user.status === 'Activo' ? 'Desactivar' : 'Activar'}
                                             </DropdownMenuItem>
@@ -238,6 +248,11 @@ export default function UsersTable() {
             <UserChangePasswordDialog
                 open={passwordDialogOpen}
                 onOpenChange={setPasswordDialogOpen}
+                user={selectedUser}
+            />
+             <UserSendInvitationDialog
+                open={invitationDialogOpen}
+                onOpenChange={setInvitationDialogOpen}
                 user={selectedUser}
             />
         </>
