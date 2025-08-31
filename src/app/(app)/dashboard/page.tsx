@@ -141,8 +141,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <>
-      <div ref={dashboardRef} className={cn("flex flex-1 flex-col gap-8 bg-background p-1", isFullscreen && 'pb-12')}>
+    <div ref={dashboardRef} className={cn("flex flex-1 flex-col bg-background", isFullscreen && "h-screen")}>
+      <div className={cn("flex flex-1 flex-col gap-8 p-1", isFullscreen && "overflow-y-auto")}>
         <div className="flex items-center justify-between pr-4">
             <div className="flex items-center gap-4">
                 {count > 1 && !isFullscreen && (
@@ -187,13 +187,11 @@ export default function DashboardPage() {
         )}
       </div>
        <footer className={cn(
-            "w-full bg-background", 
-            isFullscreen 
-                ? "fixed bottom-0 left-0 right-0 z-50 bg-background" 
-                : "fixed bottom-0 left-0 right-0 z-20 peer-data-[state=expanded]:peer-data-[side=left]:pl-[16rem] peer-data-[state=expanded]:peer-data-[side=right]:pr-[16rem] peer-data-[collapsible=icon]:peer-data-[state=expanded]:pl-[16rem] md:peer-data-[state=collapsed]:peer-data-[collapsible=icon]:pl-[3.5rem] transition-[padding] ease-linear"
-            )}>
+            "w-full bg-background shrink-0", 
+            !isFullscreen && "fixed bottom-0 left-0 right-0 z-20 peer-data-[state=expanded]:peer-data-[side=left]:pl-[16rem] peer-data-[state=expanded]:peer-data-[side=right]:pr-[16rem] peer-data-[collapsible=icon]:peer-data-[state=expanded]:pl-[16rem] md:peer-data-[state=collapsed]:peer-data-[collapsible=icon]:pl-[3.5rem] transition-[padding] ease-linear"
+        )}>
         <MotivationalTicker />
       </footer>
-    </>
+    </div>
   );
 }
