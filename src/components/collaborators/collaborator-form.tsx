@@ -173,15 +173,6 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
       });
     }
   }, [collaborator, form]);
-  
-  React.useEffect(() => {
-    if (disabled) {
-      form.disable();
-    } else {
-      form.enable();
-    }
-  }, [disabled, form]);
-
 
   const onSubmit = (data: CollaboratorFormValues) => {
     onSave(data);
@@ -246,276 +237,278 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
   return (
     <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Card>
-            <CardHeader><CardTitle>Información del Colaborador</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
+          <fieldset disabled={disabled} className="space-y-6">
+            <Card>
+                <CardHeader><CardTitle>Información del Colaborador</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                            control={form.control}
+                            name="name"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Nombre Completo</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="Ej: Juan Pérez" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                            />
+                        <FormField
+                          control={form.control}
+                          name="email"
+                          render={({ field }) => (
+                              <FormItem>
+                                  <FormLabel>Correo Electrónico</FormLabel>
+                                  <FormControl>
+                                      <Input type="email" placeholder="ejemplo@correo.com" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                              </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="role"
+                          render={({ field }) => (
+                              <FormItem>
+                                  <FormLabel>Cargo</FormLabel>
+                                  <Select onValueChange={field.onChange} value={field.value} disabled={disabled}>
+                                      <FormControl>
+                                      <SelectTrigger>
+                                          <SelectValue placeholder="Seleccionar cargo" />
+                                      </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                          {roles.map(role => (
+                                              <SelectItem key={role} value={role}>{role}</SelectItem>
+                                          ))}
+                                      </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                              </FormItem>
+                          )}
+                          />
+                        <FormField
                         control={form.control}
-                        name="name"
+                        name="area"
                         render={({ field }) => (
                             <FormItem>
-                            <FormLabel>Nombre Completo</FormLabel>
+                            <FormLabel>Área</FormLabel>
                             <FormControl>
-                                <Input placeholder="Ej: Juan Pérez" {...field} />
+                                <Input placeholder="Ej: RM, Zona Norte..." {...field} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
                         )}
                         />
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                          <FormItem>
-                              <FormLabel>Correo Electrónico</FormLabel>
-                              <FormControl>
-                                  <Input type="email" placeholder="ejemplo@correo.com" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                          </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="role"
-                      render={({ field }) => (
-                          <FormItem>
-                              <FormLabel>Cargo</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value} disabled={disabled}>
-                                  <FormControl>
-                                  <SelectTrigger>
-                                      <SelectValue placeholder="Seleccionar cargo" />
-                                  </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                      {roles.map(role => (
-                                          <SelectItem key={role} value={role}>{role}</SelectItem>
-                                      ))}
-                                  </SelectContent>
-                              </Select>
-                              <FormMessage />
-                          </FormItem>
-                      )}
-                      />
-                    <FormField
-                    control={form.control}
-                    name="area"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Área</FormLabel>
-                        <FormControl>
-                            <Input placeholder="Ej: RM, Zona Norte..." {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
+                            <FormField
+                            control={form.control}
+                            name="status"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Estado</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value} disabled={disabled}>
+                                        <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Seleccionar estado" />
+                                        </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="Activo">Activo</SelectItem>
+                                            <SelectItem value="Licencia">Licencia</SelectItem>
+                                            <SelectItem value="Vacaciones">Vacaciones</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                            />
                         <FormField
                         control={form.control}
-                        name="status"
+                        name="license"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Estado</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value} disabled={disabled}>
-                                    <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Seleccionar estado" />
-                                    </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="Activo">Activo</SelectItem>
-                                        <SelectItem value="Licencia">Licencia</SelectItem>
-                                        <SelectItem value="Vacaciones">Vacaciones</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
+                            <FormLabel>Licencia de Conducir</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Ej: Clase B" {...field} />
+                            </FormControl>
+                            <FormMessage />
                             </FormItem>
                         )}
                         />
-                    <FormField
-                    control={form.control}
-                    name="license"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Licencia de Conducir</FormLabel>
-                        <FormControl>
-                            <Input placeholder="Ej: Clase B" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                </div>
-            </CardContent>
-        </Card>
+                    </div>
+                </CardContent>
+            </Card>
 
-        <Card>
-            <CardHeader>
-                <div className="flex items-center justify-between">
-                    <CardTitle>Vestimenta de Trabajo</CardTitle>
-                    <Button type="button" size="sm" variant="outline" onClick={() => appendWorkClothing({ id: crypto.randomUUID(), item: '', size: '', quantity: 1, deliveryDate: '', expirationDate: '' })} disabled={disabled}>
-                        <PlusCircle className="mr-2 h-4 w-4"/>
-                        Añadir Fila
-                    </Button>
-                </div>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Item</TableHead>
-                            <TableHead className="w-[100px]">Talla</TableHead>
-                            <TableHead className="w-[120px]">Cantidad</TableHead>
-                            <TableHead className="w-[200px]">Fecha de Entrega</TableHead>
-                            <TableHead className="w-[200px]">Fecha de Caducidad</TableHead>
-                            <TableHead className="w-[50px]"></TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {workClothingFields.map((field, index) => (
-                            <TableRow key={field.id}>
-                                <TableCell><FormField control={form.control} name={`workClothing.${index}.item`} render={({ field }) => <Input {...field} placeholder="Pantalón Corporativo"/>} /></TableCell>
-                                <TableCell><FormField control={form.control} name={`workClothing.${index}.size`} render={({ field }) => <Input {...field} placeholder="M"/>} /></TableCell>
-                                <TableCell><FormField control={form.control} name={`workClothing.${index}.quantity`} render={({ field }) => <Input type="number" {...field} />} /></TableCell>
-                                <TableCell>
-                                    <FormField 
-                                        control={form.control} 
-                                        name={`workClothing.${index}.deliveryDate`} 
-                                        render={({ field }) => renderDateField(field, index, 'deliveryDate', 'workClothing')} 
-                                    />
-                                </TableCell>
-                                <TableCell>
-                                    <FormField 
-                                        control={form.control} 
-                                        name={`workClothing.${index}.expirationDate`} 
-                                        render={({ field }) => renderDateField(field, index, 'expirationDate', 'workClothing')} 
-                                    />
-                                </TableCell>
-                                <TableCell>
-                                    <Button variant="ghost" size="icon" onClick={() => removeWorkClothing(index)} disabled={disabled}>
-                                        <Trash2 className="h-4 w-4 text-destructive"/>
-                                    </Button>
-                                </TableCell>
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <CardTitle>Vestimenta de Trabajo</CardTitle>
+                        <Button type="button" size="sm" variant="outline" onClick={() => appendWorkClothing({ id: crypto.randomUUID(), item: '', size: '', quantity: 1, deliveryDate: '', expirationDate: '' })} disabled={disabled}>
+                            <PlusCircle className="mr-2 h-4 w-4"/>
+                            Añadir Fila
+                        </Button>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Item</TableHead>
+                                <TableHead className="w-[100px]">Talla</TableHead>
+                                <TableHead className="w-[120px]">Cantidad</TableHead>
+                                <TableHead className="w-[200px]">Fecha de Entrega</TableHead>
+                                <TableHead className="w-[200px]">Fecha de Caducidad</TableHead>
+                                <TableHead className="w-[50px]"></TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
+                        </TableHeader>
+                        <TableBody>
+                            {workClothingFields.map((field, index) => (
+                                <TableRow key={field.id}>
+                                    <TableCell><FormField control={form.control} name={`workClothing.${index}.item`} render={({ field }) => <Input {...field} placeholder="Pantalón Corporativo"/>} /></TableCell>
+                                    <TableCell><FormField control={form.control} name={`workClothing.${index}.size`} render={({ field }) => <Input {...field} placeholder="M"/>} /></TableCell>
+                                    <TableCell><FormField control={form.control} name={`workClothing.${index}.quantity`} render={({ field }) => <Input type="number" {...field} />} /></TableCell>
+                                    <TableCell>
+                                        <FormField 
+                                            control={form.control} 
+                                            name={`workClothing.${index}.deliveryDate`} 
+                                            render={({ field }) => renderDateField(field, index, 'deliveryDate', 'workClothing')} 
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <FormField 
+                                            control={form.control} 
+                                            name={`workClothing.${index}.expirationDate`} 
+                                            render={({ field }) => renderDateField(field, index, 'expirationDate', 'workClothing')} 
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Button variant="ghost" size="icon" onClick={() => removeWorkClothing(index)} disabled={disabled}>
+                                            <Trash2 className="h-4 w-4 text-destructive"/>
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
 
-        <Card>
-            <CardHeader>
-                <div className="flex items-center justify-between">
-                    <CardTitle>Equipo de Protección Personal (EPP)</CardTitle>
-                    <Button type="button" size="sm" variant="outline" onClick={() => appendEpp({ id: crypto.randomUUID(), item: '', size: '', quantity: 1, deliveryDate: '', expirationDate: '' })} disabled={disabled}>
-                        <PlusCircle className="mr-2 h-4 w-4"/>
-                        Añadir Fila
-                    </Button>
-                </div>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Item</TableHead>
-                            <TableHead className="w-[100px]">Talla</TableHead>
-                            <TableHead className="w-[120px]">Cantidad</TableHead>
-                            <TableHead className="w-[200px]">Fecha de Entrega</TableHead>
-                            <TableHead className="w-[200px]">Fecha de Caducidad</TableHead>
-                            <TableHead className="w-[50px]"></TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {eppFields.map((field, index) => (
-                            <TableRow key={field.id}>
-                                <TableCell><FormField control={form.control} name={`epp.${index}.item`} render={({ field }) => <Input {...field} placeholder="Casco de seguridad"/>} /></TableCell>
-                                <TableCell><FormField control={form.control} name={`epp.${index}.size`} render={({ field }) => <Input {...field} placeholder="M"/>} /></TableCell>
-                                <TableCell><FormField control={form.control} name={`epp.${index}.quantity`} render={({ field }) => <Input type="number" {...field} />} /></TableCell>
-                                <TableCell>
-                                    <FormField 
-                                        control={form.control} 
-                                        name={`epp.${index}.deliveryDate`} 
-                                        render={({ field }) => renderDateField(field, index, 'deliveryDate', 'epp')} 
-                                    />
-                                </TableCell>
-                                <TableCell>
-                                    <FormField 
-                                        control={form.control} 
-                                        name={`epp.${index}.expirationDate`} 
-                                        render={({ field }) => renderDateField(field, index, 'expirationDate', 'epp')} 
-                                    />
-                                </TableCell>
-                                <TableCell>
-                                    <Button variant="ghost" size="icon" onClick={() => removeEpp(index)} disabled={disabled}>
-                                        <Trash2 className="h-4 w-4 text-destructive"/>
-                                    </Button>
-                                </TableCell>
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <CardTitle>Equipo de Protección Personal (EPP)</CardTitle>
+                        <Button type="button" size="sm" variant="outline" onClick={() => appendEpp({ id: crypto.randomUUID(), item: '', size: '', quantity: 1, deliveryDate: '', expirationDate: '' })} disabled={disabled}>
+                            <PlusCircle className="mr-2 h-4 w-4"/>
+                            Añadir Fila
+                        </Button>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Item</TableHead>
+                                <TableHead className="w-[100px]">Talla</TableHead>
+                                <TableHead className="w-[120px]">Cantidad</TableHead>
+                                <TableHead className="w-[200px]">Fecha de Entrega</TableHead>
+                                <TableHead className="w-[200px]">Fecha de Caducidad</TableHead>
+                                <TableHead className="w-[50px]"></TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
+                        </TableHeader>
+                        <TableBody>
+                            {eppFields.map((field, index) => (
+                                <TableRow key={field.id}>
+                                    <TableCell><FormField control={form.control} name={`epp.${index}.item`} render={({ field }) => <Input {...field} placeholder="Casco de seguridad"/>} /></TableCell>
+                                    <TableCell><FormField control={form.control} name={`epp.${index}.size`} render={({ field }) => <Input {...field} placeholder="M"/>} /></TableCell>
+                                    <TableCell><FormField control={form.control} name={`epp.${index}.quantity`} render={({ field }) => <Input type="number" {...field} />} /></TableCell>
+                                    <TableCell>
+                                        <FormField 
+                                            control={form.control} 
+                                            name={`epp.${index}.deliveryDate`} 
+                                            render={({ field }) => renderDateField(field, index, 'deliveryDate', 'epp')} 
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <FormField 
+                                            control={form.control} 
+                                            name={`epp.${index}.expirationDate`} 
+                                            render={({ field }) => renderDateField(field, index, 'expirationDate', 'epp')} 
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Button variant="ghost" size="icon" onClick={() => removeEpp(index)} disabled={disabled}>
+                                            <Trash2 className="h-4 w-4 text-destructive"/>
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
 
-        <Card>
-            <CardHeader>
-                <div className="flex items-center justify-between">
-                    <CardTitle>Certificados</CardTitle>
-                    <Button type="button" size="sm" variant="outline" onClick={() => appendCertification({ id: crypto.randomUUID(), name: '', issuingOrganization: '', issueDate: '', expirationDate: '' })} disabled={disabled}>
-                        <PlusCircle className="mr-2 h-4 w-4"/>
-                        Añadir Fila
-                    </Button>
-                </div>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Nombre del Certificado</TableHead>
-                            <TableHead>Organización Emisora</TableHead>
-                            <TableHead className="w-[200px]">Fecha de Emisión</TableHead>
-                            <TableHead className="w-[200px]">Fecha de Caducidad</TableHead>
-                            <TableHead className="w-[50px]"></TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {certificationFields.map((field, index) => (
-                            <TableRow key={field.id}>
-                                <TableCell><FormField control={form.control} name={`certifications.${index}.name`} render={({ field }) => <Input {...field} placeholder="Certificación SEC"/>} /></TableCell>
-                                <TableCell><FormField control={form.control} name={`certifications.${index}.issuingOrganization`} render={({ field }) => <Input {...field} placeholder="SEC"/>} /></TableCell>
-                                <TableCell>
-                                    <FormField 
-                                        control={form.control} 
-                                        name={`certifications.${index}.issueDate`} 
-                                        render={({ field }) => renderDateField(field, index, 'issueDate', 'certifications')} 
-                                    />
-                                </TableCell>
-                                <TableCell>
-                                    <FormField 
-                                        control={form.control} 
-                                        name={`certifications.${index}.expirationDate`} 
-                                        render={({ field }) => renderDateField(field, index, 'expirationDate', 'certifications')} 
-                                    />
-                                </TableCell>
-                                <TableCell>
-                                    <Button variant="ghost" size="icon" onClick={() => removeCertification(index)} disabled={disabled}>
-                                        <Trash2 className="h-4 w-4 text-destructive"/>
-                                    </Button>
-                                </TableCell>
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <CardTitle>Certificados</CardTitle>
+                        <Button type="button" size="sm" variant="outline" onClick={() => appendCertification({ id: crypto.randomUUID(), name: '', issuingOrganization: '', issueDate: '', expirationDate: '' })} disabled={disabled}>
+                            <PlusCircle className="mr-2 h-4 w-4"/>
+                            Añadir Fila
+                        </Button>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Nombre del Certificado</TableHead>
+                                <TableHead>Organización Emisora</TableHead>
+                                <TableHead className="w-[200px]">Fecha de Emisión</TableHead>
+                                <TableHead className="w-[200px]">Fecha de Caducidad</TableHead>
+                                <TableHead className="w-[50px]"></TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
+                        </TableHeader>
+                        <TableBody>
+                            {certificationFields.map((field, index) => (
+                                <TableRow key={field.id}>
+                                    <TableCell><FormField control={form.control} name={`certifications.${index}.name`} render={({ field }) => <Input {...field} placeholder="Certificación SEC"/>} /></TableCell>
+                                    <TableCell><FormField control={form.control} name={`certifications.${index}.issuingOrganization`} render={({ field }) => <Input {...field} placeholder="SEC"/>} /></TableCell>
+                                    <TableCell>
+                                        <FormField 
+                                            control={form.control} 
+                                            name={`certifications.${index}.issueDate`} 
+                                            render={({ field }) => renderDateField(field, index, 'issueDate', 'certifications')} 
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <FormField 
+                                            control={form.control} 
+                                            name={`certifications.${index}.expirationDate`} 
+                                            render={({ field }) => renderDateField(field, index, 'expirationDate', 'certifications')} 
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Button variant="ghost" size="icon" onClick={() => removeCertification(index)} disabled={disabled}>
+                                            <Trash2 className="h-4 w-4 text-destructive"/>
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+          </fieldset>
 
-        {!disabled && (
-            <div className="flex justify-end gap-2">
-                <Button variant="outline" asChild><Link href="/collaborators">Cancelar</Link></Button>
-                <Button type="submit">Guardar Cambios</Button>
-            </div>
-        )}
+          {!disabled && (
+              <div className="flex justify-end gap-2">
+                  <Button variant="outline" asChild><Link href="/collaborators">Cancelar</Link></Button>
+                  <Button type="submit">Guardar Cambios</Button>
+              </div>
+          )}
         </form>
     </Form>
   );

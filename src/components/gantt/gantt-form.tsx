@@ -86,14 +86,6 @@ export default function GanttForm({ onSave, ganttChart, initialTasks, disabled =
       });
     }
   }, [ganttChart, form]);
-  
-  React.useEffect(() => {
-    if (disabled) {
-      form.disable();
-    } else {
-      form.enable();
-    }
-  }, [disabled, form]);
 
   const handleUpdateTask = (id: string, field: keyof GanttTask, value: any) => {
     setTasks(prevTasks => prevTasks.map(t => {
@@ -470,14 +462,14 @@ export default function GanttForm({ onSave, ganttChart, initialTasks, disabled =
                     )}
                 </CardContent>
             </Card>
-
-            {!disabled && (
-                <div className="flex justify-end gap-2">
-                    <Button variant="outline" asChild><Link href="/gantt">Cancelar</Link></Button>
-                    <Button type="submit">Guardar Carta Gantt</Button>
-                </div>
-            )}
         </fieldset>
+
+        {!disabled && (
+            <div className="flex justify-end gap-2">
+                <Button variant="outline" asChild><Link href="/gantt">Cancelar</Link></Button>
+                <Button type="submit">Guardar Carta Gantt</Button>
+            </div>
+        )}
       </form>
     </Form>
   );

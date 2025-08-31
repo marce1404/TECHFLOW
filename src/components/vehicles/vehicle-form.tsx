@@ -102,15 +102,6 @@ export default function VehicleForm({ onSave, vehicle, collaborators, disabled =
         });
     }
   }, [vehicle, form]);
-  
-  React.useEffect(() => {
-    if (disabled) {
-      form.disable();
-    } else {
-      form.enable();
-    }
-  }, [disabled, form]);
-
 
   const onSubmit = (data: VehicleFormValues) => {
     const dataToSave = {
