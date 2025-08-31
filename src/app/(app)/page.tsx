@@ -189,7 +189,7 @@ export default function DashboardPage() {
        <footer className={cn(
             "w-full bg-background", 
             isFullscreen 
-                ? "fixed bottom-0 left-0 right-0 z-50 bg-background/90" 
+                ? "fixed bottom-0 left-0 right-0 z-50 bg-background" 
                 : "fixed bottom-0 left-0 right-0 z-20 peer-data-[state=expanded]:peer-data-[side=left]:pl-[16rem] peer-data-[state=expanded]:peer-data-[side=right]:pr-[16rem] peer-data-[collapsible=icon]:peer-data-[state=expanded]:pl-[16rem] md:peer-data-[state=collapsed]:peer-data-[collapsible=icon]:pl-[3.5rem] transition-[padding] ease-linear"
             )}>
         <MotivationalTicker />

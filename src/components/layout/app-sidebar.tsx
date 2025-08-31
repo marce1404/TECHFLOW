@@ -148,7 +148,7 @@ export default function AppSidebar() {
                         className="h-10 w-10"
                     >
                         <Link href="/">
-                            <LayoutGrid />
+                            <LayoutGrid className="h-5 w-5" />
                         </Link>
                     </SidebarMenuButton>
                 </div>
@@ -165,7 +165,7 @@ export default function AppSidebar() {
                             className="h-10 w-10"
                         >
                             <Link href={item.href}>
-                                <item.icon />
+                                <item.icon className="h-5 w-5" />
                             </Link>
                         </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -183,7 +183,7 @@ export default function AppSidebar() {
                         isActive={isActive(settingsMenuItem.href, settingsMenuItem.exact)}
                     >
                     <Link href={settingsMenuItem.href}>
-                        <Settings />
+                        <Settings className="h-5 w-5" />
                     </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -194,7 +194,7 @@ export default function AppSidebar() {
                         variant='ghost'
                         className="h-10 w-10"
                     >
-                        <LogOut />
+                        <LogOut className="h-5 w-5" />
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 </SidebarMenu>
@@ -241,7 +241,7 @@ export default function AppSidebar() {
                   variant={isActive(item.href, item.exact) ? 'default' : 'ghost'}
                 >
                   <Link href={item.href}>
-                    <item.icon />
+                    <item.icon className="h-5 w-5" />
                     <span>{item.label}</span>
                   </Link>
                 </SidebarMenuButton>
@@ -251,7 +251,7 @@ export default function AppSidebar() {
                             <SidebarMenuSubItem key={subItem.href}>
                                 <SidebarMenuSubButton asChild isActive={pathname === subItem.href}>
                                     <Link href={subItem.href}>
-                                        <subItem.icon />
+                                        <subItem.icon className="h-5 w-5" />
                                         <span>{subItem.label}</span>
                                     </Link>
                                 </SidebarMenuSubButton>
@@ -272,7 +272,7 @@ export default function AppSidebar() {
                 variant={isActive(settingsMenuItem.href, settingsMenuItem.exact) ? 'default' : 'ghost'}
             >
               <Link href={settingsMenuItem.href}>
-                <Settings />
+                <Settings className="h-5 w-5" />
                 <span>Configuración</span>
               </Link>
             </SidebarMenuButton>
@@ -282,7 +282,7 @@ export default function AppSidebar() {
                 onClick={handleLogout}
                 variant='ghost'
             >
-              <LogOut />
+              <LogOut className="h-5 w-5" />
               <span>Cerrar Sesión</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
