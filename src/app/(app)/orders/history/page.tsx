@@ -42,19 +42,19 @@ export default function HistoryPage() {
                 order.description.toLowerCase().includes(filters.search.toLowerCase())
             );
         }
-        if (filters.client) {
+        if (filters.client && filters.client !== 'all') {
             orders = orders.filter(order => order.client === filters.client);
         }
-        if (filters.service) {
+        if (filters.service && filters.service !== 'all') {
             orders = orders.filter(order => order.service === filters.service);
         }
-        if (filters.technician) {
+        if (filters.technician && filters.technician !== 'all') {
             orders = orders.filter(order => order.technicians.includes(filters.technician));
         }
-        if (filters.supervisor) {
+        if (filters.supervisor && filters.supervisor !== 'all') {
             orders = orders.filter(order => order.assigned.includes(filters.supervisor));
         }
-        if (filters.priority) {
+        if (filters.priority && filters.priority !== 'all') {
             orders = orders.filter(order => order.priority === filters.priority);
         }
         if (filters.dateRange.from) {

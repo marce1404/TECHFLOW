@@ -30,7 +30,7 @@ export type Filters = {
   service: string;
   technician: string;
   supervisor: string;
-  priority: WorkOrder['priority'] | '';
+  priority: WorkOrder['priority'] | '' | 'all';
   dateRange: DateRange;
 };
 
@@ -44,11 +44,11 @@ export default function AdvancedFilters({ onFilterChange }: AdvancedFiltersProps
   
   const [filters, setFilters] = React.useState<Filters>({
     search: '',
-    client: '',
-    service: '',
-    technician: '',
-    supervisor: '',
-    priority: '',
+    client: 'all',
+    service: 'all',
+    technician: 'all',
+    supervisor: 'all',
+    priority: 'all',
     dateRange: { from: undefined, to: undefined },
   });
 
@@ -63,11 +63,11 @@ export default function AdvancedFilters({ onFilterChange }: AdvancedFiltersProps
   const clearFilters = () => {
     setFilters({
       search: '',
-      client: '',
-      service: '',
-      technician: '',
-      supervisor: '',
-      priority: '',
+      client: 'all',
+      service: 'all',
+      technician: 'all',
+      supervisor: 'all',
+      priority: 'all',
       dateRange: { from: undefined, to: undefined },
     });
   };
@@ -88,14 +88,14 @@ export default function AdvancedFilters({ onFilterChange }: AdvancedFiltersProps
         <Select value={filters.client} onValueChange={(value) => handleInputChange('client', value)}>
           <SelectTrigger><SelectValue placeholder="Filtrar por cliente..." /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos los clientes</SelectItem>
+            <SelectItem value="all">Todos los clientes</SelectItem>
             {clients.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={filters.service} onValueChange={(value) => handleInputChange('service', value)}>
           <SelectTrigger><SelectValue placeholder="Filtrar por servicio..." /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos los servicios</SelectItem>
+            <SelectItem value="all">Todos los servicios</SelectItem>
             {services.map(s => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
           </SelectContent>
         </Select>
@@ -137,21 +137,21 @@ export default function AdvancedFilters({ onFilterChange }: AdvancedFiltersProps
         <Select value={filters.technician} onValueChange={(value) => handleInputChange('technician', value)}>
           <SelectTrigger><SelectValue placeholder="Filtrar por técnico..." /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos los técnicos</SelectItem>
+            <SelectItem value="all">Todos los técnicos</SelectItem>
             {technicians.map(t => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={filters.supervisor} onValueChange={(value) => handleInputChange('supervisor', value)}>
           <SelectTrigger><SelectValue placeholder="Filtrar por encargado..." /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos los encargados</SelectItem>
+            <SelectItem value="all">Todos los encargados</SelectItem>
             {supervisors.map(s => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={filters.priority} onValueChange={(value) => handleInputChange('priority', value as WorkOrder['priority'])}>
           <SelectTrigger><SelectValue placeholder="Filtrar por prioridad..." /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todas las prioridades</SelectItem>
+            <SelectItem value="all">Todas las prioridades</SelectItem>
             {priorities.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
           </SelectContent>
         </Select>
