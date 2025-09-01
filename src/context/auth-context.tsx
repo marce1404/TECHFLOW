@@ -7,6 +7,7 @@ import { auth, db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { collection, doc, getDoc, getDocs, setDoc, writeBatch } from 'firebase/firestore';
 import type { AppUser } from '@/lib/types';
+import { listUsersAction } from '@/app/actions';
 
 interface AuthContextType {
   user: User | null;
@@ -32,6 +33,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (userDocSnap.exists()) {
           setUserProfile(userDocSnap.data() as AppUser);
         } else {
+          // This case might happen if a user is created in Auth but not in Firestore.
+          // We create a fallback profile with 'Visor' role.
           try {
             const newUserProfile: AppUser = {
               uid: currentUser.uid,

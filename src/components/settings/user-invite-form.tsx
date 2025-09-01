@@ -65,7 +65,7 @@ export function UserInviteForm() {
         role: data.role,
       });
 
-      if (!creationResult.success) {
+      if (!creationResult.success || !creationResult.user) {
         throw new Error(creationResult.message);
       }
       
@@ -78,16 +78,12 @@ export function UserInviteForm() {
         if (!smtpConfig) {
             toast({ variant: 'destructive', title: 'Advertencia', description: 'No se puede enviar la invitación. La configuración SMTP no está establecida.'});
         } else {
-            const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-            if (!appUrl) {
-                toast({ variant: 'destructive', title: 'Error de Configuración', description: 'La URL de la aplicación no está definida. No se puede enviar la invitación.' });
+            const appUrl = window.location.origin;
+             const result = await sendInvitationEmailAction(creationResult.user, data.password, appUrl, smtpConfig);
+            if (result.success) {
+                toast({ title: 'Invitación Enviada', description: result.message });
             } else {
-                 const result = await sendInvitationEmailAction(creationResult.user!, data.password, appUrl, smtpConfig);
-                if (result.success) {
-                    toast({ title: 'Invitación Enviada', description: result.message });
-                } else {
-                    toast({ variant: 'destructive', title: 'Error al Enviar Invitación', description: result.message });
-                }
+                toast({ variant: 'destructive', title: 'Error al Enviar Invitación', description: result.message });
             }
         }
       }

@@ -38,7 +38,6 @@ import { UserEditDialog } from './user-edit-dialog';
 import { deleteUserAction, listUsersAction, toggleUserStatusAction } from '@/app/actions';
 import { UserChangePasswordDialog } from './user-change-password-dialog';
 import { UserSendInvitationDialog } from './user-send-invitation-dialog';
-import { useWorkOrders } from '@/context/work-orders-context';
 
 export default function UsersTable() {
     const { user: currentUser } = useAuth();

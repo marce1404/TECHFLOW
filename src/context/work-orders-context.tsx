@@ -13,6 +13,7 @@ import { useAuth } from './auth-context';
 import { format } from 'date-fns';
 import { CloseWorkOrderDialog } from '@/components/orders/close-work-order-dialog';
 import { normalizeString } from '@/lib/utils';
+import { listUsersAction } from '@/app/actions';
 
 
 interface WorkOrdersContextType {
@@ -68,8 +69,8 @@ interface WorkOrdersContextType {
   deleteSubmittedReport: (id: string) => Promise<void>;
   updateCompanyInfo: (info: CompanyInfo) => Promise<void>;
   updateSmtpConfig: (config: SmtpConfig) => Promise<void>;
-  updateUserProfile: (uid: string, data: Partial<Pick<AppUser, 'displayName' | 'role'>>) => Promise<void>;
   promptToCloseOrder: (order: WorkOrder) => void;
+  users: AppUser[];
 }
 
 const WorkOrdersContext = createContext<WorkOrdersContextType | undefined>(undefined);
@@ -90,8 +91,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [submittedReports, setSubmittedReports] = useState<SubmittedReport[]>([]);
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
   const [smtpConfig, setSmtpConfig] = useState<SmtpConfig | null>(null);
+  const [users, setUsers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, loading: authLoading } = useAuth();
+  const { user, userProfile, loading: authLoading } = useAuth();
   const [orderToClose, setOrderToClose] = useState<WorkOrder | null>(null);
 
 
@@ -158,6 +160,13 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         
         await fetchAndSetSuggestedTasks();
         
+        if (userProfile && userProfile.role === 'Admin') {
+            const usersResult = await listUsersAction();
+            if (usersResult.success && usersResult.users) {
+                setUsers(usersResult.users);
+            }
+        }
+        
         const allOrders = workOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[];
         
         const active = allOrders.filter(o => normalizeString(o.status) !== 'cerrada');
@@ -211,7 +220,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         } else {
             setReportTemplates(loadedTemplates);
         }
-        
+
     } catch (error) {
         console.error("Error en fetchData: ", error);
         // Fallback to empty arrays on error
@@ -226,12 +235,13 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         setSuggestedTasks([]);
         setReportTemplates([]);
         setSubmittedReports([]);
+        setUsers([]);
         setCompanyInfo(null);
         setSmtpConfig(null);
     } finally {
         setLoading(false);
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, userProfile]);
 
 
   useEffect(() => {
@@ -517,13 +527,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     await fetchData();
   };
   
-  const updateUserProfile = async (uid: string, data: Partial<Pick<AppUser, 'displayName' | 'role'>>) => {
-    const userRef = doc(db, 'users', uid);
-    await updateDoc(userRef, data);
-    // await fetchUsers(); // Re-fetch all users to update the UI
-  };
-
-
   return (
     <WorkOrdersContext.Provider value={{ 
         activeWorkOrders, 
@@ -578,8 +581,8 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         deleteSubmittedReport,
         updateCompanyInfo,
         updateSmtpConfig,
-        updateUserProfile,
         promptToCloseOrder,
+        users,
     }}>
       {children}
       <CloseWorkOrderDialog 

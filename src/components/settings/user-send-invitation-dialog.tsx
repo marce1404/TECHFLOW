@@ -71,12 +71,7 @@ export function UserSendInvitationDialog({ open, onOpenChange, user }: UserSendI
         return;
     }
     
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-    if (!appUrl) {
-        toast({ variant: 'destructive', title: 'Error de Configuración', description: 'La URL de la aplicación no está definida. No se puede enviar la invitación.' });
-        setLoading(false);
-        return;
-    }
+    const appUrl = window.location.origin;
 
     const result = await sendInvitationEmailAction(user, data.password, appUrl, smtpConfig);
 

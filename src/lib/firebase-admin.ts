@@ -122,22 +122,6 @@ export async function updateUserAction(uid: string, data: { displayName: string;
             role: data.role,
             status: data.status,
         });
-
-        // Update corresponding collaborator if exists
-        const user = await auth.getUser(uid);
-        if (user.email) {
-            const collaboratorsQuery = db.collection('collaborators').where('email', '==', user.email);
-            const collaboratorsSnapshot = await collaboratorsQuery.get();
-            
-            if (!collaboratorsSnapshot.empty) {
-                const collaboratorDocRef = collaboratorsSnapshot.docs[0].ref;
-                await collaboratorDocRef.update({
-                    name: data.displayName,
-                    role: data.role,
-                    status: data.status,
-                });
-            }
-        }
         
         return { success: true, message: 'Usuario actualizado correctamente.' };
     } catch (error: any) {
@@ -173,5 +157,3 @@ export async function toggleUserStatusAction(uid: string, currentStatus: 'Activo
     return { success: false, message: error.message || 'Error al cambiar el estado del usuario.' };
   }
 }
-
-    

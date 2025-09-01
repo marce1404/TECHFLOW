@@ -91,11 +91,8 @@ export async function sendReportEmailAction(
     cc: string[],
     subject: string,
     htmlBody: string,
-    config: SmtpConfig | null,
+    config: SmtpConfig,
 ): Promise<{ success: boolean; message: string }> {
-    if (!config) {
-        return { success: false, message: 'La configuración SMTP no ha sido establecida.' };
-    }
     const { host, port, secure, user, pass, fromName, fromEmail } = config;
 
     let transporter;
@@ -213,11 +210,8 @@ export async function sendInvitationEmailAction(
     user: AppUser,
     password_clear: string,
     appUrl: string,
-    config: SmtpConfig | null,
+    config: SmtpConfig,
 ): Promise<{ success: boolean; message: string }> {
-    if (!config) {
-        return { success: false, message: 'La configuración SMTP no ha sido establecida.' };
-    }
     const { host, port, secure, user: smtpUser, pass, fromName, fromEmail } = config;
 
     let transporter;

@@ -74,7 +74,12 @@ export function UserEditDialog({ open, onOpenChange, user, onUserUpdate }: UserE
     setLoading(true);
 
     try {
-      const result = await updateUserAction(user.uid, data);
+      const result = await updateUserAction(user.uid, {
+        displayName: data.displayName,
+        role: data.role,
+        status: data.status,
+      });
+
       if (result.success) {
         toast({
             title: 'Usuario Actualizado',

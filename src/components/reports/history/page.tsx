@@ -39,12 +39,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { listUsersAction } from '@/app/actions';
 
 export default function ReportsHistoryPage() {
-  const { submittedReports, otCategories, loading, deleteSubmittedReport } = useWorkOrders();
+  const { submittedReports, otCategories, loading, deleteSubmittedReport, users } = useWorkOrders();
   const { userProfile } = useAuth();
-  const [users, setUsers] = React.useState<AppUser[]>([]);
   const [search, setSearch] = React.useState('');
   const [activeTab, setActiveTab] = React.useState('todos');
   const [selectedReport, setSelectedReport] = React.useState<SubmittedReport | null>(null);
@@ -52,15 +50,6 @@ export default function ReportsHistoryPage() {
   const [currentPage, setCurrentPage] = React.useState(1);
   const itemsPerPage = 15;
 
-  React.useEffect(() => {
-    async function fetchUsers() {
-        const result = await listUsersAction();
-        if (result.success && result.users) {
-            setUsers(result.users);
-        }
-    }
-    fetchUsers();
-  }, []);
 
   const categories = [
     { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },

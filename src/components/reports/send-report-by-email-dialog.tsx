@@ -31,7 +31,6 @@ import { sendReportEmailAction } from '@/app/actions';
 import { MultiSelect } from '../ui/multi-select';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { Timestamp } from 'firebase/firestore';
-import { useAuth } from '@/context/auth-context';
 
 const emailFormSchema = z.object({
   to: z.string().email({ message: 'El correo del cliente no es válido.' }),
@@ -55,9 +54,8 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
   const { toast } = useToast();
   const { collaborators, companyInfo, reportTemplates, smtpConfig } = useWorkOrders();
   const [loading, setLoading] = React.useState(false);
-  const { userProfile } = useAuth();
   
-  const canSend = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor' || userProfile?.role === 'Técnico';
+  const canSend = smtpConfig !== null;
 
   const form = useForm<EmailFormValues>({
     resolver: zodResolver(emailFormSchema),
@@ -254,13 +252,13 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
     const subject = `Informe de Servicio - OT ${report.otDetails.ot_number} - ${report.otDetails.client}`;
     const htmlBody = generateReportHtml(report, template);
 
-    const result = await sendReportEmailAction({
-        to: data.to,
-        cc: uniqueCcList,
+    const result = await sendReportEmailAction(
+        data.to,
+        uniqueCcList,
         subject,
         htmlBody,
         smtpConfig,
-    });
+    );
 
     if (result.success) {
       toast({
