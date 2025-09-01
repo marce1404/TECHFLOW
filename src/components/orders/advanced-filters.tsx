@@ -2,7 +2,6 @@
 'use client';
 
 import * as React from 'react';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -28,38 +27,25 @@ export type Filters = {
 };
 
 interface AdvancedFiltersProps {
+  filters: Omit<Filters, 'search'>;
   onFilterChange: (filters: Omit<Filters, 'search'>) => void;
   isHistory?: boolean;
 }
 
-export default function AdvancedFilters({ onFilterChange, isHistory = false }: AdvancedFiltersProps) {
+export default function AdvancedFilters({ filters, onFilterChange, isHistory = false }: AdvancedFiltersProps) {
   const { services, collaborators, activeWorkOrders, historicalWorkOrders, otStatuses } = useWorkOrders();
   const allOrders = [...activeWorkOrders, ...historicalWorkOrders];
-  
-  const [filters, setFilters] = React.useState<Omit<Filters, 'search'>>({
-    clients: [],
-    services: [],
-    technicians: [],
-    supervisors: [],
-    priorities: [],
-    statuses: [],
-    dateRange: { from: undefined, to: undefined },
-  });
 
   const handleMultiSelectChange = (key: keyof Omit<Filters, 'search' | 'dateRange'>, value: string[]) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    onFilterChange({ ...filters, [key]: value });
   };
 
   const handleDateChange = (value: DateRange | undefined) => {
-    setFilters(prev => ({ ...prev, dateRange: value || { from: undefined, to: undefined } }));
+    onFilterChange({ ...filters, dateRange: value || { from: undefined, to: undefined } });
   };
 
-  React.useEffect(() => {
-    onFilterChange(filters);
-  }, [filters, onFilterChange]);
-
   const clearFilters = () => {
-    setFilters({
+    onFilterChange({
       clients: [],
       services: [],
       technicians: [],

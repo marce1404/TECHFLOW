@@ -29,6 +29,13 @@ export default function HistoryPage() {
     });
     const [isFilterOpen, setIsFilterOpen] = React.useState(false);
 
+    const handleAdvancedFilterChange = React.useCallback((newAdvancedFilters: Omit<Filters, 'search'>) => {
+        setFilters(prev => ({
+            ...prev,
+            ...newAdvancedFilters
+        }));
+    }, []);
+
 
     const filterOrders = (categoryPrefix: string | null) => {
         setActiveTab(categoryPrefix || 'todos');
@@ -128,7 +135,7 @@ export default function HistoryPage() {
                             <CardTitle>Filtros Avanzados</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <AdvancedFilters onFilterChange={(newFilters) => setFilters(prev => ({...prev, ...newFilters}))} />
+                            <AdvancedFilters onFilterChange={handleAdvancedFilterChange} filters={filters} />
                         </CardContent>
                     </Card>
                 </CollapsibleContent>
