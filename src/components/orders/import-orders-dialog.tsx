@@ -89,6 +89,22 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     return found?.plate;
   };
 
+  const parseDate = (dateValue: any): string | undefined => {
+    if (!dateValue) return undefined;
+    if (dateValue instanceof Date) {
+        // Adjust for timezone offset
+        const adjustedDate = new Date(dateValue.getTime() - (dateValue.getTimezoneOffset() * 60000));
+        return adjustedDate.toISOString().split('T')[0];
+    }
+    if (typeof dateValue === 'string' || typeof dateValue === 'number') {
+        const d = new Date(dateValue);
+        if (!isNaN(d.getTime())) {
+            const adjustedDate = new Date(d.getTime() - (d.getTimezoneOffset() * 60000));
+            return adjustedDate.toISOString().split('T')[0];
+        }
+    }
+    return undefined; // Return undefined if parsing fails
+  }
 
   const parseFile = (fileToParse: File) => {
     const reader = new FileReader();
@@ -105,16 +121,11 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
       json.forEach((row: any, index: number) => {
         const rowData = { ...row };
         
-        // Convert date objects to string if they exist
-        if (rowData.date instanceof Date) {
-            rowData.date.setMinutes(rowData.date.getMinutes() + rowData.date.getTimezoneOffset());
-            rowData.date = rowData.date.toISOString().split('T')[0];
-        } else {
-            rowData.date = format(new Date(), 'yyyy-MM-dd');
-        }
-         if (rowData.endDate instanceof Date) {
-            rowData.endDate.setMinutes(rowData.endDate.getMinutes() + rowData.endDate.getTimezoneOffset());
-            rowData.endDate = rowData.endDate.toISOString().split('T')[0];
+        rowData.date = parseDate(rowData.date);
+        rowData.endDate = parseDate(rowData.endDate);
+
+        if (!rowData.date) {
+            validationErrors.push(`Fila ${index + 2}: La columna 'date' es requerida o tiene un formato inválido.`);
         }
 
         const result = CreateWorkOrderInputSchemaForExcel.safeParse(rowData);
@@ -123,19 +134,19 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
           const { assigned, technicians, vehicles, comercial, ...rest } = result.data;
           
           const mappedAssigned = assigned 
-            ? assigned.split(',').map(name => findMatchingCollaborator(name) || name)
+            ? assigned.split(',').map(name => findMatchingCollaborator(name.trim()) || name.trim())
             : [];
 
           const mappedTechnicians = technicians 
-            ? technicians.split(',').map(name => findMatchingCollaborator(name, 'Técnico') || name)
+            ? technicians.split(',').map(name => findMatchingCollaborator(name.trim(), 'Técnico') || name.trim())
             : [];
             
           const mappedVehicles = vehicles
-            ? vehicles.split(',').map(plate => findMatchingVehicle(plate) || plate)
+            ? vehicles.split(',').map(plate => findMatchingVehicle(plate.trim()) || plate.trim())
             : [];
 
           const mappedComercial = comercial
-            ? findMatchingCollaborator(comercial, 'Comercial') || comercial
+            ? findMatchingCollaborator(comercial.trim(), 'Comercial') || comercial.trim()
             : '';
 
           validData.push({
