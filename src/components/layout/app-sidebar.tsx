@@ -12,9 +12,6 @@ import {
   SidebarMenuButton,
   SidebarHeader,
   SidebarFooter,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem
 } from '@/components/ui/sidebar';
 import {
   LayoutGrid,
@@ -26,7 +23,6 @@ import {
   BarChart2,
   Sparkles,
   LogOut,
-  ClipboardCheck,
   FilePlus2,
   Archive,
 } from 'lucide-react';
@@ -75,9 +71,12 @@ export default function AppSidebar() {
       label: 'OTs Activas',
       icon: File,
       exact: false, // Match /orders and /orders/new, etc.
-      subItems: [
-        { href: '/orders/history', label: 'Historial', icon: History }
-      ]
+    },
+     {
+      href: '/orders/history',
+      label: 'Historial OTs',
+      icon: History,
+      exact: true,
     },
     {
       href: '/gantt',
@@ -259,20 +258,6 @@ export default function AppSidebar() {
                     <span>{item.label}</span>
                   </Link>
                 </SidebarMenuButton>
-                 {item.subItems && isActive('/orders', false) && (
-                    <SidebarMenuSub>
-                        {item.subItems.map(subItem => (
-                            <SidebarMenuSubItem key={subItem.href}>
-                                <SidebarMenuSubButton asChild isActive={pathname === subItem.href}>
-                                    <Link href={subItem.href}>
-                                        <subItem.icon className="h-5 w-5" />
-                                        <span>{subItem.label}</span>
-                                    </Link>
-                                </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                        ))}
-                    </SidebarMenuSub>
-                )}
               </SidebarMenuItem>
           )}
         </SidebarMenu>
