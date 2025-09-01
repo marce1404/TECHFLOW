@@ -7,7 +7,7 @@ import { auth, db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { collection, doc, getDoc, getDocs, setDoc, writeBatch } from 'firebase/firestore';
 import type { AppUser } from '@/lib/types';
-import { listUsers } from '@/app/actions';
+import { listUsersAction } from '@/app/actions';
 
 
 interface AuthContextType {
@@ -28,12 +28,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchUsers = useCallback(async () => {
     try {
-        const usersCollection = collection(db, 'users');
-        const usersSnapshot = await getDocs(usersCollection);
-        const usersList = usersSnapshot.docs.map(doc => doc.data() as AppUser);
-        setUsers(usersList);
+        const result = await listUsersAction();
+        if (result.success && result.users) {
+            setUsers(result.users);
+        } else {
+            console.error("Failed to fetch users:", result.message);
+            setUsers([]);
+        }
     } catch (error) {
-        console.error("Error fetching users:", error);
+        console.error("Error fetching users via action:", error);
         setUsers([]);
     }
   }, []);
@@ -49,18 +52,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (userDocSnap.exists()) {
           setUserProfile(userDocSnap.data() as AppUser);
         } else {
+          // This case should ideally not happen with the new server-side user creation logic,
+          // but it's a good fallback for edge cases or existing users without a profile.
           try {
             const newUserProfile: AppUser = {
               uid: currentUser.uid,
               email: currentUser.email!,
               displayName: currentUser.displayName || currentUser.email!.split('@')[0],
-              role: 'Visor',
+              role: 'Visor', // Default to least privileged role
               status: 'Activo',
             };
             await setDoc(userDocRef, newUserProfile);
             setUserProfile(newUserProfile);
           } catch (error) {
-             console.error("Error creating user profile in Firestore:", error);
+             console.error("Error creating fallback user profile in Firestore:", error);
              setUserProfile(null);
           }
         }
@@ -91,3 +96,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+    

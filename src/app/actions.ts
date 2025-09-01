@@ -19,6 +19,7 @@ import {
   toggleUserStatusAction as toggleUserStatusActionAdmin,
   updateUserAction as updateUserActionAdmin,
   createUserAction as createUserActionAdmin,
+  listUsersAction as listUsersActionAdmin,
 } from '@/lib/firebase-admin';
 import type { UserRecord } from 'firebase-admin/auth';
 
@@ -29,6 +30,7 @@ export const deleteUserAction = deleteUserActionAdmin;
 export const changeUserPasswordAction = changeUserPasswordActionAdmin;
 export const toggleUserStatusAction = toggleUserStatusActionAdmin;
 export const updateUserAction = updateUserActionAdmin;
+export const listUsersAction = listUsersActionAdmin;
 
 
 export async function getResourceSuggestions(
@@ -317,3 +319,5 @@ export async function deleteAllWorkOrdersAction(): Promise<{ success: boolean; m
     return { success: false, message: `Error al limpiar la base de datos: ${errorMessage}`, deletedCount: 0 };
   }
 }
+
+    

@@ -47,6 +47,18 @@ export { auth, db };
 
 // Server Actions requiring Admin privileges
 
+export async function listUsersAction(): Promise<{ success: boolean; users?: AppUser[]; message: string }> {
+  if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.' };
+  try {
+    const usersCollection = await db.collection('users').get();
+    const users = usersCollection.docs.map(doc => doc.data() as AppUser);
+    return { success: true, users: users, message: 'Users fetched successfully.' };
+  } catch (error: any) {
+    console.error('Error listing users:', error);
+    return { success: false, message: error.message || 'Error al listar los usuarios.' };
+  }
+}
+
 export async function createUserAction(data: { email: string; password; displayName: string; role: AppUser['role'] }): Promise<{ success: boolean; message: string; user?: AppUser }> {
   if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.' };
   try {
@@ -161,3 +173,5 @@ export async function toggleUserStatusAction(uid: string, currentStatus: 'Activo
     return { success: false, message: error.message || 'Error al cambiar el estado del usuario.' };
   }
 }
+
+    
