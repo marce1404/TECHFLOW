@@ -226,7 +226,7 @@ export async function sendInvitationEmailAction(
         return { success: false, message: `Error de conexión SMTP: ${error.message}` };
     }
 
-    const subject = `¡Bienvenido a TechFlow! Tus credenciales de acceso.`;
+    const subject = `¡Bienvenido a Control de OT de OSESA! Tus credenciales de acceso`;
     const htmlBody = `
     <!DOCTYPE html>
     <html lang="es">
@@ -313,3 +313,5 @@ export async function deleteAllWorkOrdersAction(): Promise<{ success: boolean; m
     return { success: false, message: `Error al limpiar la base de datos: ${errorMessage}`, deletedCount: 0 };
   }
 }
+
+    
