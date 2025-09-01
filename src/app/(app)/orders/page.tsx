@@ -15,7 +15,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Input } from "@/components/ui/input";
 
 export default function ActiveOrdersPage() {
-    const { activeWorkOrders, otCategories } = useWorkOrders();
+    const { activeWorkOrders, historicalWorkOrders, otCategories } = useWorkOrders();
     const { userProfile } = useAuth();
     const [activeTab, setActiveTab] = React.useState('todos');
     const [isFilterOpen, setIsFilterOpen] = React.useState(false);
@@ -44,7 +44,8 @@ export default function ActiveOrdersPage() {
     };
     
     const filteredOrders = React.useMemo(() => {
-        let orders = activeWorkOrders;
+        const allOrders = [...activeWorkOrders, ...historicalWorkOrders];
+        let orders = allOrders;
 
         if (activeTab !== 'todos') {
             orders = orders.filter(order => order.ot_number.startsWith(activeTab));
@@ -86,7 +87,7 @@ export default function ActiveOrdersPage() {
         }
 
         return orders;
-    }, [activeWorkOrders, activeTab, filters]);
+    }, [activeWorkOrders, historicalWorkOrders, activeTab, filters]);
 
     const categories = [
         { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
