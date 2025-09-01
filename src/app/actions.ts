@@ -1,4 +1,3 @@
-
 'use server';
 
 import {
@@ -293,4 +292,34 @@ export async function sendInvitationEmailAction(
         console.error("Error sending invitation email:", error);
         return { success: false, message: `Error al enviar el correo: ${error.message}` };
     }
+}
+
+export async function deleteAllWorkOrdersAction(): Promise<{ success: boolean; message: string; deletedCount: number }> {
+  try {
+    const collectionRef = adminDb.collection('work-orders');
+    const snapshot = await collectionRef.limit(500).get(); // Process up to 500 at a time
+
+    if (snapshot.empty) {
+      return { success: true, message: 'No hay órdenes de trabajo para eliminar.', deletedCount: 0 };
+    }
+
+    let deletedCount = 0;
+    while (!snapshot.empty) {
+        const batch = adminDb.batch();
+        snapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+            deletedCount++;
+        });
+        await batch.commit();
+        // Get the next batch
+        const nextSnapshot = await collectionRef.limit(500).get();
+        if (nextSnapshot.empty) break; // Exit loop
+    }
+
+    return { success: true, message: `Se eliminaron ${deletedCount} órdenes de trabajo.`, deletedCount };
+  } catch (error) {
+    console.error("Error deleting all work orders:", error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+    return { success: false, message: `Error al limpiar la base de datos: ${errorMessage}`, deletedCount: 0 };
+  }
 }
