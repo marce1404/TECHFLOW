@@ -10,7 +10,7 @@ import * as React from "react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useAuth } from "@/context/auth-context";
 import AdvancedFilters, { type Filters } from '@/components/orders/advanced-filters';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export default function ActiveOrdersPage() {
@@ -88,6 +88,25 @@ export default function ActiveOrdersPage() {
                 prefix: cat.prefix,
             }))
     ];
+    
+    const formatCurrency = (value: number) => {
+        return new Intl.NumberFormat('es-CL', {
+          style: 'currency',
+          currency: 'CLP',
+          minimumFractionDigits: 0,
+        }).format(value);
+    }
+    
+    const { totalPorFacturar, totalFacturado } = React.useMemo(() => {
+        return filteredOrders.reduce((acc, order) => {
+            if (order.facturado) {
+                acc.totalFacturado += order.netPrice;
+            } else {
+                acc.totalPorFacturar += order.netPrice;
+            }
+            return acc;
+        }, { totalPorFacturar: 0, totalFacturado: 0 });
+    }, [filteredOrders]);
 
     return (
         <div className="flex flex-col gap-8">
@@ -122,19 +141,33 @@ export default function ActiveOrdersPage() {
                 </Collapsible>
             </Card>
             
-            <Tabs value={activeTab} onValueChange={filterOrders}>
-                 <ScrollArea className="w-full">
-                    <TabsList className="w-max">
-                        {categories.map(cat => (
-                            <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
-                        ))}
-                    </TabsList>
-                    <ScrollBar orientation="horizontal" />
-                </ScrollArea>
-                <TabsContent value={activeTab} className="mt-4">
-                    <OrdersTable orders={filteredOrders} />
-                </TabsContent>
-            </Tabs>
+            <Card>
+                <CardContent className="p-4">
+                    <Tabs value={activeTab} onValueChange={filterOrders}>
+                        <ScrollArea className="w-full">
+                            <TabsList className="w-max">
+                                {categories.map(cat => (
+                                    <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
+                                ))}
+                            </TabsList>
+                            <ScrollBar orientation="horizontal" />
+                        </ScrollArea>
+                        <TabsContent value={activeTab} className="mt-4">
+                            <OrdersTable orders={filteredOrders} />
+                        </TabsContent>
+                    </Tabs>
+                </CardContent>
+                 <CardFooter className="flex-col items-start gap-2 pt-4 border-t">
+                    <div className="flex justify-between w-full">
+                        <span className="font-semibold text-muted-foreground">Total Por Facturar (Neto):</span>
+                        <span className="font-bold text-lg">{formatCurrency(totalPorFacturar)}</span>
+                    </div>
+                    <div className="flex justify-between w-full">
+                        <span className="font-semibold text-muted-foreground">Total Facturado (Neto):</span>
+                        <span className="font-bold text-lg text-green-600">{formatCurrency(totalFacturado)}</span>
+                    </div>
+                </CardFooter>
+            </Card>
         </div>
     );
 }
