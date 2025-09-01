@@ -24,7 +24,7 @@ export default function NewReportPage() {
   const otNumber = searchParams.get('ot_number');
   
   const { activeWorkOrders, historicalWorkOrders, reportTemplates, collaborators, getOrder, addSubmittedReport } = useWorkOrders();
-  const { users, userProfile } = useAuth();
+  const { userProfile } = useAuth();
   const { toast } = useToast();
   
   const [selectedTemplate, setSelectedTemplate] = React.useState<ReportTemplate | null>(null);
@@ -105,10 +105,20 @@ export default function NewReportPage() {
       }
   }
   
-  const getReportManager = (report: SubmittedReport): AppUser | undefined => {
-      const managerName = report.otDetails.comercial;
+  const getReportManager = (): AppUser | undefined => {
+      if (!submittedReport) return undefined;
+      const managerName = submittedReport.otDetails.comercial;
       if (!managerName) return undefined;
-      return users.find(u => u.displayName === managerName);
+      const collaborator = collaborators.find(c => c.name === managerName);
+      if (!collaborator || !collaborator.email) return undefined;
+
+      return { 
+          uid: collaborator.id, 
+          displayName: collaborator.name, 
+          email: collaborator.email,
+          role: collaborator.role as any,
+          status: 'Activo'
+      };
   };
   
   if (!workOrder) {
@@ -303,7 +313,7 @@ export default function NewReportPage() {
         open={isEmailDialogOpen}
         onOpenChange={setIsEmailDialogOpen}
         report={submittedReport}
-        reportManager={submittedReport ? getReportManager(submittedReport) : undefined}
+        reportManager={getReportManager()}
         currentUser={userProfile || undefined}
         onSendSuccess={() => {
             // After successful send, navigate to history or reset form
