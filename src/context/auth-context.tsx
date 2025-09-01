@@ -7,15 +7,11 @@ import { auth, db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { collection, doc, getDoc, getDocs, setDoc, writeBatch } from 'firebase/firestore';
 import type { AppUser } from '@/lib/types';
-import { listUsersAction } from '@/app/actions';
-
 
 interface AuthContextType {
   user: User | null;
   userProfile: AppUser | null;
   loading: boolean;
-  users: AppUser[];
-  fetchUsers: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,23 +20,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState<AppUser[]>([]);
 
-  const fetchUsers = useCallback(async () => {
-    try {
-        const result = await listUsersAction();
-        if (result.success && result.users) {
-            setUsers(result.users);
-        } else {
-            console.error("Failed to fetch users:", result.message);
-            setUsers([]);
-        }
-    } catch (error) {
-        console.error("Error fetching users via action:", error);
-        setUsers([]);
-    }
-  }, []);
-  
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setLoading(true);
@@ -52,14 +32,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (userDocSnap.exists()) {
           setUserProfile(userDocSnap.data() as AppUser);
         } else {
-          // This case should ideally not happen with the new server-side user creation logic,
-          // but it's a good fallback for edge cases or existing users without a profile.
           try {
             const newUserProfile: AppUser = {
               uid: currentUser.uid,
               email: currentUser.email!,
               displayName: currentUser.displayName || currentUser.email!.split('@')[0],
-              role: 'Visor', // Default to least privileged role
+              role: 'Visor', 
               status: 'Activo',
             };
             await setDoc(userDocRef, newUserProfile);
@@ -69,21 +47,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
              setUserProfile(null);
           }
         }
-        await fetchUsers();
       } else {
         setUser(null);
         setUserProfile(null);
-        setUsers([]);
       }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [fetchUsers]);
+  }, []);
 
 
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, users, fetchUsers }}>
+    <AuthContext.Provider value={{ user, userProfile, loading }}>
       {children}
     </AuthContext.Provider>
   );
@@ -96,5 +72,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
-    

@@ -26,9 +26,7 @@ import { Input } from '@/components/ui/input';
 import type { AppUser } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/context/auth-context';
 import { Loader2 } from 'lucide-react';
-import { useWorkOrders } from '@/context/work-orders-context';
 import { Switch } from '../ui/switch';
 import { updateUserAction } from '@/app/actions';
 
@@ -45,11 +43,11 @@ interface UserEditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user: AppUser | null;
+  onUserUpdate: () => void;
 }
 
-export function UserEditDialog({ open, onOpenChange, user }: UserEditDialogProps) {
+export function UserEditDialog({ open, onOpenChange, user, onUserUpdate }: UserEditDialogProps) {
   const { toast } = useToast();
-  const { fetchUsers } = useAuth();
   const [loading, setLoading] = React.useState(false);
 
   const form = useForm<EditFormValues>({
@@ -82,7 +80,7 @@ export function UserEditDialog({ open, onOpenChange, user }: UserEditDialogProps
             title: 'Usuario Actualizado',
             description: `El perfil de ${data.displayName} ha sido actualizado.`,
         });
-        await fetchUsers(); // Re-fetch users to update the UI
+        onUserUpdate();
         onOpenChange(false);
       } else {
         throw new Error(result.message);

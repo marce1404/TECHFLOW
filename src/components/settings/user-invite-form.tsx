@@ -17,7 +17,6 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UserPlus, Eye, EyeOff } from 'lucide-react';
-import { useAuth } from '@/context/auth-context';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import type { AppUser } from '@/lib/types';
 import { useWorkOrders } from '@/context/work-orders-context';
@@ -42,7 +41,6 @@ export function UserInviteForm() {
   const { smtpConfig } = useWorkOrders();
   const [loading, setLoading] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
-  const { fetchUsers } = useAuth();
 
   const form = useForm<InviteFormValues>({
     resolver: zodResolver(inviteFormSchema),
@@ -95,7 +93,6 @@ export function UserInviteForm() {
       }
       
       form.reset();
-      await fetchUsers();
         
     } catch (error: any) {
       toast({

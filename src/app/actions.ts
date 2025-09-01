@@ -319,5 +319,3 @@ export async function deleteAllWorkOrdersAction(): Promise<{ success: boolean; m
     return { success: false, message: `Error al limpiar la base de datos: ${errorMessage}`, deletedCount: 0 };
   }
 }
-
-    

@@ -35,14 +35,16 @@ import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '../ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { UserEditDialog } from './user-edit-dialog';
-import { deleteUserAction, toggleUserStatusAction } from '@/app/actions';
+import { deleteUserAction, listUsersAction, toggleUserStatusAction } from '@/app/actions';
 import { UserChangePasswordDialog } from './user-change-password-dialog';
 import { UserSendInvitationDialog } from './user-send-invitation-dialog';
 import { useWorkOrders } from '@/context/work-orders-context';
 
 export default function UsersTable() {
-    const { user: currentUser, users, loading, fetchUsers } = useAuth();
+    const { user: currentUser } = useAuth();
     const { toast } = useToast();
+    const [users, setUsers] = React.useState<AppUser[]>([]);
+    const [loading, setLoading] = React.useState(true);
     const [selectedUser, setSelectedUser] = React.useState<AppUser | null>(null);
     const [editDialogOpen, setEditDialogOpen] = React.useState(false);
     const [passwordDialogOpen, setPasswordDialogOpen] = React.useState(false);
@@ -50,6 +52,21 @@ export default function UsersTable() {
     const [invitationDialogOpen, setInvitationDialogOpen] = React.useState(false);
     const [currentPage, setCurrentPage] = React.useState(1);
     const itemsPerPage = 15;
+
+    const fetchUsers = React.useCallback(async () => {
+        setLoading(true);
+        const result = await listUsersAction();
+        if (result.success && result.users) {
+            setUsers(result.users);
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: 'No se pudieron cargar los usuarios.' });
+        }
+        setLoading(false);
+    }, [toast]);
+
+    React.useEffect(() => {
+        fetchUsers();
+    }, [fetchUsers]);
 
 
     const handleEditClick = (user: AppUser) => {
@@ -243,6 +260,7 @@ export default function UsersTable() {
                 open={editDialogOpen}
                 onOpenChange={setEditDialogOpen}
                 user={selectedUser}
+                onUserUpdate={fetchUsers}
             />
             <UserChangePasswordDialog
                 open={passwordDialogOpen}
