@@ -14,6 +14,8 @@ import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';
 import type { WorkOrder } from '@/lib/types';
 import { MultiSelect } from '../ui/multi-select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Label } from '../ui/label';
 
 export type Filters = {
   search: string;
@@ -24,6 +26,7 @@ export type Filters = {
   priorities: string[];
   statuses: string[];
   dateRange: DateRange;
+  invoicedStatus: 'all' | 'invoiced' | 'not_invoiced';
 };
 
 interface AdvancedFiltersProps {
@@ -36,13 +39,18 @@ export default function AdvancedFilters({ filters, onFilterChange, isHistory = f
   const { services, collaborators, activeWorkOrders, historicalWorkOrders, otStatuses } = useWorkOrders();
   const allOrders = [...activeWorkOrders, ...historicalWorkOrders];
 
-  const handleMultiSelectChange = (key: keyof Omit<Filters, 'search' | 'dateRange'>, value: string[]) => {
+  const handleMultiSelectChange = (key: keyof Omit<Filters, 'search' | 'dateRange' | 'invoicedStatus'>, value: string[]) => {
     onFilterChange({ ...filters, [key]: value });
   };
 
   const handleDateChange = (value: DateRange | undefined) => {
     onFilterChange({ ...filters, dateRange: value || { from: undefined, to: undefined } });
   };
+  
+  const handleInvoicedStatusChange = (value: Filters['invoicedStatus']) => {
+    onFilterChange({ ...filters, invoicedStatus: value });
+  };
+
 
   const clearFilters = () => {
     onFilterChange({
@@ -53,6 +61,7 @@ export default function AdvancedFilters({ filters, onFilterChange, isHistory = f
       priorities: [],
       statuses: [],
       dateRange: { from: undefined, to: undefined },
+      invoicedStatus: 'all',
     });
   };
 
@@ -138,7 +147,22 @@ export default function AdvancedFilters({ filters, onFilterChange, isHistory = f
           onChange={(value) => handleMultiSelectChange('statuses', value)}
           placeholder="Filtrar por estado..."
         />
-         <Button variant="ghost" onClick={clearFilters} className="justify-self-end">
+        <div className="space-y-2">
+            <Label>Estado de Facturación</Label>
+            <Select onValueChange={handleInvoicedStatusChange} value={filters.invoicedStatus}>
+                <SelectTrigger>
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    <SelectItem value="invoiced">Facturadas</SelectItem>
+                    <SelectItem value="not_invoiced">Por Facturar</SelectItem>
+                </SelectContent>
+            </Select>
+        </div>
+      </div>
+      <div className="flex justify-end pt-2">
+        <Button variant="ghost" onClick={clearFilters} className="justify-self-end">
             <X className="mr-2 h-4 w-4" />
             Limpiar Filtros Avanzados
           </Button>
