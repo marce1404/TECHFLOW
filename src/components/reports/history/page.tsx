@@ -1,4 +1,5 @@
 
+
 'use client';
 import {
   Table,
@@ -41,7 +42,7 @@ import {
 } from "@/components/ui/alert-dialog"
 
 export default function ReportsHistoryPage() {
-  const { submittedReports, otCategories, loading, deleteSubmittedReport, users } = useWorkOrders();
+  const { submittedReports, otCategories, loading, deleteSubmittedReport, collaborators } = useWorkOrders();
   const { userProfile } = useAuth();
   const [search, setSearch] = React.useState('');
   const [activeTab, setActiveTab] = React.useState('todos');
@@ -106,7 +107,16 @@ export default function ReportsHistoryPage() {
   const getReportManager = (report: SubmittedReport): AppUser | undefined => {
       const managerName = report.otDetails.comercial;
       if (!managerName) return undefined;
-      return users.find(u => u.displayName === managerName);
+      // This is a simplified lookup from collaborators, not the full AppUser list
+      const collaborator = collaborators.find(u => u.name === managerName);
+      if (!collaborator || !collaborator.email) return undefined;
+      return { 
+          uid: collaborator.id, 
+          displayName: collaborator.name, 
+          email: collaborator.email,
+          role: 'Comercial', // Role is assumed here as we don't have the full AppUser
+          status: 'Activo'
+      };
   };
 
   if (loading) {

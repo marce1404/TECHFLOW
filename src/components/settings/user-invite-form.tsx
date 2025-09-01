@@ -1,4 +1,5 @@
 
+
 'use client';
 import * as React from 'react';
 import { z } from 'zod';
@@ -36,7 +37,11 @@ const inviteFormSchema = z.object({
 
 type InviteFormValues = z.infer<typeof inviteFormSchema>;
 
-export function UserInviteForm() {
+interface UserInviteFormProps {
+    onUserAdded: () => void;
+}
+
+export function UserInviteForm({ onUserAdded }: UserInviteFormProps) {
   const { toast } = useToast();
   const { smtpConfig } = useWorkOrders();
   const [loading, setLoading] = React.useState(false);
@@ -74,6 +79,8 @@ export function UserInviteForm() {
         description: `El usuario ${data.name} ha sido creado.`,
       });
       
+      onUserAdded();
+
       if (data.sendInvitation) {
         if (!smtpConfig) {
             toast({ variant: 'destructive', title: 'Advertencia', description: 'No se puede enviar la invitación. La configuración SMTP no está establecida.'});

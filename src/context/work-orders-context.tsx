@@ -30,7 +30,6 @@ interface WorkOrdersContextType {
   submittedReports: SubmittedReport[];
   companyInfo: CompanyInfo | null;
   smtpConfig: SmtpConfig | null;
-  users: AppUser[];
   loading: boolean;
   fetchData: () => Promise<void>;
   updateOrder: (id: string, updatedOrder: Partial<WorkOrder>) => Promise<void>;
@@ -91,9 +90,8 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [submittedReports, setSubmittedReports] = useState<SubmittedReport[]>([]);
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
   const [smtpConfig, setSmtpConfig] = useState<SmtpConfig | null>(null);
-  const [users, setUsers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, userProfile, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [orderToClose, setOrderToClose] = useState<WorkOrder | null>(null);
 
 
@@ -159,16 +157,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         ]);
         
         await fetchAndSetSuggestedTasks();
-        
-        if (userProfile && userProfile.role === 'Admin') {
-            const usersResult = await listUsersAction();
-            if (usersResult.success && usersResult.users) {
-                setUsers(usersResult.users);
-            } else {
-                console.error("Failed to fetch users:", usersResult.message);
-                setUsers([]);
-            }
-        }
         
         const allOrders = workOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[];
         
@@ -238,13 +226,12 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         setSuggestedTasks([]);
         setReportTemplates([]);
         setSubmittedReports([]);
-        setUsers([]);
         setCompanyInfo(null);
         setSmtpConfig(null);
     } finally {
         setLoading(false);
     }
-  }, [user, authLoading, userProfile]);
+  }, [user, authLoading]);
 
 
   useEffect(() => {
@@ -545,7 +532,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         submittedReports,
         companyInfo,
         smtpConfig,
-        users,
         loading,
         fetchData,
         updateOrder,

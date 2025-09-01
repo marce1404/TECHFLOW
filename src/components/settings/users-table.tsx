@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -38,11 +39,15 @@ import { UserEditDialog } from './user-edit-dialog';
 import { deleteUserAction, toggleUserStatusAction } from '@/app/actions';
 import { UserChangePasswordDialog } from './user-change-password-dialog';
 import { UserSendInvitationDialog } from './user-send-invitation-dialog';
-import { useWorkOrders } from '@/context/work-orders-context';
 
-export default function UsersTable() {
+interface UsersTableProps {
+    users: AppUser[];
+    loading: boolean;
+    onDataChange: () => void;
+}
+
+export default function UsersTable({ users, loading, onDataChange }: UsersTableProps) {
     const { user: currentUser } = useAuth();
-    const { users, loading, fetchData } = useWorkOrders();
     const { toast } = useToast();
     const [selectedUser, setSelectedUser] = React.useState<AppUser | null>(null);
     const [editDialogOpen, setEditDialogOpen] = React.useState(false);
@@ -78,7 +83,7 @@ export default function UsersTable() {
         const result = await deleteUserAction(selectedUser.uid);
         if (result.success) {
             toast({ title: 'Éxito', description: result.message });
-            await fetchData();
+            onDataChange();
         } else {
             toast({ variant: 'destructive', title: 'Error', description: result.message });
         }
@@ -91,7 +96,7 @@ export default function UsersTable() {
         
         if(result.success) {
             toast({ title: 'Éxito', description: `El estado de ${user.displayName} ha sido actualizado.` });
-            await fetchData(); // Re-fetch all users to update the UI
+            onDataChange(); // Re-fetch all users to update the UI
         } else {
             toast({ variant: 'destructive', title: 'Error', description: result.message });
         }
@@ -244,7 +249,7 @@ export default function UsersTable() {
                 open={editDialogOpen}
                 onOpenChange={setEditDialogOpen}
                 user={selectedUser}
-                onUserUpdate={fetchData}
+                onUserUpdate={onDataChange}
             />
             <UserChangePasswordDialog
                 open={passwordDialogOpen}
