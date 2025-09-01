@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { normalizeString } from "@/lib/utils";
 
 export default function ActiveOrdersPage() {
-    const { activeWorkOrders, otCategories } = useWorkOrders();
+    const { activeWorkOrders, historicalWorkOrders, otCategories } = useWorkOrders();
     const { userProfile } = useAuth();
     const [activeTab, setActiveTab] = React.useState('todos');
     const [isFilterOpen, setIsFilterOpen] = React.useState(false);
@@ -44,9 +44,22 @@ export default function ActiveOrdersPage() {
     const filterOrders = (categoryPrefix: string | null) => {
         setActiveTab(categoryPrefix || 'todos');
     };
+
+    const hasAdvancedFilters = React.useMemo(() => {
+        return filters.clients.length > 0 ||
+               filters.services.length > 0 ||
+               filters.technicians.length > 0 ||
+               filters.supervisors.length > 0 ||
+               filters.priorities.length > 0 ||
+               filters.statuses.length > 0 ||
+               filters.dateRange.from !== undefined ||
+               filters.invoicedStatus !== 'all';
+    }, [filters]);
     
     const filteredOrders = React.useMemo(() => {
-        let orders = activeWorkOrders.filter(order => normalizeString(order.status) !== 'cerrada');
+        const isSearching = filters.search || hasAdvancedFilters;
+        
+        let orders = isSearching ? [...activeWorkOrders, ...historicalWorkOrders] : activeWorkOrders.filter(order => normalizeString(order.status) !== 'cerrada');
 
         if (activeTab !== 'todos') {
             orders = orders.filter(order => order.ot_number.startsWith(activeTab));
@@ -95,7 +108,7 @@ export default function ActiveOrdersPage() {
         }
 
         return orders;
-    }, [activeWorkOrders, activeTab, filters]);
+    }, [activeWorkOrders, historicalWorkOrders, activeTab, filters, hasAdvancedFilters]);
 
     const categories = [
         { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
