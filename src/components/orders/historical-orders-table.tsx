@@ -110,13 +110,14 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
   };
 
-  const headerItems: { key: keyof WorkOrder, label: string, className: string }[] = [
-      { key: 'ot_number', label: 'ID', className: 'w-[10%]' },
+  const headerItems: { key: keyof WorkOrder, label: string, className?: string }[] = [
+      { key: 'ot_number', label: 'ID', className: 'w-[8%]' },
       { key: 'description', label: 'Descripción', className: 'w-[25%]' },
-      { key: 'client', label: 'Cliente', className: 'w-[15%]' },
+      { key: 'client', label: 'Cliente', className: 'w-[12%]' },
       { key: 'service', label: 'Servicio', className: 'w-[10%]' },
-      { key: 'assigned', label: 'Encargado', className: 'w-[12%]' },
-      { key: 'comercial', label: 'Comercial', className: 'w-[12%]' },
+      { key: 'assigned', label: 'Encargado', className: 'w-[10%]' },
+      { key: 'comercial', label: 'Comercial', className: 'w-[10%]' },
+      { key: 'netPrice', label: 'Precio Neto', className: 'w-[10%]' },
       { key: 'status', label: 'Estado', className: 'w-[10%]' },
   ];
 
@@ -127,6 +128,14 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
         updateOrder(order.id, { ...order, status: newStatus });
     }
   };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: 'CLP',
+      minimumFractionDigits: 0,
+    }).format(value);
+  }
 
 
   return (
@@ -143,7 +152,7 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                             </Button>
                         </TableHead>
                     ))}
-                    <TableHead className="w-[6%] text-center">Facturado</TableHead>
+                    <TableHead className="w-[5%] text-center">Facturado</TableHead>
                 </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -161,6 +170,7 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                           <TableCell>{order.service}</TableCell>
                           <TableCell>{order.assigned.join(', ')}</TableCell>
                           <TableCell>{order.comercial}</TableCell>
+                           <TableCell className="text-right">{formatCurrency(order.netPrice)}</TableCell>
                           <TableCell>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild disabled={!canChangeStatus}>
