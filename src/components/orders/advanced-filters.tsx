@@ -28,7 +28,7 @@ export type Filters = {
 };
 
 interface AdvancedFiltersProps {
-  onFilterChange: (filters: Filters) => void;
+  onFilterChange: (filters: Omit<Filters, 'search'>) => void;
   isHistory?: boolean;
 }
 
@@ -36,8 +36,7 @@ export default function AdvancedFilters({ onFilterChange, isHistory = false }: A
   const { services, collaborators, activeWorkOrders, historicalWorkOrders, otStatuses } = useWorkOrders();
   const allOrders = [...activeWorkOrders, ...historicalWorkOrders];
   
-  const [filters, setFilters] = React.useState<Filters>({
-    search: '',
+  const [filters, setFilters] = React.useState<Omit<Filters, 'search'>>({
     clients: [],
     services: [],
     technicians: [],
@@ -47,12 +46,12 @@ export default function AdvancedFilters({ onFilterChange, isHistory = false }: A
     dateRange: { from: undefined, to: undefined },
   });
 
-  const handleMultiSelectChange = (key: keyof Filters, value: string[]) => {
+  const handleMultiSelectChange = (key: keyof Omit<Filters, 'search' | 'dateRange'>, value: string[]) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleInputChange = (key: keyof Filters, value: any) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+  const handleDateChange = (value: DateRange | undefined) => {
+    setFilters(prev => ({ ...prev, dateRange: value || { from: undefined, to: undefined } }));
   };
 
   React.useEffect(() => {
@@ -61,7 +60,6 @@ export default function AdvancedFilters({ onFilterChange, isHistory = false }: A
 
   const clearFilters = () => {
     setFilters({
-      search: '',
       clients: [],
       services: [],
       technicians: [],
@@ -83,11 +81,6 @@ export default function AdvancedFilters({ onFilterChange, isHistory = false }: A
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Input
-          placeholder="Buscar por Nº OT, descripción..."
-          value={filters.search}
-          onChange={(e) => handleInputChange('search', e.target.value)}
-        />
         <Popover>
             <PopoverTrigger asChild>
                 <Button
@@ -115,7 +108,7 @@ export default function AdvancedFilters({ onFilterChange, isHistory = false }: A
                     mode="range"
                     defaultMonth={filters.dateRange.from}
                     selected={filters.dateRange}
-                    onSelect={(range) => handleInputChange('dateRange', range || {from: undefined, to: undefined})}
+                    onSelect={handleDateChange}
                     numberOfMonths={2}
                     locale={es}
                 />
@@ -133,14 +126,14 @@ export default function AdvancedFilters({ onFilterChange, isHistory = false }: A
           onChange={(value) => handleMultiSelectChange('services', value)}
           placeholder="Filtrar por servicio..."
         />
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MultiSelect
           options={technicianOptions}
           selected={filters.technicians}
           onChange={(value) => handleMultiSelectChange('technicians', value)}
           placeholder="Filtrar por técnico..."
         />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MultiSelect
           options={supervisorOptions}
           selected={filters.supervisors}
@@ -159,11 +152,9 @@ export default function AdvancedFilters({ onFilterChange, isHistory = false }: A
           onChange={(value) => handleMultiSelectChange('statuses', value)}
           placeholder="Filtrar por estado..."
         />
-      </div>
-      <div className="flex justify-end">
-          <Button variant="ghost" onClick={clearFilters}>
+         <Button variant="ghost" onClick={clearFilters} className="justify-self-end">
             <X className="mr-2 h-4 w-4" />
-            Limpiar Todos los Filtros
+            Limpiar Filtros Avanzados
           </Button>
       </div>
     </div>

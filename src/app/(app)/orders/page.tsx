@@ -12,13 +12,14 @@ import { useAuth } from "@/context/auth-context";
 import AdvancedFilters, { type Filters } from '@/components/orders/advanced-filters';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Input } from "@/components/ui/input";
 
 export default function ActiveOrdersPage() {
     const { activeWorkOrders, otCategories } = useWorkOrders();
     const { userProfile } = useAuth();
     const [activeTab, setActiveTab] = React.useState('todos');
-    const [filters, setFilters] = React.useState<Filters>({
-      search: '',
+    const [search, setSearch] = React.useState('');
+    const [advancedFilters, setAdvancedFilters] = React.useState<Omit<Filters, 'search'>>({
       clients: [],
       services: [],
       technicians: [],
@@ -42,40 +43,42 @@ export default function ActiveOrdersPage() {
             orders = orders.filter(order => order.ot_number.startsWith(activeTab));
         }
 
-        // Apply advanced filters
-        if (filters.search) {
-            orders = orders.filter(order =>
-                order.ot_number.toLowerCase().includes(filters.search.toLowerCase()) ||
-                order.description.toLowerCase().includes(filters.search.toLowerCase())
+        // Simple search
+        if (search) {
+             orders = orders.filter(order =>
+                order.ot_number.toLowerCase().includes(search.toLowerCase()) ||
+                order.description.toLowerCase().includes(search.toLowerCase())
             );
         }
-        if (filters.clients.length > 0) {
-            orders = orders.filter(order => filters.clients.includes(order.client));
+
+        // Apply advanced filters
+        if (advancedFilters.clients.length > 0) {
+            orders = orders.filter(order => advancedFilters.clients.includes(order.client));
         }
-        if (filters.services.length > 0) {
-            orders = orders.filter(order => filters.services.includes(order.service));
+        if (advancedFilters.services.length > 0) {
+            orders = orders.filter(order => advancedFilters.services.includes(order.service));
         }
-        if (filters.technicians.length > 0) {
-            orders = orders.filter(order => order.technicians.some(t => filters.technicians.includes(t)));
+        if (advancedFilters.technicians.length > 0) {
+            orders = orders.filter(order => order.technicians.some(t => advancedFilters.technicians.includes(t)));
         }
-        if (filters.supervisors.length > 0) {
-            orders = orders.filter(order => order.assigned.some(s => filters.supervisors.includes(s)));
+        if (advancedFilters.supervisors.length > 0) {
+            orders = orders.filter(order => order.assigned.some(s => advancedFilters.supervisors.includes(s)));
         }
-        if (filters.priorities.length > 0) {
-            orders = orders.filter(order => filters.priorities.includes(order.priority));
+        if (advancedFilters.priorities.length > 0) {
+            orders = orders.filter(order => advancedFilters.priorities.includes(order.priority));
         }
-        if (filters.statuses.length > 0) {
-            orders = orders.filter(order => filters.statuses.includes(order.status));
+        if (advancedFilters.statuses.length > 0) {
+            orders = orders.filter(order => advancedFilters.statuses.includes(order.status));
         }
-        if (filters.dateRange.from) {
-            orders = orders.filter(order => new Date(order.date.replace(/-/g, '/')) >= filters.dateRange.from!);
+        if (advancedFilters.dateRange.from) {
+            orders = orders.filter(order => new Date(order.date.replace(/-/g, '/')) >= advancedFilters.dateRange.from!);
         }
-        if (filters.dateRange.to) {
-            orders = orders.filter(order => new Date(order.date.replace(/-/g, '/')) <= filters.dateRange.to!);
+        if (advancedFilters.dateRange.to) {
+            orders = orders.filter(order => new Date(order.date.replace(/-/g, '/')) <= advancedFilters.dateRange.to!);
         }
 
         return orders;
-    }, [activeWorkOrders, activeTab, filters]);
+    }, [activeWorkOrders, activeTab, search, advancedFilters]);
 
     const categories = [
         { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
@@ -135,28 +138,37 @@ export default function ActiveOrdersPage() {
                     </CardHeader>
                     <CollapsibleContent>
                         <CardContent>
-                            <AdvancedFilters onFilterChange={setFilters} />
+                            <AdvancedFilters onFilterChange={setAdvancedFilters} />
                         </CardContent>
                     </CollapsibleContent>
                 </Collapsible>
             </Card>
             
             <Card>
-                <CardContent className="p-4">
+                <CardHeader>
                     <Tabs value={activeTab} onValueChange={filterOrders}>
-                        <ScrollArea className="w-full">
-                            <TabsList className="w-max">
-                                {categories.map(cat => (
-                                    <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
-                                ))}
-                            </TabsList>
-                            <ScrollBar orientation="horizontal" />
-                        </ScrollArea>
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                            <ScrollArea className="w-full sm:w-auto">
+                                <TabsList className="w-max">
+                                    {categories.map(cat => (
+                                        <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
+                                    ))}
+                                </TabsList>
+                                <ScrollBar orientation="horizontal" />
+                            </ScrollArea>
+                             <div className="w-full sm:w-auto sm:max-w-sm">
+                                <Input
+                                    placeholder="Buscar por OT o descripción..."
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                />
+                            </div>
+                        </div>
                         <TabsContent value={activeTab} className="mt-4">
                             <OrdersTable orders={filteredOrders} />
                         </TabsContent>
                     </Tabs>
-                </CardContent>
+                </CardHeader>
                  <CardFooter className="flex-col items-start gap-2 pt-4 border-t">
                     <div className="flex justify-between w-full">
                         <span className="font-semibold text-muted-foreground">Total Por Facturar (Neto):</span>
