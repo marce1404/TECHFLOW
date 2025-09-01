@@ -28,6 +28,9 @@ interface ImportOrdersDialogProps {
   onImportSuccess: () => void;
 }
 
+const workOrderStatuses = ['Por Iniciar', 'En Progreso', 'En Proceso', 'Pendiente', 'Atrasada', 'Cerrada', 'CERRADA'] as const;
+const workOrderPriorities = ['Baja', 'Media', 'Alta'] as const;
+
 const CreateWorkOrderInputSchemaForExcel = z.object({
   ot_number: z.string().min(1, 'ot_number no puede estar vacío.'),
   description: z.string().min(1, 'description no puede estar vacío.'),
@@ -36,8 +39,21 @@ const CreateWorkOrderInputSchemaForExcel = z.object({
   date: z.string().optional(),
   endDate: z.string().optional(),
   notes: z.string().optional(),
-  status: z.enum(['Por Iniciar', 'En Progreso', 'En Proceso', 'Pendiente', 'Atrasada', 'Cerrada', 'CERRADA']),
-  priority: z.enum(['Baja', 'Media', 'Alta']).optional(),
+  status: z.preprocess((val) => {
+    if (typeof val === 'string') {
+        const lowerVal = val.toLowerCase();
+        const foundStatus = workOrderStatuses.find(s => s.toLowerCase() === lowerVal);
+        return foundStatus || val;
+    }
+    return val;
+  }, z.enum(workOrderStatuses)),
+  priority: z.preprocess((val) => {
+      if (typeof val === 'string') {
+          const lowerVal = val.toLowerCase();
+          return lowerVal.charAt(0).toUpperCase() + lowerVal.slice(1);
+      }
+      return val;
+  }, z.enum(workOrderPriorities)).optional(),
   netPrice: z.number().optional().default(0),
   ocNumber: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
   invoiceNumber: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
@@ -99,12 +115,20 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     }
     
     if (typeof dateValue === 'string') {
-        const parts = dateValue.split(/[/.-]/); // Handles DD/MM/YYYY and DD-MM-YYYY
+        const parts = dateValue.split(/[/.-]/); // Handles DD/MM/YYYY, DD-MM-YYYY, etc.
         if (parts.length === 3) {
-            const day = parseInt(parts[0], 10);
-            const month = parseInt(parts[1], 10);
-            const year = parseInt(parts[2], 10);
-            if (day && month && year && year > 1900) {
+            let day, month, year;
+            // Guess format based on part lengths or values
+            if (parts[2].length === 4) { // Likely DD/MM/YYYY
+                day = parseInt(parts[0], 10);
+                month = parseInt(parts[1], 10);
+                year = parseInt(parts[2], 10);
+            } else if (parts[0].length === 4) { // Likely YYYY/MM/DD
+                year = parseInt(parts[0], 10);
+                month = parseInt(parts[1], 10);
+                day = parseInt(parts[2], 10);
+            }
+             if (day && month && year && year > 1900) {
                  // Create date in UTC to avoid timezone issues
                 const date = new Date(Date.UTC(year, month - 1, day));
                 if (!isNaN(date.getTime())) {
@@ -114,7 +138,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         }
     }
     
-    // Fallback for other formats like YYYY-MM-DD or numbers
+    // Fallback for other formats like native YYYY-MM-DD or numbers
     if (typeof dateValue === 'string' || typeof dateValue === 'number') {
         const d = new Date(dateValue);
         if (!isNaN(d.getTime())) {
