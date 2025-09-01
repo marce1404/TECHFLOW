@@ -1,3 +1,4 @@
+
 'use server';
 
 import {
@@ -9,7 +10,7 @@ import {
   AppUser,
 } from '@/lib/types';
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
-import { db as adminDb, auth as adminAuth } from '@/lib/firebase-admin';
+import { db as adminDb } from '@/lib/firebase-admin';
 import nodemailer from 'nodemailer';
 import * as xlsx from 'xlsx';
 import {
@@ -17,24 +18,18 @@ import {
   changeUserPasswordAction as changeUserPasswordActionAdmin,
   toggleUserStatusAction as toggleUserStatusActionAdmin,
   updateUserAction as updateUserActionAdmin,
+  createUserAction as createUserActionAdmin,
 } from '@/lib/firebase-admin';
 import type { UserRecord } from 'firebase-admin/auth';
-import { generatePassword } from '@/lib/password-generator';
 
 // --- Server Actions ---
 
-export async function listUsers(): Promise<{ success: boolean; users?: UserRecord[]; message?: string }> {
-  if (!adminAuth.listUsers) {
-    return { success: false, message: 'Firebase Admin not initialized.' };
-  }
-  try {
-    const userRecords = await adminAuth.listUsers();
-    return { success: true, users: userRecords.users };
-  } catch (error: any) {
-    console.error('Error listing users:', error);
-    return { success: false, message: error.message || 'Error al listar los usuarios.' };
-  }
-}
+export const createUserAction = createUserActionAdmin;
+export const deleteUserAction = deleteUserActionAdmin;
+export const changeUserPasswordAction = changeUserPasswordActionAdmin;
+export const toggleUserStatusAction = toggleUserStatusActionAdmin;
+export const updateUserAction = updateUserActionAdmin;
+
 
 export async function getResourceSuggestions(
   input: SuggestOptimalResourceAssignmentInput
@@ -47,12 +42,6 @@ export async function getResourceSuggestions(
     return { error: 'An unexpected error occurred. Please try again.' };
   }
 }
-
-export const deleteUserAction = deleteUserActionAdmin;
-export const changeUserPasswordAction = changeUserPasswordActionAdmin;
-export const toggleUserStatusAction = toggleUserStatusActionAdmin;
-export const updateUserAction = updateUserActionAdmin;
-
 
 export async function sendTestEmailAction(config: SmtpConfig, to: string): Promise<{ success: boolean; message: string }> {
   const { host, port, secure, user, pass, fromName, fromEmail } = config;
@@ -272,7 +261,7 @@ export async function sendInvitationEmailAction(
                     <p><strong>Contraseña:</strong> ${password_clear}</p>
                 </div>
                 <p>Te recomendamos cambiar tu contraseña después de iniciar sesión por primera vez.</p>
-                <a href="${appUrl}" class="button">Iniciar Sesión en TechFlow</a>
+                <a href="${appUrl}/login" class="button">Iniciar Sesión en TechFlow</a>
             </div>
             <div class="footer">
                 <p>Si tienes problemas para acceder, por favor contacta a tu administrador.</p>

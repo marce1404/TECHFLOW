@@ -15,16 +15,13 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, Eye, EyeOff, Send } from 'lucide-react';
+import { Loader2, UserPlus, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import type { AppUser } from '@/lib/types';
-import { doc, setDoc } from 'firebase/firestore';
 import { useWorkOrders } from '@/context/work-orders-context';
-import { sendInvitationEmailAction } from '@/app/actions';
+import { createUserAction, sendInvitationEmailAction } from '@/app/actions';
 
 const inviteFormSchema = z.object({
   name: z.string().min(3, { message: 'El nombre debe tener al menos 3 caracteres.' }),
@@ -61,29 +58,24 @@ export function UserInviteForm() {
 
   const onSubmit = async (data: InviteFormValues) => {
     setLoading(true);
-    let newUserUID = '';
+
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-      const user = userCredential.user;
-      newUserUID = user.uid;
-
-      await updateProfile(user, { displayName: data.name });
-
-      const userProfile: AppUser = {
-        uid: user.uid,
+      const creationResult = await createUserAction({
         email: data.email,
+        password: data.password,
         displayName: data.name,
         role: data.role,
-        status: 'Activo',
-      };
-      
-      await setDoc(doc(db, "users", user.uid), userProfile);
+      });
+
+      if (!creationResult.success) {
+        throw new Error(creationResult.message);
+      }
       
       toast({
         title: 'Usuario Creado con Éxito',
-        description: `El usuario ${data.name} ha sido creado y su perfil guardado.`,
+        description: `El usuario ${data.name} ha sido creado.`,
       });
-
+      
       if (data.sendInvitation) {
         if (!smtpConfig) {
             toast({ variant: 'destructive', title: 'Advertencia', description: 'No se puede enviar la invitación. La configuración SMTP no está establecida.'});
@@ -92,7 +84,7 @@ export function UserInviteForm() {
             if (!appUrl) {
                 toast({ variant: 'destructive', title: 'Error de Configuración', description: 'La URL de la aplicación no está definida. No se puede enviar la invitación.' });
             } else {
-                 const result = await sendInvitationEmailAction(userProfile, data.password, appUrl, smtpConfig);
+                 const result = await sendInvitationEmailAction(creationResult.user!, data.password, appUrl, smtpConfig);
                 if (result.success) {
                     toast({ title: 'Invitación Enviada', description: result.message });
                 } else {
@@ -106,18 +98,10 @@ export function UserInviteForm() {
       await fetchUsers();
         
     } catch (error: any) {
-      let errorMessage = 'Ocurrió un error desconocido.';
-      if (error.code === 'auth/email-already-in-use') {
-        errorMessage = 'Este correo electrónico ya está registrado.';
-      } else if (error.code === 'auth/weak-password') {
-        errorMessage = 'La contraseña es demasiado débil.';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
       toast({
         variant: 'destructive',
         title: 'Error al Crear Usuario',
-        description: errorMessage,
+        description: error.message || 'Ocurrió un error inesperado.',
       });
     } finally {
         setLoading(false);

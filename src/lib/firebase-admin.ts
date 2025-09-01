@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
 import * as dotenv from 'dotenv';
 import { getFirestore } from 'firebase-admin/firestore';
+import type { AppUser } from './types';
 
 dotenv.config();
 
@@ -45,12 +46,49 @@ export { auth, db };
 
 
 // Server Actions requiring Admin privileges
+
+export async function createUserAction(data: { email: string; password; displayName: string; role: AppUser['role'] }): Promise<{ success: boolean; message: string; user?: AppUser }> {
+  if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.' };
+  try {
+    const userRecord = await auth.createUser({
+        email: data.email,
+        password: data.password,
+        displayName: data.displayName,
+        disabled: false,
+    });
+    
+    const userProfile: AppUser = {
+        uid: userRecord.uid,
+        email: data.email,
+        displayName: data.displayName,
+        role: data.role,
+        status: 'Activo',
+    };
+
+    await db.collection('users').doc(userRecord.uid).set(userProfile);
+    
+    return { success: true, message: 'Usuario creado con éxito.', user: userProfile };
+
+  } catch (error: any) {
+    console.error('Error creating user:', error);
+    let message = 'Error al crear el usuario.';
+    if (error.code === 'auth/email-already-exists') {
+        message = 'El correo electrónico ya está en uso.';
+    } else if (error.code === 'auth/invalid-password') {
+        message = 'La contraseña debe tener al menos 6 caracteres.';
+    }
+    return { success: false, message };
+  }
+}
+
+
 export async function deleteUserAction(uid: string): Promise<{ success: boolean; message: string }> {
   if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.' };
   try {
     await auth.deleteUser(uid);
-    // Firestore deletion of user profile should be handled via a trigger or manually
-    // to keep this action focused on authentication.
+    // Also delete from Firestore
+    await db.collection('users').doc(uid).delete();
+    
     return { success: true, message: 'Usuario eliminado correctamente.' };
   } catch (error: any) {
     console.error('Error deleting user:', error);
@@ -73,16 +111,20 @@ export async function updateUserAction(uid: string, data: { displayName: string;
             status: data.status,
         });
 
-        const collaboratorsQuery = db.collection('collaborators').where('email', '==', (await auth.getUser(uid)).email);
-        const collaboratorsSnapshot = await collaboratorsQuery.get();
-        
-        if (!collaboratorsSnapshot.empty) {
-            const collaboratorDocRef = collaboratorsSnapshot.docs[0].ref;
-            await collaboratorDocRef.update({
-                name: data.displayName,
-                role: data.role,
-                status: data.status,
-            });
+        // Update corresponding collaborator if exists
+        const user = await auth.getUser(uid);
+        if (user.email) {
+            const collaboratorsQuery = db.collection('collaborators').where('email', '==', user.email);
+            const collaboratorsSnapshot = await collaboratorsQuery.get();
+            
+            if (!collaboratorsSnapshot.empty) {
+                const collaboratorDocRef = collaboratorsSnapshot.docs[0].ref;
+                await collaboratorDocRef.update({
+                    name: data.displayName,
+                    role: data.role,
+                    status: data.status,
+                });
+            }
         }
         
         return { success: true, message: 'Usuario actualizado correctamente.' };
