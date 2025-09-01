@@ -75,6 +75,7 @@ interface WorkOrdersContextType {
 const WorkOrdersContext = createContext<WorkOrdersContextType | undefined>(undefined);
 
 const SEED_FLAG_KEY = 'suggested_tasks_seeded_v6';
+const TEMPLATE_SEED_FLAG_KEY = 'templates_seeded_v1';
 
 export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [activeWorkOrders, setActiveWorkOrders] = useState<WorkOrder[]>([]);
@@ -129,6 +130,34 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             
             localStorage.setItem(SEED_FLAG_KEY, 'true');
         };
+
+        const fetchAndSetReportTemplates = async () => {
+            const seedCompleted = localStorage.getItem(TEMPLATE_SEED_FLAG_KEY);
+            const templatesSnapshot = await getDocs(collection(db, "report-templates"));
+            const loadedTemplates = templatesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as ReportTemplate[]);
+
+            if (seedCompleted === 'true' && loadedTemplates.length >= predefinedReportTemplates.length) {
+                setReportTemplates(loadedTemplates);
+                return;
+            }
+
+            const batch = writeBatch(db);
+            let templatesToSet = [...loadedTemplates];
+
+            for (const template of predefinedReportTemplates) {
+                const alreadyExists = loadedTemplates.some(lt => lt.name === template.name);
+                if (!alreadyExists) {
+                    const docRef = doc(collection(db, "report-templates"));
+                    batch.set(docRef, template);
+                    // Optimistically add to our array to avoid a re-fetch
+                    templatesToSet.push({ ...template, id: docRef.id }); 
+                }
+            }
+
+            await batch.commit();
+            setReportTemplates(templatesToSet);
+            localStorage.setItem(TEMPLATE_SEED_FLAG_KEY, 'true');
+        };
         
         const [
             workOrdersSnapshot,
@@ -138,7 +167,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             collaboratorsSnapshot,
             vehiclesSnapshot,
             ganttChartsSnapshot,
-            reportTemplatesSnapshot,
             submittedReportsSnapshot,
             companyInfoSnapshot,
             smtpConfigSnapshot,
@@ -150,13 +178,13 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             getDocs(collection(db, "collaborators")),
             getDocs(collection(db, "vehicles")),
             getDocs(collection(db, "gantt-charts")),
-            getDocs(collection(db, "report-templates")),
             getDocs(query(collection(db, "submitted-reports"), orderBy("submittedAt", "desc"))),
             getDoc(doc(db, "settings", "companyInfo")),
             getDoc(doc(db, "settings", "smtpConfig")),
         ]);
         
         await fetchAndSetSuggestedTasks();
+        await fetchAndSetReportTemplates();
         
         const allOrders = workOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[];
         
@@ -195,22 +223,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             }));
             return { id: doc.id, ...data, tasks };
         }) as GanttChart[]);
-        
-        const loadedTemplates = reportTemplatesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ReportTemplate[];
-        const hasPredefinedTemplate = loadedTemplates.some(t => t.name === 'Guía de Atención Técnica');
-
-        if (!hasPredefinedTemplate && predefinedReportTemplates.length > 0) {
-            const batch = writeBatch(db);
-            const templateToAdd = predefinedReportTemplates[0]; // Assuming only one for now
-            const docRef = doc(collection(db, "report-templates"));
-            batch.set(docRef, templateToAdd);
-            await batch.commit();
-            // Re-fetch templates to get the new one
-            const newTemplatesSnapshot = await getDocs(collection(db, "report-templates"));
-            setReportTemplates(newTemplatesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ReportTemplate[]);
-        } else {
-            setReportTemplates(loadedTemplates);
-        }
 
     } catch (error) {
         console.error("Error en fetchData: ", error);
