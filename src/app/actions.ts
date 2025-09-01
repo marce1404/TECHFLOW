@@ -24,6 +24,9 @@ import { generatePassword } from '@/lib/password-generator';
 // --- Server Actions ---
 
 export async function listUsers(): Promise<{ success: boolean; users?: UserRecord[]; message?: string }> {
+  if (!adminAuth.listUsers) {
+    return { success: false, message: 'Firebase Admin not initialized.' };
+  }
   try {
     const userRecords = await adminAuth.listUsers();
     return { success: true, users: userRecords.users };
@@ -168,6 +171,7 @@ export async function exportOrdersToExcel(orders: WorkOrder[]): Promise<string> 
 }
 
 async function createOrUpdateWorkOrder(input: CreateWorkOrderInput) {
+  if (!adminDb.collection) return { success: false, message: 'Firebase Admin not initialized.' };
   try {
     const workOrderData = {
       ...input,
@@ -295,26 +299,27 @@ export async function sendInvitationEmailAction(
 }
 
 export async function deleteAllWorkOrdersAction(): Promise<{ success: boolean; message: string; deletedCount: number }> {
+  if (!adminDb.collection) return { success: false, message: 'Firebase Admin not initialized.', deletedCount: 0 };
   try {
     const collectionRef = adminDb.collection('work-orders');
-    const snapshot = await collectionRef.limit(500).get(); // Process up to 500 at a time
-
-    if (snapshot.empty) {
-      return { success: true, message: 'No hay órdenes de trabajo para eliminar.', deletedCount: 0 };
-    }
-
+    
     let deletedCount = 0;
-    while (!snapshot.empty) {
+    
+    while (true) {
+        const snapshot = await collectionRef.limit(500).get();
+        if (snapshot.empty) {
+            break; // No more documents to delete
+        }
+        
         const batch = adminDb.batch();
         snapshot.docs.forEach(doc => {
             batch.delete(doc.ref);
-            deletedCount++;
         });
         await batch.commit();
-        // Get the next batch
-        const nextSnapshot = await collectionRef.limit(500).get();
-        if (nextSnapshot.empty) break; // Exit loop
+
+        deletedCount += snapshot.size;
     }
+
 
     return { success: true, message: `Se eliminaron ${deletedCount} órdenes de trabajo.`, deletedCount };
   } catch (error) {
