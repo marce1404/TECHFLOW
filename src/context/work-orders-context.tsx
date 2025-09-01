@@ -30,6 +30,7 @@ interface WorkOrdersContextType {
   submittedReports: SubmittedReport[];
   companyInfo: CompanyInfo | null;
   smtpConfig: SmtpConfig | null;
+  users: AppUser[];
   loading: boolean;
   fetchData: () => Promise<void>;
   updateOrder: (id: string, updatedOrder: Partial<WorkOrder>) => Promise<void>;
@@ -70,7 +71,6 @@ interface WorkOrdersContextType {
   updateCompanyInfo: (info: CompanyInfo) => Promise<void>;
   updateSmtpConfig: (config: SmtpConfig) => Promise<void>;
   promptToCloseOrder: (order: WorkOrder) => void;
-  users: AppUser[];
 }
 
 const WorkOrdersContext = createContext<WorkOrdersContextType | undefined>(undefined);
@@ -164,6 +164,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             const usersResult = await listUsersAction();
             if (usersResult.success && usersResult.users) {
                 setUsers(usersResult.users);
+            } else {
+                console.error("Failed to fetch users:", usersResult.message);
+                setUsers([]);
             }
         }
         
@@ -542,6 +545,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         submittedReports,
         companyInfo,
         smtpConfig,
+        users,
         loading,
         fetchData,
         updateOrder,
@@ -582,7 +586,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         updateCompanyInfo,
         updateSmtpConfig,
         promptToCloseOrder,
-        users,
     }}>
       {children}
       <CloseWorkOrderDialog 
