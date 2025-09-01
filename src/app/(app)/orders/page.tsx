@@ -18,8 +18,9 @@ export default function ActiveOrdersPage() {
     const { activeWorkOrders, otCategories } = useWorkOrders();
     const { userProfile } = useAuth();
     const [activeTab, setActiveTab] = React.useState('todos');
-    const [search, setSearch] = React.useState('');
-    const [advancedFilters, setAdvancedFilters] = React.useState<Omit<Filters, 'search'>>({
+    const [isFilterOpen, setIsFilterOpen] = React.useState(false);
+    const [filters, setFilters] = React.useState<Filters>({
+      search: '',
       clients: [],
       services: [],
       technicians: [],
@@ -28,7 +29,6 @@ export default function ActiveOrdersPage() {
       statuses: [],
       dateRange: { from: undefined, to: undefined },
     });
-    const [isFilterOpen, setIsFilterOpen] = React.useState(false);
     
     const canCreate = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
 
@@ -44,41 +44,42 @@ export default function ActiveOrdersPage() {
         }
 
         // Simple search
-        if (search) {
+        if (filters.search) {
              orders = orders.filter(order =>
-                order.ot_number.toLowerCase().includes(search.toLowerCase()) ||
-                order.description.toLowerCase().includes(search.toLowerCase())
+                order.ot_number.toLowerCase().includes(filters.search.toLowerCase()) ||
+                order.description.toLowerCase().includes(filters.search.toLowerCase()) ||
+                order.client.toLowerCase().includes(filters.search.toLowerCase())
             );
         }
 
         // Apply advanced filters
-        if (advancedFilters.clients.length > 0) {
-            orders = orders.filter(order => advancedFilters.clients.includes(order.client));
+        if (filters.clients.length > 0) {
+            orders = orders.filter(order => filters.clients.includes(order.client));
         }
-        if (advancedFilters.services.length > 0) {
-            orders = orders.filter(order => advancedFilters.services.includes(order.service));
+        if (filters.services.length > 0) {
+            orders = orders.filter(order => filters.services.includes(order.service));
         }
-        if (advancedFilters.technicians.length > 0) {
-            orders = orders.filter(order => order.technicians.some(t => advancedFilters.technicians.includes(t)));
+        if (filters.technicians.length > 0) {
+            orders = orders.filter(order => order.technicians.some(t => filters.technicians.includes(t)));
         }
-        if (advancedFilters.supervisors.length > 0) {
-            orders = orders.filter(order => order.assigned.some(s => advancedFilters.supervisors.includes(s)));
+        if (filters.supervisors.length > 0) {
+            orders = orders.filter(order => order.assigned.some(s => filters.supervisors.includes(s)));
         }
-        if (advancedFilters.priorities.length > 0) {
-            orders = orders.filter(order => advancedFilters.priorities.includes(order.priority));
+        if (filters.priorities.length > 0) {
+            orders = orders.filter(order => filters.priorities.includes(order.priority));
         }
-        if (advancedFilters.statuses.length > 0) {
-            orders = orders.filter(order => advancedFilters.statuses.includes(order.status));
+        if (filters.statuses.length > 0) {
+            orders = orders.filter(order => filters.statuses.includes(order.status));
         }
-        if (advancedFilters.dateRange.from) {
-            orders = orders.filter(order => new Date(order.date.replace(/-/g, '/')) >= advancedFilters.dateRange.from!);
+        if (filters.dateRange.from) {
+            orders = orders.filter(order => new Date(order.date.replace(/-/g, '/')) >= filters.dateRange.from!);
         }
-        if (advancedFilters.dateRange.to) {
-            orders = orders.filter(order => new Date(order.date.replace(/-/g, '/')) <= advancedFilters.dateRange.to!);
+        if (filters.dateRange.to) {
+            orders = orders.filter(order => new Date(order.date.replace(/-/g, '/')) <= filters.dateRange.to!);
         }
 
         return orders;
-    }, [activeWorkOrders, activeTab, search, advancedFilters]);
+    }, [activeWorkOrders, activeTab, filters]);
 
     const categories = [
         { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
@@ -112,37 +113,35 @@ export default function ActiveOrdersPage() {
     }, [filteredOrders]);
 
     return (
-        <div className="flex flex-col gap-8">
-            <Card>
-                <Collapsible open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-                    <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <CollapsibleTrigger asChild>
-                                    <Button variant="ghost" size="sm">
-                                        <ChevronsUpDown className="h-4 w-4" />
-                                        <span className="sr-only">Toggle</span>
-                                    </Button>
-                                </CollapsibleTrigger>
-                                <CardTitle>Filtros Avanzados</CardTitle>
-                            </div>
-                            {canCreate && (
-                                <Button asChild>
-                                    <Link href="/orders/new">
-                                        <PlusCircle className="mr-2 h-4 w-4" />
-                                        Nueva OT
-                                    </Link>
-                                </Button>
-                            )}
-                        </div>
-                    </CardHeader>
-                    <CollapsibleContent>
+        <div className="flex flex-col gap-4">
+             <Collapsible open={isFilterOpen} onOpenChange={setIsFilterOpen} className="space-y-2">
+                <div className="flex items-center justify-between">
+                    <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                            <ChevronsUpDown className="h-4 w-4 mr-2" />
+                            Filtros Avanzados
+                        </Button>
+                    </CollapsibleTrigger>
+                     {canCreate && (
+                        <Button asChild size="sm">
+                            <Link href="/orders/new">
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Nueva OT
+                            </Link>
+                        </Button>
+                    )}
+                </div>
+                <CollapsibleContent>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Filtros Avanzados</CardTitle>
+                        </CardHeader>
                         <CardContent>
-                            <AdvancedFilters onFilterChange={setAdvancedFilters} />
+                             <AdvancedFilters onFilterChange={(newFilters) => setFilters(prev => ({...prev, ...newFilters}))} />
                         </CardContent>
-                    </CollapsibleContent>
-                </Collapsible>
-            </Card>
+                    </Card>
+                </CollapsibleContent>
+            </Collapsible>
             
             <Card>
                 <CardHeader>
@@ -158,9 +157,9 @@ export default function ActiveOrdersPage() {
                             </ScrollArea>
                              <div className="w-full sm:w-auto sm:max-w-sm">
                                 <Input
-                                    placeholder="Buscar por OT o descripción..."
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Buscar por OT, cliente, descripción..."
+                                    value={filters.search}
+                                    onChange={(e) => setFilters(prev => ({...prev, search: e.target.value}))}
                                 />
                             </div>
                         </div>

@@ -11,6 +11,7 @@ import AdvancedFilters, { type Filters } from '@/components/orders/advanced-filt
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { ChevronsUpDown } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 
 export default function HistoryPage() {
@@ -40,13 +41,16 @@ export default function HistoryPage() {
             orders = orders.filter(order => order.ot_number.startsWith(activeTab));
         }
         
-        // Apply advanced filters
+        // Apply simple search
         if (filters.search) {
-            orders = orders.filter(order =>
+             orders = orders.filter(order =>
                 order.ot_number.toLowerCase().includes(filters.search.toLowerCase()) ||
-                order.description.toLowerCase().includes(filters.search.toLowerCase())
+                order.description.toLowerCase().includes(filters.search.toLowerCase()) ||
+                order.client.toLowerCase().includes(filters.search.toLowerCase())
             );
         }
+        
+        // Apply advanced filters
         if (filters.clients.length > 0) {
             orders = orders.filter(order => filters.clients.includes(order.client));
         }
@@ -89,44 +93,54 @@ export default function HistoryPage() {
     ];
 
     return (
-        <div className="flex flex-col gap-8">
-             <Card>
-                <Collapsible open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-                    <CardHeader>
-                         <div className="flex items-center gap-2">
-                            <CollapsibleTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                    <ChevronsUpDown className="h-4 w-4" />
-                                    <span className="sr-only">Toggle</span>
-                                </Button>
-                            </CollapsibleTrigger>
-                            <div>
-                                <CardTitle>Filtros Avanzados del Historial</CardTitle>
-                                <CardDescription>Usa los filtros para encontrar órdenes de trabajo antiguas.</CardDescription>
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CollapsibleContent>
+        <div className="flex flex-col gap-4">
+            <Collapsible open={isFilterOpen} onOpenChange={setIsFilterOpen} className="space-y-2">
+                 <div className="flex items-center justify-between">
+                    <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                            <ChevronsUpDown className="h-4 w-4 mr-2" />
+                            Filtros Avanzados
+                        </Button>
+                    </CollapsibleTrigger>
+                </div>
+                <CollapsibleContent>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Filtros Avanzados</CardTitle>
+                        </CardHeader>
                         <CardContent>
-                            <AdvancedFilters onFilterChange={setFilters} />
+                            <AdvancedFilters onFilterChange={(newFilters) => setFilters(prev => ({...prev, ...newFilters}))} />
                         </CardContent>
-                    </CollapsibleContent>
-                </Collapsible>
-            </Card>
+                    </Card>
+                </CollapsibleContent>
+            </Collapsible>
 
-            <Tabs value={activeTab} onValueChange={filterOrders}>
-                    <ScrollArea className="w-full">
-                        <TabsList className="w-max">
-                            {categories.map(cat => (
-                                <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
-                            ))}
-                        </TabsList>
-                        <ScrollBar orientation="horizontal" />
-                    </ScrollArea>
-                <TabsContent value={activeTab} className="mt-4">
-                    <HistoricalOrdersTable orders={filteredOrders} />
-                </TabsContent>
-            </Tabs>
+            <Card>
+                <CardHeader>
+                    <Tabs value={activeTab} onValueChange={filterOrders}>
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                                <ScrollArea className="w-full sm:w-auto">
+                                    <TabsList className="w-max">
+                                        {categories.map(cat => (
+                                            <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
+                                        ))}
+                                    </TabsList>
+                                    <ScrollBar orientation="horizontal" />
+                                </ScrollArea>
+                                <div className="w-full sm:w-auto sm:max-w-sm">
+                                    <Input
+                                        placeholder="Buscar por OT, cliente, descripción..."
+                                        value={filters.search}
+                                        onChange={(e) => setFilters(prev => ({...prev, search: e.target.value}))}
+                                    />
+                                </div>
+                            </div>
+                        <TabsContent value={activeTab} className="mt-4">
+                            <HistoricalOrdersTable orders={filteredOrders} />
+                        </TabsContent>
+                    </Tabs>
+                </CardHeader>
+            </Card>
         </div>
     );
 }
