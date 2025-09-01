@@ -91,11 +91,30 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
   const parseDate = (dateValue: any): string | undefined => {
     if (!dateValue) return undefined;
+
     if (dateValue instanceof Date) {
-        // Adjust for timezone offset
+        // Adjust for timezone offset when Excel provides a Date object
         const adjustedDate = new Date(dateValue.getTime() - (dateValue.getTimezoneOffset() * 60000));
         return adjustedDate.toISOString().split('T')[0];
     }
+    
+    if (typeof dateValue === 'string') {
+        const parts = dateValue.split(/[/.-]/); // Handles DD/MM/YYYY and DD-MM-YYYY
+        if (parts.length === 3) {
+            const day = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10);
+            const year = parseInt(parts[2], 10);
+            if (day && month && year && year > 1900) {
+                 // Create date in UTC to avoid timezone issues
+                const date = new Date(Date.UTC(year, month - 1, day));
+                if (!isNaN(date.getTime())) {
+                    return date.toISOString().split('T')[0];
+                }
+            }
+        }
+    }
+    
+    // Fallback for other formats like YYYY-MM-DD or numbers
     if (typeof dateValue === 'string' || typeof dateValue === 'number') {
         const d = new Date(dateValue);
         if (!isNaN(d.getTime())) {
@@ -103,7 +122,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             return adjustedDate.toISOString().split('T')[0];
         }
     }
-    return undefined; // Return undefined if parsing fails
+    
+    return undefined;
   }
 
   const parseFile = (fileToParse: File) => {
@@ -202,8 +222,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         client: "Nombre del Cliente",
         rut: "12.345.678-9",
         service: "CCTV",
-        date: "2024-08-15",
-        endDate: "2024-08-20",
+        date: "16/06/2025",
+        endDate: "20/06/2025",
         status: "Por Iniciar",
         priority: "Media",
         netPrice: 150000,
