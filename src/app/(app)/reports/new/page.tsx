@@ -120,6 +120,9 @@ export default function NewReportPage() {
           status: 'Activo'
       };
   };
+
+  const serviceGuides = React.useMemo(() => reportTemplates.filter(t => t.type === 'service-guide'), [reportTemplates]);
+  const projectDeliveries = React.useMemo(() => reportTemplates.filter(t => t.type === 'project-delivery'), [reportTemplates]);
   
   if (!workOrder) {
     return (
@@ -192,20 +195,20 @@ export default function NewReportPage() {
                         <SelectValue placeholder="Elige el formato a completar..." />
                         </SelectTrigger>
                         <SelectContent>
-                            {reportTemplates.filter(t => t.type === 'service-guide').length > 0 && (
+                            {serviceGuides.length > 0 && (
                                 <SelectGroup>
                                     <SelectLabel>Guías de Servicio</SelectLabel>
-                                    {reportTemplates.filter(t => t.type === 'service-guide').map(template => (
+                                    {serviceGuides.map(template => (
                                         <SelectItem key={template.id} value={template.id}>
                                         {template.name}
                                         </SelectItem>
                                     ))}
                                 </SelectGroup>
                             )}
-                            {reportTemplates.filter(t => t.type === 'project-delivery').length > 0 && (
+                            {projectDeliveries.length > 0 && (
                                 <SelectGroup>
                                     <SelectLabel>Entrega de Proyectos</SelectLabel>
-                                    {reportTemplates.filter(t => t.type === 'project-delivery').map(template => (
+                                    {projectDeliveries.map(template => (
                                         <SelectItem key={template.id} value={template.id}>
                                         {template.name}
                                         </SelectItem>
