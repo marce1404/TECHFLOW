@@ -26,6 +26,7 @@ export default function HistoryPage() {
       priorities: [],
       statuses: [],
       dateRange: { from: undefined, to: undefined },
+      invoicedStatus: 'all',
     });
     const [isFilterOpen, setIsFilterOpen] = React.useState(false);
 
@@ -81,6 +82,13 @@ export default function HistoryPage() {
         }
         if (filters.dateRange.to) {
             orders = orders.filter(order => new Date(order.date.replace(/-/g, '/')) <= filters.dateRange.to!);
+        }
+        if (filters.invoicedStatus !== 'all') {
+            orders = orders.filter(order => {
+                if (filters.invoicedStatus === 'invoiced') return order.facturado;
+                if (filters.invoicedStatus === 'not_invoiced') return !order.facturado;
+                return true;
+            });
         }
 
 
