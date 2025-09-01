@@ -257,7 +257,7 @@ export async function sendInvitationEmailAction(
                     <p><strong>Contraseña:</strong> ${password_clear}</p>
                 </div>
                 <p>Te recomendamos cambiar tu contraseña después de iniciar sesión por primera vez.</p>
-                <a href="${appUrl}/login" class="button">Iniciar Sesión en TechFlow</a>
+                <a href="${appUrl}" class="button">Iniciar Sesión en TechFlow</a>
             </div>
             <div class="footer">
                 <p>Si tienes problemas para acceder, por favor contacta a tu administrador.</p>
