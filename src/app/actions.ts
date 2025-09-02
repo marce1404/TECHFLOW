@@ -10,7 +10,7 @@ import {
   AppUser,
 } from '@/lib/types';
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
-import { db as adminDb } from '@/lib/firebase-admin';
+import { db as adminDb, storage as adminStorage } from '@/lib/firebase-admin';
 import nodemailer from 'nodemailer';
 import * as xlsx from 'xlsx';
 import {
@@ -22,6 +22,7 @@ import {
   listUsersAction as listUsersActionAdmin,
 } from '@/lib/firebase-admin';
 import type { UserRecord } from 'firebase-admin/auth';
+import { UploadTaskSnapshot, getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
 
 // --- Server Actions ---
 
@@ -314,4 +315,45 @@ export async function deleteAllWorkOrdersAction(): Promise<{ success: boolean; m
   }
 }
 
+export async function uploadLogoAction(
+  { fileBuffer, fileType }: { fileBuffer: Buffer; fileType: string },
+  onProgress: (progress: number) => void
+): Promise<{ success: boolean; message: string; url?: string }> {
+  if (!adminStorage) {
+    return { success: false, message: "Firebase Storage no está inicializado." };
+  }
+
+  const bucket = adminStorage.bucket();
+  const filePath = `company/logo`; // Overwrite the same file
+  const file = bucket.file(filePath);
+
+  const stream = file.createWriteStream({
+    metadata: {
+      contentType: fileType,
+    },
+    resumable: false, // Keep it simple
+  });
+
+  return new Promise((resolve, reject) => {
+    stream.on('error', (err) => {
+      console.error("Error subiendo el logo:", err);
+      reject({ success: false, message: "Error al subir el archivo." });
+    });
+
+    stream.on('finish', async () => {
+      try {
+        // Make the file public
+        await file.makePublic();
+        // Get the public URL
+        const publicUrl = file.publicUrl();
+        resolve({ success: true, message: "Logo subido exitosamente", url: publicUrl });
+      } catch (err) {
+        console.error("Error al hacer el archivo público:", err);
+        reject({ success: false, message: "Error al publicar el archivo." });
+      }
+    });
+
+    stream.end(fileBuffer);
+  });
+}
     

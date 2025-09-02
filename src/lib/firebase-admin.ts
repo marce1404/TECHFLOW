@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
 import * as dotenv from 'dotenv';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getStorage } from 'firebase-admin/storage';
 import type { AppUser } from './types';
 
 dotenv.config();
@@ -10,6 +11,8 @@ dotenv.config();
 let adminApp: admin.app.App | undefined;
 let auth: admin.auth.Auth;
 let db: admin.firestore.Firestore;
+let storage: admin.storage.Storage;
+
 
 if (!admin.apps.length) {
     const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
@@ -20,6 +23,7 @@ if (!admin.apps.length) {
             const serviceAccount = JSON.parse(serviceAccountString);
             adminApp = admin.initializeApp({
                 credential: admin.credential.cert(serviceAccount),
+                storageBucket: `${serviceAccount.project_id}.appspot.com`
             });
         } catch (e: any) {
             console.error("Firebase Admin SDK initialization failed due to a malformed service account JSON. Admin features will be disabled.", e);
@@ -34,15 +38,17 @@ if (!admin.apps.length) {
 if (adminApp) {
     auth = getAuth(adminApp);
     db = getFirestore(adminApp);
+    storage = getStorage(adminApp);
 } else {
     // Create mock objects if adminApp is not initialized
     // This allows the app to build and run without crashing, but admin features will fail gracefully.
     auth = {} as admin.auth.Auth;
     db = {} as admin.firestore.Firestore;
+    storage = {} as admin.storage.Storage;
 }
 
 
-export { auth, db };
+export { auth, db, storage };
 
 
 // Server Actions requiring Admin privileges
