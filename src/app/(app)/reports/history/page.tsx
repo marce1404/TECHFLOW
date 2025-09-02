@@ -105,7 +105,7 @@ export default function ReportsHistoryPage() {
   
   const getReportManager = (report: SubmittedReport): AppUser | undefined => {
       const managerName = report.otDetails.comercial;
-      if (!managerName) return undefined;
+      if (!managerName || !users) return undefined;
       return users.find(u => u.displayName === managerName);
   };
 

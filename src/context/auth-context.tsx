@@ -11,7 +11,9 @@ import type { AppUser } from '@/lib/types';
 interface AuthContextType {
   user: User | null;
   userProfile: AppUser | null;
+  users: AppUser[];
   loading: boolean;
+  refetchUsers: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,13 +21,20 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<AppUser | null>(null);
+  const [users, setUsers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const fetchUsers = useCallback(async () => {
+    const usersCollection = await getDocs(collection(db, 'users'));
+    setUsers(usersCollection.docs.map(doc => doc.data() as AppUser));
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setLoading(true);
       if (currentUser) {
         setUser(currentUser);
+        await fetchUsers(); // Fetch all users
         const userDocRef = doc(db, 'users', currentUser.uid);
         const userDocSnap = await getDoc(userDocRef);
         
@@ -44,6 +53,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             };
             await setDoc(userDocRef, newUserProfile);
             setUserProfile(newUserProfile);
+            await fetchUsers(); // Re-fetch users after creating a new one
           } catch (error) {
              console.error("Error creating fallback user profile in Firestore:", error);
              setUserProfile(null);
@@ -52,16 +62,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setUser(null);
         setUserProfile(null);
+        setUsers([]);
       }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [fetchUsers]);
 
 
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading }}>
+    <AuthContext.Provider value={{ user, userProfile, users, loading, refetchUsers: fetchUsers }}>
       {children}
     </AuthContext.Provider>
   );

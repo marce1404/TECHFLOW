@@ -8,48 +8,9 @@ import UsersTable from '@/components/settings/users-table';
 import { useAuth } from '@/context/auth-context';
 import { UserInviteForm } from '@/components/settings/user-invite-form';
 import { Shield, Eye, HardHat, UserCog } from 'lucide-react';
-import { listUsersAction } from '@/app/actions';
-import type { AppUser } from '@/lib/types';
-import { useToast } from '@/hooks/use-toast';
 
 export default function UsersPage() {
-    const { userProfile } = useAuth();
-    const { toast } = useToast();
-    const [users, setUsers] = React.useState<AppUser[]>([]);
-    const [loading, setLoading] = React.useState(true);
-
-    const fetchUsers = React.useCallback(async () => {
-        if (userProfile?.role !== 'Admin') {
-            setLoading(false);
-            return;
-        }
-        setLoading(true);
-        try {
-            const result = await listUsersAction();
-            if (result.success && result.users) {
-                setUsers(result.users);
-            } else {
-                toast({
-                    variant: 'destructive',
-                    title: 'Error al cargar usuarios',
-                    description: result.message,
-                });
-                setUsers([]);
-            }
-        } catch (error: any) {
-             toast({
-                variant: 'destructive',
-                title: 'Error inesperado',
-                description: 'No se pudieron cargar los usuarios.',
-            });
-        } finally {
-            setLoading(false);
-        }
-    }, [userProfile?.role, toast]);
-
-    React.useEffect(() => {
-        fetchUsers();
-    }, [fetchUsers]);
+    const { userProfile, users, loading, refetchUsers } = useAuth();
     
     if (userProfile?.role !== 'Admin') {
         return (
@@ -68,7 +29,7 @@ export default function UsersPage() {
 
     return (
         <div className="flex flex-col gap-8">
-            <UserInviteForm onUserAdded={fetchUsers} />
+            <UserInviteForm onUserAdded={refetchUsers} />
 
              <Card>
                 <CardHeader>
@@ -143,7 +104,7 @@ export default function UsersPage() {
                     <CardDescription>Gestiona los usuarios y sus roles de acceso al sistema.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <UsersTable users={users} loading={loading} onDataChange={fetchUsers} />
+                    <UsersTable users={users} loading={loading} onDataChange={refetchUsers} />
                 </CardContent>
             </Card>
         </div>
