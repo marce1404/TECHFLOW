@@ -44,83 +44,88 @@ export default function ActiveOrdersPage() {
     const filterOrders = (categoryPrefix: string | null) => {
         setActiveTab(categoryPrefix || 'todos');
     };
-
-    const hasAdvancedFilters = React.useMemo(() => {
-        return filters.clients.length > 0 ||
-               filters.services.length > 0 ||
-               filters.technicians.length > 0 ||
-               filters.supervisors.length > 0 ||
-               filters.priorities.length > 0 ||
-               filters.statuses.length > 0 ||
-               filters.dateRange.from !== undefined ||
-               filters.invoicedStatus !== 'all';
-    }, [filters]);
     
     const filteredOrders = React.useMemo(() => {
-        const isSearchingOrFiltering = filters.search || hasAdvancedFilters;
-        let baseOrders = isSearchingOrFiltering ? [...activeWorkOrders, ...historicalWorkOrders] : activeWorkOrders;
+        let allOrders = [...activeWorkOrders, ...historicalWorkOrders];
+        let ordersToDisplay;
 
-        if (activeTab !== 'todos') {
-            baseOrders = baseOrders.filter(order => order.ot_number.startsWith(activeTab));
+        // Start with the correct base list of orders
+        if (filters.invoicedStatus === 'not_invoiced') {
+            // "Por Facturar" should only ever show non-closed orders
+            ordersToDisplay = allOrders.filter(order => normalizeString(order.status) !== 'cerrada');
+        } else if (filters.invoicedStatus === 'invoiced') {
+            // "Facturadas" can come from anywhere
+            ordersToDisplay = allOrders;
+        } else if (filters.search || filters.clients.length || filters.services.length || filters.technicians.length || filters.supervisors.length || filters.priorities.length || filters.statuses.length || filters.dateRange.from) {
+             // If any other filter is active, search in all orders
+             ordersToDisplay = allOrders;
+        }
+        else {
+            // Default view: only active orders
+            ordersToDisplay = activeWorkOrders;
         }
         
-        let orders = baseOrders;
+        let filtered = ordersToDisplay;
 
-        // Simple search
+        // Apply Tab Filter
+        if (activeTab !== 'todos') {
+            filtered = filtered.filter(order => order.ot_number.startsWith(activeTab));
+        }
+        
+        // Apply Search
         if (filters.search) {
-             orders = orders.filter(order =>
+             filtered = filtered.filter(order =>
                 order.ot_number.toLowerCase().includes(filters.search.toLowerCase()) ||
                 order.description.toLowerCase().includes(filters.search.toLowerCase()) ||
                 (order.client && order.client.toLowerCase().includes(filters.search.toLowerCase()))
             );
         }
 
-        // Apply advanced filters
+        // Apply Advanced Filters
         if (filters.clients.length > 0) {
-            orders = orders.filter(order => filters.clients.includes(order.client));
+            filtered = filtered.filter(order => filters.clients.includes(order.client));
         }
         if (filters.services.length > 0) {
-            orders = orders.filter(order => filters.services.includes(order.service));
+            filtered = filtered.filter(order => filters.services.includes(order.service));
         }
         if (filters.technicians.length > 0) {
-            orders = orders.filter(order => (order.technicians || []).some(t => filters.technicians.includes(t)));
+            filtered = filtered.filter(order => (order.technicians || []).some(t => filters.technicians.includes(t)));
         }
         if (filters.supervisors.length > 0) {
-            orders = orders.filter(order => (order.assigned || []).some(s => filters.supervisors.includes(s)));
+            filtered = filtered.filter(order => (order.assigned || []).some(s => filters.supervisors.includes(s)));
         }
         if (filters.priorities.length > 0) {
-            orders = orders.filter(order => filters.priorities.includes(order.priority));
+            filtered = filtered.filter(order => filters.priorities.includes(order.priority));
         }
         if (filters.statuses.length > 0) {
-            orders = orders.filter(order => filters.statuses.includes(order.status));
+            filtered = filtered.filter(order => filters.statuses.includes(order.status));
         }
         if (filters.dateRange.from) {
-            orders = orders.filter(order => new Date(order.date.replace(/-/g, '/')) >= filters.dateRange.from!);
+            filtered = filtered.filter(order => new Date(order.date.replace(/-/g, '/')) >= filters.dateRange.from!);
         }
         if (filters.dateRange.to) {
-            orders = orders.filter(order => new Date(order.date.replace(/-/g, '/')) <= filters.dateRange.to!);
+            filtered = filtered.filter(order => new Date(order.date.replace(/-/g, '/')) <= filters.dateRange.to!);
         }
+
+        // Apply Invoiced Status Filter LAST
         if (filters.invoicedStatus !== 'all') {
-            orders = orders.filter(order => {
+            filtered = filtered.filter(order => {
                 const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
                 const netPrice = order.netPrice || 0;
                 
                 if (filters.invoicedStatus === 'invoiced') {
-                    // Fully invoiced: old `facturado` flag OR total invoiced amount is >= net price
                     return order.facturado === true || (netPrice > 0 && totalInvoiced >= netPrice);
                 }
                 if (filters.invoicedStatus === 'not_invoiced') {
-                     // Not fully invoiced: total invoiced is < net price AND it's not marked with old facturado flag
-                     // AND must not be a "Cerrada" OT
-                     return !order.facturado && totalInvoiced < netPrice && normalizeString(order.status) !== 'cerrada';
+                     return !order.facturado && totalInvoiced < netPrice;
                 }
                 return true;
             });
         }
 
 
-        return orders;
-    }, [activeWorkOrders, historicalWorkOrders, activeTab, filters, hasAdvancedFilters]);
+        return filtered;
+    }, [activeWorkOrders, historicalWorkOrders, activeTab, filters]);
 
     const categories = [
         { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
