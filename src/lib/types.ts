@@ -188,7 +188,6 @@ export type CompanyInfo = {
     name: string;
     slogan?: string;
     address?: string;
-    logoUrl?: string;
 };
 
 export type SmtpConfig = {
@@ -323,3 +322,5 @@ export const CreateWorkOrderOutputSchema = z.object({
   message: z.string(),
 });
 export type CreateWorkOrderOutput = z.infer<typeof CreateWorkOrderOutputSchema>;
+
+    

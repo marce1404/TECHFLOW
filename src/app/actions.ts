@@ -1,6 +1,7 @@
 
 'use server';
 
+import * as admin from 'firebase-admin';
 import {
   SuggestOptimalResourceAssignmentInput,
   SuggestOptimalResourceAssignmentOutputWithError,
@@ -10,19 +11,56 @@ import {
   AppUser,
 } from '@/lib/types';
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
-import { adminApp } from '@/lib/firebase-admin';
 import nodemailer from 'nodemailer';
 import * as xlsx from 'xlsx';
-import { getFirestore } from 'firebase-admin/firestore';
-import { getAuth } from 'firebase-admin/auth';
-import { getStorage } from 'firebase-admin/storage';
+
+// Initialize Firebase Admin SDK
+try {
+    const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    if (serviceAccountBase64) {
+        const serviceAccountString = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
+        const serviceAccount = JSON.parse(serviceAccountString);
+
+        if (!admin.apps.length) {
+            admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount),
+                storageBucket: `${serviceAccount.project_id}.appspot.com`
+            });
+        }
+    } else if (process.env.NODE_ENV !== 'production') {
+        // Fallback for local development if you have a serviceAccount.json file
+        // Ensure you have this file and GOOGLE_APPLICATION_CREDENTIALS is set in your local env
+    }
+} catch (error) {
+    console.error('Firebase Admin SDK initialization failed:', error);
+}
+
+
+const getAdminApp = (): admin.app.App => {
+    if (admin.apps.length > 0) {
+        return admin.apps[0]!;
+    }
+    // This part should ideally not be reached if initialization is correct.
+    // It's a fallback.
+    const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    if (serviceAccountBase64) {
+         const serviceAccountString = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
+         const serviceAccount = JSON.parse(serviceAccountString);
+        return admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount),
+            storageBucket: `${serviceAccount.project_id}.appspot.com`
+        });
+    }
+    // Attempt to initialize with default credentials for environments like Google Cloud Run
+    return admin.initializeApp();
+}
 
 
 // --- Server Actions ---
 export async function listUsersAction(): Promise<{ success: boolean; users?: AppUser[]; message: string }> {
-  if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.' };
   try {
-    const firestoreDb = getFirestore(adminApp);
+    const adminAuth = getAdminApp().auth();
+    const firestoreDb = getAdminApp().firestore();
     const usersCollection = await firestoreDb.collection('users').get();
     const users = usersCollection.docs.map(doc => doc.data() as AppUser);
     return { success: true, users: users, message: 'Users fetched successfully.' };
@@ -33,10 +71,9 @@ export async function listUsersAction(): Promise<{ success: boolean; users?: App
 }
 
 export async function createUserAction(data: { email: string; password; displayName: string; role: AppUser['role'] }): Promise<{ success: boolean; message: string; user?: AppUser }> {
-  if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.' };
   try {
-    const adminAuth = getAuth(adminApp);
-    const firestoreDb = getFirestore(adminApp);
+    const adminAuth = getAdminApp().auth();
+    const firestoreDb = getAdminApp().firestore();
 
     const userRecord = await adminAuth.createUser({
         email: data.email,
@@ -71,10 +108,9 @@ export async function createUserAction(data: { email: string; password; displayN
 
 
 export async function deleteUserAction(uid: string): Promise<{ success: boolean; message: string }> {
-  if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.' };
   try {
-    const adminAuth = getAuth(adminApp);
-    const firestoreDb = getFirestore(adminApp);
+    const adminAuth = getAdminApp().auth();
+    const firestoreDb = getAdminApp().firestore();
     await adminAuth.deleteUser(uid);
     await firestoreDb.collection('users').doc(uid).delete();
     
@@ -86,10 +122,9 @@ export async function deleteUserAction(uid: string): Promise<{ success: boolean;
 }
 
 export async function updateUserAction(uid: string, data: { displayName: string; role: string; status: string }): Promise<{ success: boolean; message: string }> {
-    if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.' };
     try {
-        const adminAuth = getAuth(adminApp);
-        const firestoreDb = getFirestore(adminApp);
+        const adminAuth = getAdminApp().auth();
+        const firestoreDb = getAdminApp().firestore();
         await adminAuth.updateUser(uid, {
             displayName: data.displayName,
             disabled: data.status === 'Inactivo',
@@ -111,9 +146,8 @@ export async function updateUserAction(uid: string, data: { displayName: string;
 
 
 export async function changeUserPasswordAction(uid: string, newPassword: string): Promise<{ success: boolean; message: string }> {
-  if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.' };
   try {
-    const adminAuth = getAuth(adminApp);
+    const adminAuth = getAdminApp().auth();
     await adminAuth.updateUser(uid, { password: newPassword });
     return { success: true, message: `Contraseña actualizada correctamente.` };
   } catch (error: any) {
@@ -123,10 +157,9 @@ export async function changeUserPasswordAction(uid: string, newPassword: string)
 }
 
 export async function toggleUserStatusAction(uid: string, currentStatus: 'Activo' | 'Inactivo'): Promise<{ success: boolean; message: string }> {
-  if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.' };
   try {
-    const adminAuth = getAuth(adminApp);
-    const firestoreDb = getFirestore(adminApp);
+    const adminAuth = getAdminApp().auth();
+    const firestoreDb = getAdminApp().firestore();
     const newStatus = currentStatus === 'Activo' ? 'Inactivo' : 'Activo';
     await adminAuth.updateUser(uid, { disabled: newStatus === 'Inactivo' });
     
@@ -267,8 +300,7 @@ export async function exportOrdersToExcel(orders: WorkOrder[]): Promise<string> 
 }
 
 async function createOrUpdateWorkOrder(input: CreateWorkOrderInput) {
-  if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.' };
-  const db = getFirestore(adminApp);
+  const db = getAdminApp().firestore();
   try {
     const workOrderData = {
       ...input,
@@ -393,8 +425,7 @@ export async function sendInvitationEmailAction(
 }
 
 export async function deleteAllWorkOrdersAction(): Promise<{ success: boolean; message: string; deletedCount: number }> {
-  if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.', deletedCount: 0 };
-  const db = getFirestore(adminApp);
+  const db = getAdminApp().firestore();
   try {
     const collectionRef = db.collection('work-orders');
     
@@ -423,57 +454,6 @@ export async function deleteAllWorkOrdersAction(): Promise<{ success: boolean; m
     return { success: false, message: `Error al limpiar la base de datos: ${errorMessage}`, deletedCount: 0 };
   }
 }
+    
 
-export async function uploadLogoAction({
-  fileDataUri,
-}: {
-  fileDataUri: string;
-}): Promise<{ success: boolean; message: string; url?: string }> {
-  if (!adminApp) {
-    return { success: false, message: "Firebase Storage no está inicializado." };
-  }
-
-  const storage = getStorage(adminApp);
-  const bucket = storage.bucket();
-  const filePath = `company/logo`; // Overwrite the same file
-
-  // Extract content type and base64 data from data URI
-  const match = fileDataUri.match(/^data:(.+);base64,(.+)$/);
-  if (!match) {
-    return { success: false, message: "Formato de Data URI inválido." };
-  }
-  const contentType = match[1];
-  const base64Data = match[2];
-  const fileBuffer = Buffer.from(base64Data, 'base64');
-  
-  const file = bucket.file(filePath);
-
-  const stream = file.createWriteStream({
-    metadata: {
-      contentType: contentType,
-      // Make the file publicly readable
-      cacheControl: 'public, max-age=31536000',
-    },
-  });
-
-  return new Promise((resolve, reject) => {
-    stream.on('error', (err) => {
-      console.error("Error subiendo el logo:", err);
-      reject({ success: false, message: "Error al subir el archivo." });
-    });
-
-    stream.on('finish', async () => {
-      try {
-        await file.makePublic();
-        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
-        resolve({ success: true, message: "Logo subido exitosamente", url: publicUrl });
-      } catch (err) {
-        console.error("Error al hacer el archivo público:", err);
-        reject({ success: false, message: "Error al publicar el archivo." });
-      }
-    });
-
-    stream.end(fileBuffer);
-  });
-}
     

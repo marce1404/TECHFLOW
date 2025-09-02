@@ -70,9 +70,6 @@ function PrintReportContent({ report, template, companyInfo }: { report: Submitt
         <div className="bg-white text-black p-6 printable-content max-w-3xl mx-auto">
             <header className="flex justify-between items-start mb-4 pb-4 border-b border-gray-300">
                 <div className="flex items-center gap-4">
-                    {companyInfo?.logoUrl && (
-                        <Image src={companyInfo.logoUrl} alt="Company Logo" width={120} height={40} className="object-contain" />
-                    )}
                     <div>
                         <h2 className="font-bold text-lg">{companyInfo?.name || 'TechFlow'}</h2>
                         <p className="text-xs">{companyInfo?.slogan || 'Soluciones Inteligentes'}</p>
@@ -231,3 +228,5 @@ export default function PrintReportPage() {
 
     return <PrintReportContent report={data.report} template={data.template} companyInfo={data.companyInfo} />;
 }
+
+    
