@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription as FormDesc } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { CompanyInfo } from '@/lib/types';
@@ -174,6 +174,7 @@ export default function CompanyDetailsPage() {
                             </Button>
                         </>
                     )}
+                    <p className="text-xs text-muted-foreground pt-1">Formatos admitidos: PNG, JPG, GIF. Se recomienda PNG con fondo transparente.</p>
                  </div>
                </div>
               <div className="flex justify-end">
