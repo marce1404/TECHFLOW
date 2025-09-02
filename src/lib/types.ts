@@ -188,6 +188,7 @@ export type CompanyInfo = {
     name: string;
     slogan?: string;
     address?: string;
+    logoUrl?: string;
 };
 
 export type SmtpConfig = {

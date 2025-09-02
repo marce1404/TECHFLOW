@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CheckSquare, Square } from 'lucide-react';
 import { useParams } from 'next/navigation';
+import Image from 'next/image';
 
 async function getReportForPrint(reportId: string): Promise<{ report: SubmittedReport; template: ReportTemplate, companyInfo: CompanyInfo | null } | null> {
   try {
@@ -67,19 +68,24 @@ function PrintReportContent({ report, template, companyInfo }: { report: Submitt
 
     return (
         <div className="bg-white text-black p-6 printable-content max-w-3xl mx-auto">
-            <header className="flex justify-between items-start mb-4">
-                <div className="flex-1">
-                    <h1 className="text-3xl font-headline font-bold text-primary">{template.name}</h1>
+            <header className="flex justify-between items-start mb-4 pb-4 border-b border-gray-300">
+                <div className="flex items-center gap-4">
+                    {companyInfo?.logoUrl && (
+                        <Image src={companyInfo.logoUrl} alt="Company Logo" width={120} height={40} className="object-contain" />
+                    )}
+                    <div>
+                        <h2 className="font-bold text-lg">{companyInfo?.name || 'TechFlow'}</h2>
+                        <p className="text-xs">{companyInfo?.slogan || 'Soluciones Inteligentes'}</p>
+                        <p className="text-xs">{companyInfo?.address || ''}</p>
+                    </div>
                 </div>
-                <div className="text-right text-xs">
-                    <h2 className="font-bold text-base">{companyInfo?.name || 'TechFlow'}</h2>
-                    <p>{companyInfo?.slogan || 'Soluciones Inteligentes'}</p>
-                    <p>{companyInfo?.address || ''}</p>
+                <div className="text-right">
+                     <h1 className="text-2xl font-headline font-bold text-primary">{template.name}</h1>
                 </div>
             </header>
             
             <div className="flex justify-between items-center mb-4">
-                <p className="font-semibold text-lg">Folio Nº: {shortFolio}</p>
+                <p className="font-semibold text-base">Folio Nº: {shortFolio}</p>
                 <p className="text-sm text-gray-600">Fecha de Emisión: {submittedDate}</p>
             </div>
 

@@ -20,6 +20,7 @@ const companyFormSchema = z.object({
   name: z.string().min(2, { message: 'El nombre debe tener al menos 2 caracteres.' }),
   slogan: z.string().optional(),
   address: z.string().optional(),
+  logoUrl: z.string().url({ message: 'Debe ser una URL válida.' }).optional().or(z.literal('')),
 });
 
 type CompanyFormValues = z.infer<typeof companyFormSchema>;
@@ -34,6 +35,7 @@ export default function CompanyDetailsPage() {
       name: '',
       slogan: '',
       address: '',
+      logoUrl: '',
     },
   });
 
@@ -98,6 +100,19 @@ export default function CompanyDetailsPage() {
                     <FormLabel>Dirección (Opcional)</FormLabel>
                     <FormControl>
                       <Textarea placeholder="La dirección de tu empresa" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="logoUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>URL del Logo (Opcional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://ejemplo.com/logo.png" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
