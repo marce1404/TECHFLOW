@@ -45,7 +45,7 @@ export default function UsersPage() {
         } finally {
             setLoading(false);
         }
-    }, [userProfile, toast]);
+    }, [userProfile?.role, toast]);
 
     React.useEffect(() => {
         fetchUsers();

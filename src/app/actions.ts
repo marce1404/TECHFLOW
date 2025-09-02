@@ -10,29 +10,135 @@ import {
   AppUser,
 } from '@/lib/types';
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
-import { db as adminDb, storage as adminStorage } from '@/lib/firebase-admin';
+import { adminApp } from '@/lib/firebase-admin';
 import nodemailer from 'nodemailer';
 import * as xlsx from 'xlsx';
-import {
-  deleteUserAction as deleteUserActionAdmin,
-  changeUserPasswordAction as changeUserPasswordActionAdmin,
-  toggleUserStatusAction as toggleUserStatusActionAdmin,
-  updateUserAction as updateUserActionAdmin,
-  createUserAction as createUserActionAdmin,
-  listUsersAction as listUsersActionAdmin,
-} from '@/lib/firebase-admin';
-import type { UserRecord } from 'firebase-admin/auth';
-import type { Storage } from 'firebase-admin/storage';
+import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
+import { getStorage } from 'firebase-admin/storage';
 
 
 // --- Server Actions ---
+export async function listUsersAction(): Promise<{ success: boolean; users?: AppUser[]; message: string }> {
+  if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.' };
+  try {
+    const firestoreDb = getFirestore(adminApp);
+    const usersCollection = await firestoreDb.collection('users').get();
+    const users = usersCollection.docs.map(doc => doc.data() as AppUser);
+    return { success: true, users: users, message: 'Users fetched successfully.' };
+  } catch (error: any) {
+    console.error('Error listing users:', error);
+    return { success: false, message: error.message || 'Error al listar los usuarios.' };
+  }
+}
 
-export const createUserAction = createUserActionAdmin;
-export const deleteUserAction = deleteUserActionAdmin;
-export const changeUserPasswordAction = changeUserPasswordActionAdmin;
-export const toggleUserStatusAction = toggleUserStatusActionAdmin;
-export const updateUserAction = updateUserActionAdmin;
-export const listUsersAction = listUsersActionAdmin;
+export async function createUserAction(data: { email: string; password; displayName: string; role: AppUser['role'] }): Promise<{ success: boolean; message: string; user?: AppUser }> {
+  if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.' };
+  try {
+    const adminAuth = getAuth(adminApp);
+    const firestoreDb = getFirestore(adminApp);
+
+    const userRecord = await adminAuth.createUser({
+        email: data.email,
+        password: data.password,
+        displayName: data.displayName,
+        disabled: false,
+    });
+    
+    const userProfile: AppUser = {
+        uid: userRecord.uid,
+        email: data.email,
+        displayName: data.displayName,
+        role: data.role,
+        status: 'Activo',
+    };
+
+    await firestoreDb.collection('users').doc(userRecord.uid).set(userProfile);
+    
+    return { success: true, message: 'Usuario creado con éxito.', user: userProfile };
+
+  } catch (error: any) {
+    console.error('Error creating user:', error);
+    let message = 'Error al crear el usuario.';
+    if (error.code === 'auth/email-already-exists') {
+        message = 'El correo electrónico ya está en uso.';
+    } else if (error.code === 'auth/invalid-password') {
+        message = 'La contraseña debe tener al menos 6 caracteres.';
+    }
+    return { success: false, message };
+  }
+}
+
+
+export async function deleteUserAction(uid: string): Promise<{ success: boolean; message: string }> {
+  if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.' };
+  try {
+    const adminAuth = getAuth(adminApp);
+    const firestoreDb = getFirestore(adminApp);
+    await adminAuth.deleteUser(uid);
+    await firestoreDb.collection('users').doc(uid).delete();
+    
+    return { success: true, message: 'Usuario eliminado correctamente.' };
+  } catch (error: any) {
+    console.error('Error deleting user:', error);
+    return { success: false, message: error.message || 'Error al eliminar el usuario.' };
+  }
+}
+
+export async function updateUserAction(uid: string, data: { displayName: string; role: string; status: string }): Promise<{ success: boolean; message: string }> {
+    if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.' };
+    try {
+        const adminAuth = getAuth(adminApp);
+        const firestoreDb = getFirestore(adminApp);
+        await adminAuth.updateUser(uid, {
+            displayName: data.displayName,
+            disabled: data.status === 'Inactivo',
+        });
+
+        const userDocRef = firestoreDb.collection('users').doc(uid);
+        await userDocRef.update({
+            displayName: data.displayName,
+            role: data.role,
+            status: data.status,
+        });
+        
+        return { success: true, message: 'Usuario actualizado correctamente.' };
+    } catch (error: any) {
+        console.error('Error updating user:', error);
+        return { success: false, message: error.message || 'Error al actualizar el usuario.' };
+    }
+}
+
+
+export async function changeUserPasswordAction(uid: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+  if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.' };
+  try {
+    const adminAuth = getAuth(adminApp);
+    await adminAuth.updateUser(uid, { password: newPassword });
+    return { success: true, message: `Contraseña actualizada correctamente.` };
+  } catch (error: any) {
+    console.error('Error changing password:', error);
+    return { success: false, message: error.message || 'Error al cambiar la contraseña.' };
+  }
+}
+
+export async function toggleUserStatusAction(uid: string, currentStatus: 'Activo' | 'Inactivo'): Promise<{ success: boolean; message: string }> {
+  if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.' };
+  try {
+    const adminAuth = getAuth(adminApp);
+    const firestoreDb = getFirestore(adminApp);
+    const newStatus = currentStatus === 'Activo' ? 'Inactivo' : 'Activo';
+    await adminAuth.updateUser(uid, { disabled: newStatus === 'Inactivo' });
+    
+    const userDocRef = firestoreDb.collection('users').doc(uid);
+    await userDocRef.update({ status: newStatus });
+        
+    return { success: true, message: 'Estado del usuario actualizado correctamente.' };
+  } catch (error: any) {
+    console.error('Error toggling user status:', error);
+    return { success: false, message: error.message || 'Error al cambiar el estado del usuario.' };
+  }
+}
 
 
 export async function getResourceSuggestions(
@@ -161,14 +267,15 @@ export async function exportOrdersToExcel(orders: WorkOrder[]): Promise<string> 
 }
 
 async function createOrUpdateWorkOrder(input: CreateWorkOrderInput) {
-  if (!(adminDb as any).collection) return { success: false, message: 'Firebase Admin not initialized.' };
+  if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.' };
+  const db = getFirestore(adminApp);
   try {
     const workOrderData = {
       ...input,
       facturado: !!input.invoiceNumber,
     };
 
-    const docRef = await (adminDb as any).collection("work-orders").add(workOrderData);
+    const docRef = await db.collection("work-orders").add(workOrderData);
     return {
       success: true,
       orderId: docRef.id,
@@ -286,9 +393,10 @@ export async function sendInvitationEmailAction(
 }
 
 export async function deleteAllWorkOrdersAction(): Promise<{ success: boolean; message: string; deletedCount: number }> {
-  if (!(adminDb as any).collection) return { success: false, message: 'Firebase Admin not initialized.', deletedCount: 0 };
+  if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.', deletedCount: 0 };
+  const db = getFirestore(adminApp);
   try {
-    const collectionRef = (adminDb as any).collection('work-orders');
+    const collectionRef = db.collection('work-orders');
     
     let deletedCount = 0;
     
@@ -298,7 +406,7 @@ export async function deleteAllWorkOrdersAction(): Promise<{ success: boolean; m
             break; // No more documents to delete
         }
         
-        const batch = (adminDb as any).batch();
+        const batch = db.batch();
         snapshot.docs.forEach(doc => {
             batch.delete(doc.ref);
         });
@@ -321,11 +429,12 @@ export async function uploadLogoAction({
 }: {
   fileDataUri: string;
 }): Promise<{ success: boolean; message: string; url?: string }> {
-  if (!(adminStorage as Storage).bucket) {
+  if (!adminApp) {
     return { success: false, message: "Firebase Storage no está inicializado." };
   }
 
-  const bucket = (adminStorage as Storage).bucket();
+  const storage = getStorage(adminApp);
+  const bucket = storage.bucket();
   const filePath = `company/logo`; // Overwrite the same file
 
   // Extract content type and base64 data from data URI

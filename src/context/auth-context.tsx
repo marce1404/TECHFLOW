@@ -7,7 +7,6 @@ import { auth, db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { collection, doc, getDoc, getDocs, setDoc, writeBatch } from 'firebase/firestore';
 import type { AppUser } from '@/lib/types';
-import { listUsersAction } from '@/app/actions';
 
 interface AuthContextType {
   user: User | null;
