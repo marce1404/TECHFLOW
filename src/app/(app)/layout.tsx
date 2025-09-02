@@ -3,7 +3,8 @@
 
 import * as React from 'react';
 import AppLayout from '@/components/layout/app-layout';
-import { WorkOrdersClientProvider } from '@/context/work-orders-client-provider';
+import { WorkOrdersProvider } from '@/context/work-orders-context';
+import { AuthProvider } from '@/context/auth-context';
 
 
 export default function AppProtectedLayout({
@@ -13,10 +14,12 @@ export default function AppProtectedLayout({
 }) {
   
   return (
-    <WorkOrdersClientProvider>
+    <AuthProvider>
+      <WorkOrdersProvider>
         <AppLayout>
             {children}
         </AppLayout>
-    </WorkOrdersClientProvider>
+      </WorkOrdersProvider>
+    </AuthProvider>
   );
 }

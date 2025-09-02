@@ -25,8 +25,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchUsers = useCallback(async () => {
-    const usersCollection = await getDocs(collection(db, 'users'));
-    setUsers(usersCollection.docs.map(doc => doc.data() as AppUser));
+    try {
+        const usersCollection = await getDocs(collection(db, 'users'));
+        setUsers(usersCollection.docs.map(doc => doc.data() as AppUser));
+    } catch (e) {
+        console.error("Error fetching users: ", e);
+        setUsers([]);
+    }
   }, []);
 
   useEffect(() => {
@@ -34,7 +39,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       if (currentUser) {
         setUser(currentUser);
-        await fetchUsers(); // Fetch all users
+        // Fetch user profile
         const userDocRef = doc(db, 'users', currentUser.uid);
         const userDocSnap = await getDoc(userDocRef);
         
@@ -53,12 +58,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             };
             await setDoc(userDocRef, newUserProfile);
             setUserProfile(newUserProfile);
-            await fetchUsers(); // Re-fetch users after creating a new one
           } catch (error) {
              console.error("Error creating fallback user profile in Firestore:", error);
              setUserProfile(null);
           }
         }
+        // Fetch all users
+        await fetchUsers();
       } else {
         setUser(null);
         setUserProfile(null);
