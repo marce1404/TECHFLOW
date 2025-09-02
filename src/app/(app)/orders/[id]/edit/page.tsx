@@ -137,12 +137,14 @@ export default function EditOrderPage() {
   const endDate = methods.watch('endDate') ? new Date(methods.watch('endDate')!.replace(/-/g, '/')) : undefined;
 
   const totalPrice = watchNetPrice ? Math.round(watchNetPrice * 1.19) : 0;
+  const ivaPrice = watchNetPrice ? Math.round(watchNetPrice * 0.19) : 0;
   
-  const totalInvoiced = React.useMemo(() => {
+  const totalInvoicedNet = React.useMemo(() => {
     return (watchInvoices || []).reduce((sum, inv) => sum + (inv.amount || 0), 0);
   }, [watchInvoices]);
   
-  const balance = watchNetPrice - totalInvoiced;
+  const totalInvoicedGross = Math.round(totalInvoicedNet * 1.19);
+  const balance = watchNetPrice - totalInvoicedNet;
 
   const currentPrefix = methods.watch('ot_number').split('-')[0];
   const assignedGantt = ganttCharts.find(g => g.assignedOT === methods.watch('ot_number'));
@@ -363,7 +365,7 @@ export default function EditOrderPage() {
                         </div>
                     </div>
                     
-                     <div className="grid grid-cols-2 gap-4">
+                     <div className="grid grid-cols-3 gap-4">
                         <div>
                             <Label htmlFor="net-price">Precio Neto</Label>
                             <Input 
@@ -377,8 +379,18 @@ export default function EditOrderPage() {
                                 }}
                             />
                         </div>
+                         <div>
+                            <Label htmlFor="iva-price">IVA (19%)</Label>
+                            <Input 
+                              id="iva-price" 
+                              type="text" 
+                              value={formatNumber(ivaPrice)}
+                              readOnly 
+                              className="bg-muted"
+                            />
+                        </div>
                         <div>
-                            <Label htmlFor="total-price">Precio Total (IVA Incl.)</Label>
+                            <Label htmlFor="total-price">Precio Total</Label>
                             <Input 
                               id="total-price" 
                               type="text" 
@@ -495,7 +507,8 @@ export default function EditOrderPage() {
                             <TableRow>
                                 <TableHead>Número de Factura</TableHead>
                                 <TableHead className="w-[200px]">Fecha</TableHead>
-                                <TableHead className="w-[200px]">Monto (Neto)</TableHead>
+                                <TableHead className="w-[150px]">Monto (Neto)</TableHead>
+                                <TableHead className="w-[150px]">Total (IVA Incl.)</TableHead>
                                 <TableHead className="w-[50px]"></TableHead>
                             </TableRow>
                         </TableHeader>
@@ -527,12 +540,21 @@ export default function EditOrderPage() {
                                     <TableCell>
                                         <Input 
                                             type="text" 
+                                            className="text-right"
                                             value={formatNumber(methods.watch(`invoices.${index}.amount`))}
                                             onChange={(e) => {
                                                 const rawValue = e.target.value.replace(/\./g, '');
                                                 const numericValue = parseInt(rawValue, 10);
                                                 methods.setValue(`invoices.${index}.amount`, isNaN(numericValue) ? 0 : numericValue);
                                             }}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                         <Input 
+                                            type="text" 
+                                            className="text-right bg-muted"
+                                            readOnly
+                                            value={formatNumber(Math.round(methods.watch(`invoices.${index}.amount`) * 1.19))}
                                         />
                                     </TableCell>
                                     <TableCell>
@@ -544,7 +566,7 @@ export default function EditOrderPage() {
                             ))}
                             {invoiceFields.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center">
+                                    <TableCell colSpan={5} className="h-24 text-center">
                                         No se han añadido facturas.
                                     </TableCell>
                                 </TableRow>
@@ -552,17 +574,21 @@ export default function EditOrderPage() {
                         </TableBody>
                     </Table>
                 </div>
-                <div className="grid grid-cols-3 gap-4 pt-4 text-sm font-medium">
+                <div className="grid grid-cols-4 gap-4 pt-4 text-sm font-medium">
                     <div className="p-2 border rounded-md">
                         <p className="text-muted-foreground">Total Facturado (Neto)</p>
-                        <p className="text-lg font-bold">{formatNumber(totalInvoiced)}</p>
+                        <p className="text-lg font-bold">{formatNumber(totalInvoicedNet)}</p>
+                    </div>
+                     <div className="p-2 border rounded-md">
+                        <p className="text-muted-foreground">Total Facturado (IVA Incl.)</p>
+                        <p className="text-lg font-bold">{formatNumber(totalInvoicedGross)}</p>
                     </div>
                      <div className="p-2 border rounded-md">
                         <p className="text-muted-foreground">Precio OT (Neto)</p>
                         <p className="text-lg font-bold">{formatNumber(watchNetPrice)}</p>
                     </div>
                      <div className={cn("p-2 border rounded-md", balance < 0 ? "text-destructive" : "")}>
-                        <p className="text-muted-foreground">Saldo Pendiente</p>
+                        <p className="text-muted-foreground">Saldo Pendiente (Neto)</p>
                         <p className="text-lg font-bold">{formatNumber(balance)}</p>
                     </div>
                 </div>
