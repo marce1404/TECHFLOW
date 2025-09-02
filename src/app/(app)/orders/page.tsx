@@ -46,10 +46,7 @@ export default function ActiveOrdersPage() {
     };
     
     const filteredOrders = React.useMemo(() => {
-        const allOrders = [...activeWorkOrders, ...historicalWorkOrders];
-        let ordersToFilter = allOrders;
-
-        // Default View: If no filters are active, show only active orders.
+        let baseOrders: WorkOrder[] = [];
         const noAdvancedFilters =
             !filters.clients.length &&
             !filters.services.length &&
@@ -60,26 +57,34 @@ export default function ActiveOrdersPage() {
             !filters.dateRange.from &&
             !filters.dateRange.to;
 
-        if (filters.invoicedStatus === 'all' && !filters.search && noAdvancedFilters) {
-            ordersToFilter = activeWorkOrders;
-        }
-        
-        // --- Special Invoice Status Filtering ---
+        // 1. Determine the base data set based on the primary invoice status filter
         if (filters.invoicedStatus === 'not_invoiced') {
-            // "Por Facturar" ONLY looks at ACTIVE orders.
-            ordersToFilter = activeWorkOrders.filter(order => {
+            // "Por Facturar" ALWAYS starts with ONLY active orders
+            baseOrders = activeWorkOrders.filter(order => {
                 const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
                 const netPrice = order.netPrice || 0;
                 return netPrice > 0 && totalInvoiced < netPrice && !order.facturado;
             });
         } else if (filters.invoicedStatus === 'invoiced') {
-            // "Facturadas" looks at ALL orders.
-            ordersToFilter = allOrders.filter(order => {
+            // "Facturadas" ALWAYS starts with ALL orders
+            baseOrders = [...activeWorkOrders, ...historicalWorkOrders].filter(order => {
                  const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
                  const netPrice = order.netPrice || 0;
                  return order.facturado === true || (netPrice > 0 && totalInvoiced >= netPrice);
             });
+        } else {
+            // Default view ("Todas" for invoice status)
+            if (!filters.search && noAdvancedFilters) {
+                // If no other filters are active, show only active orders
+                baseOrders = activeWorkOrders;
+            } else {
+                // If any other filter IS active, search across all orders
+                baseOrders = [...activeWorkOrders, ...historicalWorkOrders];
+            }
         }
+
+        // 2. Apply all other filters sequentially to the determined base set
+        let ordersToFilter = baseOrders;
 
         // Apply Tab Filter
         if (activeTab !== 'todos') {
