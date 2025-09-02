@@ -83,7 +83,7 @@ function PrintReportContent({ report, template, companyInfo }: { report: Submitt
                 <p className="text-sm text-gray-600">Fecha de Emisión: {submittedDate}</p>
             </div>
 
-            <Card className="mb-4 shadow-none border-black">
+            <Card className="mb-4 shadow-none border-black bg-transparent">
                 <CardHeader className="p-4">
                     <CardTitle className="text-xl">Información de la Orden de Trabajo</CardTitle>
                 </CardHeader>
@@ -98,7 +98,7 @@ function PrintReportContent({ report, template, companyInfo }: { report: Submitt
                 </CardContent>
             </Card>
 
-            <Card className="shadow-none border-black">
+            <Card className="shadow-none border-black bg-transparent">
                 <CardHeader className="p-4">
                     <CardTitle className="text-xl">Detalles del Servicio Realizado</CardTitle>
                 </CardHeader>
