@@ -96,8 +96,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
 
   const fetchData = useCallback(async () => {
-    // This provider will only be rendered when the user is authenticated.
-    // So we can safely assume `user` is present.
     setLoading(true);
     try {
         const fetchAndSetSuggestedTasks = async () => {
@@ -148,7 +146,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
                 if (!alreadyExists) {
                     const docRef = doc(collection(db, "report-templates"));
                     batch.set(docRef, template);
-                    // Optimistically add to our array to avoid a re-fetch
                     templatesToSet.push({ ...template, id: docRef.id }); 
                 }
             }
@@ -242,15 +239,13 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     } finally {
         setLoading(false);
     }
-  }, [user, authLoading]);
+  }, []);
 
 
   useEffect(() => {
-    // Only fetch data if a user is authenticated
     if (user && !authLoading) {
       fetchData();
     } else if (!authLoading) {
-      // If not loading and no user, set loading to false for this context too.
       setLoading(false);
     }
   }, [user, authLoading, fetchData]);
@@ -265,7 +260,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
   const addOrder = async (order: Omit<WorkOrder, 'id'>): Promise<WorkOrder> => {
     const docRef = await addDoc(collection(db, "work-orders"), order);
-    await fetchData(); // Re-fetch all data to ensure consistency
+    await fetchData(); 
     const newOrder = { id: docRef.id, ...order } as WorkOrder;
     return newOrder;
   };
@@ -358,7 +353,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const docRef = doc(db, "collaborators", id);
     const cleanData = { ...updatedCollaborator };
     
-    // Clean out undefined fields to prevent Firestore errors
     Object.keys(cleanData).forEach(key => {
         if (cleanData[key as keyof typeof cleanData] === undefined) {
             delete cleanData[key as keyof typeof cleanData];
@@ -402,7 +396,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
           }))
       };
       const docRef = await addDoc(collection(db, "gantt-charts"), dataToSave);
-      await fetchData(); // Re-fetch to ensure consistency and get the ID
+      await fetchData(); 
       return { ...ganttChart, id: docRef.id };
   };
   
@@ -502,7 +496,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     };
     const docRef = await addDoc(collection(db, "submitted-reports"), reportData);
     await fetchData();
-    return { ...report, id: docRef.id, submittedAt: new Date() } as SubmittedReport; // Simulate timestamp for immediate UI update
+    return { ...report, id: docRef.id, submittedAt: new Date() } as SubmittedReport; 
   };
 
   const updateSubmittedReport = async (id: string, report: Partial<SubmittedReport>) => {
