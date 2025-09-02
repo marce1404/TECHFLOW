@@ -1,5 +1,4 @@
 
-
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -137,6 +136,33 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
     }).format(value);
   }
 
+  const getInvoiceStatusIndicator = (order: WorkOrder) => {
+    // Legacy check for old 'facturado' boolean
+    if (order.facturado === true) {
+      return <CheckCircle className="h-5 w-5 text-green-500 mx-auto" />;
+    }
+
+    // New logic based on invoices array
+    const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
+    const netPrice = order.netPrice || 0;
+
+    if (netPrice > 0 && totalInvoiced >= netPrice) {
+      return <CheckCircle className="h-5 w-5 text-green-500 mx-auto" />;
+    }
+    
+    if (totalInvoiced > 0) {
+      const percentageInvoiced = Math.round((totalInvoiced / netPrice) * 100);
+      return (
+        <Badge variant="outline" className="border-green-500 text-green-600 font-bold">
+          {percentageInvoiced}%
+        </Badge>
+      );
+    }
+
+    return null; // No indicator if not invoiced at all
+  };
+
+
   return (
     <div className="space-y-4">
         <div className="rounded-md border">
@@ -156,25 +182,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                 </TableHeader>
                 <TableBody>
                 {paginatedData.length > 0 ? (
-                    paginatedData.map((order) => {
-                        const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
-                        const netPrice = order.netPrice || 0;
-                        let invoiceStatusIndicator = null;
-                        
-                        const isFullyInvoicedByAmount = netPrice > 0 && totalInvoiced >= netPrice;
-                        
-                        if (isFullyInvoicedByAmount) {
-                            invoiceStatusIndicator = <CheckCircle className="h-5 w-5 text-green-500 mx-auto" />;
-                        } else if (totalInvoiced > 0) {
-                            const percentageInvoiced = netPrice > 0 ? Math.round((totalInvoiced / netPrice) * 100) : 0;
-                            invoiceStatusIndicator = (
-                                <Badge variant="outline" className="border-green-500 text-green-600 font-bold">
-                                    {percentageInvoiced}%
-                                </Badge>
-                            );
-                        }
-
-                        return (
+                    paginatedData.map((order) => (
                         <TableRow key={order.id}>
                           <TableCell className="font-medium">
                             <Link href={`/orders/${order.id}/edit`} className="text-primary hover:underline">
@@ -208,10 +216,10 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                             </DropdownMenu>
                           </TableCell>
                           <TableCell className="text-center">
-                            {invoiceStatusIndicator}
+                            {getInvoiceStatusIndicator(order)}
                           </TableCell>
                         </TableRow>
-                    )})
+                    ))
                 ) : (
                     <TableRow>
                         <TableCell colSpan={headerItems.length + 1} className="h-24 text-center">
