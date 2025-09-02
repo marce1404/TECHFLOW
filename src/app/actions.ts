@@ -22,7 +22,8 @@ import {
   listUsersAction as listUsersActionAdmin,
 } from '@/lib/firebase-admin';
 import type { UserRecord } from 'firebase-admin/auth';
-import { UploadTaskSnapshot, getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
+import type { Storage } from 'firebase-admin/storage';
+
 
 // --- Server Actions ---
 
@@ -160,14 +161,14 @@ export async function exportOrdersToExcel(orders: WorkOrder[]): Promise<string> 
 }
 
 async function createOrUpdateWorkOrder(input: CreateWorkOrderInput) {
-  if (!adminDb.collection) return { success: false, message: 'Firebase Admin not initialized.' };
+  if (!(adminDb as any).collection) return { success: false, message: 'Firebase Admin not initialized.' };
   try {
     const workOrderData = {
       ...input,
       facturado: !!input.invoiceNumber,
     };
 
-    const docRef = await adminDb.collection("work-orders").add(workOrderData);
+    const docRef = await (adminDb as any).collection("work-orders").add(workOrderData);
     return {
       success: true,
       orderId: docRef.id,
@@ -285,9 +286,9 @@ export async function sendInvitationEmailAction(
 }
 
 export async function deleteAllWorkOrdersAction(): Promise<{ success: boolean; message: string; deletedCount: number }> {
-  if (!adminDb.collection) return { success: false, message: 'Firebase Admin not initialized.', deletedCount: 0 };
+  if (!(adminDb as any).collection) return { success: false, message: 'Firebase Admin not initialized.', deletedCount: 0 };
   try {
-    const collectionRef = adminDb.collection('work-orders');
+    const collectionRef = (adminDb as any).collection('work-orders');
     
     let deletedCount = 0;
     
@@ -297,7 +298,7 @@ export async function deleteAllWorkOrdersAction(): Promise<{ success: boolean; m
             break; // No more documents to delete
         }
         
-        const batch = adminDb.batch();
+        const batch = (adminDb as any).batch();
         snapshot.docs.forEach(doc => {
             batch.delete(doc.ref);
         });
@@ -320,11 +321,11 @@ export async function uploadLogoAction({
 }: {
   fileDataUri: string;
 }): Promise<{ success: boolean; message: string; url?: string }> {
-  if (!adminStorage) {
+  if (!(adminStorage as Storage).bucket) {
     return { success: false, message: "Firebase Storage no está inicializado." };
   }
 
-  const bucket = adminStorage.bucket();
+  const bucket = (adminStorage as Storage).bucket();
   const filePath = `company/logo`; // Overwrite the same file
 
   // Extract content type and base64 data from data URI
@@ -367,4 +368,3 @@ export async function uploadLogoAction({
   });
 }
     
-

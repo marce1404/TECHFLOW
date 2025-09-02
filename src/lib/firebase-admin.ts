@@ -1,4 +1,6 @@
 
+'use server';
+
 import * as admin from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
 import * as dotenv from 'dotenv';
@@ -8,47 +10,33 @@ import type { AppUser } from './types';
 
 dotenv.config();
 
-function initializeFirebaseAdmin() {
+let adminApp: admin.app.App | null = null;
+
+try {
     const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+
     if (serviceAccountBase64) {
-        if (admin.apps.length > 0) {
-            return admin.apps[0]!;
-        }
-        try {
-            const serviceAccountString = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
-            const serviceAccount = JSON.parse(serviceAccountString);
-            return admin.initializeApp({
+        if (admin.apps.length === 0) {
+             const serviceAccountString = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
+             const serviceAccount = JSON.parse(serviceAccountString);
+             adminApp = admin.initializeApp({
                 credential: admin.credential.cert(serviceAccount),
                 storageBucket: `${serviceAccount.project_id}.appspot.com`
             });
-        } catch (e: any) {
-            console.error("Firebase Admin SDK initialization failed due to a malformed service account JSON. Admin features will be disabled.", e);
-            return null;
+        } else {
+            adminApp = admin.apps[0];
         }
     } else {
         console.warn("FIREBASE_SERVICE_ACCOUNT_JSON environment variable is not set. Firebase Admin features will be disabled.");
-        return null;
     }
+} catch (e: any) {
+    console.error("Firebase Admin SDK initialization failed.", e);
+    adminApp = null;
 }
 
-const adminApp = initializeFirebaseAdmin();
-
-let auth: admin.auth.Auth;
-let db: admin.firestore.Firestore;
-let storage: admin.storage.Storage;
-
-
-if (adminApp) {
-    auth = getAuth(adminApp);
-    db = getFirestore(adminApp);
-    storage = getStorage(adminApp);
-} else {
-    // Create mock objects if adminApp is not initialized
-    // This allows the app to build and run without crashing, but admin features will fail gracefully.
-    auth = {} as admin.auth.Auth;
-    db = {} as admin.firestore.Firestore;
-    storage = {} as admin.storage.Storage;
-}
+const auth: admin.auth.Auth | object = adminApp ? getAuth(adminApp) : {};
+const db: admin.firestore.Firestore | object = adminApp ? getFirestore(adminApp) : {};
+const storage: admin.storage.Storage | object = adminApp ? getStorage(adminApp) : {};
 
 
 export { auth, db, storage };
@@ -59,7 +47,8 @@ export { auth, db, storage };
 export async function listUsersAction(): Promise<{ success: boolean; users?: AppUser[]; message: string }> {
   if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.' };
   try {
-    const usersCollection = await db.collection('users').get();
+    const firestoreDb = getFirestore(adminApp);
+    const usersCollection = await firestoreDb.collection('users').get();
     const users = usersCollection.docs.map(doc => doc.data() as AppUser);
     return { success: true, users: users, message: 'Users fetched successfully.' };
   } catch (error: any) {
@@ -71,7 +60,10 @@ export async function listUsersAction(): Promise<{ success: boolean; users?: App
 export async function createUserAction(data: { email: string; password; displayName: string; role: AppUser['role'] }): Promise<{ success: boolean; message: string; user?: AppUser }> {
   if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.' };
   try {
-    const userRecord = await auth.createUser({
+    const adminAuth = getAuth(adminApp);
+    const firestoreDb = getFirestore(adminApp);
+
+    const userRecord = await adminAuth.createUser({
         email: data.email,
         password: data.password,
         displayName: data.displayName,
@@ -86,7 +78,7 @@ export async function createUserAction(data: { email: string; password; displayN
         status: 'Activo',
     };
 
-    await db.collection('users').doc(userRecord.uid).set(userProfile);
+    await firestoreDb.collection('users').doc(userRecord.uid).set(userProfile);
     
     return { success: true, message: 'Usuario creado con éxito.', user: userProfile };
 
@@ -106,9 +98,10 @@ export async function createUserAction(data: { email: string; password; displayN
 export async function deleteUserAction(uid: string): Promise<{ success: boolean; message: string }> {
   if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.' };
   try {
-    await auth.deleteUser(uid);
-    // Also delete from Firestore
-    await db.collection('users').doc(uid).delete();
+    const adminAuth = getAuth(adminApp);
+    const firestoreDb = getFirestore(adminApp);
+    await adminAuth.deleteUser(uid);
+    await firestoreDb.collection('users').doc(uid).delete();
     
     return { success: true, message: 'Usuario eliminado correctamente.' };
   } catch (error: any) {
@@ -120,12 +113,14 @@ export async function deleteUserAction(uid: string): Promise<{ success: boolean;
 export async function updateUserAction(uid: string, data: { displayName: string; role: string; status: string }): Promise<{ success: boolean; message: string }> {
     if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.' };
     try {
-        await auth.updateUser(uid, {
+        const adminAuth = getAuth(adminApp);
+        const firestoreDb = getFirestore(adminApp);
+        await adminAuth.updateUser(uid, {
             displayName: data.displayName,
             disabled: data.status === 'Inactivo',
         });
 
-        const userDocRef = db.collection('users').doc(uid);
+        const userDocRef = firestoreDb.collection('users').doc(uid);
         await userDocRef.update({
             displayName: data.displayName,
             role: data.role,
@@ -143,7 +138,8 @@ export async function updateUserAction(uid: string, data: { displayName: string;
 export async function changeUserPasswordAction(uid: string, newPassword: string): Promise<{ success: boolean; message: string }> {
   if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.' };
   try {
-    await auth.updateUser(uid, { password: newPassword });
+    const adminAuth = getAuth(adminApp);
+    await adminAuth.updateUser(uid, { password: newPassword });
     return { success: true, message: `Contraseña actualizada correctamente.` };
   } catch (error: any) {
     console.error('Error changing password:', error);
@@ -154,10 +150,12 @@ export async function changeUserPasswordAction(uid: string, newPassword: string)
 export async function toggleUserStatusAction(uid: string, currentStatus: 'Activo' | 'Inactivo'): Promise<{ success: boolean; message: string }> {
   if (!adminApp) return { success: false, message: 'Firebase Admin not initialized.' };
   try {
+    const adminAuth = getAuth(adminApp);
+    const firestoreDb = getFirestore(adminApp);
     const newStatus = currentStatus === 'Activo' ? 'Inactivo' : 'Activo';
-    await auth.updateUser(uid, { disabled: newStatus === 'Inactivo' });
+    await adminAuth.updateUser(uid, { disabled: newStatus === 'Inactivo' });
     
-    const userDocRef = db.collection('users').doc(uid);
+    const userDocRef = firestoreDb.collection('users').doc(uid);
     await userDocRef.update({ status: newStatus });
         
     return { success: true, message: 'Estado del usuario actualizado correctamente.' };
