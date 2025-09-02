@@ -93,8 +93,8 @@ export default function HistoryPage() {
                     return order.facturado === true || (netPrice > 0 && totalInvoiced >= netPrice);
                 }
                 if (filters.invoicedStatus === 'not_invoiced') {
-                    // Not fully invoiced: total invoiced is < net price (includes 0)
-                     return totalInvoiced < netPrice;
+                     // Not fully invoiced: total invoiced is < net price AND it's not marked with old facturado flag
+                     return !order.facturado && totalInvoiced < netPrice;
                 }
                 return true;
             });

@@ -100,21 +100,22 @@ export default function ActiveOrdersPage() {
             orders = orders.filter(order => new Date(order.date.replace(/-/g, '/')) <= filters.dateRange.to!);
         }
         if (filters.invoicedStatus !== 'all') {
-             orders = orders.filter(order => {
+            orders = orders.filter(order => {
                 const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
                 const netPrice = order.netPrice || 0;
-                
+
                 if (filters.invoicedStatus === 'invoiced') {
-                    // Fully invoiced: net price > 0 and total invoiced is >= net price
-                    return netPrice > 0 && totalInvoiced >= netPrice;
+                    // Fully invoiced: old `facturado` flag OR total invoiced amount is >= net price
+                    return order.facturado === true || (netPrice > 0 && totalInvoiced >= netPrice);
                 }
                 if (filters.invoicedStatus === 'not_invoiced') {
-                    // Not fully invoiced: total invoiced is < net price (includes 0)
-                    return totalInvoiced < netPrice;
+                    // Not fully invoiced: total invoiced is < net price AND it's not marked with old facturado flag
+                    return !order.facturado && totalInvoiced < netPrice;
                 }
                 return true;
             });
         }
+
 
         return orders;
     }, [activeWorkOrders, historicalWorkOrders, activeTab, filters, hasAdvancedFilters]);
