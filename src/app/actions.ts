@@ -315,23 +315,35 @@ export async function deleteAllWorkOrdersAction(): Promise<{ success: boolean; m
   }
 }
 
-export async function uploadLogoAction(
-  { fileBuffer, fileType }: { fileBuffer: Buffer; fileType: string },
-  onProgress: (progress: number) => void
-): Promise<{ success: boolean; message: string; url?: string }> {
+export async function uploadLogoAction({
+  fileDataUri,
+}: {
+  fileDataUri: string;
+}): Promise<{ success: boolean; message: string; url?: string }> {
   if (!adminStorage) {
     return { success: false, message: "Firebase Storage no está inicializado." };
   }
 
   const bucket = adminStorage.bucket();
   const filePath = `company/logo`; // Overwrite the same file
+
+  // Extract content type and base64 data from data URI
+  const match = fileDataUri.match(/^data:(.+);base64,(.+)$/);
+  if (!match) {
+    return { success: false, message: "Formato de Data URI inválido." };
+  }
+  const contentType = match[1];
+  const base64Data = match[2];
+  const fileBuffer = Buffer.from(base64Data, 'base64');
+  
   const file = bucket.file(filePath);
 
   const stream = file.createWriteStream({
     metadata: {
-      contentType: fileType,
+      contentType: contentType,
+      // Make the file publicly readable
+      cacheControl: 'public, max-age=31536000',
     },
-    resumable: false, // Keep it simple
   });
 
   return new Promise((resolve, reject) => {
@@ -342,10 +354,8 @@ export async function uploadLogoAction(
 
     stream.on('finish', async () => {
       try {
-        // Make the file public
         await file.makePublic();
-        // Get the public URL
-        const publicUrl = file.publicUrl();
+        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
         resolve({ success: true, message: "Logo subido exitosamente", url: publicUrl });
       } catch (err) {
         console.error("Error al hacer el archivo público:", err);
@@ -357,3 +367,4 @@ export async function uploadLogoAction(
   });
 }
     
+

@@ -60,16 +60,23 @@ export default function CompanyDetailsPage() {
     setUploadProgress(0);
 
     const reader = new FileReader();
-    reader.readAsArrayBuffer(file);
+    reader.readAsDataURL(file); // Read as a data URI (base64 string)
 
     reader.onload = async () => {
-        const arrayBuffer = reader.result as ArrayBuffer;
+        const fileDataUri = reader.result as string;
+        
+        // The onProgress callback is not easily achievable with this new approach.
+        // We will simulate a progress bar for better UX.
+        const progressInterval = setInterval(() => {
+            setUploadProgress(prev => Math.min(prev + 10, 90));
+        }, 200);
+
         const result = await uploadLogoAction({
-            fileBuffer: Buffer.from(arrayBuffer),
-            fileType: file.type,
-        }, (progress) => {
-            setUploadProgress(progress);
+            fileDataUri: fileDataUri,
         });
+        
+        clearInterval(progressInterval);
+        setUploadProgress(100);
 
         if (result.success && result.url) {
             form.setValue('logoUrl', result.url, { shouldValidate: true });
