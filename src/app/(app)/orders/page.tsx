@@ -100,10 +100,18 @@ export default function ActiveOrdersPage() {
             orders = orders.filter(order => new Date(order.date.replace(/-/g, '/')) <= filters.dateRange.to!);
         }
         if (filters.invoicedStatus !== 'all') {
-            orders = orders.filter(order => {
-                const hasInvoices = (order.invoices || []).length > 0;
-                if (filters.invoicedStatus === 'invoiced') return hasInvoices;
-                if (filters.invoicedStatus === 'not_invoiced') return !hasInvoices;
+             orders = orders.filter(order => {
+                const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
+                const netPrice = order.netPrice || 0;
+                
+                if (filters.invoicedStatus === 'invoiced') {
+                    // Fully invoiced: net price > 0 and total invoiced is >= net price
+                    return netPrice > 0 && totalInvoiced >= netPrice;
+                }
+                if (filters.invoicedStatus === 'not_invoiced') {
+                    // Not fully invoiced: total invoiced is < net price (includes 0)
+                    return totalInvoiced < netPrice;
+                }
                 return true;
             });
         }

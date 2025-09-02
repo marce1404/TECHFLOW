@@ -85,9 +85,17 @@ export default function HistoryPage() {
         }
         if (filters.invoicedStatus !== 'all') {
             orders = orders.filter(order => {
-                const hasInvoices = (order.invoices || []).length > 0;
-                if (filters.invoicedStatus === 'invoiced') return hasInvoices;
-                if (filters.invoicedStatus === 'not_invoiced') return !hasInvoices;
+                const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
+                const netPrice = order.netPrice || 0;
+                
+                if (filters.invoicedStatus === 'invoiced') {
+                    // Fully invoiced: old `facturado` flag OR total invoiced amount is >= net price
+                    return order.facturado === true || (netPrice > 0 && totalInvoiced >= netPrice);
+                }
+                if (filters.invoicedStatus === 'not_invoiced') {
+                    // Not fully invoiced: total invoiced is < net price (includes 0)
+                     return totalInvoiced < netPrice;
+                }
                 return true;
             });
         }
