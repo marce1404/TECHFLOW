@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, PlusCircle, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from 'date-fns/locale';
@@ -19,10 +19,12 @@ import Link from 'next/link';
 import { MultiSelect } from "@/components/ui/multi-select";
 import { useToast } from "@/hooks/use-toast";
 import { useWorkOrders } from "@/context/work-orders-context";
-import type { WorkOrder } from "@/lib/types";
+import type { WorkOrder, Invoice } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { Slider } from "@/components/ui/slider";
 import { useAuth } from "@/context/auth-context";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
 
 export default function NewOrderPage() {
     const router = useRouter();
@@ -53,6 +55,12 @@ export default function NewOrderPage() {
     const [comercial, setComercial] = React.useState('');
     const [manualProgress, setManualProgress] = React.useState(0);
     
+    // Invoice Management State
+    const [invoices, setInvoices] = React.useState<Invoice[]>([]);
+    const [newInvoiceNumber, setNewInvoiceNumber] = React.useState('');
+    const [newInvoiceDate, setNewInvoiceDate] = React.useState<Date | undefined>(new Date());
+    const [newInvoiceAmount, setNewInvoiceAmount] = React.useState(0);
+
 
     const technicians = collaborators
       .filter(c => c.role === 'Técnico' && c.status === 'Activo')
@@ -97,7 +105,7 @@ export default function NewOrderPage() {
         status,
         priority,
         netPrice,
-        invoices: [],
+        invoices: invoices,
         ocNumber,
         saleNumber,
         hesEmMigo,
@@ -119,22 +127,40 @@ export default function NewOrderPage() {
     }, 1000);
   };
 
-  const formatNumber = (num: number): string => {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  const formatCurrency = (num: number): string => {
+    return isNaN(num) ? '' : new Intl.NumberFormat('es-CL').format(num);
   };
 
   const handleNetPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value.replace(/\./g, '');
     const numericValue = parseInt(rawValue, 10);
-
-    if (!isNaN(numericValue)) {
-      setNetPrice(numericValue);
-    } else {
-      setNetPrice(0);
-    }
+    setNetPrice(isNaN(numericValue) ? 0 : numericValue);
   };
   
   const totalPrice = Math.round(netPrice * 1.19);
+  const ivaPrice = Math.round(netPrice * 0.19);
+
+  const handleAddInvoice = () => {
+    if (!newInvoiceNumber || !newInvoiceDate || newInvoiceAmount <= 0) {
+        toast({ variant: 'destructive', title: 'Datos de Factura Incompletos', description: 'Por favor, complete todos los campos de la factura.'});
+        return;
+    }
+    const newInvoice: Invoice = {
+        id: crypto.randomUUID(),
+        number: newInvoiceNumber,
+        date: format(newInvoiceDate, 'yyyy-MM-dd'),
+        amount: newInvoiceAmount,
+    };
+    setInvoices([...invoices, newInvoice]);
+    // Reset form
+    setNewInvoiceNumber('');
+    setNewInvoiceDate(new Date());
+    setNewInvoiceAmount(0);
+  };
+
+  const handleRemoveInvoice = (id: string) => {
+    setInvoices(invoices.filter(inv => inv.id !== id));
+  };
   
   if (!canCreate) {
     return (
@@ -353,14 +379,24 @@ export default function NewOrderPage() {
                             </div>
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-4">
+                         <div className="grid grid-cols-3 gap-4">
                             <div>
                                 <Label htmlFor="net-price">Precio Neto</Label>
                                 <Input 
                                 id="net-price" 
                                 type="text" 
-                                value={formatNumber(netPrice)}
+                                value={formatCurrency(netPrice)}
                                 onChange={handleNetPriceChange}
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="iva-price">IVA (19%)</Label>
+                                <Input 
+                                id="iva-price" 
+                                type="text" 
+                                value={formatCurrency(ivaPrice)}
+                                readOnly 
+                                className="bg-muted"
                                 />
                             </div>
                             <div>
@@ -368,12 +404,13 @@ export default function NewOrderPage() {
                                 <Input 
                                 id="total-price" 
                                 type="text" 
-                                value={formatNumber(totalPrice)}
+                                value={formatCurrency(totalPrice)}
                                 readOnly 
                                 className="bg-muted"
                                 />
                             </div>
                         </div>
+
 
                         <div className="grid grid-cols-2 gap-4">
                              <div>
@@ -439,14 +476,102 @@ export default function NewOrderPage() {
                     </div>
                 </div>
             </div>
-
-
-            <div className="flex justify-end gap-2 mt-8">
-                <Button variant="outline" asChild><Link href="/orders">Cancelar</Link></Button>
-                <Button onClick={handleCreateOrder}>Crear OT</Button>
-            </div>
         </CardContent>
       </Card>
+      
+        <Card>
+            <CardHeader>
+              <CardTitle>Gestión de Facturas</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="rounded-md border mb-4">
+                      <Table>
+                          <TableHeader>
+                              <TableRow>
+                                  <TableHead>Número de Factura</TableHead>
+                                  <TableHead className="w-[180px]">Fecha</TableHead>
+                                  <TableHead className="w-[150px] text-right">Monto (Neto)</TableHead>
+                                  <TableHead className="w-[150px] text-right">Total (IVA Incl.)</TableHead>
+                                  <TableHead className="w-[50px]"></TableHead>
+                              </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                              {invoices.map((inv) => (
+                                  <TableRow key={inv.id}>
+                                      <TableCell>{inv.number}</TableCell>
+                                      <TableCell>{format(new Date(inv.date.replace(/-/g, '/')), "PPP", { locale: es })}</TableCell>
+                                      <TableCell className="text-right">{formatCurrency(inv.amount)}</TableCell>
+                                      <TableCell className="text-right">{formatCurrency(Math.round(inv.amount * 1.19))}</TableCell>
+                                      <TableCell>
+                                          <Button variant="ghost" size="icon" onClick={() => handleRemoveInvoice(inv.id)}>
+                                              <Trash2 className="h-4 w-4 text-destructive"/>
+                                          </Button>
+                                      </TableCell>
+                                  </TableRow>
+                              ))}
+                              {invoices.length === 0 && (
+                                  <TableRow>
+                                      <TableCell colSpan={5} className="h-24 text-center">
+                                          No se han añadido facturas.
+                                      </TableCell>
+                                  </TableRow>
+                              )}
+                          </TableBody>
+                      </Table>
+                  </div>
+            </CardContent>
+        </Card>
+        
+        <Card>
+            <CardHeader>
+                <CardTitle>Añadir Nueva Factura</CardTitle>
+            </CardHeader>
+             <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div className="md:col-span-1">
+                    <Label htmlFor="new-invoice-number">Número de Factura</Label>
+                    <Input id="new-invoice-number" value={newInvoiceNumber} onChange={e => setNewInvoiceNumber(e.target.value)} />
+                </div>
+                 <div className="md:col-span-1">
+                    <Label htmlFor="new-invoice-date">Fecha</Label>
+                     <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" className={cn("w-full justify-start text-left font-normal")}>
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {newInvoiceDate ? format(newInvoiceDate, "PPP", { locale: es }) : <span>Elegir fecha</span>}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                            <Calendar mode="single" selected={newInvoiceDate} onSelect={setNewInvoiceDate} initialFocus locale={es} />
+                        </PopoverContent>
+                    </Popover>
+                </div>
+                 <div className="md:col-span-1">
+                    <Label htmlFor="new-invoice-amount">Monto (Neto)</Label>
+                    <Input 
+                        id="new-invoice-amount" 
+                        type="text" 
+                        className="text-right" 
+                        value={formatCurrency(newInvoiceAmount)} 
+                        onChange={(e) => {
+                            const rawValue = e.target.value.replace(/\./g, '');
+                            const numericValue = parseInt(rawValue, 10);
+                            setNewInvoiceAmount(isNaN(numericValue) ? 0 : numericValue);
+                        }}
+                    />
+                </div>
+                 <div className="md:col-span-1">
+                    <Button onClick={handleAddInvoice} className="w-full">
+                        <PlusCircle className="mr-2 h-4 w-4"/>
+                        Agregar Factura a la Lista
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+
+        <div className="flex justify-end gap-2 mt-8">
+            <Button variant="outline" asChild><Link href="/orders">Cancelar</Link></Button>
+            <Button onClick={handleCreateOrder}>Crear OT</Button>
+        </div>
     </div>
   );
 }

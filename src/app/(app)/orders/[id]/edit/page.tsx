@@ -3,7 +3,7 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,7 +19,7 @@ import Link from 'next/link';
 import { MultiSelect } from "@/components/ui/multi-select";
 import { useToast } from "@/hooks/use-toast";
 import { useParams, useRouter } from "next/navigation";
-import type { WorkOrder } from "@/lib/types";
+import type { WorkOrder, Invoice } from "@/lib/types";
 import { useWorkOrders } from "@/context/work-orders-context";
 import {
   AlertDialog,
@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Slider } from "@/components/ui/slider";
 import { useAuth } from "@/context/auth-context";
-import { useFieldArray, useForm, FormProvider } from "react-hook-form";
+import { useForm, FormProvider } from "react-hook-form";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 
@@ -54,17 +54,17 @@ export default function EditOrderPage() {
     defaultValues: initialOrder
   });
 
-  const { fields: invoiceFields, append: appendInvoice, remove: removeInvoice } = useFieldArray({
-    control: methods.control,
-    name: "invoices",
-  });
+  const [invoices, setInvoices] = React.useState<Invoice[]>([]);
+  const [newInvoiceNumber, setNewInvoiceNumber] = React.useState('');
+  const [newInvoiceDate, setNewInvoiceDate] = React.useState<Date | undefined>(new Date());
+  const [newInvoiceAmount, setNewInvoiceAmount] = React.useState(0);
   
-  const watchInvoices = methods.watch('invoices');
   const watchNetPrice = methods.watch('netPrice');
 
   React.useEffect(() => {
     if (initialOrder) {
       methods.reset(initialOrder);
+      setInvoices(initialOrder.invoices || []);
     }
   }, [initialOrder, methods]);
 
@@ -83,7 +83,8 @@ export default function EditOrderPage() {
   const handleUpdateOrder = async (data: WorkOrder) => {
     if (!canEdit) return;
 
-    await updateOrder(data.id, data);
+    const finalData = { ...data, invoices };
+    await updateOrder(data.id, finalData);
 
     toast({
       title: "Orden de Trabajo Actualizada",
@@ -127,12 +128,10 @@ export default function EditOrderPage() {
     label: `${v.model} (${v.plate})`,
   }));
 
-  const formatNumber = (num: number): string => {
+  const formatCurrency = (num: number): string => {
     return isNaN(num) ? '' : new Intl.NumberFormat('es-CL').format(num);
   };
 
-  // By replacing hyphens with slashes, we ensure the date is parsed in the local time zone,
-  // preventing hydration mismatches between server and client.
   const startDate = methods.watch('date') ? new Date(methods.watch('date').replace(/-/g, '/')) : undefined;
   const endDate = methods.watch('endDate') ? new Date(methods.watch('endDate')!.replace(/-/g, '/')) : undefined;
 
@@ -140,11 +139,33 @@ export default function EditOrderPage() {
   const ivaPrice = watchNetPrice ? Math.round(watchNetPrice * 0.19) : 0;
   
   const totalInvoicedNet = React.useMemo(() => {
-    return (watchInvoices || []).reduce((sum, inv) => sum + (inv.amount || 0), 0);
-  }, [watchInvoices]);
+    return invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
+  }, [invoices]);
   
   const totalInvoicedGross = Math.round(totalInvoicedNet * 1.19);
   const balance = watchNetPrice - totalInvoicedNet;
+
+  const handleAddInvoice = () => {
+    if (!newInvoiceNumber || !newInvoiceDate || newInvoiceAmount <= 0) {
+        toast({ variant: 'destructive', title: 'Datos de Factura Incompletos', description: 'Por favor, complete todos los campos de la factura.'});
+        return;
+    }
+    const newInvoice: Invoice = {
+        id: crypto.randomUUID(),
+        number: newInvoiceNumber,
+        date: format(newInvoiceDate, 'yyyy-MM-dd'),
+        amount: newInvoiceAmount,
+    };
+    setInvoices([...invoices, newInvoice]);
+    setNewInvoiceNumber('');
+    setNewInvoiceDate(new Date());
+    setNewInvoiceAmount(0);
+  };
+
+  const handleRemoveInvoice = (id: string) => {
+    setInvoices(invoices.filter(inv => inv.id !== id));
+  };
+
 
   const currentPrefix = methods.watch('ot_number').split('-')[0];
   const assignedGantt = ganttCharts.find(g => g.assignedOT === methods.watch('ot_number'));
@@ -371,7 +392,7 @@ export default function EditOrderPage() {
                             <Input 
                                 id="net-price" 
                                 type="text" 
-                                value={formatNumber(watchNetPrice)}
+                                value={formatCurrency(watchNetPrice)}
                                 onChange={(e) => {
                                     const rawValue = e.target.value.replace(/\./g, '');
                                     const numericValue = parseInt(rawValue, 10);
@@ -384,7 +405,7 @@ export default function EditOrderPage() {
                             <Input 
                               id="iva-price" 
                               type="text" 
-                              value={formatNumber(ivaPrice)}
+                              value={formatCurrency(ivaPrice)}
                               readOnly 
                               className="bg-muted"
                             />
@@ -394,7 +415,7 @@ export default function EditOrderPage() {
                             <Input 
                               id="total-price" 
                               type="text" 
-                              value={formatNumber(totalPrice)}
+                              value={formatCurrency(totalPrice)}
                               readOnly 
                               className="bg-muted"
                             />
@@ -488,113 +509,118 @@ export default function EditOrderPage() {
             </fieldset>
       </Card>
       
-      {/* Invoice Management Section */}
-      <Card>
-          <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle>Gestión de Facturas</CardTitle>
-                 <Button type="button" size="sm" variant="outline" disabled={!canEdit} onClick={() => appendInvoice({ id: crypto.randomUUID(), number: '', date: format(new Date(), 'yyyy-MM-dd'), amount: 0 })}>
-                    <PlusCircle className="mr-2 h-4 w-4"/>
-                    Añadir Factura
-                </Button>
-              </div>
-          </CardHeader>
-          <CardContent>
-            <fieldset disabled={!canEdit}>
-                <div className="rounded-md border">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Número de Factura</TableHead>
-                                <TableHead className="w-[200px]">Fecha</TableHead>
-                                <TableHead className="w-[150px]">Monto (Neto)</TableHead>
-                                <TableHead className="w-[150px]">Total (IVA Incl.)</TableHead>
-                                <TableHead className="w-[50px]"></TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {invoiceFields.map((field, index) => (
-                                <TableRow key={field.id}>
-                                    <TableCell>
-                                        <Input {...methods.register(`invoices.${index}.number`)} placeholder="Ej: 12345"/>
-                                    </TableCell>
-                                    <TableCell>
-                                         <Popover>
-                                            <PopoverTrigger asChild>
-                                                <Button variant="outline" className={cn("w-full justify-start text-left font-normal")}>
-                                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                                     {methods.watch(`invoices.${index}.date`) ? format(new Date(methods.watch(`invoices.${index}.date`).replace(/-/g, '/')), "PPP", { locale: es }) : <span>Elegir fecha</span>}
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0">
-                                                <Calendar
-                                                    mode="single"
-                                                    selected={new Date(methods.watch(`invoices.${index}.date`).replace(/-/g, '/'))}
-                                                    onSelect={(date) => methods.setValue(`invoices.${index}.date`, date ? format(date, 'yyyy-MM-dd') : '')}
-                                                    initialFocus
-                                                    locale={es}
-                                                />
-                                            </PopoverContent>
-                                        </Popover>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Input 
-                                            type="text" 
-                                            className="text-right"
-                                            value={formatNumber(methods.watch(`invoices.${index}.amount`))}
-                                            onChange={(e) => {
-                                                const rawValue = e.target.value.replace(/\./g, '');
-                                                const numericValue = parseInt(rawValue, 10);
-                                                methods.setValue(`invoices.${index}.amount`, isNaN(numericValue) ? 0 : numericValue);
-                                            }}
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                         <Input 
-                                            type="text" 
-                                            className="text-right bg-muted"
-                                            readOnly
-                                            value={formatNumber(Math.round(methods.watch(`invoices.${index}.amount`) * 1.19))}
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <Button variant="ghost" size="icon" onClick={() => removeInvoice(index)}>
-                                            <Trash2 className="h-4 w-4 text-destructive"/>
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                            {invoiceFields.length === 0 && (
+        <Card>
+            <CardHeader>
+              <CardTitle>Gestión de Facturas</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <fieldset disabled={!canEdit}>
+                    <div className="rounded-md border mb-4">
+                        <Table>
+                            <TableHeader>
                                 <TableRow>
-                                    <TableCell colSpan={5} className="h-24 text-center">
-                                        No se han añadido facturas.
-                                    </TableCell>
+                                    <TableHead>Número de Factura</TableHead>
+                                    <TableHead className="w-[180px]">Fecha</TableHead>
+                                    <TableHead className="w-[150px] text-right">Monto (Neto)</TableHead>
+                                    <TableHead className="w-[150px] text-right">Total (IVA Incl.)</TableHead>
+                                    <TableHead className="w-[50px]"></TableHead>
                                 </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {invoices.map((inv) => (
+                                    <TableRow key={inv.id}>
+                                        <TableCell>{inv.number}</TableCell>
+                                        <TableCell>{format(new Date(inv.date.replace(/-/g, '/')), "PPP", { locale: es })}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(inv.amount)}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(Math.round(inv.amount * 1.19))}</TableCell>
+                                        <TableCell>
+                                            <Button variant="ghost" size="icon" onClick={() => handleRemoveInvoice(inv.id)}>
+                                                <Trash2 className="h-4 w-4 text-destructive"/>
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                                {invoices.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="h-24 text-center">
+                                            No se han añadido facturas.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-4 pt-4 text-sm font-medium">
+                        <div className="p-2 border rounded-md">
+                            <p className="text-muted-foreground">Total Facturado (Neto)</p>
+                            <p className="text-lg font-bold">{formatCurrency(totalInvoicedNet)}</p>
+                        </div>
+                        <div className="p-2 border rounded-md">
+                            <p className="text-muted-foreground">Total Facturado (IVA Incl.)</p>
+                            <p className="text-lg font-bold">{formatCurrency(totalInvoicedGross)}</p>
+                        </div>
+                        <div className="p-2 border rounded-md">
+                            <p className="text-muted-foreground">Precio OT (Neto)</p>
+                            <p className="text-lg font-bold">{formatCurrency(watchNetPrice)}</p>
+                        </div>
+                        <div className={cn("p-2 border rounded-md", balance < 0 ? "text-destructive" : "")}>
+                            <p className="text-muted-foreground">Saldo Pendiente (Neto)</p>
+                            <p className="text-lg font-bold">{formatCurrency(balance)}</p>
+                        </div>
+                    </div>
+                </fieldset>
+            </CardContent>
+        </Card>
+
+        {canEdit && (
+        <Card>
+            <CardHeader>
+                <CardTitle>Añadir Nueva Factura</CardTitle>
+                <CardDescription>Completa los datos y presiona "Agregar" para añadir una factura a la lista.</CardDescription>
+            </CardHeader>
+             <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div className="md:col-span-1">
+                    <Label htmlFor="new-invoice-number">Número de Factura</Label>
+                    <Input id="new-invoice-number" value={newInvoiceNumber} onChange={e => setNewInvoiceNumber(e.target.value)} />
                 </div>
-                <div className="grid grid-cols-4 gap-4 pt-4 text-sm font-medium">
-                    <div className="p-2 border rounded-md">
-                        <p className="text-muted-foreground">Total Facturado (Neto)</p>
-                        <p className="text-lg font-bold">{formatNumber(totalInvoicedNet)}</p>
-                    </div>
-                     <div className="p-2 border rounded-md">
-                        <p className="text-muted-foreground">Total Facturado (IVA Incl.)</p>
-                        <p className="text-lg font-bold">{formatNumber(totalInvoicedGross)}</p>
-                    </div>
-                     <div className="p-2 border rounded-md">
-                        <p className="text-muted-foreground">Precio OT (Neto)</p>
-                        <p className="text-lg font-bold">{formatNumber(watchNetPrice)}</p>
-                    </div>
-                     <div className={cn("p-2 border rounded-md", balance < 0 ? "text-destructive" : "")}>
-                        <p className="text-muted-foreground">Saldo Pendiente (Neto)</p>
-                        <p className="text-lg font-bold">{formatNumber(balance)}</p>
-                    </div>
+                 <div className="md:col-span-1">
+                    <Label htmlFor="new-invoice-date">Fecha</Label>
+                     <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" className={cn("w-full justify-start text-left font-normal")}>
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {newInvoiceDate ? format(newInvoiceDate, "PPP", { locale: es }) : <span>Elegir fecha</span>}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                            <Calendar mode="single" selected={newInvoiceDate} onSelect={setNewInvoiceDate} initialFocus locale={es} />
+                        </PopoverContent>
+                    </Popover>
                 </div>
-            </fieldset>
-          </CardContent>
-      </Card>
+                 <div className="md:col-span-1">
+                    <Label htmlFor="new-invoice-amount">Monto (Neto)</Label>
+                    <Input 
+                        id="new-invoice-amount" 
+                        type="text" 
+                        className="text-right" 
+                        value={formatCurrency(newInvoiceAmount)} 
+                        onChange={(e) => {
+                            const rawValue = e.target.value.replace(/\./g, '');
+                            const numericValue = parseInt(rawValue, 10);
+                            setNewInvoiceAmount(isNaN(numericValue) ? 0 : numericValue);
+                        }}
+                    />
+                </div>
+                 <div className="md:col-span-1">
+                    <Button onClick={handleAddInvoice} className="w-full" type="button">
+                        <PlusCircle className="mr-2 h-4 w-4"/>
+                        Agregar Factura a la Lista
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+      )}
 
 
       {canEdit && (
