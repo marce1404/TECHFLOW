@@ -16,8 +16,7 @@ import { normalizeString } from '@/lib/utils';
 
 
 interface WorkOrdersContextType {
-  activeWorkOrders: WorkOrder[];
-  historicalWorkOrders: WorkOrder[];
+  workOrders: WorkOrder[];
   otCategories: OTCategory[];
   otStatuses: OTStatus[];
   services: Service[];
@@ -77,8 +76,7 @@ const SEED_FLAG_KEY = 'suggested_tasks_seeded_v6';
 const TEMPLATE_SEED_FLAG_KEY = 'templates_seeded_v1';
 
 export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
-  const [activeWorkOrders, setActiveWorkOrders] = useState<WorkOrder[]>([]);
-  const [historicalWorkOrders, setHistoricalWorkOrders] = useState<WorkOrder[]>([]);
+  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [otCategories, setOtCategories] = useState<OTCategory[]>([]);
   const [otStatuses, setOtStatuses] = useState<OTStatus[]>([]);
   const [services, setServices] = useState<Service[]>([]);
@@ -182,14 +180,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         await fetchAndSetSuggestedTasks();
         await fetchAndSetReportTemplates();
         
-        const allOrders = workOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[];
-        
-        const active = allOrders.filter(o => normalizeString(o.status) !== 'cerrada');
-        const historical = allOrders.filter(o => normalizeString(o.status) === 'cerrada');
-
-        setActiveWorkOrders(active);
-        setHistoricalWorkOrders(historical);
-
+        setWorkOrders(workOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[]);
         setOtCategories(categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as OTCategory[]);
         setOtStatuses(statusesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as OTStatus[]);
         setServices(servicesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Service[]);
@@ -223,8 +214,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
         console.error("Error en fetchData: ", error);
         // Fallback to empty arrays on error
-        setActiveWorkOrders([]);
-        setHistoricalWorkOrders([]);
+        setWorkOrders([]);
         setOtCategories([]);
         setOtStatuses([]);
         setServices([]);
@@ -251,8 +241,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   }, [user, authLoading, fetchData]);
 
   const getNextOtNumber = (prefix: string) => {
-    const allOrders = [...activeWorkOrders, ...historicalWorkOrders];
-    const relevantOrders = allOrders.filter(o => o.ot_number.startsWith(prefix + '-'));
+    const relevantOrders = workOrders.filter(o => o.ot_number.startsWith(prefix + '-'));
     if (relevantOrders.length === 0) return `${prefix}-1`;
     const maxNumber = Math.max(...relevantOrders.map(o => parseInt(o.ot_number.split('-')[1] || '0', 10)));
     return `${prefix}-${maxNumber + 1}`;
@@ -266,7 +255,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   };
   
   const getOrder = (id: string) => {
-    return [...activeWorkOrders, ...historicalWorkOrders].find(order => order.id === id);
+    return workOrders.find(order => order.id === id);
   };
 
   const updateOrder = async (id: string, updatedData: Partial<WorkOrder>) => {
@@ -524,8 +513,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   
   return (
     <WorkOrdersContext.Provider value={{ 
-        activeWorkOrders, 
-        historicalWorkOrders, 
+        workOrders, 
         otCategories,
         otStatuses,
         services,
@@ -595,4 +583,3 @@ export const useWorkOrders = () => {
   }
   return context;
 };
-

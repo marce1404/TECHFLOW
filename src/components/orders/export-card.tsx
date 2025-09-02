@@ -16,14 +16,23 @@ import { useToast } from '@/hooks/use-toast';
 import { exportOrdersToExcel } from '@/app/actions';
 import { ImportOrdersDialog } from './import-orders-dialog';
 import { useWorkOrders } from '@/context/work-orders-context';
+import { normalizeString } from '@/lib/utils';
 
 export default function DataManagementCard() {
-    const { activeWorkOrders, historicalWorkOrders, otStatuses, fetchData } = useWorkOrders();
+    const { workOrders, otStatuses, fetchData } = useWorkOrders();
     const [date, setDate] = React.useState<DateRange | undefined>();
     const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>([]);
     const [isExporting, setIsExporting] = React.useState(false);
     const [isImporting, setIsImporting] = React.useState(false);
     const { toast } = useToast();
+
+    const historicalWorkOrders = React.useMemo(() => {
+        return workOrders.filter(o => normalizeString(o.status) === 'cerrada');
+    }, [workOrders]);
+    
+    const activeWorkOrders = React.useMemo(() => {
+        return workOrders.filter(o => normalizeString(o.status) !== 'cerrada');
+    }, [workOrders]);
 
     const statusOptions = otStatuses.map(s => ({ value: s.name, label: s.name }));
 

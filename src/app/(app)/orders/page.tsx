@@ -14,9 +14,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { normalizeString } from "@/lib/utils";
+import type { WorkOrder } from "@/lib/types";
 
 export default function ActiveOrdersPage() {
-    const { activeWorkOrders, historicalWorkOrders, otCategories } = useWorkOrders();
+    const { workOrders, otCategories } = useWorkOrders();
     const { userProfile } = useAuth();
     const [activeTab, setActiveTab] = React.useState('todos');
     const [isFilterOpen, setIsFilterOpen] = React.useState(false);
@@ -46,52 +47,35 @@ export default function ActiveOrdersPage() {
     };
     
     const filteredOrders = React.useMemo(() => {
-        let baseOrders: WorkOrder[] = [];
-        const noAdvancedFilters =
-            !filters.clients.length &&
-            !filters.services.length &&
-            !filters.technicians.length &&
-            !filters.supervisors.length &&
-            !filters.priorities.length &&
-            !filters.statuses.length &&
-            !filters.dateRange.from &&
-            !filters.dateRange.to;
+        let ordersToFilter: WorkOrder[] = [];
+        
+        const hasAdvancedFilters =
+            filters.clients.length > 0 ||
+            filters.services.length > 0 ||
+            filters.technicians.length > 0 ||
+            filters.supervisors.length > 0 ||
+            filters.priorities.length > 0 ||
+            filters.statuses.length > 0 ||
+            filters.dateRange.from !== undefined;
 
-        // 1. Determine the base data set based on the primary invoice status filter
+        // 1. Determine the base set of orders
         if (filters.invoicedStatus === 'not_invoiced') {
-            // "Por Facturar" ALWAYS starts with ONLY active orders
-            baseOrders = activeWorkOrders.filter(order => {
-                const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
-                const netPrice = order.netPrice || 0;
-                return netPrice > 0 && totalInvoiced < netPrice && !order.facturado;
-            });
-        } else if (filters.invoicedStatus === 'invoiced') {
-            // "Facturadas" ALWAYS starts with ALL orders
-            baseOrders = [...activeWorkOrders, ...historicalWorkOrders].filter(order => {
-                 const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
-                 const netPrice = order.netPrice || 0;
-                 return order.facturado === true || (netPrice > 0 && totalInvoiced >= netPrice);
-            });
+             // "Por Facturar" always starts with active orders
+            ordersToFilter = workOrders.filter(o => normalizeString(o.status) !== 'cerrada');
+        } else if (filters.invoicedStatus === 'invoiced' || hasAdvancedFilters || filters.search) {
+             // "Facturadas" or any other active filter starts with ALL orders
+            ordersToFilter = workOrders;
         } else {
-            // Default view ("Todas" for invoice status)
-            if (!filters.search && noAdvancedFilters) {
-                // If no other filters are active, show only active orders
-                baseOrders = activeWorkOrders;
-            } else {
-                // If any other filter IS active, search across all orders
-                baseOrders = [...activeWorkOrders, ...historicalWorkOrders];
-            }
+            // Default view (no filters active) is just active orders
+            ordersToFilter = workOrders.filter(o => normalizeString(o.status) !== 'cerrada');
         }
 
-        // 2. Apply all other filters sequentially to the determined base set
-        let ordersToFilter = baseOrders;
-
-        // Apply Tab Filter
+        // 2. Apply tab filter
         if (activeTab !== 'todos') {
             ordersToFilter = ordersToFilter.filter(order => order.ot_number.startsWith(activeTab));
         }
-        
-        // Apply Search
+
+        // 3. Apply search filter
         if (filters.search) {
              ordersToFilter = ordersToFilter.filter(order =>
                 order.ot_number.toLowerCase().includes(filters.search.toLowerCase()) ||
@@ -100,7 +84,7 @@ export default function ActiveOrdersPage() {
             );
         }
 
-        // Apply Advanced Filters
+        // 4. Apply advanced filters
         if (filters.clients.length > 0) {
             ordersToFilter = ordersToFilter.filter(order => filters.clients.includes(order.client));
         }
@@ -125,10 +109,25 @@ export default function ActiveOrdersPage() {
         if (filters.dateRange.to) {
             ordersToFilter = ordersToFilter.filter(order => new Date(order.date.replace(/-/g, '/')) <= filters.dateRange.to!);
         }
+        
+        // 5. Apply final invoice status filter
+        if (filters.invoicedStatus === 'invoiced') {
+            ordersToFilter = ordersToFilter.filter(order => {
+                 const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
+                 const netPrice = order.netPrice || 0;
+                 return order.facturado === true || (netPrice > 0 && totalInvoiced >= netPrice);
+            });
+        } else if (filters.invoicedStatus === 'not_invoiced') {
+             ordersToFilter = ordersToFilter.filter(order => {
+                const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
+                const netPrice = order.netPrice || 0;
+                return netPrice > 0 && totalInvoiced < netPrice && !order.facturado;
+            });
+        }
 
         return ordersToFilter;
 
-    }, [activeWorkOrders, historicalWorkOrders, activeTab, filters]);
+    }, [workOrders, activeTab, filters]);
 
     const categories = [
         { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },

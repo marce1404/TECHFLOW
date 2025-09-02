@@ -36,8 +36,7 @@ interface AdvancedFiltersProps {
 }
 
 export default function AdvancedFilters({ filters, onFilterChange, isHistory = false }: AdvancedFiltersProps) {
-  const { services, collaborators, activeWorkOrders, historicalWorkOrders, otStatuses } = useWorkOrders();
-  const allOrders = [...activeWorkOrders, ...historicalWorkOrders];
+  const { services, collaborators, workOrders, otStatuses } = useWorkOrders();
 
   const handleMultiSelectChange = (key: keyof Omit<Filters, 'search' | 'dateRange' | 'invoicedStatus'>, value: string[]) => {
     onFilterChange({ ...filters, [key]: value });
@@ -65,7 +64,7 @@ export default function AdvancedFilters({ filters, onFilterChange, isHistory = f
     });
   };
 
-  const clientOptions = React.useMemo(() => Array.from(new Set(allOrders.map(o => o.client).filter(Boolean))).sort().map(c => ({ value: c, label: c })), [allOrders]);
+  const clientOptions = React.useMemo(() => Array.from(new Set(workOrders.map(o => o.client).filter(Boolean))).sort().map(c => ({ value: c, label: c })), [workOrders]);
   const serviceOptions = React.useMemo(() => services.map(s => ({ value: s.name, label: s.name })), [services]);
   const technicianOptions = React.useMemo(() => collaborators.filter(c => c.role === 'Técnico').map(t => ({ value: t.name, label: t.name })), [collaborators]);
   const supervisorOptions = React.useMemo(() => collaborators.filter(c => ['Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado'].includes(c.role)).map(s => ({ value: s.name, label: s.name })), [collaborators]);

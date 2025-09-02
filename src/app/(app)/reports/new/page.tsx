@@ -18,12 +18,13 @@ import { Separator } from '@/components/ui/separator';
 import { SendReportByEmailDialog } from '@/components/reports/send-report-by-email-dialog';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
+import { normalizeString } from '@/lib/utils';
 
 export default function NewReportPage() {
   const searchParams = useSearchParams();
   const otNumber = searchParams.get('ot_number');
   
-  const { activeWorkOrders, historicalWorkOrders, reportTemplates, collaborators, getOrder, addSubmittedReport } = useWorkOrders();
+  const { workOrders, reportTemplates, collaborators, getOrder, addSubmittedReport } = useWorkOrders();
   const { userProfile } = useAuth();
   const { toast } = useToast();
   
@@ -36,10 +37,8 @@ export default function NewReportPage() {
 
   const workOrder = React.useMemo(() => {
     if (!otNumber) return undefined;
-    const allOrders: WorkOrder[] = [...activeWorkOrders, ...historicalWorkOrders];
-    const foundOrder = allOrders.find(o => o.ot_number === otNumber);
-    return foundOrder ? getOrder(foundOrder.id) : undefined;
-  }, [activeWorkOrders, historicalWorkOrders, otNumber, getOrder]);
+    return workOrders.find(o => o.ot_number === otNumber);
+  }, [workOrders, otNumber]);
 
   const technicians = React.useMemo(() => {
     return collaborators.filter(c => c.role === 'Técnico' && c.status === 'Activo');

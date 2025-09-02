@@ -12,10 +12,11 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Button } from "@/components/ui/button";
 import { ChevronsUpDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { normalizeString } from "@/lib/utils";
 
 
 export default function HistoryPage() {
-    const { historicalWorkOrders, otCategories } = useWorkOrders();
+    const { workOrders, otCategories } = useWorkOrders();
     const [activeTab, setActiveTab] = React.useState('todos');
     const [filters, setFilters] = React.useState<Filters>({
       search: '',
@@ -29,6 +30,10 @@ export default function HistoryPage() {
       invoicedStatus: 'all',
     });
     const [isFilterOpen, setIsFilterOpen] = React.useState(false);
+
+    const historicalWorkOrders = React.useMemo(() => {
+        return workOrders.filter(o => normalizeString(o.status) === 'cerrada');
+    }, [workOrders]);
 
     const handleAdvancedFilterChange = React.useCallback((newAdvancedFilters: Omit<Filters, 'search'>) => {
         setFilters(prev => ({

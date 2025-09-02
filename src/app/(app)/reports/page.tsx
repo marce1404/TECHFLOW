@@ -18,9 +18,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { FilePlus2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { normalizeString } from '@/lib/utils';
 
 export default function ReportsPage() {
-  const { activeWorkOrders, historicalWorkOrders, otCategories, submittedReports } = useWorkOrders();
+  const { workOrders, otCategories, submittedReports } = useWorkOrders();
   const [search, setSearch] = React.useState('');
   const [activeTab, setActiveTab] = React.useState('todos');
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -34,8 +35,7 @@ export default function ReportsPage() {
   const submittedOtIds = React.useMemo(() => new Set(submittedReports.map(r => r.workOrderId)), [submittedReports]);
 
   const filteredOrders = React.useMemo(() => {
-    const allWorkOrders = [...activeWorkOrders, ...historicalWorkOrders];
-    let orders = allWorkOrders.filter(order => !submittedOtIds.has(order.id));
+    let orders = workOrders.filter(order => !submittedOtIds.has(order.id) && normalizeString(order.status) !== 'cerrada');
 
     if (activeTab !== 'todos') {
         orders = orders.filter(order => order.ot_number.startsWith(activeTab));
@@ -48,7 +48,7 @@ export default function ReportsPage() {
         );
     }
     return orders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [activeWorkOrders, historicalWorkOrders, activeTab, search, submittedOtIds]);
+  }, [workOrders, activeTab, search, submittedOtIds]);
   
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
   const paginatedOrders = filteredOrders.slice(

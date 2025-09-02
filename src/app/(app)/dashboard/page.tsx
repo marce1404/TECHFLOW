@@ -18,13 +18,20 @@ import { cn } from '@/lib/utils';
 const ITEMS_PER_PAGE = 11;
 
 export default function DashboardPage() {
-  const { activeWorkOrders, historicalWorkOrders, loading, ganttCharts } = useWorkOrders();
+  const { workOrders, loading, ganttCharts } = useWorkOrders();
   const [api, setApi] = React.useState<CarouselApi>();
   const [current, setCurrent] = React.useState(0);
   const [count, setCount] = React.useState(0);
   const [isFullscreen, setIsFullscreen] = React.useState(false);
   const dashboardRef = React.useRef<HTMLDivElement>(null);
 
+  const activeWorkOrders = React.useMemo(() => {
+    return workOrders.filter(o => normalizeString(o.status) !== 'cerrada');
+  }, [workOrders]);
+  
+  const historicalWorkOrders = React.useMemo(() => {
+    return workOrders.filter(o => normalizeString(o.status) === 'cerrada');
+  }, [workOrders]);
 
   const statusOrder: WorkOrder['status'][] = ['Atrasada', 'En Progreso', 'Pendiente', 'Por Iniciar'];
   
