@@ -47,23 +47,31 @@ export default function ActiveOrdersPage() {
     
     const filteredOrders = React.useMemo(() => {
         const allOrders = [...activeWorkOrders, ...historicalWorkOrders];
-        let ordersToDisplay = allOrders;
+        let ordersToFilter = allOrders;
 
-        // Special case: "Por Facturar" should only ever show active orders.
-        if (filters.invoicedStatus === 'not_invoiced') {
-            ordersToDisplay = activeWorkOrders;
+        const noAdvancedFilters =
+            !filters.clients.length &&
+            !filters.services.length &&
+            !filters.technicians.length &&
+            !filters.supervisors.length &&
+            !filters.priorities.length &&
+            !filters.statuses.length &&
+            !filters.dateRange.from &&
+            !filters.dateRange.to;
+
+        // Default View: If no filters are active, show only active orders.
+        if (!filters.search && noAdvancedFilters && filters.invoicedStatus === 'all') {
+            ordersToFilter = activeWorkOrders;
         }
-
-        let filtered = ordersToDisplay;
 
         // Apply Tab Filter
         if (activeTab !== 'todos') {
-            filtered = filtered.filter(order => order.ot_number.startsWith(activeTab));
+            ordersToFilter = ordersToFilter.filter(order => order.ot_number.startsWith(activeTab));
         }
         
         // Apply Search
         if (filters.search) {
-             filtered = filtered.filter(order =>
+             ordersToFilter = ordersToFilter.filter(order =>
                 order.ot_number.toLowerCase().includes(filters.search.toLowerCase()) ||
                 order.description.toLowerCase().includes(filters.search.toLowerCase()) ||
                 (order.client && order.client.toLowerCase().includes(filters.search.toLowerCase()))
@@ -72,33 +80,33 @@ export default function ActiveOrdersPage() {
 
         // Apply Advanced Filters
         if (filters.clients.length > 0) {
-            filtered = filtered.filter(order => filters.clients.includes(order.client));
+            ordersToFilter = ordersToFilter.filter(order => filters.clients.includes(order.client));
         }
         if (filters.services.length > 0) {
-            filtered = filtered.filter(order => filters.services.includes(order.service));
+            ordersToFilter = ordersToFilter.filter(order => filters.services.includes(order.service));
         }
         if (filters.technicians.length > 0) {
-            filtered = filtered.filter(order => (order.technicians || []).some(t => filters.technicians.includes(t)));
+            ordersToFilter = ordersToFilter.filter(order => (order.technicians || []).some(t => filters.technicians.includes(t)));
         }
         if (filters.supervisors.length > 0) {
-            filtered = filtered.filter(order => (order.assigned || []).some(s => filters.supervisors.includes(s)));
+            ordersToFilter = ordersToFilter.filter(order => (order.assigned || []).some(s => filters.supervisors.includes(s)));
         }
         if (filters.priorities.length > 0) {
-            filtered = filtered.filter(order => filters.priorities.includes(order.priority));
+            ordersToFilter = ordersToFilter.filter(order => filters.priorities.includes(order.priority));
         }
         if (filters.statuses.length > 0) {
-            filtered = filtered.filter(order => filters.statuses.includes(order.status));
+            ordersToFilter = ordersToFilter.filter(order => filters.statuses.includes(order.status));
         }
         if (filters.dateRange.from) {
-            filtered = filtered.filter(order => new Date(order.date.replace(/-/g, '/')) >= filters.dateRange.from!);
+            ordersToFilter = ordersToFilter.filter(order => new Date(order.date.replace(/-/g, '/')) >= filters.dateRange.from!);
         }
         if (filters.dateRange.to) {
-            filtered = filtered.filter(order => new Date(order.date.replace(/-/g, '/')) <= filters.dateRange.to!);
+            ordersToFilter = ordersToFilter.filter(order => new Date(order.date.replace(/-/g, '/')) <= filters.dateRange.to!);
         }
         
         // Apply Invoiced Status Filter LAST
         if (filters.invoicedStatus !== 'all') {
-            filtered = filtered.filter(order => {
+            return ordersToFilter.filter(order => {
                 const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
                 const netPrice = order.netPrice || 0;
 
@@ -108,30 +116,14 @@ export default function ActiveOrdersPage() {
                 }
                 if (filters.invoicedStatus === 'not_invoiced') {
                     // Not fully invoiced: has a price, not marked with old facturado flag, and invoiced amount is less than net price
-                    return netPrice > 0 && !order.facturado && totalInvoiced < netPrice;
+                     return netPrice > 0 && !order.facturado && totalInvoiced < netPrice && normalizeString(order.status) !== 'cerrada';
                 }
-                return true; // Should not be reached if filter is 'all'
-            });
-        } else if (!filters.search &&
-            !filters.clients.length && 
-            !filters.services.length &&
-            !filters.technicians.length &&
-            !filters.supervisors.length &&
-            !filters.priorities.length &&
-            !filters.statuses.length &&
-            !filters.dateRange.from
-        ) {
-            // Default view: only active orders if no filters are active
-            filtered = activeWorkOrders.filter(order => {
-                 if (activeTab !== 'todos') {
-                    return order.ot_number.startsWith(activeTab);
-                 }
-                 return true;
+                return true;
             });
         }
 
+        return ordersToFilter;
 
-        return filtered;
     }, [activeWorkOrders, historicalWorkOrders, activeTab, filters]);
 
     const categories = [
