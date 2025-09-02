@@ -8,32 +8,35 @@ import type { AppUser } from './types';
 
 dotenv.config();
 
-let adminApp: admin.app.App | undefined;
-let auth: admin.auth.Auth;
-let db: admin.firestore.Firestore;
-let storage: admin.storage.Storage;
-
-
-if (!admin.apps.length) {
+function initializeFirebaseAdmin() {
     const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-
     if (serviceAccountBase64) {
+        if (admin.apps.length > 0) {
+            return admin.apps[0]!;
+        }
         try {
             const serviceAccountString = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
             const serviceAccount = JSON.parse(serviceAccountString);
-            adminApp = admin.initializeApp({
+            return admin.initializeApp({
                 credential: admin.credential.cert(serviceAccount),
                 storageBucket: `${serviceAccount.project_id}.appspot.com`
             });
         } catch (e: any) {
             console.error("Firebase Admin SDK initialization failed due to a malformed service account JSON. Admin features will be disabled.", e);
+            return null;
         }
     } else {
         console.warn("FIREBASE_SERVICE_ACCOUNT_JSON environment variable is not set. Firebase Admin features will be disabled.");
+        return null;
     }
-} else {
-    adminApp = admin.apps[0]!;
 }
+
+const adminApp = initializeFirebaseAdmin();
+
+let auth: admin.auth.Auth;
+let db: admin.firestore.Firestore;
+let storage: admin.storage.Storage;
+
 
 if (adminApp) {
     auth = getAuth(adminApp);
