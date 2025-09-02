@@ -49,6 +49,7 @@ export default function ActiveOrdersPage() {
         const allOrders = [...activeWorkOrders, ...historicalWorkOrders];
         let ordersToFilter = allOrders;
 
+        // Default View: If no filters are active, show only active orders.
         const noAdvancedFilters =
             !filters.clients.length &&
             !filters.services.length &&
@@ -59,9 +60,25 @@ export default function ActiveOrdersPage() {
             !filters.dateRange.from &&
             !filters.dateRange.to;
 
-        // Default View: If no filters are active, show only active orders.
-        if (!filters.search && noAdvancedFilters && filters.invoicedStatus === 'all') {
+        if (filters.invoicedStatus === 'all' && !filters.search && noAdvancedFilters) {
             ordersToFilter = activeWorkOrders;
+        }
+        
+        // --- Special Invoice Status Filtering ---
+        if (filters.invoicedStatus === 'not_invoiced') {
+            // "Por Facturar" ONLY looks at ACTIVE orders.
+            ordersToFilter = activeWorkOrders.filter(order => {
+                const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
+                const netPrice = order.netPrice || 0;
+                return netPrice > 0 && totalInvoiced < netPrice && !order.facturado;
+            });
+        } else if (filters.invoicedStatus === 'invoiced') {
+            // "Facturadas" looks at ALL orders.
+            ordersToFilter = allOrders.filter(order => {
+                 const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
+                 const netPrice = order.netPrice || 0;
+                 return order.facturado === true || (netPrice > 0 && totalInvoiced >= netPrice);
+            });
         }
 
         // Apply Tab Filter
@@ -103,24 +120,6 @@ export default function ActiveOrdersPage() {
         if (filters.dateRange.to) {
             ordersToFilter = ordersToFilter.filter(order => new Date(order.date.replace(/-/g, '/')) <= filters.dateRange.to!);
         }
-        
-        // Apply Invoiced Status Filter LAST
-        if (filters.invoicedStatus !== 'all') {
-            return ordersToFilter.filter(order => {
-                const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
-                const netPrice = order.netPrice || 0;
-
-                if (filters.invoicedStatus === 'invoiced') {
-                    // Fully invoiced: old `facturado` flag OR total invoiced amount is >= net price
-                    return (order.facturado === true) || (netPrice > 0 && totalInvoiced >= netPrice);
-                }
-                if (filters.invoicedStatus === 'not_invoiced') {
-                    // Not fully invoiced: has a price, not marked with old facturado flag, and invoiced amount is less than net price
-                     return netPrice > 0 && !order.facturado && totalInvoiced < netPrice && normalizeString(order.status) !== 'cerrada';
-                }
-                return true;
-            });
-        }
 
         return ordersToFilter;
 
@@ -151,8 +150,8 @@ export default function ActiveOrdersPage() {
             const invoicedAmount = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
             const netPrice = order.netPrice || 0;
             
-            // Only add to "Por Facturar" if it's not fully invoiced
-            if (netPrice > invoicedAmount) {
+            // Only add to "Por Facturar" if it's not fully invoiced and not closed
+            if (netPrice > invoicedAmount && normalizeString(order.status) !== 'cerrada') {
                 acc.totalPorFacturar += (netPrice - invoicedAmount);
             }
             
