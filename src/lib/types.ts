@@ -43,6 +43,7 @@ export type WorkOrder = {
   vehicles: string[];
   netPrice: number;
   invoices?: Invoice[];
+  invoiceNumber?: string; // For data migration from old structure
   ocNumber?: string;
   rut?: string;
   saleNumber?: string;

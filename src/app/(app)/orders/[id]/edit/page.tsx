@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Slider } from "@/components/ui/slider";
 import { useAuth } from "@/context/auth-context";
-import { useForm, FormProvider } from "react-hook-form";
+import { useForm, FormProvider, useFieldArray } from "react-hook-form";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 
@@ -51,20 +51,34 @@ export default function EditOrderPage() {
   const canEdit = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
 
   const methods = useForm<WorkOrder>({
-    defaultValues: initialOrder
+    defaultValues: initialOrder || {}
+  });
+  
+  const { fields: invoiceFields, append: appendInvoice, remove: removeInvoice } = useFieldArray({
+    control: methods.control,
+    name: "invoices",
   });
 
-  const [invoices, setInvoices] = React.useState<Invoice[]>([]);
   const [newInvoiceNumber, setNewInvoiceNumber] = React.useState('');
   const [newInvoiceDate, setNewInvoiceDate] = React.useState<Date | undefined>(new Date());
   const [newInvoiceAmount, setNewInvoiceAmount] = React.useState(0);
   
   const watchNetPrice = methods.watch('netPrice');
+  const watchedInvoices = methods.watch('invoices');
 
   React.useEffect(() => {
     if (initialOrder) {
-      methods.reset(initialOrder);
-      setInvoices(initialOrder.invoices || []);
+      // Data migration logic
+      let finalOrderData = { ...initialOrder };
+      if (!initialOrder.invoices && initialOrder.invoiceNumber) {
+        finalOrderData.invoices = [{
+          id: crypto.randomUUID(),
+          number: initialOrder.invoiceNumber,
+          amount: initialOrder.netPrice || 0,
+          date: initialOrder.date,
+        }];
+      }
+      methods.reset(finalOrderData);
     }
   }, [initialOrder, methods]);
 
@@ -82,9 +96,7 @@ export default function EditOrderPage() {
 
   const handleUpdateOrder = async (data: WorkOrder) => {
     if (!canEdit) return;
-
-    const finalData = { ...data, invoices };
-    await updateOrder(data.id, finalData);
+    await updateOrder(data.id, data);
 
     toast({
       title: "Orden de Trabajo Actualizada",
@@ -139,11 +151,11 @@ export default function EditOrderPage() {
   const ivaPrice = watchNetPrice ? Math.round(watchNetPrice * 0.19) : 0;
   
   const totalInvoicedNet = React.useMemo(() => {
-    return invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
-  }, [invoices]);
+    return (watchedInvoices || []).reduce((sum, inv) => sum + (inv.amount || 0), 0);
+  }, [watchedInvoices]);
   
   const totalInvoicedGross = Math.round(totalInvoicedNet * 1.19);
-  const balance = watchNetPrice - totalInvoicedNet;
+  const balance = (watchNetPrice || 0) - totalInvoicedNet;
 
   const handleAddInvoice = () => {
     if (!newInvoiceNumber || !newInvoiceDate || newInvoiceAmount <= 0) {
@@ -156,14 +168,10 @@ export default function EditOrderPage() {
         date: format(newInvoiceDate, 'yyyy-MM-dd'),
         amount: newInvoiceAmount,
     };
-    setInvoices([...invoices, newInvoice]);
+    appendInvoice(newInvoice);
     setNewInvoiceNumber('');
     setNewInvoiceDate(new Date());
     setNewInvoiceAmount(0);
-  };
-
-  const handleRemoveInvoice = (id: string) => {
-    setInvoices(invoices.filter(inv => inv.id !== id));
   };
 
 
@@ -392,7 +400,7 @@ export default function EditOrderPage() {
                             <Input 
                                 id="net-price" 
                                 type="text" 
-                                value={formatCurrency(watchNetPrice)}
+                                value={formatCurrency(watchNetPrice || 0)}
                                 onChange={(e) => {
                                     const rawValue = e.target.value.replace(/\./g, '');
                                     const numericValue = parseInt(rawValue, 10);
@@ -527,20 +535,20 @@ export default function EditOrderPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {invoices.map((inv) => (
-                                    <TableRow key={inv.id}>
-                                        <TableCell>{inv.number}</TableCell>
-                                        <TableCell>{format(new Date(inv.date.replace(/-/g, '/')), "PPP", { locale: es })}</TableCell>
-                                        <TableCell className="text-right">{formatCurrency(inv.amount)}</TableCell>
-                                        <TableCell className="text-right">{formatCurrency(Math.round(inv.amount * 1.19))}</TableCell>
+                                {invoiceFields.map((field, index) => (
+                                    <TableRow key={field.id}>
+                                        <TableCell>{methods.watch(`invoices.${index}.number`)}</TableCell>
+                                        <TableCell>{format(new Date(methods.watch(`invoices.${index}.date`).replace(/-/g, '/')), "PPP", { locale: es })}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(methods.watch(`invoices.${index}.amount`))}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(Math.round(methods.watch(`invoices.${index}.amount`) * 1.19))}</TableCell>
                                         <TableCell>
-                                            <Button variant="ghost" size="icon" onClick={() => handleRemoveInvoice(inv.id)}>
+                                            <Button variant="ghost" size="icon" onClick={() => removeInvoice(index)}>
                                                 <Trash2 className="h-4 w-4 text-destructive"/>
                                             </Button>
                                         </TableCell>
                                     </TableRow>
                                 ))}
-                                {invoices.length === 0 && (
+                                {invoiceFields.length === 0 && (
                                     <TableRow>
                                         <TableCell colSpan={5} className="h-24 text-center">
                                             No se han añadido facturas.
@@ -562,7 +570,7 @@ export default function EditOrderPage() {
                         </div>
                         <div className="p-2 border rounded-md">
                             <p className="text-muted-foreground">Precio OT (Neto)</p>
-                            <p className="text-lg font-bold">{formatCurrency(watchNetPrice)}</p>
+                            <p className="text-lg font-bold">{formatCurrency(watchNetPrice || 0)}</p>
                         </div>
                         <div className={cn("p-2 border rounded-md", balance < 0 ? "text-destructive" : "")}>
                             <p className="text-muted-foreground">Saldo Pendiente (Neto)</p>
