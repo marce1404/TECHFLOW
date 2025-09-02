@@ -49,19 +49,18 @@ export default function ActiveOrdersPage() {
         let allOrders = [...activeWorkOrders, ...historicalWorkOrders];
         let ordersToDisplay;
 
-        // Start with the correct base list of orders
-        if (filters.invoicedStatus === 'not_invoiced') {
-            // "Por Facturar" should only ever show non-closed orders
-            ordersToDisplay = allOrders.filter(order => normalizeString(order.status) !== 'cerrada');
-        } else if (filters.invoicedStatus === 'invoiced') {
-            // "Facturadas" can come from anywhere
-            ordersToDisplay = allOrders;
-        } else if (filters.search || filters.clients.length || filters.services.length || filters.technicians.length || filters.supervisors.length || filters.priorities.length || filters.statuses.length || filters.dateRange.from) {
-             // If any other filter is active, search in all orders
+        const anyAdvancedFilterActive = 
+            filters.clients.length > 0 ||
+            filters.services.length > 0 ||
+            filters.technicians.length > 0 ||
+            filters.supervisors.length > 0 ||
+            filters.priorities.length > 0 ||
+            filters.statuses.length > 0 ||
+            filters.dateRange.from !== undefined;
+
+        if (filters.search || anyAdvancedFilterActive || filters.invoicedStatus !== 'all') {
              ordersToDisplay = allOrders;
-        }
-        else {
-            // Default view: only active orders
+        } else {
             ordersToDisplay = activeWorkOrders;
         }
         
@@ -112,12 +111,14 @@ export default function ActiveOrdersPage() {
             filtered = filtered.filter(order => {
                 const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
                 const netPrice = order.netPrice || 0;
-                
+
                 if (filters.invoicedStatus === 'invoiced') {
+                    // Fully invoiced: old `facturado` flag OR total invoiced amount is >= net price
                     return order.facturado === true || (netPrice > 0 && totalInvoiced >= netPrice);
                 }
                 if (filters.invoicedStatus === 'not_invoiced') {
-                     return !order.facturado && totalInvoiced < netPrice;
+                     // Not fully invoiced: has a price, not marked with old flag, and invoiced amount is less than net price
+                     return netPrice > 0 && !order.facturado && totalInvoiced < netPrice;
                 }
                 return true;
             });

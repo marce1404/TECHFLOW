@@ -162,15 +162,13 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                         const netPrice = order.netPrice || 0;
                         let invoiceStatusIndicator = null;
                         
-                        // New logic: Check old 'facturado' flag as a fallback
-                        const isFullyInvoicedByFlag = order.facturado === true && (!order.invoices || order.invoices.length === 0);
-                        const isFullyInvoicedByAmount = totalInvoiced > 0 && totalInvoiced >= netPrice;
-
+                        const isFullyInvoicedByFlag = order.facturado === true;
+                        const isFullyInvoicedByAmount = netPrice > 0 && totalInvoiced >= netPrice;
 
                         if (isFullyInvoicedByFlag || isFullyInvoicedByAmount) {
                              invoiceStatusIndicator = <CheckCircle className="h-5 w-5 text-green-500 mx-auto" />;
-                        } else if (totalInvoiced > 0) {
-                            const percentageInvoiced = netPrice > 0 ? Math.round((totalInvoiced / netPrice) * 100) : 0;
+                        } else if (totalInvoiced > 0 && netPrice > 0) {
+                            const percentageInvoiced = Math.round((totalInvoiced / netPrice) * 100);
                             invoiceStatusIndicator = (
                                 <Badge variant="outline" className="border-green-500 text-green-600 font-bold">
                                     {percentageInvoiced}%
