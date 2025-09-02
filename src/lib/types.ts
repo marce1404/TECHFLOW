@@ -19,6 +19,13 @@ export type AppUser = {
   status: 'Activo' | 'Inactivo';
 };
 
+export type Invoice = {
+  id: string;
+  number: string;
+  date: string;
+  amount: number;
+};
+
 export type WorkOrder = {
   id: string;
   ot_number: string;
@@ -32,11 +39,10 @@ export type WorkOrder = {
   comercial: string;
   status: 'Por Iniciar' | 'En Progreso' | 'Pendiente' | 'Atrasada' | 'Cerrada';
   priority: 'Baja' | 'Media' | 'Alta';
-  facturado: boolean;
   technicians: string[];
   vehicles: string[];
   netPrice: number;
-  invoiceNumber?: string;
+  invoices?: Invoice[];
   ocNumber?: string;
   rut?: string;
   saleNumber?: string;
@@ -288,6 +294,12 @@ export type UpdateUserOutput = z.infer<typeof UpdateUserOutputSchema>;
 
 // Excel Import Types & API Types
 const workOrderStatuses = z.enum(['Por Iniciar', 'En Progreso', 'En Proceso', 'Pendiente', 'Atrasada', 'Cerrada', 'CERRADA']);
+const invoiceSchema = z.object({
+  id: z.string(),
+  number: z.string().min(1, "El número de factura es requerido"),
+  date: z.string().min(1, "La fecha es requerida"),
+  amount: z.coerce.number().min(0, "El monto debe ser positivo"),
+});
 
 export const CreateWorkOrderInputSchema = z.object({
   ot_number: z.string().describe("The unique work order number, including prefix. E.g., 'OT-1525'"),
@@ -302,7 +314,7 @@ export const CreateWorkOrderInputSchema = z.object({
   priority: z.enum(['Baja', 'Media', 'Alta']).optional().describe("The priority of the work order."),
   netPrice: z.number().optional().default(0).describe("The net price of the work order."),
   ocNumber: z.string().optional().describe("The Purchase Order (OC) number, if available."),
-  invoiceNumber: z.string().optional().describe("The invoice number, if available."),
+  invoices: z.array(invoiceSchema).optional().default([]),
   assigned: z.array(z.string()).optional().default([]).describe("A list of names for assigned supervisors/managers."),
   technicians: z.array(z.string()).optional().default([]).describe("A list of names for assigned technicians."),
   vehicles: z.array(z.string()).optional().default([]).describe("A list of assigned vehicles."),
@@ -314,7 +326,9 @@ export const CreateWorkOrderInputSchema = z.object({
 });
 export type CreateWorkOrderInput = z.infer<typeof CreateWorkOrderInputSchema>;
 
-export const CreateWorkOrderInputSchemaForExcel = CreateWorkOrderInputSchema;
+export const CreateWorkOrderInputSchemaForExcel = CreateWorkOrderInputSchema.omit({ invoices: true }).extend({
+    invoiceNumber: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
+});
 
 export const CreateWorkOrderOutputSchema = z.object({
   success: z.boolean(),
@@ -322,5 +336,3 @@ export const CreateWorkOrderOutputSchema = z.object({
   message: z.string(),
 });
 export type CreateWorkOrderOutput = z.infer<typeof CreateWorkOrderOutputSchema>;
-
-    

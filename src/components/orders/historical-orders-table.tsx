@@ -168,7 +168,7 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                           <TableCell>{order.description}</TableCell>
                           <TableCell>{order.client}</TableCell>
                           <TableCell>{order.service}</TableCell>
-                          <TableCell>{order.assigned.join(', ')}</TableCell>
+                          <TableCell>{(order.assigned || []).join(', ')}</TableCell>
                           <TableCell>{order.comercial}</TableCell>
                            <TableCell className="text-right">{formatCurrency(order.netPrice)}</TableCell>
                           <TableCell>
@@ -191,7 +191,7 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                             </DropdownMenu>
                           </TableCell>
                           <TableCell className="text-center">
-                            {order.facturado && <CheckCircle className="h-5 w-5 text-green-500 mx-auto" />}
+                            {(order.invoices || []).length > 0 && <CheckCircle className="h-5 w-5 text-green-500 mx-auto" />}
                           </TableCell>
                         </TableRow>
                     ))

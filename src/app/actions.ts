@@ -267,29 +267,31 @@ export async function sendReportEmailAction(
 
 
 export async function exportOrdersToExcel(orders: WorkOrder[]): Promise<string> {
-    const dataToExport = orders.map(order => ({
-        'Nº OT': order.ot_number,
-        'Descripción': order.description,
-        'Cliente': order.client,
-        'RUT Cliente': order.rut || '',
-        'Servicio': order.service,
-        'Fecha Inicio': order.date,
-        'Fecha Término': order.endDate || '',
-        'Estado': order.status,
-        'Prioridad': order.priority,
-        'Encargados': order.assigned.join(', '),
-        'Técnicos': order.technicians.join(', '),
-        'Vehículos': order.vehicles.join(', '),
-        'Comercial': order.comercial,
-        'Facturado': order.facturado ? 'Sí' : 'No',
-        'Precio Neto': order.netPrice,
-        'Nº Factura': order.invoiceNumber || '',
-        'Nº OC': order.ocNumber || '',
-        'Nº Venta': order.saleNumber || '',
-        'HES / EM / MIGO': order.hesEmMigo || '',
-        'Vehículo Arrendado': order.rentedVehicle || '',
-        'Observaciones / Notas Adicionales': order.notes || '',
-    }));
+    const dataToExport = orders.map(order => {
+        const invoices = (order.invoices || []).map(inv => `${inv.number} ($${inv.amount})`).join('; ');
+        return {
+            'Nº OT': order.ot_number,
+            'Descripción': order.description,
+            'Cliente': order.client,
+            'RUT Cliente': order.rut || '',
+            'Servicio': order.service,
+            'Fecha Inicio': order.date,
+            'Fecha Término': order.endDate || '',
+            'Estado': order.status,
+            'Prioridad': order.priority,
+            'Encargados': (order.assigned || []).join(', '),
+            'Técnicos': (order.technicians || []).join(', '),
+            'Vehículos': (order.vehicles || []).join(', '),
+            'Comercial': order.comercial,
+            'Facturas': invoices,
+            'Precio Neto': order.netPrice,
+            'Nº OC': order.ocNumber || '',
+            'Nº Venta': order.saleNumber || '',
+            'HES / EM / MIGO': order.hesEmMigo || '',
+            'Vehículo Arrendado': order.rentedVehicle || '',
+            'Observaciones / Notas Adicionales': order.notes || '',
+        };
+    });
 
     const worksheet = xlsx.utils.json_to_sheet(dataToExport);
     const workbook = xlsx.utils.book_new();
@@ -302,10 +304,7 @@ export async function exportOrdersToExcel(orders: WorkOrder[]): Promise<string> 
 async function createOrUpdateWorkOrder(input: CreateWorkOrderInput) {
   const db = getAdminApp().firestore();
   try {
-    const workOrderData = {
-      ...input,
-      facturado: !!input.invoiceNumber,
-    };
+    const { ...workOrderData } = input;
 
     const docRef = await db.collection("work-orders").add(workOrderData);
     return {
@@ -454,6 +453,3 @@ export async function deleteAllWorkOrdersAction(): Promise<{ success: boolean; m
     return { success: false, message: `Error al limpiar la base de datos: ${errorMessage}`, deletedCount: 0 };
   }
 }
-    
-
-    

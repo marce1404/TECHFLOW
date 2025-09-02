@@ -66,10 +66,10 @@ export default function HistoryPage() {
             orders = orders.filter(order => filters.services.includes(order.service));
         }
         if (filters.technicians.length > 0) {
-            orders = orders.filter(order => order.technicians.some(t => filters.technicians.includes(t)));
+            orders = orders.filter(order => (order.technicians || []).some(t => filters.technicians.includes(t)));
         }
         if (filters.supervisors.length > 0) {
-            orders = orders.filter(order => order.assigned.some(s => filters.supervisors.includes(s)));
+            orders = orders.filter(order => (order.assigned || []).some(s => filters.supervisors.includes(s)));
         }
         if (filters.priorities.length > 0) {
             orders = orders.filter(order => filters.priorities.includes(order.priority));
@@ -85,8 +85,9 @@ export default function HistoryPage() {
         }
         if (filters.invoicedStatus !== 'all') {
             orders = orders.filter(order => {
-                if (filters.invoicedStatus === 'invoiced') return order.facturado;
-                if (filters.invoicedStatus === 'not_invoiced') return !order.facturado;
+                const hasInvoices = (order.invoices || []).length > 0;
+                if (filters.invoicedStatus === 'invoiced') return hasInvoices;
+                if (filters.invoicedStatus === 'not_invoiced') return !hasInvoices;
                 return true;
             });
         }
@@ -117,10 +118,12 @@ export default function HistoryPage() {
     
     const { totalPorFacturar, totalFacturado } = React.useMemo(() => {
         return filteredOrders.reduce((acc, order) => {
-            if (order.facturado) {
-                acc.totalFacturado += order.netPrice;
-            } else {
-                acc.totalPorFacturar += order.netPrice;
+            const invoicedAmount = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
+            const pendingAmount = order.netPrice - invoicedAmount;
+            
+            acc.totalFacturado += invoicedAmount;
+            if (pendingAmount > 0) {
+                acc.totalPorFacturar += pendingAmount;
             }
             return acc;
         }, { totalPorFacturar: 0, totalFacturado: 0 });

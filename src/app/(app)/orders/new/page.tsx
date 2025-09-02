@@ -46,7 +46,6 @@ export default function NewOrderPage() {
     const [status, setStatus] = React.useState<WorkOrder['status']>('Por Iniciar');
     const [priority, setPriority] = React.useState<WorkOrder['priority']>('Baja');
     const [netPrice, setNetPrice] = React.useState(0);
-    const [invoiceNumber, setInvoiceNumber] = React.useState('');
     const [ocNumber, setOcNumber] = React.useState('');
     const [saleNumber, setSaleNumber] = React.useState('');
     const [hesEmMigo, setHesEmMigo] = React.useState('');
@@ -97,9 +96,8 @@ export default function NewOrderPage() {
         notes,
         status,
         priority,
-        facturado: !!invoiceNumber,
         netPrice,
-        invoiceNumber,
+        invoices: [],
         ocNumber,
         saleNumber,
         hesEmMigo,
@@ -377,23 +375,7 @@ export default function NewOrderPage() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-4">
-                            <div>
-                                <Label htmlFor="sale-number">Nº Venta</Label>
-                                <Input 
-                                    id="sale-number" 
-                                    value={saleNumber}
-                                    onChange={(e) => setSaleNumber(e.target.value)}
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="hes-em-migo">HES / EM / MIGO</Label>
-                                <Input 
-                                    id="hes-em-migo" 
-                                    value={hesEmMigo}
-                                    onChange={(e) => setHesEmMigo(e.target.value)}
-                                />
-                            </div>
+                        <div className="grid grid-cols-2 gap-4">
                              <div>
                                 <Label htmlFor="oc-number">OC</Label>
                                 <Input 
@@ -402,16 +384,25 @@ export default function NewOrderPage() {
                                     onChange={(e) => setOcNumber(e.target.value)}
                                 />
                             </div>
+                            <div>
+                                <Label htmlFor="sale-number">Nº Venta</Label>
+                                <Input 
+                                    id="sale-number" 
+                                    value={saleNumber}
+                                    onChange={(e) => setSaleNumber(e.target.value)}
+                                />
+                            </div>
                         </div>
-
-                        <div>
-                            <Label htmlFor="invoice-number">Nº Factura</Label>
+                        
+                         <div>
+                            <Label htmlFor="hes-em-migo">HES / EM / MIGO</Label>
                             <Input 
-                                id="invoice-number" 
-                                value={invoiceNumber}
-                                onChange={(e) => setInvoiceNumber(e.target.value)}
+                                id="hes-em-migo" 
+                                value={hesEmMigo}
+                                onChange={(e) => setHesEmMigo(e.target.value)}
                             />
                         </div>
+
 
                         <div>
                             <Label>Encargados</Label>
