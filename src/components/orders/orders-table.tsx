@@ -160,18 +160,18 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                         const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
                         const netPrice = order.netPrice || 0;
                         let invoiceStatusIndicator = null;
-
-                        if (totalInvoiced > 0) {
-                            if (totalInvoiced >= netPrice) {
-                                invoiceStatusIndicator = <CheckCircle className="h-5 w-5 text-green-500 mx-auto" />;
-                            } else {
-                                const percentageInvoiced = netPrice > 0 ? Math.round((totalInvoiced / netPrice) * 100) : 0;
-                                invoiceStatusIndicator = (
-                                    <Badge variant="outline" className="border-green-500 text-green-600 font-bold">
-                                        {percentageInvoiced}%
-                                    </Badge>
-                                );
-                            }
+                        
+                        const isFullyInvoicedByAmount = netPrice > 0 && totalInvoiced >= netPrice;
+                        
+                        if (isFullyInvoicedByAmount) {
+                            invoiceStatusIndicator = <CheckCircle className="h-5 w-5 text-green-500 mx-auto" />;
+                        } else if (totalInvoiced > 0) {
+                            const percentageInvoiced = netPrice > 0 ? Math.round((totalInvoiced / netPrice) * 100) : 0;
+                            invoiceStatusIndicator = (
+                                <Badge variant="outline" className="border-green-500 text-green-600 font-bold">
+                                    {percentageInvoiced}%
+                                </Badge>
+                            );
                         }
 
                         return (

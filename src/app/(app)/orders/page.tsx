@@ -57,20 +57,21 @@ export default function ActiveOrdersPage() {
     }, [filters]);
     
     const filteredOrders = React.useMemo(() => {
-        const isSearching = filters.search || hasAdvancedFilters;
-        
-        let orders = isSearching ? [...activeWorkOrders, ...historicalWorkOrders] : activeWorkOrders.filter(order => normalizeString(order.status) !== 'cerrada');
+        const isSearchingOrFiltering = filters.search || hasAdvancedFilters;
+        let baseOrders = isSearchingOrFiltering ? [...activeWorkOrders, ...historicalWorkOrders] : activeWorkOrders;
 
         if (activeTab !== 'todos') {
-            orders = orders.filter(order => order.ot_number.startsWith(activeTab));
+            baseOrders = baseOrders.filter(order => order.ot_number.startsWith(activeTab));
         }
+        
+        let orders = baseOrders;
 
         // Simple search
         if (filters.search) {
              orders = orders.filter(order =>
                 order.ot_number.toLowerCase().includes(filters.search.toLowerCase()) ||
                 order.description.toLowerCase().includes(filters.search.toLowerCase()) ||
-                order.client.toLowerCase().includes(filters.search.toLowerCase())
+                (order.client && order.client.toLowerCase().includes(filters.search.toLowerCase()))
             );
         }
 
@@ -103,14 +104,15 @@ export default function ActiveOrdersPage() {
             orders = orders.filter(order => {
                 const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
                 const netPrice = order.netPrice || 0;
-
+                
                 if (filters.invoicedStatus === 'invoiced') {
                     // Fully invoiced: old `facturado` flag OR total invoiced amount is >= net price
                     return order.facturado === true || (netPrice > 0 && totalInvoiced >= netPrice);
                 }
                 if (filters.invoicedStatus === 'not_invoiced') {
-                    // Not fully invoiced: total invoiced is < net price AND it's not marked with old facturado flag
-                    return !order.facturado && totalInvoiced < netPrice;
+                     // Not fully invoiced: total invoiced is < net price AND it's not marked with old facturado flag
+                     // AND must not be a "Cerrada" OT
+                     return !order.facturado && totalInvoiced < netPrice && normalizeString(order.status) !== 'cerrada';
                 }
                 return true;
             });
@@ -143,15 +145,19 @@ export default function ActiveOrdersPage() {
     const { totalPorFacturar, totalFacturado } = React.useMemo(() => {
         return filteredOrders.reduce((acc, order) => {
             const invoicedAmount = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
-            const pendingAmount = order.netPrice - invoicedAmount;
-
-            acc.totalFacturado += invoicedAmount;
-            if (pendingAmount > 0) {
-                acc.totalPorFacturar += pendingAmount;
+            const netPrice = order.netPrice || 0;
+            
+            // Only add to "Por Facturar" if it's not fully invoiced
+            if (netPrice > invoicedAmount) {
+                acc.totalPorFacturar += (netPrice - invoicedAmount);
             }
+            
+            acc.totalFacturado += invoicedAmount;
+
             return acc;
         }, { totalPorFacturar: 0, totalFacturado: 0 });
     }, [filteredOrders]);
+
 
     return (
         <div className="flex flex-col gap-4">
