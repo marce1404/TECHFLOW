@@ -157,7 +157,24 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                 </TableHeader>
                 <TableBody>
                 {paginatedData.length > 0 ? (
-                    paginatedData.map((order) => (
+                    paginatedData.map((order) => {
+                        const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
+                        const netPrice = order.netPrice || 0;
+                        let invoiceStatusIndicator = null;
+
+                        if (totalInvoiced > 0) {
+                            if (totalInvoiced >= netPrice) {
+                                invoiceStatusIndicator = <CheckCircle className="h-5 w-5 text-green-500 mx-auto" />;
+                            } else {
+                                invoiceStatusIndicator = (
+                                    <Badge className="bg-green-500 hover:bg-green-500 text-white rounded-full h-5 w-5 p-0 flex items-center justify-center mx-auto">
+                                        P
+                                    </Badge>
+                                );
+                            }
+                        }
+
+                        return (
                         <TableRow key={order.id}>
                           <TableCell className="font-medium">
                             <Link href={`/orders/${order.id}/edit`} className="text-primary hover:underline">
@@ -191,10 +208,10 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                             </DropdownMenu>
                           </TableCell>
                           <TableCell className="text-center">
-                            {(order.invoices || []).length > 0 && <CheckCircle className="h-5 w-5 text-green-500 mx-auto" />}
+                            {invoiceStatusIndicator}
                           </TableCell>
                         </TableRow>
-                    ))
+                    )})
                 ) : (
                     <TableRow>
                         <TableCell colSpan={headerItems.length + 1} className="h-24 text-center">
