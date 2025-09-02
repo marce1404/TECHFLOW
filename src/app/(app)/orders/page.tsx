@@ -46,28 +46,16 @@ export default function ActiveOrdersPage() {
     };
     
     const filteredOrders = React.useMemo(() => {
-        let allOrders = [...activeWorkOrders, ...historicalWorkOrders];
-        let ordersToDisplay;
+        const allOrders = [...activeWorkOrders, ...historicalWorkOrders];
+        let ordersToDisplay = allOrders;
 
-        const anyAdvancedFilterActive = 
-            filters.clients.length > 0 ||
-            filters.services.length > 0 ||
-            filters.technicians.length > 0 ||
-            filters.supervisors.length > 0 ||
-            filters.priorities.length > 0 ||
-            filters.statuses.length > 0 ||
-            filters.dateRange.from !== undefined ||
-            filters.invoicedStatus !== 'all';
-
-        // Start with all orders if any filter is active, otherwise start with only active ones.
-        if (filters.search || anyAdvancedFilterActive) {
-             ordersToDisplay = allOrders;
-        } else {
+        // Special case: "Por Facturar" should only ever show active orders.
+        if (filters.invoicedStatus === 'not_invoiced') {
             ordersToDisplay = activeWorkOrders;
         }
-        
+
         let filtered = ordersToDisplay;
-        
+
         // Apply Tab Filter
         if (activeTab !== 'todos') {
             filtered = filtered.filter(order => order.ot_number.startsWith(activeTab));
@@ -120,9 +108,25 @@ export default function ActiveOrdersPage() {
                 }
                 if (filters.invoicedStatus === 'not_invoiced') {
                     // Not fully invoiced: has a price, not marked with old facturado flag, and invoiced amount is less than net price
-                     return netPrice > 0 && !order.facturado && totalInvoiced < netPrice;
+                    return netPrice > 0 && !order.facturado && totalInvoiced < netPrice;
                 }
-                return true;
+                return true; // Should not be reached if filter is 'all'
+            });
+        } else if (!filters.search &&
+            !filters.clients.length && 
+            !filters.services.length &&
+            !filters.technicians.length &&
+            !filters.supervisors.length &&
+            !filters.priorities.length &&
+            !filters.statuses.length &&
+            !filters.dateRange.from
+        ) {
+            // Default view: only active orders if no filters are active
+            filtered = activeWorkOrders.filter(order => {
+                 if (activeTab !== 'todos') {
+                    return order.ot_number.startsWith(activeTab);
+                 }
+                 return true;
             });
         }
 
@@ -173,7 +177,7 @@ export default function ActiveOrdersPage() {
                 <div className="flex items-center justify-between">
                     <CollapsibleTrigger asChild>
                         <Button variant="ghost" size="sm">
-                            <ChevronsUpDown className="h-4 w-4 mr-2" />
+                            <ChevronsUpDown className="mr-2 h-4 w-4" />
                             Filtros Avanzados
                         </Button>
                     </CollapsibleTrigger>
