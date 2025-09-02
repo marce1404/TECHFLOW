@@ -166,9 +166,10 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                             if (totalInvoiced >= netPrice) {
                                 invoiceStatusIndicator = <CheckCircle className="h-5 w-5 text-green-500 mx-auto" />;
                             } else {
+                                const percentageInvoiced = netPrice > 0 ? Math.round((totalInvoiced / netPrice) * 100) : 0;
                                 invoiceStatusIndicator = (
-                                    <Badge className="bg-green-500 hover:bg-green-500 text-white rounded-full h-5 w-5 p-0 flex items-center justify-center mx-auto">
-                                        P
+                                    <Badge variant="outline" className="border-green-500 text-green-600 font-bold">
+                                        {percentageInvoiced}%
                                     </Badge>
                                 );
                             }
