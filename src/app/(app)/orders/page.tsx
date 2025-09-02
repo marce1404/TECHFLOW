@@ -56,16 +56,18 @@ export default function ActiveOrdersPage() {
             filters.supervisors.length > 0 ||
             filters.priorities.length > 0 ||
             filters.statuses.length > 0 ||
-            filters.dateRange.from !== undefined;
+            filters.dateRange.from !== undefined ||
+            filters.invoicedStatus !== 'all';
 
-        if (filters.search || anyAdvancedFilterActive || filters.invoicedStatus !== 'all') {
+        // Start with all orders if any filter is active, otherwise start with only active ones.
+        if (filters.search || anyAdvancedFilterActive) {
              ordersToDisplay = allOrders;
         } else {
             ordersToDisplay = activeWorkOrders;
         }
         
         let filtered = ordersToDisplay;
-
+        
         // Apply Tab Filter
         if (activeTab !== 'todos') {
             filtered = filtered.filter(order => order.ot_number.startsWith(activeTab));
@@ -105,7 +107,7 @@ export default function ActiveOrdersPage() {
         if (filters.dateRange.to) {
             filtered = filtered.filter(order => new Date(order.date.replace(/-/g, '/')) <= filters.dateRange.to!);
         }
-
+        
         // Apply Invoiced Status Filter LAST
         if (filters.invoicedStatus !== 'all') {
             filtered = filtered.filter(order => {
@@ -114,10 +116,10 @@ export default function ActiveOrdersPage() {
 
                 if (filters.invoicedStatus === 'invoiced') {
                     // Fully invoiced: old `facturado` flag OR total invoiced amount is >= net price
-                    return order.facturado === true || (netPrice > 0 && totalInvoiced >= netPrice);
+                    return (order.facturado === true) || (netPrice > 0 && totalInvoiced >= netPrice);
                 }
                 if (filters.invoicedStatus === 'not_invoiced') {
-                     // Not fully invoiced: has a price, not marked with old flag, and invoiced amount is less than net price
+                    // Not fully invoiced: has a price, not marked with old facturado flag, and invoiced amount is less than net price
                      return netPrice > 0 && !order.facturado && totalInvoiced < netPrice;
                 }
                 return true;

@@ -150,13 +150,13 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
       return <CheckCircle className="h-5 w-5 text-green-500 mx-auto" />;
     }
     
-    if (totalInvoiced > 0) {
-      const percentageInvoiced = Math.round((totalInvoiced / netPrice) * 100);
-      return (
-        <Badge variant="outline" className="border-green-500 text-green-600 font-bold">
-          {percentageInvoiced}%
-        </Badge>
-      );
+    if (totalInvoiced > 0 && netPrice > 0) {
+        const percentageInvoiced = Math.round((totalInvoiced / netPrice) * 100);
+        return (
+            <Badge variant="outline" className="border-green-500 text-green-600 font-bold">
+            {percentageInvoiced}%
+            </Badge>
+        );
     }
 
     return null; // No indicator if not invoiced at all
