@@ -11,6 +11,20 @@ import { predefinedReportTemplates } from '@/lib/predefined-templates';
 import { useAuth } from './auth-context';
 import { format } from 'date-fns';
 import { CloseWorkOrderDialog } from '@/components/orders/close-work-order-dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
 
 interface WorkOrdersContextType {
   workOrders: WorkOrder[];
@@ -40,6 +54,7 @@ interface WorkOrdersContextType {
   addOrder: (order: Omit<WorkOrder, 'id'>) => Promise<WorkOrder>;
   deleteOrder: (id: string) => Promise<void>;
   getNextOtNumber: (prefix: string) => string;
+  getLastOtNumber: (prefix: string) => string | null;
   addCollaborator: (collaborator: Omit<Collaborator, 'id'>) => Promise<Collaborator>;
   getCollaborator: (id: string) => Collaborator | undefined;
   updateCollaborator: (id: string, collaborator: Partial<Omit<Collaborator, 'id'>>) => Promise<void>;
@@ -88,6 +103,8 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const { user, loading: authLoading } = useAuth();
   const [orderToClose, setOrderToClose] = useState<WorkOrder | null>(null);
+  const { toast } = useToast();
+  const [orderToDelete, setOrderToDelete] = useState<WorkOrder | null>(null);
 
 
   const fetchData = useCallback(async () => {
@@ -244,6 +261,14 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     return `${prefix}-${maxNumber + 1}`;
   };
 
+  const getLastOtNumber = (prefix: string) => {
+    if (!prefix) return null;
+    const relevantOrders = workOrders.filter(o => o.ot_number.startsWith(prefix + '-'));
+    if (relevantOrders.length === 0) return null;
+    const maxNumber = Math.max(...relevantOrders.map(o => parseInt(o.ot_number.split('-')[1] || '0', 10)));
+    return `${prefix}-${maxNumber}`;
+  };
+
   const addOrder = async (order: Omit<WorkOrder, 'id'>): Promise<WorkOrder> => {
     const docRef = await addDoc(collection(db, "work-orders"), order);
     await fetchData(); 
@@ -262,8 +287,19 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const deleteOrder = async (id: string) => {
-    await deleteDoc(doc(db, 'work-orders', id));
-    await fetchData();
+    const orderToDelete = workOrders.find(o => o.id === id);
+    if (!orderToDelete) return;
+    setOrderToDelete(orderToDelete);
+  };
+  
+  const handleConfirmDelete = async (order: WorkOrder) => {
+      await deleteDoc(doc(db, 'work-orders', order.id));
+      toast({
+          title: "Orden Eliminada",
+          description: `La OT "${order.description}" ha sido eliminada.`,
+      });
+      await fetchData();
+      setOrderToDelete(null);
   };
 
   const promptToCloseOrder = (order: WorkOrder) => {
@@ -537,6 +573,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         deleteService,
         addOrder,
         getNextOtNumber,
+        getLastOtNumber,
         addCollaborator,
         getCollaborator,
         updateCollaborator,
@@ -564,6 +601,24 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         promptToCloseOrder,
     }}>
       {children}
+      {orderToDelete && (
+        <AlertDialog open={!!orderToDelete} onOpenChange={() => setOrderToDelete(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>¿Está absolutamente seguro?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Esta acción no se puede deshacer. Se eliminará permanentemente la orden de trabajo <span className="font-bold">{orderToDelete.ot_number}</span>.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setOrderToDelete(null)}>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => handleConfirmDelete(orderToDelete)} className="bg-destructive hover:bg-destructive/90">
+                        Sí, eliminar
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+      )}
       <CloseWorkOrderDialog 
         order={orderToClose}
         onClose={() => setOrderToClose(null)}

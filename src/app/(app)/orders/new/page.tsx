@@ -29,7 +29,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 export default function NewOrderPage() {
     const router = useRouter();
     const { toast } = useToast();
-    const { otCategories, services, addOrder, getNextOtNumber, collaborators, otStatuses, vehicles } = useWorkOrders();
+    const { otCategories, services, addOrder, getNextOtNumber, collaborators, otStatuses, vehicles, getLastOtNumber } = useWorkOrders();
     const { userProfile } = useAuth();
     
     const canCreate = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
@@ -161,6 +161,9 @@ export default function NewOrderPage() {
   const handleRemoveInvoice = (id: string) => {
     setInvoices(invoices.filter(inv => inv.id !== id));
   };
+
+  const lastOtNumber = getLastOtNumber(categoryPrefix);
+  const nextOtNumber = getNextOtNumber(categoryPrefix);
   
   if (!canCreate) {
     return (
@@ -207,6 +210,11 @@ export default function NewOrderPage() {
                                 ))}
                             </SelectContent>
                             </Select>
+                            {categoryPrefix && (
+                                <p className="text-sm text-muted-foreground mt-2">
+                                    Último número usado: <span className="font-bold">{lastOtNumber || 'N/A'}</span>. Se asignará el número: <span className="font-bold">{nextOtNumber}</span>.
+                                </p>
+                            )}
                         </div>
                         
                         <div className="grid grid-cols-2 gap-4">
