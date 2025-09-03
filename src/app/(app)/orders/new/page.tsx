@@ -34,6 +34,7 @@ export default function NewOrderPage() {
     
     const canCreate = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
 
+    const [otNumber, setOtNumber] = React.useState('');
     const [description, setDescription] = React.useState('');
     const [categoryPrefix, setCategoryPrefix] = React.useState('');
     const [client, setClient] = React.useState('');
@@ -61,6 +62,14 @@ export default function NewOrderPage() {
     const [newInvoiceDate, setNewInvoiceDate] = React.useState<Date | undefined>(new Date());
     const [newInvoiceAmount, setNewInvoiceAmount] = React.useState(0);
 
+    React.useEffect(() => {
+        if (categoryPrefix) {
+            setOtNumber(getNextOtNumber(categoryPrefix));
+        } else {
+            setOtNumber('');
+        }
+    }, [categoryPrefix, getNextOtNumber]);
+
 
     const technicians = collaborators
       .filter(c => c.role === 'Técnico' && c.status === 'Activo')
@@ -81,17 +90,17 @@ export default function NewOrderPage() {
 
 
   const handleCreateOrder = () => {
-    if (!description || !categoryPrefix) {
+    if (!description || !categoryPrefix || !otNumber) {
         toast({
             variant: "destructive",
             title: "Campos Requeridos",
-            description: "Por favor, completa el nombre y la categoría de la OT.",
+            description: "Por favor, completa el número de OT, nombre y la categoría de la OT.",
         });
         return;
     }
 
     const newOrder: Omit<WorkOrder, 'id'> = {
-        ot_number: getNextOtNumber(categoryPrefix),
+        ot_number: otNumber,
         description,
         client,
         rut,
@@ -161,9 +170,6 @@ export default function NewOrderPage() {
   const handleRemoveInvoice = (id: string) => {
     setInvoices(invoices.filter(inv => inv.id !== id));
   };
-
-  const lastOtNumber = getLastOtNumber(categoryPrefix);
-  const nextOtNumber = getNextOtNumber(categoryPrefix);
   
   if (!canCreate) {
     return (
@@ -198,23 +204,30 @@ export default function NewOrderPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                     {/* Left Column */}
                     <div className="space-y-4">
-                        <div>
-                            <Label htmlFor="ot-category">Categoría OT *</Label>
-                            <Select onValueChange={setCategoryPrefix} value={categoryPrefix}>
-                            <SelectTrigger id="ot-category">
-                                <SelectValue placeholder="Seleccionar categoría" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {otCategories.filter(cat => cat.status === 'Activa').map(cat => (
-                                    <SelectItem key={cat.prefix} value={cat.prefix}>{cat.name} ({cat.prefix})</SelectItem>
-                                ))}
-                            </SelectContent>
-                            </Select>
-                            {categoryPrefix && (
-                                <p className="text-sm text-muted-foreground mt-2">
-                                    Último número usado: <span className="font-bold">{lastOtNumber || 'N/A'}</span>. Se asignará el número: <span className="font-bold">{nextOtNumber}</span>.
-                                </p>
-                            )}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <Label htmlFor="ot-category">Categoría OT *</Label>
+                                <Select onValueChange={setCategoryPrefix} value={categoryPrefix}>
+                                <SelectTrigger id="ot-category">
+                                    <SelectValue placeholder="Seleccionar categoría" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {otCategories.filter(cat => cat.status === 'Activa').map(cat => (
+                                        <SelectItem key={cat.prefix} value={cat.prefix}>{cat.name} ({cat.prefix})</SelectItem>
+                                    ))}
+                                </SelectContent>
+                                </Select>
+                            </div>
+                             <div>
+                                <Label htmlFor="ot_number">Número de OT *</Label>
+                                <Input 
+                                    id="ot_number" 
+                                    placeholder="Seleccione categoría para generar" 
+                                    value={otNumber}
+                                    onChange={(e) => setOtNumber(e.target.value)}
+                                    disabled={!categoryPrefix}
+                                />
+                            </div>
                         </div>
                         
                         <div className="grid grid-cols-2 gap-4">

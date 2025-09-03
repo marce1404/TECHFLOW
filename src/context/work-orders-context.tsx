@@ -257,7 +257,15 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const getNextOtNumber = (prefix: string) => {
     const relevantOrders = workOrders.filter(o => o.ot_number.startsWith(prefix + '-'));
     if (relevantOrders.length === 0) return `${prefix}-1`;
-    const maxNumber = Math.max(...relevantOrders.map(o => parseInt(o.ot_number.split('-')[1] || '0', 10)));
+
+    const maxNumber = Math.max(
+      ...relevantOrders.map(o => {
+        const numberPart = o.ot_number.split('-')[1] || '0';
+        // Extrae solo la parte numérica, ignorando sufijos como 'A', 'B', etc.
+        const numericPart = parseInt(numberPart.replace(/\D/g, ''), 10);
+        return isNaN(numericPart) ? 0 : numericPart;
+      })
+    );
     return `${prefix}-${maxNumber + 1}`;
   };
 
@@ -265,8 +273,20 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     if (!prefix) return null;
     const relevantOrders = workOrders.filter(o => o.ot_number.startsWith(prefix + '-'));
     if (relevantOrders.length === 0) return null;
-    const maxNumber = Math.max(...relevantOrders.map(o => parseInt(o.ot_number.split('-')[1] || '0', 10)));
-    return `${prefix}-${maxNumber}`;
+
+    let maxNumber = 0;
+    let lastOtNumber = '';
+
+    relevantOrders.forEach(o => {
+        const numberPart = o.ot_number.split('-')[1] || '0';
+        const numericPart = parseInt(numberPart.replace(/\D/g, ''), 10);
+        if (!isNaN(numericPart) && numericPart >= maxNumber) {
+            maxNumber = numericPart;
+            lastOtNumber = o.ot_number;
+        }
+    });
+
+    return lastOtNumber || null;
   };
 
   const addOrder = async (order: Omit<WorkOrder, 'id'>): Promise<WorkOrder> => {
@@ -605,7 +625,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         <AlertDialog open={!!orderToDelete} onOpenChange={() => setOrderToDelete(null)}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>¿Está absolutamente seguro?</AlertDialogTitle>
+                    <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
                     <AlertDialogDescription>
                         Esta acción no se puede deshacer. Se eliminará permanentemente la orden de trabajo <span className="font-bold">{orderToDelete.ot_number}</span>.
                     </AlertDialogDescription>
