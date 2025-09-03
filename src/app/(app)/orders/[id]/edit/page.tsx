@@ -61,6 +61,40 @@ export default function EditOrderPage() {
   
   const watchNetPrice = methods.watch('netPrice');
   const watchedInvoices = methods.watch('invoices');
+
+  const technicians = collaborators
+    .filter(c => c.role === 'Técnico')
+    .map(c => ({ value: c.name, label: c.name }));
+
+  const supervisors = collaborators
+    .filter(c => ['Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado'].includes(c.role))
+    .map(c => ({ value: c.name, label: c.name }));
+
+  const vendors = collaborators
+    .filter(c => c.role === 'Comercial')
+    .map(c => ({ value: c.name, label: c.name }));
+  
+  const vehicleOptions = vehicles.map(v => ({
+    value: v.plate,
+    label: `${v.model} (${v.plate})`,
+  }));
+
+  const startDate = methods.watch('date') ? new Date(methods.watch('date').replace(/-/g, '/')) : undefined;
+  const endDate = methods.watch('endDate') ? new Date(methods.watch('endDate')!.replace(/-/g, '/')) : undefined;
+
+  const totalPrice = watchNetPrice ? Math.round(watchNetPrice * 1.19) : 0;
+  const ivaPrice = watchNetPrice ? Math.round(watchNetPrice * 0.19) : 0;
+  
+  const totalInvoicedNet = React.useMemo(() => {
+    return (watchedInvoices || []).reduce((sum, inv) => sum + (inv.amount || 0), 0);
+  }, [watchedInvoices]);
+  
+  const totalInvoicedGross = Math.round(totalInvoicedNet * 1.19);
+  const balance = (watchNetPrice || 0) - totalInvoicedNet;
+
+  const currentPrefix = (methods.watch('ot_number') || '').split('-')[0];
+  const assignedGantt = ganttCharts.find(g => g.assignedOT === methods.watch('ot_number'));
+  const isGanttAssigned = !!assignedGantt;
   
   React.useEffect(() => {
     if (!contextLoading) {
@@ -129,39 +163,9 @@ export default function EditOrderPage() {
     router.push('/orders');
   }
 
-  const technicians = collaborators
-    .filter(c => c.role === 'Técnico')
-    .map(c => ({ value: c.name, label: c.name }));
-
-  const supervisors = collaborators
-    .filter(c => ['Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado'].includes(c.role))
-    .map(c => ({ value: c.name, label: c.name }));
-
-  const vendors = collaborators
-    .filter(c => c.role === 'Comercial')
-    .map(c => ({ value: c.name, label: c.name }));
-  
-  const vehicleOptions = vehicles.map(v => ({
-    value: v.plate,
-    label: `${v.model} (${v.plate})`,
-  }));
-
   const formatCurrency = (num: number): string => {
     return isNaN(num) ? '' : new Intl.NumberFormat('es-CL').format(num);
   };
-
-  const startDate = methods.watch('date') ? new Date(methods.watch('date').replace(/-/g, '/')) : undefined;
-  const endDate = methods.watch('endDate') ? new Date(methods.watch('endDate')!.replace(/-/g, '/')) : undefined;
-
-  const totalPrice = watchNetPrice ? Math.round(watchNetPrice * 1.19) : 0;
-  const ivaPrice = watchNetPrice ? Math.round(watchNetPrice * 0.19) : 0;
-  
-  const totalInvoicedNet = React.useMemo(() => {
-    return (watchedInvoices || []).reduce((sum, inv) => sum + (inv.amount || 0), 0);
-  }, [watchedInvoices]);
-  
-  const totalInvoicedGross = Math.round(totalInvoicedNet * 1.19);
-  const balance = (watchNetPrice || 0) - totalInvoicedNet;
 
   const handleAddInvoice = () => {
     if (!newInvoiceNumber || !newInvoiceDate || newInvoiceAmount <= 0) {
@@ -179,11 +183,6 @@ export default function EditOrderPage() {
     setNewInvoiceDate(new Date());
     setNewInvoiceAmount(0);
   };
-
-
-  const currentPrefix = (methods.watch('ot_number') || '').split('-')[0];
-  const assignedGantt = ganttCharts.find(g => g.assignedOT === methods.watch('ot_number'));
-  const isGanttAssigned = !!assignedGantt;
 
   return (
     <FormProvider {...methods}>
