@@ -210,7 +210,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                                 <DropdownMenuContent>
                                     {otStatuses.map(status => (
                                         <DropdownMenuItem key={status.id} onSelect={() => handleStatusChange(order, status.name as WorkOrder['status'])}>
-                                            {status.name}
+                                            {status.name.toUpperCase()}
                                         </DropdownMenuItem>
                                     ))}
                                 </DropdownMenuContent>
