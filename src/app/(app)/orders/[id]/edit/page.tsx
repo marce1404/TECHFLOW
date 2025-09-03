@@ -172,7 +172,7 @@ export default function EditOrderPage() {
   };
 
 
-  const currentPrefix = methods.watch('ot_number').split('-')[0];
+  const currentPrefix = (methods.watch('ot_number') || '').split('-')[0];
   const assignedGantt = ganttCharts.find(g => g.assignedOT === methods.watch('ot_number'));
   const isGanttAssigned = !!assignedGantt;
 
