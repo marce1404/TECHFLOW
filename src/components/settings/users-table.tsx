@@ -56,8 +56,7 @@ export default function UsersTable({ users, loading, onDataChange }: UsersTableP
     const [invitationDialogOpen, setInvitationDialogOpen] = React.useState(false);
     const [currentPage, setCurrentPage] = React.useState(1);
     const itemsPerPage = 15;
-
-
+    
     const handleEditClick = (user: AppUser) => {
         setSelectedUser(user);
         setEditDialogOpen(true);
@@ -264,3 +263,4 @@ export default function UsersTable({ users, loading, onDataChange }: UsersTableP
         </>
     );
 }
+
