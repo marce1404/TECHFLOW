@@ -40,6 +40,9 @@ export default function EditVehiclePage() {
     setVehicle(foundVehicle);
   }, [vehicleId, vehicles]);
 
+  if (!vehicle) {
+    return <div>Cargando vehículo...</div>;
+  }
 
   const handleSave = (data: VehicleFormValues) => {
     if (!vehicle || !canEdit) return;
@@ -61,10 +64,6 @@ export default function EditVehiclePage() {
         duration: 2000,
     });
     router.push('/vehicles');
-  }
-
-  if (!vehicle) {
-    return <div>Cargando vehículo...</div>;
   }
 
   return (

@@ -13,9 +13,13 @@ export default function EditReportTemplatePage() {
   const params = useParams();
   const { toast } = useToast();
   const { reportTemplates, updateReportTemplate } = useWorkOrders();
-  
   const templateId = params.id as string;
+  
   const template = React.useMemo(() => reportTemplates.find(t => t.id === templateId), [templateId, reportTemplates]);
+
+  if (!template) {
+    return <div>Cargando plantilla...</div>;
+  }
 
   const handleSave = async (data: Omit<ReportTemplate, 'id'>) => {
     if (!template) return;
@@ -27,10 +31,6 @@ export default function EditReportTemplatePage() {
     });
     router.push('/settings/report-templates');
   };
-
-  if (!template) {
-    return <div>Cargando plantilla...</div>;
-  }
 
   return (
     <div className="flex flex-col gap-8">

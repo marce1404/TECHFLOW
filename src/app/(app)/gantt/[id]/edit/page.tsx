@@ -28,13 +28,11 @@ export default function EditGanttPage() {
   const { getGanttChart, updateGanttChart, deleteGanttChart } = useWorkOrders();
   const { toast } = useToast();
   const { userProfile } = useAuth();
+  const ganttId = params.id as string;
   
   const canEdit = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
-
-  const ganttId = params.id as string;
-  const initialGanttChart = React.useMemo(() => getGanttChart(ganttId), [ganttId, getGanttChart]);
-  
   const [processedTasks, setProcessedTasks] = React.useState<GanttTask[]>([]);
+  const initialGanttChart = React.useMemo(() => getGanttChart(ganttId), [ganttId, getGanttChart]);
 
   React.useEffect(() => {
     if (initialGanttChart && initialGanttChart.tasks) {
@@ -84,6 +82,10 @@ export default function EditGanttPage() {
     }
   }, [initialGanttChart]);
 
+  if (!initialGanttChart) {
+    return <div>Cargando Carta Gantt...</div>;
+  }
+
   const handleSave = (ganttChartData: Omit<GanttChart, 'id' | 'tasks'>, finalTasks: GanttTask[]) => {
     if (!canEdit) return;
     const rawTasks = finalTasks.filter(t => !t.isPhase);
@@ -106,10 +108,6 @@ export default function EditGanttPage() {
         duration: 2000,
     });
     router.push('/gantt');
-  }
-
-  if (!initialGanttChart) {
-    return <div>Cargando Carta Gantt...</div>;
   }
 
   return (
