@@ -70,7 +70,7 @@ export default function EditOrderPage() {
       methods.reset(finalOrderData);
     }
   }, [initialOrder, methods]);
-
+  
   if (!initialOrder) {
       return <div>Cargando orden de trabajo...</div>
   }
