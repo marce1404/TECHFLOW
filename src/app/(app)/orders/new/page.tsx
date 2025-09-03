@@ -355,7 +355,7 @@ export default function NewOrderPage() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         {otStatuses.map(s => (
-                                            <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
+                                            <SelectItem key={s.id} value={s.name}>{s.name.toUpperCase()}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
@@ -406,7 +406,7 @@ export default function NewOrderPage() {
                                 type="text" 
                                 value={formatCurrency(totalPrice)}
                                 readOnly 
-                                className="bg-muted"
+                                className="bg_muted"
                                 />
                             </div>
                         </div>

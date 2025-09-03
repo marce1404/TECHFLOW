@@ -371,7 +371,7 @@ export default function EditOrderPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {otStatuses.map(status => (
-                                        <SelectItem key={status.id} value={status.name}>{status.name}</SelectItem>
+                                        <SelectItem key={status.id} value={status.name}>{status.name.toUpperCase()}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -425,7 +425,7 @@ export default function EditOrderPage() {
                               type="text" 
                               value={formatCurrency(totalPrice)}
                               readOnly 
-                              className="bg-muted"
+                              className="bg_muted"
                             />
                         </div>
                     </div>

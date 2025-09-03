@@ -88,7 +88,7 @@ export function OrderCard({ order, progress }: OrderCardProps) {
                 <p className="font-semibold text-foreground truncate">{order.service}</p>
                 <Badge 
                     variant={getStatusVariant(order.status)} 
-                    className={cn(getStatusBadgeClass(order.status), 'capitalize text-[10px] px-2 py-0.5')}
+                    className={cn(getStatusBadgeClass(order.status), 'uppercase text-[10px] px-2 py-0.5')}
                 >
                     {order.status}
                 </Badge>

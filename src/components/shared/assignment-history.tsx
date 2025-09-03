@@ -26,8 +26,8 @@ interface AssignmentHistoryProps {
 }
 
 export default function AssignmentHistory({ title, description, filterKey, filterValue }: AssignmentHistoryProps) {
-  const { activeWorkOrders, historicalWorkOrders } = useWorkOrders();
-  const allWorkOrders = [...activeWorkOrders, ...historicalWorkOrders];
+  const { workOrders } = useWorkOrders();
+  const allWorkOrders = workOrders;
 
   const [date, setDate] = React.useState<DateRange | undefined>();
 
@@ -162,7 +162,7 @@ export default function AssignmentHistory({ title, description, filterKey, filte
                                 <TableCell>
                                     <Badge 
                                         variant={getStatusVariant(order.status)}
-                                        className={getStatusBadgeClass(order.status)}
+                                        className={cn(getStatusBadgeClass(order.status), 'uppercase')}
                                     >
                                         {order.status}
                                     </Badge>

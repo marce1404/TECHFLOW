@@ -195,7 +195,7 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                                 <DropdownMenuTrigger asChild disabled={!canChangeStatus}>
                                     <Badge 
                                         variant={getStatusVariant(order.status)} 
-                                        className={cn(canChangeStatus && "cursor-pointer", getStatusBadgeClass(order.status))}
+                                        className={cn(canChangeStatus && "cursor-pointer", getStatusBadgeClass(order.status), "uppercase")}
                                     >
                                         {order.status}
                                     </Badge>

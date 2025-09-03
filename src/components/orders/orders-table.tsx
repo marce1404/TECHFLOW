@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -201,7 +202,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                                 <DropdownMenuTrigger asChild disabled={!canChangeStatus}>
                                      <Badge 
                                         variant={getStatusVariant(order.status)} 
-                                        className={cn(canChangeStatus && "cursor-pointer", getStatusBadgeClass(order.status))}
+                                        className={cn(canChangeStatus && "cursor-pointer", getStatusBadgeClass(order.status), "uppercase")}
                                     >
                                         {order.status}
                                     </Badge>
