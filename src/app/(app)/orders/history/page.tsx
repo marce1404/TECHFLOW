@@ -131,13 +131,20 @@ export default function HistoryPage() {
     
     const { totalPorFacturar, totalFacturado } = React.useMemo(() => {
         return filteredOrders.reduce((acc, order) => {
+            const netPrice = order.netPrice || 0;
             const invoicedAmount = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
-            const pendingAmount = order.netPrice - invoicedAmount;
+            const isFullyInvoiced = order.facturado === true || (netPrice > 0 && invoicedAmount >= netPrice);
             
-            acc.totalFacturado += invoicedAmount;
-            if (pendingAmount > 0) {
-                acc.totalPorFacturar += pendingAmount;
+            if (isFullyInvoiced) {
+                acc.totalFacturado += netPrice;
+            } else {
+                acc.totalFacturado += invoicedAmount;
+                const pendingAmount = netPrice - invoicedAmount;
+                if (pendingAmount > 0) {
+                    acc.totalPorFacturar += pendingAmount;
+                }
             }
+
             return acc;
         }, { totalPorFacturar: 0, totalFacturado: 0 });
     }, [filteredOrders]);
