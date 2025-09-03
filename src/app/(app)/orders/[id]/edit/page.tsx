@@ -40,11 +40,12 @@ import {
 export default function EditOrderPage() {
   const params = useParams();
   const router = useRouter();
-  const { getOrder, updateOrder, otCategories, services, collaborators, ganttCharts, otStatuses, vehicles, promptToCloseOrder, deleteOrder } = useWorkOrders();
+  const { getOrder, updateOrder, otCategories, services, collaborators, ganttCharts, otStatuses, vehicles, promptToCloseOrder, deleteOrder, loading: contextLoading } = useWorkOrders();
   const { userProfile } = useAuth();
   const { toast } = useToast();
   
   const orderId = params.id as string;
+  const [initialOrder, setInitialOrder] = React.useState<WorkOrder | null | undefined>(undefined);
   
   const methods = useForm<WorkOrder>();
   const { fields: invoiceFields, append: appendInvoice, remove: removeInvoice } = useFieldArray({
@@ -56,16 +57,20 @@ export default function EditOrderPage() {
   const [newInvoiceDate, setNewInvoiceDate] = React.useState<Date | undefined>(new Date());
   const [newInvoiceAmount, setNewInvoiceAmount] = React.useState(0);
   
-  const initialOrder = React.useMemo(() => getOrder(orderId), [orderId, getOrder]);
-  
   const canEdit = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
   
   const watchNetPrice = methods.watch('netPrice');
   const watchedInvoices = methods.watch('invoices');
+  
+  React.useEffect(() => {
+    if (!contextLoading) {
+      const foundOrder = getOrder(orderId);
+      setInitialOrder(foundOrder);
+    }
+  }, [orderId, contextLoading, getOrder]);
 
   React.useEffect(() => {
     if (initialOrder) {
-      // Data migration logic
       let finalOrderData = { ...initialOrder };
       if (!initialOrder.invoices && initialOrder.invoiceNumber) {
         finalOrderData.invoices = [{
@@ -79,8 +84,12 @@ export default function EditOrderPage() {
     }
   }, [initialOrder, methods]);
   
-  if (!initialOrder) {
+  if (initialOrder === undefined || contextLoading) {
       return <div>Cargando orden de trabajo...</div>
+  }
+
+  if (initialOrder === null) {
+      return <div>Orden de trabajo no encontrada.</div>
   }
   
   const handleStatusChange = (value: WorkOrder['status']) => {
