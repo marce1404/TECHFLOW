@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -25,7 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAuth } from '@/context/auth-context';
 
-function EditCollaboratorComponent() {
+export default function EditCollaboratorPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
@@ -44,7 +43,7 @@ function EditCollaboratorComponent() {
     }
   }, [collaboratorId, loading, getCollaborator]);
 
-  if (collaborator === undefined) {
+  if (loading || collaborator === undefined) {
     return <div>Cargando colaborador...</div>;
   }
   
@@ -131,8 +130,4 @@ function EditCollaboratorComponent() {
       />
     </div>
   );
-}
-
-export default function EditCollaboratorPage() {
-    return <EditCollaboratorComponent />;
 }
