@@ -69,17 +69,48 @@ const calculateEndDate = (startDate: Date, duration: number, workOnSaturdays: bo
     return currentDate;
 };
 
-
-function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
+export default function PrintGanttPage() {
+    const params = useParams();
+    const ganttId = params?.id as string;
+    const [ganttChart, setGanttChart] = React.useState<GanttChart | null>(null);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState<string | null>(null);
     
     React.useEffect(() => {
-        setTimeout(() => {
-            window.print();
-        }, 500);
-    }, []);
+        if (!ganttId) {
+            setError('ID de Gantt no válido.');
+            setLoading(false);
+            return;
+        }
+        
+        async function fetchGantt() {
+            try {
+                const chart = await getGanttForPrint(ganttId);
+                if (chart) {
+                    setGanttChart(chart);
+                } else {
+                    setError('No se pudo encontrar la Carta Gantt.');
+                }
+            } catch (err) {
+                console.error("Error fetching Gantt data for print:", err);
+                setError('Ocurrió un error al cargar los datos.');
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchGantt();
+    }, [ganttId]);
+
+    React.useEffect(() => {
+        if (!loading && ganttChart) {
+            setTimeout(() => {
+                window.print();
+            }, 500);
+        }
+    }, [loading, ganttChart]);
 
     const ganttChartData = React.useMemo(() => {
-        if (!ganttChart.tasks || ganttChart.tasks.length === 0) {
+        if (!ganttChart || !ganttChart.tasks || ganttChart.tasks.length === 0) {
             return { days: [], months: [], earliestDate: null, latestDate: null };
         }
 
@@ -108,6 +139,18 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
 
         return { days, months: Object.entries(months), earliestDate, latestDate };
     }, [ganttChart]);
+
+    if (loading) {
+        return <div className="p-8 text-center">Cargando para imprimir...</div>;
+    }
+
+    if (error) {
+        return <div className="p-8 text-center text-red-500">{error}</div>;
+    }
+
+    if (!ganttChart) {
+        return <div className="p-8 text-center">No hay datos de Carta Gantt.</div>;
+    }
 
     const { days, months, earliestDate } = ganttChartData;
     const dayWidth = 30; // 30px
@@ -193,51 +236,4 @@ function PrintGanttPageContent({ ganttChart }: { ganttChart: GanttChart }) {
             )}
         </div>
     );
-}
-
-export default function PrintGanttPage() {
-    const params = useParams();
-    const ganttId = params?.id as string;
-    const [ganttChart, setGanttChart] = React.useState<GanttChart | null>(null);
-    const [loading, setLoading] = React.useState(true);
-    const [error, setError] = React.useState<string | null>(null);
-    
-    React.useEffect(() => {
-        if (!ganttId) {
-            setError('ID de Gantt no válido.');
-            setLoading(false);
-            return;
-        }
-        
-        async function fetchGantt() {
-            try {
-                const chart = await getGanttForPrint(ganttId);
-                if (chart) {
-                    setGanttChart(chart);
-                } else {
-                    setError('No se pudo encontrar la Carta Gantt.');
-                }
-            } catch (err) {
-                console.error("Error fetching Gantt data for print:", err);
-                setError('Ocurrió un error al cargar los datos.');
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetchGantt();
-    }, [ganttId]);
-
-    if (loading) {
-        return <div className="p-8 text-center">Cargando para imprimir...</div>;
-    }
-
-    if (error) {
-        return <div className="p-8 text-center text-red-500">{error}</div>;
-    }
-
-    if (!ganttChart) {
-        return <div className="p-8 text-center">No hay datos de Carta Gantt.</div>;
-    }
-
-    return <PrintGanttPageContent ganttChart={ganttChart} />;
 }

@@ -1,5 +1,4 @@
 
-
 'use client';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -52,13 +51,59 @@ async function getReportForPrint(reportId: string): Promise<{ report: SubmittedR
   }
 }
 
-function PrintReportContent({ report, template, companyInfo }: { report: SubmittedReport; template: ReportTemplate; companyInfo: CompanyInfo | null }) {
-    React.useEffect(() => {
-        setTimeout(() => {
-            window.print();
-        }, 500);
-    }, []);
+export default function PrintReportPage() {
+    const params = useParams();
+    const reportId = params ? params.id as string : '';
+    const [data, setData] = React.useState<{ report: SubmittedReport; template: ReportTemplate; companyInfo: CompanyInfo | null } | null>(null);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState<string | null>(null);
     
+    React.useEffect(() => {
+        if (!reportId) {
+            setError('ID de informe no válido.');
+            setLoading(false);
+            return;
+        };
+
+        async function fetchReport() {
+            try {
+                const result = await getReportForPrint(reportId);
+                if (result) {
+                    setData(result);
+                } else {
+                    setError('No se pudo encontrar el informe o su plantilla asociada.');
+                }
+            } catch (err) {
+                console.error(err);
+                setError('Ocurrió un error al cargar los datos del informe.');
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchReport();
+    }, [reportId]);
+    
+    React.useEffect(() => {
+        if (!loading && data) {
+             setTimeout(() => {
+                window.print();
+            }, 500);
+        }
+    }, [loading, data]);
+
+    if (loading) {
+        return <div className="p-8 text-center">Cargando informe para imprimir...</div>;
+    }
+
+    if (error) {
+        return <div className="p-8 text-center text-red-500">{error}</div>;
+    }
+
+    if (!data) {
+        return <div className="p-8 text-center">No hay datos para mostrar.</div>;
+    }
+
+    const { report, template, companyInfo } = data;
     const submittedDate = report.submittedAt?.toDate ? format(report.submittedAt.toDate(), "dd 'de' MMMM, yyyy", { locale: es }) : 'Fecha no disponible';
     const shortFolio = report.id.substring(report.id.length - 6).toUpperCase();
 
@@ -180,53 +225,3 @@ function PrintReportContent({ report, template, companyInfo }: { report: Submitt
         </div>
     );
 }
-
-
-export default function PrintReportPage() {
-    const params = useParams();
-    const reportId = params ? params.id as string : '';
-    const [data, setData] = React.useState<{ report: SubmittedReport; template: ReportTemplate; companyInfo: CompanyInfo | null } | null>(null);
-    const [loading, setLoading] = React.useState(true);
-    const [error, setError] = React.useState<string | null>(null);
-    
-    React.useEffect(() => {
-        if (!reportId) {
-            setError('ID de informe no válido.');
-            setLoading(false);
-            return;
-        };
-
-        async function fetchReport() {
-            try {
-                const result = await getReportForPrint(reportId);
-                if (result) {
-                    setData(result);
-                } else {
-                    setError('No se pudo encontrar el informe o su plantilla asociada.');
-                }
-            } catch (err) {
-                console.error(err);
-                setError('Ocurrió un error al cargar los datos del informe.');
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetchReport();
-    }, [reportId]);
-
-    if (loading) {
-        return <div className="p-8 text-center">Cargando informe para imprimir...</div>;
-    }
-
-    if (error) {
-        return <div className="p-8 text-center text-red-500">{error}</div>;
-    }
-
-    if (!data) {
-        return <div className="p-8 text-center">No hay datos para mostrar.</div>;
-    }
-
-    return <PrintReportContent report={data.report} template={data.template} companyInfo={data.companyInfo} />;
-}
-
-    
