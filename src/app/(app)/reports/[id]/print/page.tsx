@@ -1,6 +1,7 @@
 
+
 'use client';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { SubmittedReport, ReportTemplate, CompanyInfo } from '@/lib/types';
 import * as React from 'react';
@@ -22,7 +23,12 @@ async function getReportForPrint(reportId: string): Promise<{ report: SubmittedR
       return null;
     }
 
-    const report = { id: reportSnap.id, ...reportSnap.data() } as SubmittedReport;
+    const reportData = reportSnap.data();
+    const report = { 
+        id: reportSnap.id, 
+        ...reportData,
+        submittedAt: reportData.submittedAt instanceof Timestamp ? reportData.submittedAt : new Timestamp(reportData.submittedAt.seconds, reportData.submittedAt.nanoseconds)
+    } as SubmittedReport;
 
     if (!report.templateId) {
         console.error("Report is missing templateId");

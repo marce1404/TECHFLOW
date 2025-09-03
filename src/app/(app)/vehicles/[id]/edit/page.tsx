@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -40,10 +41,6 @@ export default function EditVehiclePage() {
     setVehicle(foundVehicle);
   }, [vehicleId, vehicles]);
 
-  if (!vehicle) {
-    return <div>Cargando vehículo...</div>;
-  }
-
   const handleSave = (data: VehicleFormValues) => {
     if (!vehicle || !canEdit) return;
     updateVehicle(vehicle.id, { id: vehicle.id, ...data });
@@ -64,6 +61,10 @@ export default function EditVehiclePage() {
         duration: 2000,
     });
     router.push('/vehicles');
+  }
+
+  if (!vehicle) {
+    return <div>Cargando vehículo...</div>;
   }
 
   return (

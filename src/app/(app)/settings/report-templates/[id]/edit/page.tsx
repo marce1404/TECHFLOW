@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -17,10 +18,6 @@ export default function EditReportTemplatePage() {
   
   const template = React.useMemo(() => reportTemplates.find(t => t.id === templateId), [templateId, reportTemplates]);
 
-  if (!template) {
-    return <div>Cargando plantilla...</div>;
-  }
-
   const handleSave = async (data: Omit<ReportTemplate, 'id'>) => {
     if (!template) return;
     await updateReportTemplate(template.id, data);
@@ -31,6 +28,10 @@ export default function EditReportTemplatePage() {
     });
     router.push('/settings/report-templates');
   };
+  
+  if (!template) {
+    return <div>Cargando plantilla...</div>;
+  }
 
   return (
     <div className="flex flex-col gap-8">

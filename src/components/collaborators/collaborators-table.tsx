@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -44,7 +45,7 @@ interface CollaboratorsTableProps {
 export default function CollaboratorsTable({ collaborators, requestSort, sortConfig }: CollaboratorsTableProps) {
     const { updateCollaborator, deleteCollaborator } = useWorkOrders();
     const { userProfile } = useAuth();
-
+    
     const canEdit = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
 
     const handleToggleStatus = (collaborator: Collaborator, status: Collaborator['status']) => {

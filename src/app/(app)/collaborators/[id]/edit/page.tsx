@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAuth } from '@/context/auth-context';
 
-function EditCollaboratorComponent() {
+export default function EditCollaboratorPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
@@ -43,7 +43,6 @@ function EditCollaboratorComponent() {
       setCollaborator(foundCollaborator);
     }
   }, [collaboratorId, loading, getCollaborator]);
-
 
   const handleSave = (data: CollaboratorFormValues) => {
     if (!collaborator || !canEdit) return;
@@ -70,8 +69,8 @@ function EditCollaboratorComponent() {
   const handlePrint = () => {
     window.open(`/collaborators/${collaboratorId}/print`, '_blank');
   };
-  
-  if (collaborator === undefined) {
+
+  if (loading || collaborator === undefined) {
     return <div>Cargando colaborador...</div>;
   }
   
@@ -132,8 +131,4 @@ function EditCollaboratorComponent() {
       />
     </div>
   );
-}
-
-export default function EditCollaboratorPage() {
-    return <EditCollaboratorComponent />;
 }

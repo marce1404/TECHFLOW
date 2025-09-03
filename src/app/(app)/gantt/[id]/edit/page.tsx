@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import GanttForm from '@/components/gantt/gantt-form';
@@ -82,10 +83,6 @@ export default function EditGanttPage() {
     }
   }, [initialGanttChart]);
 
-  if (!initialGanttChart) {
-    return <div>Cargando Carta Gantt...</div>;
-  }
-
   const handleSave = (ganttChartData: Omit<GanttChart, 'id' | 'tasks'>, finalTasks: GanttTask[]) => {
     if (!canEdit) return;
     const rawTasks = finalTasks.filter(t => !t.isPhase);
@@ -109,6 +106,11 @@ export default function EditGanttPage() {
     });
     router.push('/gantt');
   }
+  
+  if (!initialGanttChart) {
+    return <div>Cargando Carta Gantt...</div>;
+  }
+
 
   return (
     <div className="flex flex-col gap-8">

@@ -1,4 +1,5 @@
 
+
 'use client';
 import type { GanttChart } from '@/lib/types';
 import { addDays, differenceInCalendarDays, eachDayOfInterval, format } from 'date-fns';
@@ -208,7 +209,6 @@ export default function PrintGanttPage() {
                         const width = durationDays * dayWidth;
                         
                         const progress = task.progress || 0;
-                        const progressWidth = (width * progress) / 100;
 
                         return (
                              <React.Fragment key={task.id}>
