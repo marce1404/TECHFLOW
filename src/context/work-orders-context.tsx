@@ -255,13 +255,14 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   }, [user, authLoading, fetchData]);
 
   const getNextOtNumber = (prefix: string) => {
-    const relevantOrders = workOrders.filter(o => o.ot_number.startsWith(prefix + '-'));
+    if (!prefix) return '';
+    const relevantOrders = workOrders.filter(o => o.ot_number.startsWith(prefix));
+    
     if (relevantOrders.length === 0) return `${prefix}-1`;
 
     const maxNumber = Math.max(
       ...relevantOrders.map(o => {
-        const numberPart = o.ot_number.split('-')[1] || '0';
-        // Extrae solo la parte numérica, ignorando sufijos como 'A', 'B', etc.
+        const numberPart = o.ot_number.replace(prefix, '').replace(/-/g, '');
         const numericPart = parseInt(numberPart.replace(/\D/g, ''), 10);
         return isNaN(numericPart) ? 0 : numericPart;
       })
@@ -271,14 +272,14 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
   const getLastOtNumber = (prefix: string) => {
     if (!prefix) return null;
-    const relevantOrders = workOrders.filter(o => o.ot_number.startsWith(prefix + '-'));
+    const relevantOrders = workOrders.filter(o => o.ot_number.startsWith(prefix));
     if (relevantOrders.length === 0) return null;
 
     let maxNumber = 0;
     let lastOtNumber = '';
 
     relevantOrders.forEach(o => {
-        const numberPart = o.ot_number.split('-')[1] || '0';
+        const numberPart = o.ot_number.replace(prefix, '').replace(/-/g, '');
         const numericPart = parseInt(numberPart.replace(/\D/g, ''), 10);
         if (!isNaN(numericPart) && numericPart >= maxNumber) {
             maxNumber = numericPart;
