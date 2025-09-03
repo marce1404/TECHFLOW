@@ -12,8 +12,7 @@ import { predefinedReportTemplates } from '@/lib/predefined-templates';
 import { useAuth } from './auth-context';
 import { format } from 'date-fns';
 import { CloseWorkOrderDialog } from '@/components/orders/close-work-order-dialog';
-import { normalizeString } from '@/lib/utils';
-
+import { DeleteOrderDialog } from '@/components/orders/delete-order-dialog';
 
 interface WorkOrdersContextType {
   workOrders: WorkOrder[];
@@ -68,6 +67,7 @@ interface WorkOrdersContextType {
   updateCompanyInfo: (info: CompanyInfo) => Promise<void>;
   updateSmtpConfig: (config: SmtpConfig) => Promise<void>;
   promptToCloseOrder: (order: WorkOrder) => void;
+  promptToDeleteOrder: (order: WorkOrder) => void;
 }
 
 const WorkOrdersContext = createContext<WorkOrdersContextType | undefined>(undefined);
@@ -91,6 +91,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const { user, loading: authLoading } = useAuth();
   const [orderToClose, setOrderToClose] = useState<WorkOrder | null>(null);
+  const [orderToDelete, setOrderToDelete] = useState<WorkOrder | null>(null);
 
 
   const fetchData = useCallback(async () => {
@@ -271,6 +272,10 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
   const promptToCloseOrder = (order: WorkOrder) => {
     setOrderToClose(order);
+  };
+  
+  const promptToDeleteOrder = (order: WorkOrder) => {
+    setOrderToDelete(order);
   };
 
   const handleConfirmClose = async (order: WorkOrder, closingDate: Date) => {
@@ -565,12 +570,18 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         updateCompanyInfo,
         updateSmtpConfig,
         promptToCloseOrder,
+        promptToDeleteOrder,
     }}>
       {children}
       <CloseWorkOrderDialog 
         order={orderToClose}
         onClose={() => setOrderToClose(null)}
         onConfirm={handleConfirmClose}
+      />
+      <DeleteOrderDialog
+        order={orderToDelete}
+        onClose={() => setOrderToDelete(null)}
+        onConfirmDelete={deleteOrder}
       />
     </WorkOrdersContext.Provider>
   );

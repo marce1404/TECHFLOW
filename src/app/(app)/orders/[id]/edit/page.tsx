@@ -21,17 +21,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useParams, useRouter } from "next/navigation";
 import type { WorkOrder, Invoice } from "@/lib/types";
 import { useWorkOrders } from "@/context/work-orders-context";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Slider } from "@/components/ui/slider";
 import { useAuth } from "@/context/auth-context";
 import { useForm, FormProvider, useFieldArray } from "react-hook-form";
@@ -41,7 +30,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 export default function EditOrderPage() {
   const params = useParams();
   const router = useRouter();
-  const { getOrder, updateOrder, otCategories, services, collaborators, ganttCharts, otStatuses, vehicles, promptToCloseOrder, deleteOrder } = useWorkOrders();
+  const { getOrder, updateOrder, otCategories, services, collaborators, ganttCharts, otStatuses, vehicles, promptToCloseOrder, promptToDeleteOrder } = useWorkOrders();
   const { userProfile } = useAuth();
   const { toast } = useToast();
   
@@ -112,15 +101,9 @@ export default function EditOrderPage() {
     }
   };
   
-  const handleDeleteOrder = async () => {
+  const handleDeleteTrigger = () => {
     if (!canEdit) return;
-    await deleteOrder(initialOrder.id);
-    toast({
-        title: "Orden Eliminada",
-        description: `La OT "${initialOrder.description}" ha sido eliminada.`,
-        duration: 2000,
-    });
-    router.push('/orders');
+    promptToDeleteOrder(initialOrder);
   }
 
   const technicians = collaborators
@@ -256,7 +239,7 @@ export default function EditOrderPage() {
                         </SelectTrigger>
                         <SelectContent>
                             {services.map(service => (
-                                <SelectItem key={service.id} value={service.name.toLowerCase()}>{service.name}</SelectItem>
+                                <SelectItem key={service.id} value={service.name.toLowerCase()}>{service.name.toUpperCase()}</SelectItem>
                             ))}
                         </SelectContent>
                         </Select>
@@ -633,28 +616,10 @@ export default function EditOrderPage() {
 
       {canEdit && (
           <div className="flex justify-between items-center mt-8">
-              <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                      <Button variant="destructive">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Eliminar OT
-                      </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                      <AlertDialogHeader>
-                          <AlertDialogTitle>¿Está seguro de que desea eliminar esta Orden de Trabajo?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                              Esta acción es permanente y no se puede deshacer. Se eliminará la OT "{initialOrder.ot_number} - {initialOrder.description}".
-                          </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleDeleteOrder} className="bg-destructive hover:bg-destructive/90">
-                              Sí, eliminar
-                          </AlertDialogAction>
-                      </AlertDialogFooter>
-                  </AlertDialogContent>
-              </AlertDialog>
+                <Button variant="destructive" onClick={handleDeleteTrigger} type="button">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Eliminar OT
+                </Button>
               <div className="flex gap-2">
                   <Button variant="outline" asChild><Link href="/orders">Cancelar</Link></Button>
                   <Button type="submit">Guardar Cambios</Button>
