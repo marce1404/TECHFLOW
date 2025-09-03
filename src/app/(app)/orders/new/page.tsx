@@ -62,6 +62,8 @@ export default function NewOrderPage() {
     const [newInvoiceDate, setNewInvoiceDate] = React.useState<Date | undefined>(new Date());
     const [newInvoiceAmount, setNewInvoiceAmount] = React.useState(0);
 
+    const lastUsedOt = getLastOtNumber(categoryPrefix);
+
     React.useEffect(() => {
         if (categoryPrefix) {
             setOtNumber(getNextOtNumber(categoryPrefix));
@@ -225,8 +227,12 @@ export default function NewOrderPage() {
                                     placeholder="Seleccione categoría para generar" 
                                     value={otNumber}
                                     onChange={(e) => setOtNumber(e.target.value)}
-                                    disabled={!categoryPrefix}
                                 />
+                                {lastUsedOt && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        Último usado: <span className="font-semibold">{lastUsedOt}</span>
+                                    </p>
+                                )}
                             </div>
                         </div>
                         

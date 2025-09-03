@@ -19,7 +19,7 @@ export const activeWorkOrders: WorkOrder[] = [
   { id: 'wo_6', ot_number: 'OT-1502', date: '2025-01-22', endDate: '', description: 'ANGLO AMERICAN SUMINISTRO DE CANDADOS PROTEC 2 CON C', notes: 'OC 4503589975', client: 'ANGLO AMERICAN', service: 'ABLOY', assigned: ['PEDRO'], comercial: 'Claudina Manqui', status: 'Por Iniciar', priority: 'Baja', facturado: false, technicians: [], vehicles: [], netPrice: 1063000 },
   { id: 'wo_7', ot_number: 'OT-1503', date: '2025-01-22', endDate: '', description: 'ANGLO AMERICAN SUMINISTRO LLAVES TA77ZZ PROTEC2', notes: 'OC 4500585945', client: 'ANGLO AMERICAN', service: 'ABLOY', assigned: ['PEDRO'], comercial: 'Claudina Manqui', status: 'Por Iniciar', priority: 'Baja', facturado: false, technicians: [], vehicles: [], netPrice: 999500 },
   { id: 'wo_8', ot_number: 'OT-1498', date: '2025-01-13', endDate: '', description: 'ZENIT - MNTTO DETECTORES Y SPRINLERS N°2 - MALL BUENAVENTURA', notes: '', client: 'T ARQUITECTURA INGENIERIA Y CONSTRUCCION', service: 'INCENDIO', assigned: ['FRANCISCO'], comercial: 'Angel Contreras', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 1624678 },
-  { id: 'wo_9', ot_number: 'OT-1507', date: '2025-01-31', endDate: '', description: 'IMPORPER MAESTRANZA-MONITOREO-SAN EUGENIO 12351 - SAN', notes: 'OC 100592', client: 'INVERSIONES COLLINS Y COLLINS', service: 'ALARMA', assigned: ['ELIO'], comercial: 'Angel Contreras', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 1030769 },
+  { id: 'wo_9', ot_number: 'OT-1507', date: '2025-01-31', endDate: '', description: 'IMPORPER MAESTRANZA-MONITOREO-SAN EUGENIO 12351 - SAN', notes: 'OC 100592', client: 'INVERSIONES COLLINS Y COLLins', service: 'ALARMA', assigned: ['ELIO'], comercial: 'Angel Contreras', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 1030769 },
   { id: 'wo_10', ot_number: 'OT-268', date: '2025-02-03', endDate: '', description: 'MLP EEPP 48 (Mantención Enero)', notes: 'OC 4540005027', client: 'MLP', service: 'CCAA', assigned: ['PEDRO'], comercial: 'Eric Landeros', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 36305106 },
   { id: 'wo_11', ot_number: 'OT-1509', date: '2025-02-10', endDate: '', description: 'PAULINA QUIROZ DIAGNOSTICO SISTEMA DE CCTV', notes: 'Sin OC', client: 'PAULINA QUIROZ', service: 'CCTV', assigned: ['FRANCISCO'], comercial: 'Carlos Puga', status: 'Por Iniciar', priority: 'Baja', facturado: false, technicians: [], vehicles: [], netPrice: 95925 },
   { id: 'wo_12', ot_number: 'OT-1506', date: '2025-01-30', endDate: '', description: 'EQUIPAMIENTO PATACHE 01 CMDIC', notes: 'OC B33481', client: 'COLLAHUASI', service: 'ABLOY', assigned: ['ALEXANDER'], comercial: 'Eric Landeros', status: 'En Progreso', priority: 'Media', facturado: false, technicians: [], vehicles: [], netPrice: 2976884 },
@@ -126,7 +126,7 @@ export const otCategories: OTCategory[] = [
     { id: 'cat_2', name: 'Proyecto', prefix: 'OT', status: 'Activa' },
     { id: 'cat_3', name: 'Mantención', prefix: 'OM', status: 'Activa' },
     { id: 'cat_4', name: 'Otro', prefix: 'OTR', status: 'Inactiva' },
-    { id: 'cat_5', name: 'Abloy', prefix: 'ABLOY', status: 'Activa' },
+    { id: 'cat_5', name: 'Abloy', prefix: 'AB', status: 'Activa' },
 ];
 
 export const services: Service[] = [

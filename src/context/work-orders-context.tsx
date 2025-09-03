@@ -254,41 +254,42 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user, authLoading, fetchData]);
 
-  const getNextOtNumber = (prefix: string) => {
+  const getNextOtNumber = (prefix: string): string => {
     if (!prefix) return '';
     const relevantOrders = workOrders.filter(o => o.ot_number.startsWith(prefix));
-    
-    if (relevantOrders.length === 0) return `${prefix}-1`;
+
+    if (relevantOrders.length === 0) return `${prefix}1`;
 
     const maxNumber = Math.max(
       ...relevantOrders.map(o => {
-        const numberPart = o.ot_number.replace(prefix, '').replace(/-/g, '');
+        const numberPart = o.ot_number.replace(new RegExp(`^${prefix}`), '');
         const numericPart = parseInt(numberPart.replace(/\D/g, ''), 10);
         return isNaN(numericPart) ? 0 : numericPart;
       })
     );
-    return `${prefix}-${maxNumber + 1}`;
-  };
 
-  const getLastOtNumber = (prefix: string) => {
+    return `${prefix}${maxNumber + 1}`;
+};
+
+const getLastOtNumber = (prefix: string): string | null => {
     if (!prefix) return null;
     const relevantOrders = workOrders.filter(o => o.ot_number.startsWith(prefix));
     if (relevantOrders.length === 0) return null;
 
-    let maxNumber = 0;
-    let lastOtNumber = '';
+    let maxNumber = -1;
+    let lastOtNumber: string | null = null;
 
     relevantOrders.forEach(o => {
-        const numberPart = o.ot_number.replace(prefix, '').replace(/-/g, '');
+        const numberPart = o.ot_number.replace(new RegExp(`^${prefix}`), '');
         const numericPart = parseInt(numberPart.replace(/\D/g, ''), 10);
-        if (!isNaN(numericPart) && numericPart >= maxNumber) {
+        if (!isNaN(numericPart) && numericPart > maxNumber) {
             maxNumber = numericPart;
             lastOtNumber = o.ot_number;
         }
     });
 
-    return lastOtNumber || null;
-  };
+    return lastOtNumber;
+};
 
   const addOrder = async (order: Omit<WorkOrder, 'id'>): Promise<WorkOrder> => {
     const docRef = await addDoc(collection(db, "work-orders"), order);
