@@ -162,9 +162,9 @@ export default function AssignmentHistory({ title, description, filterKey, filte
                                 <TableCell>
                                     <Badge 
                                         variant={getStatusVariant(order.status)}
-                                        className={cn(getStatusBadgeClass(order.status), 'uppercase')}
+                                        className={cn(getStatusBadgeClass(order.status))}
                                     >
-                                        {order.status}
+                                        {order.status.toUpperCase()}
                                     </Badge>
                                 </TableCell>
                             </TableRow>

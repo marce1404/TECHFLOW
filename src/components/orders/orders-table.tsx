@@ -202,9 +202,9 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                                 <DropdownMenuTrigger asChild disabled={!canChangeStatus}>
                                      <Badge 
                                         variant={getStatusVariant(order.status)} 
-                                        className={cn(canChangeStatus && "cursor-pointer", getStatusBadgeClass(order.status), "uppercase")}
+                                        className={cn(canChangeStatus && "cursor-pointer", getStatusBadgeClass(order.status))}
                                     >
-                                        {order.status}
+                                        {order.status.toUpperCase()}
                                     </Badge>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
