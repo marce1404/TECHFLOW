@@ -24,32 +24,41 @@ import { Slider } from "@/components/ui/slider";
 import { useAuth } from "@/context/auth-context";
 import { useForm, FormProvider, useFieldArray } from "react-hook-form";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 
 export default function EditOrderPage() {
   const params = useParams();
   const router = useRouter();
-  const { getOrder, updateOrder, otCategories, services, collaborators, ganttCharts, otStatuses, vehicles, promptToCloseOrder, promptToDeleteOrder } = useWorkOrders();
+  const { getOrder, updateOrder, otCategories, services, collaborators, ganttCharts, otStatuses, vehicles, promptToCloseOrder, deleteOrder } = useWorkOrders();
   const { userProfile } = useAuth();
   const { toast } = useToast();
   
   const orderId = params.id as string;
-  const initialOrder = React.useMemo(() => getOrder(orderId), [orderId, getOrder]);
   
-  const canEdit = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
-
-  const methods = useForm<WorkOrder>({
-    defaultValues: initialOrder || {}
-  });
-  
+  const methods = useForm<WorkOrder>();
   const { fields: invoiceFields, append: appendInvoice, remove: removeInvoice } = useFieldArray({
-    control: methods.control,
-    name: "invoices",
+      control: methods.control,
+      name: "invoices",
   });
 
   const [newInvoiceNumber, setNewInvoiceNumber] = React.useState('');
   const [newInvoiceDate, setNewInvoiceDate] = React.useState<Date | undefined>(new Date());
   const [newInvoiceAmount, setNewInvoiceAmount] = React.useState(0);
+  
+  const initialOrder = React.useMemo(() => getOrder(orderId), [orderId, getOrder]);
+  
+  const canEdit = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
   
   const watchNetPrice = methods.watch('netPrice');
   const watchedInvoices = methods.watch('invoices');
@@ -100,9 +109,15 @@ export default function EditOrderPage() {
     }
   };
   
-  const handleDeleteTrigger = () => {
-    if (!canEdit) return;
-    promptToDeleteOrder(initialOrder);
+  const handleDelete = async () => {
+    if (!canEdit || !initialOrder) return;
+    await deleteOrder(initialOrder.id);
+    toast({
+        title: "Orden Eliminada",
+        description: `La OT "${initialOrder.description}" ha sido eliminada.`,
+        duration: 2000,
+    });
+    router.push('/orders');
   }
 
   const technicians = collaborators
@@ -615,10 +630,28 @@ export default function EditOrderPage() {
 
       {canEdit && (
           <div className="flex justify-between items-center mt-8">
-                <Button variant="destructive" onClick={handleDeleteTrigger} type="button">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Eliminar OT
-                </Button>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" type="button">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Eliminar OT
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Esta acción es permanente y no se puede deshacer. Se eliminará la orden de trabajo <span className="font-bold">{initialOrder?.ot_number}</span>.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                                Sí, eliminar
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
               <div className="flex gap-2">
                   <Button variant="outline" asChild><Link href="/orders">Cancelar</Link></Button>
                   <Button type="submit">Guardar Cambios</Button>
