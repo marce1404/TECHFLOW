@@ -146,6 +146,49 @@ export async function exportOrdersToExcel(orders: WorkOrder[]): Promise<string> 
     return buffer.toString('base64');
 }
 
+const getRoleDetails = (role: AppUser['role']) => {
+    switch (role) {
+        case 'Admin':
+            return `
+                <p style="margin: 4px 0;"><strong>Rol:</strong> Admin (Control total)</p>
+                <ul style="margin: 4px 0; padding-left: 20px; font-size: 14px;">
+                    <li>Ver todo el sistema.</li>
+                    <li>Crear, editar y eliminar cualquier registro.</li>
+                    <li>Gestionar usuarios y configuraciones.</li>
+                </ul>
+            `;
+        case 'Supervisor':
+            return `
+                <p style="margin: 4px 0;"><strong>Rol:</strong> Supervisor (Gestión operativa)</p>
+                <ul style="margin: 4px 0; padding-left: 20px; font-size: 14px;">
+                    <li>Ver todo el sistema.</li>
+                    <li>Crear y editar la mayoría de registros.</li>
+                    <li>No puede gestionar usuarios ni configuraciones.</li>
+                </ul>
+            `;
+        case 'Técnico':
+            return `
+                <p style="margin: 4px 0;"><strong>Rol:</strong> Técnico (Ejecución y reportes)</p>
+                 <ul style="margin: 4px 0; padding-left: 20px; font-size: 14px;">
+                    <li>Solo puede ver módulos operativos.</li>
+                    <li>Puede llenar y enviar informes de servicio.</li>
+                    <li>No puede crear, editar ni eliminar registros.</li>
+                </ul>
+            `;
+        case 'Visor':
+            return `
+                <p style="margin: 4px 0;"><strong>Rol:</strong> Visor (Solo lectura)</p>
+                 <ul style="margin: 4px 0; padding-left: 20px; font-size: 14px;">
+                    <li>Acceso de solo lectura a todo el sistema.</li>
+                    <li>No puede realizar ninguna acción de escritura.</li>
+                    <li>Ideal para roles de consulta o gerenciales.</li>
+                </ul>
+            `;
+        default:
+            return `<p><strong>Rol:</strong> ${role}</p>`;
+    }
+};
+
 export async function sendInvitationEmailAction(
     user: AppUser,
     password_clear: string,
@@ -165,6 +208,8 @@ export async function sendInvitationEmailAction(
         console.error("Error verifying SMTP transporter:", error);
         return { success: false, message: `Error de conexión SMTP: ${error.message}` };
     }
+    
+    const roleDetails = getRoleDetails(user.role);
 
     const subject = `¡Bienvenido a Control de OT de OSESA! Tus credenciales de acceso`;
     const htmlBody = `
@@ -193,9 +238,10 @@ export async function sendInvitationEmailAction(
                 <p>Hola ${user.displayName},</p>
                 <p>Has sido invitado a unirte a la plataforma de gestión de operaciones TechFlow, CONTROL DE OT DE OSESA. A continuación encontrarás tus credenciales de acceso.</p>
                 <div class="credentials">
-                    <p><strong>Usuario:</strong> ${user.email}</p>
-                    <p><strong>Contraseña:</strong> ${password_clear}</p>
-                    <p><strong>Nivel de Acceso:</strong> ${user.role}</p>
+                    <p style="margin: 4px 0;"><strong>Usuario:</strong> ${user.email}</p>
+                    <p style="margin: 4px 0;"><strong>Contraseña:</strong> ${password_clear}</p>
+                    <hr style="border: none; border-top: 1px solid #cbd5e1; margin: 12px 0;">
+                    ${roleDetails}
                 </div>
                 <a href="${loginUrl}" class="button">Iniciar Sesión en TechFlow</a>
             </div>
@@ -261,10 +307,17 @@ export async function createUserAction(userData: CreateUserInput): Promise<{ suc
 
 export async function updateUserAction(uid: string, data: Partial<AppUser>): Promise<{ success: boolean; message: string }> {
   try {
-    await (auth as any).updateUser(uid, {
-      displayName: data.displayName,
-      email: data.email,
-    });
+    const updatePayload: Partial<admin.auth.UpdateRequest> = {};
+    if (data.displayName) {
+        updatePayload.displayName = data.displayName;
+    }
+    if (data.email) {
+        updatePayload.email = data.email;
+    }
+    if (Object.keys(updatePayload).length > 0) {
+        await (auth as any).updateUser(uid, updatePayload);
+    }
+    
     if (data.role) {
         await (auth as any).setCustomUserClaims(uid, { role: data.role });
     }
