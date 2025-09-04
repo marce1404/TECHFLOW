@@ -38,7 +38,7 @@ export async function suggestGanttTasks(
 
 const prompt = ai.definePrompt({
   name: 'suggestGanttTasksPrompt',
-  input: {schema: SuggestGanntTasksInputSchema},
+  input: {schema: SuggestGanttTasksInputSchema},
   output: {schema: SuggestGanttTasksOutputSchema},
   prompt: `Eres un experto en gestión de proyectos para una empresa de servicios técnicos en áreas como CCTV, control de acceso, y obras civiles.
 
