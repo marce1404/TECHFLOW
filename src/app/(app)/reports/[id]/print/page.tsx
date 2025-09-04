@@ -60,12 +60,30 @@ async function getReportForPrint(reportId: string): Promise<{ report: SubmittedR
 const ReportField = ({ label, value }: { label: string; value: any }) => {
     if (value === undefined || value === null || value === '') return null;
     return (
-        <div className="text-sm">
-            <p className="font-bold mb-1">{label}:</p>
-            <p className="text-gray-700 whitespace-pre-wrap pl-1">{String(value)}</p>
+        <div className="text-sm border-b border-gray-300 py-1">
+            <p className="font-bold text-gray-600">{label}</p>
+            <p className="text-gray-800 whitespace-pre-wrap">{String(value)}</p>
         </div>
     );
 };
+
+const ReportFieldFull = ({ label, value }: { label: string; value: any }) => {
+    if (value === undefined || value === null || value === '') return null;
+    return (
+        <div className="text-sm p-2 border border-gray-400 bg-gray-50 rounded-md">
+            <p className="font-bold text-gray-600 mb-1">{label}</p>
+            <div className="text-gray-800 whitespace-pre-wrap pl-2">
+                {String(value).split('\n').map((line, index) => (
+                    <p key={index} className="flex items-start">
+                        <span className="mr-2">•</span>
+                        <span>{line}</span>
+                    </p>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 
 const ReportCheckboxField = ({ label, checked }: { label: string; checked: boolean }) => {
     return (
@@ -130,98 +148,130 @@ export default function PrintReportPage() {
     }
 
     const { report, template, companyInfo } = data;
-    const submittedDate = report.submittedAt?.toDate ? format(report.submittedAt.toDate(), "dd 'de' MMMM, yyyy", { locale: es }) : 'Fecha no disponible';
-    const shortFolio = report.id.substring(report.id.length - 6).toUpperCase();
-
     const getFieldValue = (fieldName: string) => report.reportData[fieldName];
 
+    if (template.name === 'Informe Técnico de Control de Acceso') {
+        const materials = String(getFieldValue('equipamiento_utilizado') || '').split('\n').map(line => {
+            const parts = line.split(',');
+            return {
+                cantidad: parts[0] || '',
+                descripcion: parts[1] || '',
+                observacion: parts[2] || '',
+            }
+        });
+
+        return (
+            <div className="bg-white text-black p-8 printable-content max-w-4xl mx-auto font-sans">
+                <header className="text-center mb-6">
+                    <h1 className="text-xl font-bold">INFORME TÉCNICO</h1>
+                    <h2 className="text-lg font-bold">CONTROL DE ACCESO CMDIC</h2>
+                </header>
+                
+                <table className="w-full border-collapse border border-gray-400 mb-4 text-sm">
+                    <tbody>
+                        <tr>
+                            <td className="border border-gray-400 p-2 bg-blue-100 font-bold w-1/6">Fecha</td>
+                            <td className="border border-gray-400 p-2 w-1/3">{getFieldValue('fecha') ? format(new Date(getFieldValue('fecha').replace(/-/g, '/')), 'dd/MM/yyyy') : 'N/A'}</td>
+                            <td className="border border-gray-400 p-2 bg-blue-100 font-bold w-1/6">Técnico</td>
+                            <td className="border border-gray-400 p-2 w-1/3">{getFieldValue('tecnico')}</td>
+                        </tr>
+                        <tr>
+                            <td className="border border-gray-400 p-2 bg-blue-100 font-bold">Tag/Nombre</td>
+                            <td className="border border-gray-400 p-2">{getFieldValue('tag_nombre')}</td>
+                            <td className="border border-gray-400 p-2 bg-blue-100 font-bold">Supervisor</td>
+                            <td className="border border-gray-400 p-2">{getFieldValue('supervisor')}</td>
+                        </tr>
+                         <tr>
+                            <td className="border border-gray-400 p-2 bg-blue-100 font-bold">Área</td>
+                            <td colSpan={3} className="border border-gray-400 p-2">{getFieldValue('area')}</td>
+                        </tr>
+                        <tr>
+                            <td className="border border-gray-400 p-2 bg-blue-100 font-bold">Ubicación de unidad</td>
+                            <td colSpan={3} className="border border-gray-400 p-2">{getFieldValue('ubicacion_unidad')}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div className="mb-4 text-sm">
+                    <div className="p-2 border border-gray-400 bg-blue-100 font-bold rounded-t-md">Requerimiento</div>
+                    <div className="p-2 border border-gray-400 border-t-0 rounded-b-md">{getFieldValue('requerimiento')}</div>
+                </div>
+
+                <div className="mb-4 text-sm">
+                    <div className="p-2 border border-gray-400 bg-blue-100 font-bold rounded-t-md">Servicios / actividades realizadas</div>
+                    <div className="p-2 border border-gray-400 border-t-0 rounded-b-md">{getFieldValue('servicios_realizados')}</div>
+                </div>
+
+                <div className="mb-4 text-sm">
+                    <div className="p-2 border border-gray-400 bg-blue-100 font-bold rounded-t-md">Equipamiento / material utilizado</div>
+                    <div className="border border-gray-400 border-t-0 rounded-b-md">
+                        <table className="w-full">
+                           <thead>
+                                <tr>
+                                    <th className="p-2 border-b border-r border-gray-400 w-1/6">Cantidad</th>
+                                    <th className="p-2 border-b border-r border-gray-400 w-2/3">Descripción</th>
+                                    <th className="p-2 border-b border-gray-400">Observación</th>
+                                </tr>
+                           </thead>
+                           <tbody>
+                            {materials.map((mat, idx) => (
+                                <tr key={idx}>
+                                    <td className="p-2 border-r border-gray-400">{mat.cantidad}</td>
+                                    <td className="p-2 border-r border-gray-400">{mat.descripcion}</td>
+                                    <td className="p-2">{mat.observacion}</td>
+                                </tr>
+                            ))}
+                            {[...Array(Math.max(0, 10 - materials.length))].map((_, i) => (
+                                <tr key={`empty-${i}`}><td className="p-2 border-r border-gray-400 h-8"></td><td className="p-2 border-r border-gray-400"></td><td className="p-2"></td></tr>
+                            ))}
+                           </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div className="mb-6 text-sm">
+                    <div className="p-2 border border-gray-400 bg-blue-100 font-bold rounded-t-md">Observaciones</div>
+                    <div className="p-2 border border-gray-400 border-t-0 rounded-b-md">
+                        <ul className="list-disc pl-5">
+                            {String(getFieldValue('observaciones') || '').split('\n').map((line, idx) => line.trim() && <li key={idx}>{line}</li>)}
+                        </ul>
+                    </div>
+                </div>
+
+                <footer className="grid grid-cols-2 gap-8 pt-8">
+                     <div className="text-center">
+                        <p className="font-bold mb-2">OSESA</p>
+                        <p className="border-b-2 border-black h-16 mb-2"></p>
+                        <p>Nombre: {getFieldValue('nombre_osesa')}</p>
+                        <p>Firma:</p>
+                    </div>
+                    <div className="text-center">
+                        <p className="font-bold mb-2">CMDIC</p>
+                        <p className="border-b-2 border-black h-16 mb-2"></p>
+                        <p>Nombre: {getFieldValue('nombre_cmdic')}</p>
+                        <p>Firma:</p>
+                    </div>
+                </footer>
+            </div>
+        );
+    }
+
+    // Fallback for other templates
     return (
         <div className="bg-white text-black p-6 printable-content max-w-3xl mx-auto">
-            <header className="flex justify-between items-start mb-4 pb-4 border-b border-gray-300">
-                <div className="flex items-center gap-4">
-                    <div>
-                        <h2 className="font-bold text-lg">{companyInfo?.name || 'TechFlow'}</h2>
-                        <p className="text-xs">{companyInfo?.slogan || 'Soluciones Inteligentes'}</p>
-                        <p className="text-xs">{companyInfo?.address || ''}</p>
-                    </div>
+             <header className="flex justify-between items-start mb-4 pb-4 border-b border-gray-300">
+                <div>
+                    <h2 className="font-bold text-lg">{companyInfo?.name || 'TechFlow'}</h2>
+                    <p className="text-xs">{companyInfo?.slogan || 'Soluciones Inteligentes'}</p>
+                    <p className="text-xs">{companyInfo?.address || ''}</p>
                 </div>
                 <div className="text-right">
                      <h1 className="text-2xl font-headline font-bold text-primary">{template.name}</h1>
                 </div>
             </header>
-            
-            <div className="flex justify-between items-center mb-4">
-                <p className="font-semibold text-base">Folio Nº: {shortFolio}</p>
-                <p className="text-sm text-gray-600">Fecha de Emisión: {submittedDate}</p>
+            <div className="space-y-4">
+            {template.fields.map(field => <ReportField key={field.id} label={field.label} value={getFieldValue(field.name)} />)}
             </div>
-
-            <Card className="mb-4 shadow-none border-black bg-transparent">
-                <CardHeader className="p-4">
-                    <CardTitle className="text-xl">Información de la Orden de Trabajo</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0">
-                     <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
-                        <div><strong>Nº OT:</strong> {report.otDetails.ot_number}</div>
-                        <div><strong>Cliente:</strong> {report.otDetails.client}</div>
-                        <div className="col-span-2"><strong>Descripción:</strong> {report.otDetails.description}</div>
-                        <div><strong>Técnico:</strong> {getFieldValue('tecnico') || getFieldValue('technician_signature') || 'N/A'}</div>
-                        <div><strong>Fecha de Servicio:</strong> {getFieldValue('fecha') || getFieldValue('service_date') ? format(new Date((getFieldValue('fecha') || getFieldValue('service_date')).replace(/-/g, '/')), 'dd/MM/yyyy') : 'N/A'}</div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Card className="shadow-none border-black bg-transparent">
-                <CardHeader className="p-4">
-                    <CardTitle className="text-xl">Detalles del Servicio Realizado</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 space-y-4">
-                    <ReportField label="Requerimiento" value={getFieldValue('requerimiento') || getFieldValue('requirement')} />
-                    <ReportField label="Servicios / Actividades Realizadas" value={getFieldValue('servicios_realizados') || getFieldValue('solution')} />
-                    <ReportField label="Equipamiento / Material Utilizado" value={getFieldValue('equipamiento_utilizado') || getFieldValue('materials_used')} />
-                    <ReportField label="Observaciones" value={getFieldValue('observaciones') || getFieldValue('tech_recommendations')} />
-                    
-                    <div className="grid grid-cols-2 gap-4 pt-2">
-                        <ReportCheckboxField label="¿Sistema queda operativo?" checked={!!getFieldValue('system_operative')} />
-                        <ReportCheckboxField label="Cliente Conforme" checked={!!getFieldValue('client_conformity')} />
-                    </div>
-                </CardContent>
-            </Card>
-
-            <div className="mt-6 grid grid-cols-2 gap-6 text-sm">
-                <div className="space-y-1">
-                    <p className="font-semibold text-base">Estado de Pago:</p>
-                    <div className="flex flex-col gap-1">
-                        <ReportCheckboxField label="Valor pendiente" checked={!!getFieldValue('valor_pendiente')} />
-                        <ReportCheckboxField label="Valor cancelado" checked={!!getFieldValue('valor_cancelado')} />
-                        <ReportCheckboxField label="En garantía" checked={!!getFieldValue('en_garantia')} />
-                        <ReportCheckboxField label="Cargo Automático" checked={!!getFieldValue('cargo_automatico')} />
-                    </div>
-                </div>
-                 <div className="space-y-1 text-right">
-                    <p className="font-semibold text-base">Valor Servicio (Neto):</p>
-                    <p className="text-lg font-bold">${new Intl.NumberFormat('es-CL').format(report.otDetails.netPrice || 0)}</p>
-                </div>
-            </div>
-
-            <footer className="mt-12 pt-8 border-t-2 border-dashed border-gray-400">
-                <div className="grid grid-cols-2 gap-8 text-center text-sm">
-                     <div className="flex flex-col justify-between">
-                         <div>
-                            <p className="mb-12 border-b border-black w-full"></p>
-                            <p><strong>Firma Cliente</strong></p>
-                            <p className="capitalize">{getFieldValue('nombre_cmdic') || getFieldValue('client_name_signature') || 'N/A'}</p>
-                            <p className="uppercase">{getFieldValue('client_rut_signature') || ''}</p>
-                        </div>
-                    </div>
-                    <div className="flex flex-col justify-between">
-                        <div>
-                           <p className="mb-12 border-b border-black w-full"></p>
-                           <p><strong>Firma Técnico</strong></p>
-                           <p className="capitalize">{getFieldValue('nombre_osesa') || getFieldValue('technician_signature') || 'N/A'}</p>
-                        </div>
-                    </div>
-                </div>
-            </footer>
         </div>
     );
 }

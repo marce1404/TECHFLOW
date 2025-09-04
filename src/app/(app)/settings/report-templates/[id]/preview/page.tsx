@@ -52,6 +52,7 @@ export default function PreviewReportTemplatePage() {
             case 'text':
                 return `[${field.label}]`;
             case 'textarea':
+                if (field.name === 'equipamiento_utilizado') return "6,Tarjeta ioprox,nueva\n2,Batería 12V,reemplazo";
                 return `[${field.label}] - Este es un ejemplo de texto más largo para ver cómo se ajusta en el informe.`;
             case 'number':
                 return '12345';
@@ -91,6 +92,115 @@ export default function PreviewReportTemplatePage() {
     if (!template) {
         return <div className="p-8 text-center text-red-500">No se pudo encontrar la plantilla.</div>;
     }
+    
+    if (template.name === 'Informe Técnico de Control de Acceso') {
+        const materials = String(getPlaceholderValue({name: 'equipamiento_utilizado', type: 'textarea', id:'test', label: '', required: false}) || '').split('\n').map(line => {
+            const parts = line.split(',');
+            return {
+                cantidad: parts[0] || '',
+                descripcion: parts[1] || '',
+                observacion: parts[2] || '',
+            }
+        });
+
+        return (
+            <div className="bg-white text-black p-8 printable-content max-w-4xl mx-auto font-sans">
+                <header className="text-center mb-6">
+                    <h1 className="text-xl font-bold">INFORME TÉCNICO</h1>
+                    <h2 className="text-lg font-bold">CONTROL DE ACCESO CMDIC</h2>
+                </header>
+                
+                <table className="w-full border-collapse border border-gray-400 mb-4 text-sm">
+                    <tbody>
+                        <tr>
+                            <td className="border border-gray-400 p-2 bg-blue-100 font-bold w-1/6">Fecha</td>
+                            <td className="border border-gray-400 p-2 w-1/3">{format(new Date(), 'dd/MM/yyyy')}</td>
+                            <td className="border border-gray-400 p-2 bg-blue-100 font-bold w-1/6">Técnico</td>
+                            <td className="border border-gray-400 p-2">[Nombre del Técnico]</td>
+                        </tr>
+                        <tr>
+                            <td className="border border-gray-400 p-2 bg-blue-100 font-bold">Tag/Nombre</td>
+                            <td className="border border-gray-400 p-2">[Sala de Cambio]</td>
+                            <td className="border border-gray-400 p-2 bg-blue-100 font-bold">Supervisor</td>
+                            <td className="border border-gray-400 p-2">[Nombre del Supervisor]</td>
+                        </tr>
+                         <tr>
+                            <td className="border border-gray-400 p-2 bg-blue-100 font-bold">Área</td>
+                            <td colSpan={3} className="border border-gray-400 p-2">[Concentradora]</td>
+                        </tr>
+                        <tr>
+                            <td className="border border-gray-400 p-2 bg-blue-100 font-bold">Ubicación de unidad</td>
+                            <td colSpan={3} className="border border-gray-400 p-2">[Ubicación detallada de la unidad]</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div className="mb-4 text-sm">
+                    <div className="p-2 border border-gray-400 bg-blue-100 font-bold rounded-t-md">Requerimiento</div>
+                    <div className="p-2 border border-gray-400 border-t-0 rounded-b-md">[Mantenimiento preventivo y correctivo del sistema de control de acceso.]</div>
+                </div>
+
+                <div className="mb-4 text-sm">
+                    <div className="p-2 border border-gray-400 bg-blue-100 font-bold rounded-t-md">Servicios / actividades realizadas</div>
+                    <div className="p-2 border border-gray-400 border-t-0 rounded-b-md">[Se realiza una inspección completa del sistema control de acceso y de funciones generales.]</div>
+                </div>
+
+                <div className="mb-4 text-sm">
+                    <div className="p-2 border border-gray-400 bg-blue-100 font-bold rounded-t-md">Equipamiento / material utilizado</div>
+                    <div className="border border-gray-400 border-t-0 rounded-b-md">
+                        <table className="w-full">
+                           <thead>
+                                <tr>
+                                    <th className="p-2 border-b border-r border-gray-400 w-1/6">Cantidad</th>
+                                    <th className="p-2 border-b border-r border-gray-400 w-2/3">Descripción</th>
+                                    <th className="p-2 border-b border-gray-400">Observación</th>
+                                </tr>
+                           </thead>
+                           <tbody>
+                            {materials.map((mat, idx) => (
+                                <tr key={idx}>
+                                    <td className="p-2 border-r border-gray-400">{mat.cantidad}</td>
+                                    <td className="p-2 border-r border-gray-400">{mat.descripcion}</td>
+                                    <td className="p-2">{mat.observacion}</td>
+                                </tr>
+                            ))}
+                            {[...Array(Math.max(0, 10 - materials.length))].map((_, i) => (
+                                <tr key={`empty-${i}`}><td className="p-2 border-r border-gray-400 h-8"></td><td className="p-2 border-r border-gray-400"></td><td className="p-2"></td></tr>
+                            ))}
+                           </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div className="mb-6 text-sm">
+                    <div className="p-2 border border-gray-400 bg-blue-100 font-bold rounded-t-md">Observaciones</div>
+                    <div className="p-2 border border-gray-400 border-t-0 rounded-b-md">
+                        <ul className="list-disc pl-5">
+                           <li>[Observación de ejemplo 1.]</li>
+                           <li>[Observación de ejemplo 2.]</li>
+                           <li>[Observación de ejemplo 3.]</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <footer className="grid grid-cols-2 gap-8 pt-8">
+                     <div className="text-center">
+                        <p className="font-bold mb-2">OSESA</p>
+                        <p className="border-b-2 border-black h-16 mb-2"></p>
+                        <p>Nombre: [Nombre firma OSESA]</p>
+                        <p>Firma:</p>
+                    </div>
+                    <div className="text-center">
+                        <p className="font-bold mb-2">CMDIC</p>
+                        <p className="border-b-2 border-black h-16 mb-2"></p>
+                        <p>Nombre: [Nombre firma Cliente]</p>
+                        <p>Firma:</p>
+                    </div>
+                </footer>
+            </div>
+        );
+    }
+
 
     return (
         <div className="bg-white text-black p-6 printable-content max-w-3xl mx-auto">
