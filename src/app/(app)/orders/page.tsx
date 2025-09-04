@@ -132,17 +132,16 @@ export default function ActiveOrdersPage() {
     }
     
     const { totalPorFacturar, totalFacturado } = React.useMemo(() => {
-        // Calculate totals based on ALL active orders, regardless of filters.
+        // Calculate totals based on ALL active orders, regardless of table filters.
         return activeOrders.reduce((acc, order) => {
             const invoicedAmount = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
             const netPrice = order.netPrice || 0;
-            
-            // "Por Facturar" is the sum of net prices of orders not yet fully invoiced.
-            if (netPrice > invoicedAmount) {
-                acc.totalPorFacturar += netPrice;
+            const pendingAmount = netPrice - invoicedAmount;
+
+            if (pendingAmount > 0) {
+                acc.totalPorFacturar += pendingAmount;
             }
             
-            // "Facturado" is the sum of what has actually been invoiced across all active orders.
             acc.totalFacturado += invoicedAmount;
 
             return acc;
