@@ -211,24 +211,30 @@ export default function EditOrderPage() {
                 
                 {/* Left Column */}
                 <div className="space-y-4">
-                    <div>
-                        <Label htmlFor="ot-category">Categoría OT *</Label>
-                        <Select
-                          value={currentPrefix}
-                          onValueChange={(value) => {
-                            const currentNumber = methods.getValues('ot_number').split('-')[1];
-                            methods.setValue('ot_number', `${value}-${currentNumber}`);
-                          }}
-                        >
-                        <SelectTrigger id="ot-category">
-                            <SelectValue placeholder="Seleccionar categoría" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {otCategories.map(cat => (
-                              <SelectItem key={cat.id} value={cat.prefix}>{cat.name} ({cat.prefix})</SelectItem>
-                            ))}
-                        </SelectContent>
-                        </Select>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <Label htmlFor="ot-category">Categoría OT *</Label>
+                            <Select
+                              value={currentPrefix}
+                              onValueChange={(value) => {
+                                const currentNumber = methods.getValues('ot_number').split('-')[1];
+                                methods.setValue('ot_number', `${value}-${currentNumber}`);
+                              }}
+                            >
+                            <SelectTrigger id="ot-category">
+                                <SelectValue placeholder="Seleccionar categoría" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {otCategories.map(cat => (
+                                  <SelectItem key={cat.id} value={cat.prefix}>{cat.name} ({cat.prefix})</SelectItem>
+                                ))}
+                            </SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                            <Label htmlFor="ot_number">Número de OT</Label>
+                            <Input id="ot_number" {...methods.register('ot_number')} readOnly className="bg-muted"/>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -561,10 +567,10 @@ export default function EditOrderPage() {
                         }}
                     />
                 </div>
-                 <div className="md:col-span-1">
-                    <Button onClick={handleAddInvoice} size="sm" className="w-full sm:w-auto" type="button">
+                 <div className="md:col-span-1 flex justify-end">
+                    <Button onClick={handleAddInvoice} size="sm" type="button">
                         <PlusCircle className="mr-2 h-4 w-4"/>
-                        Agregar Factura
+                        Agregar
                     </Button>
                 </div>
             </CardContent>
