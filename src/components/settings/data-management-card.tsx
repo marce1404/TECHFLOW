@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/card';
 import { Button } from '../ui/button';
-import { FileUp, FileDown, Loader2, Calendar as CalendarIcon, Trash2 } from 'lucide-react';
+import { FileUp, FileDown, Loader2, Calendar as CalendarIcon } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
 import { es } from 'date-fns/locale';
 import { format } from 'date-fns';
@@ -11,22 +11,10 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { cn } from '@/lib/utils';
 import { Calendar } from '../ui/calendar';
 import { MultiSelect } from '../ui/multi-select';
-import { OTStatus, WorkOrder } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { exportOrdersToExcel, deleteAllWorkOrdersAction } from '@/app/actions';
+import { exportOrdersToExcel } from '@/app/actions';
 import { ImportOrdersDialog } from '@/components/orders/import-orders-dialog';
 import { useWorkOrders } from '@/context/work-orders-context';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 
 export default function DataManagementCard() {
     const { activeWorkOrders, historicalWorkOrders, otStatuses, fetchData } = useWorkOrders();
@@ -34,7 +22,6 @@ export default function DataManagementCard() {
     const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>([]);
     const [isExporting, setIsExporting] = React.useState(false);
     const [isImporting, setIsImporting] = React.useState(false);
-    const [isDeleting, setIsDeleting] = React.useState(false);
     const { toast } = useToast();
 
     const statusOptions = otStatuses.map(s => ({ value: s.name, label: s.name }));
@@ -90,24 +77,6 @@ export default function DataManagementCard() {
         }
     };
     
-    const handleClearDatabase = async () => {
-        setIsDeleting(true);
-        try {
-            const result = await deleteAllWorkOrdersAction();
-            if (result.success) {
-                toast({ title: "Base de Datos Limpiada", description: result.message });
-                await fetchData(); // Refresh data in context
-            } else {
-                toast({ variant: "destructive", title: "Error", description: result.message });
-            }
-        } catch (error) {
-            console.error("Error clearing database: ", error);
-            toast({ variant: "destructive", title: "Error Inesperado", description: "No se pudo completar la operación de limpieza." });
-        } finally {
-            setIsDeleting(false);
-        }
-    };
-
     return (
         <>
             <Card>
@@ -174,42 +143,6 @@ export default function DataManagementCard() {
                             Exportar Órdenes
                         </Button>
                     </div>
-                </CardContent>
-            </Card>
-
-             <Card className="border-destructive">
-                <CardHeader>
-                    <CardTitle className="text-destructive">Zona de Peligro</CardTitle>
-                    <CardDescription>
-                       Esta acción eliminará permanentemente todas las órdenes de trabajo de la base de datos.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                     <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive" disabled={isDeleting}>
-                                {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                                Limpiar Base de Datos de OTs
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Esta acción no se puede deshacer. Se eliminarán permanentemente TODAS las órdenes de trabajo de la base de datos. Esto es útil si quieres empezar de cero con una nueva importación.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction
-                                    className="bg-destructive hover:bg-destructive/90"
-                                    onClick={handleClearDatabase}
-                                >
-                                    Sí, eliminar todo
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
                 </CardContent>
             </Card>
 
