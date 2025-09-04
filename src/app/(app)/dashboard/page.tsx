@@ -13,12 +13,14 @@ import { Carousel, CarouselContent, CarouselItem, type CarouselApi, CarouselPrev
 import { Button } from '@/components/ui/button';
 import { Expand, Shrink } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ExpirationAlertsCard, type ExpirationAlertItem } from '@/components/dashboard/expiration-alerts-card';
+import { differenceInDays, parseISO } from 'date-fns';
 
 
-const ITEMS_PER_PAGE = 11;
+const ITEMS_PER_PAGE = 10;
 
 export default function DashboardPage() {
-  const { workOrders, loading, ganttCharts } = useWorkOrders();
+  const { workOrders, loading, ganttCharts, collaborators } = useWorkOrders();
   const [api, setApi] = React.useState<CarouselApi>();
   const [current, setCurrent] = React.useState(0);
   const [count, setCount] = React.useState(0);
@@ -81,6 +83,36 @@ export default function DashboardPage() {
       const today = new Date();
       return orderDate.getMonth() === today.getMonth() && orderDate.getFullYear() === today.getFullYear();
   });
+
+    const expiringItems = React.useMemo(() => {
+        const alerts: ExpirationAlertItem[] = [];
+        const today = new Date();
+        
+        collaborators.forEach(c => {
+            const allItems = [
+                ...(c.workClothing || []),
+                ...(c.epp || []),
+                ...(c.certifications || []),
+            ];
+
+            allItems.forEach(item => {
+                if (item.expirationDate) {
+                    const expiration = parseISO(item.expirationDate);
+                    const daysUntilExpiration = differenceInDays(expiration, today);
+                    if (daysUntilExpiration >= 0 && daysUntilExpiration <= 60) {
+                        alerts.push({
+                            collaboratorName: c.name,
+                            itemName: item.item || item.name || 'Documento sin nombre',
+                            daysUntilExpiration,
+                            expirationDate: item.expirationDate,
+                        });
+                    }
+                }
+            });
+        });
+
+        return alerts.sort((a,b) => a.daysUntilExpiration - b.daysUntilExpiration);
+    }, [collaborators]);
 
   const toggleFullscreen = () => {
     if (!dashboardRef.current) return;
@@ -172,7 +204,12 @@ export default function DashboardPage() {
                         {page.map(order => (
                         <OrderCard key={order.id} order={order} progress={getProgress(order)} />
                         ))}
-                        {index === 0 && <ClosedOrdersCard orders={closedOrdersThisMonth} />}
+                        {index === 0 && (
+                            <>
+                                <ClosedOrdersCard orders={closedOrdersThisMonth} />
+                                <ExpirationAlertsCard items={expiringItems} />
+                            </>
+                        )}
                     </div>
                     </CarouselItem>
                 ))}
@@ -189,7 +226,8 @@ export default function DashboardPage() {
                 <div className="col-span-full flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
                 <p className="text-muted-foreground">No hay órdenes de trabajo activas.</p>
                 </div>
-                <ClosedOrdersCard orders={closedOrdersThisMonth} />
+                 <ClosedOrdersCard orders={closedOrdersThisMonth} />
+                 <ExpirationAlertsCard items={expiringItems} />
             </div>
             )}
         </div>
