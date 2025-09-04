@@ -263,6 +263,7 @@ export async function updateUserAction(uid: string, data: Partial<AppUser>): Pro
   try {
     await (auth as any).updateUser(uid, {
       displayName: data.displayName,
+      email: data.email,
     });
     if (data.role) {
         await (auth as any).setCustomUserClaims(uid, { role: data.role });

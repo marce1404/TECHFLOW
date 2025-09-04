@@ -33,6 +33,7 @@ import { updateUserAction } from '@/app/actions';
 
 const editFormSchema = z.object({
   displayName: z.string().min(3, { message: 'El nombre debe tener al menos 3 caracteres.' }),
+  email: z.string().email({ message: 'Debe ser un correo electrónico válido.' }),
   role: z.enum(['Admin', 'Supervisor', 'Técnico', 'Visor']),
   status: z.enum(['Activo', 'Inactivo']),
 });
@@ -54,6 +55,7 @@ export function UserEditDialog({ open, onOpenChange, user, onUserUpdate }: UserE
     resolver: zodResolver(editFormSchema),
     defaultValues: {
       displayName: '',
+      email: '',
       role: 'Visor',
       status: 'Activo',
     },
@@ -63,6 +65,7 @@ export function UserEditDialog({ open, onOpenChange, user, onUserUpdate }: UserE
     if (user) {
       form.reset({
         displayName: user.displayName,
+        email: user.email,
         role: user.role,
         status: user.status,
       });
@@ -76,6 +79,7 @@ export function UserEditDialog({ open, onOpenChange, user, onUserUpdate }: UserE
     try {
       const result = await updateUserAction(user.uid, {
         displayName: data.displayName,
+        email: data.email,
         role: data.role,
         status: data.status,
       });
@@ -109,7 +113,7 @@ export function UserEditDialog({ open, onOpenChange, user, onUserUpdate }: UserE
         <DialogHeader>
           <DialogTitle>Editar Usuario</DialogTitle>
           <DialogDescription>
-            Modifica el nombre y el rol del usuario.
+            Modifica los datos del usuario.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -122,6 +126,19 @@ export function UserEditDialog({ open, onOpenChange, user, onUserUpdate }: UserE
                   <FormLabel>Nombre Completo</FormLabel>
                   <FormControl>
                     <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Correo Electrónico</FormLabel>
+                  <FormControl>
+                    <Input type="email" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
