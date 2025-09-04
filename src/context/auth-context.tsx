@@ -39,7 +39,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setLoading(true);
       if (currentUser) {
         setUser(currentUser);
         const userDocRef = doc(db, 'users', currentUser.uid);
@@ -64,27 +63,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
         await fetchUsers();
-
-        // If user is logged in but on the login page, redirect to dashboard
-        if (pathname === '/login') {
-            router.replace('/dashboard');
-        }
-
       } else {
         setUser(null);
         setUserProfile(null);
         setUsers([]);
-        
-        // If user is not logged in and not on the login page, redirect them.
-        if (pathname !== '/login') {
-            router.replace('/login');
-        }
       }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [fetchUsers, pathname, router]);
+  }, [fetchUsers]);
+  
+  useEffect(() => {
+    if (!loading) {
+        if (user && pathname === '/login') {
+            router.replace('/dashboard');
+        } else if (!user && pathname !== '/login') {
+            router.replace('/login');
+        }
+    }
+  }, [user, loading, pathname, router]);
 
 
   return (
