@@ -38,7 +38,6 @@ export function ExpirationAlertsCard({ items }: ExpirationAlertsCardProps) {
   }
 
   const getDayText = (days: number) => {
-    if (days < 0) return 'Vencido';
     if (days === 0) return 'Hoy';
     return `${days}d`;
   }
