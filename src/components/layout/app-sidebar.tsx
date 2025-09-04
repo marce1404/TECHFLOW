@@ -79,7 +79,7 @@ export default function AppSidebar() {
       href: '/orders',
       label: 'OTs Activas',
       icon: File,
-      exact: false, 
+      exact: true, 
     },
      {
       href: '/orders/history',
