@@ -219,6 +219,13 @@ export type Filters = {
   invoicedStatus: 'all' | 'invoiced' | 'not_invoiced';
 };
 
+export type AuditLog = {
+  id: string;
+  user: string; // User's display name
+  action: string;
+  timestamp: Timestamp;
+};
+
 
 // AI Resource Assignment Types
 export const SuggestOptimalResourceAssignmentInputSchema = z.object({

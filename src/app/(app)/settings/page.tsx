@@ -1,7 +1,7 @@
 
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ChevronRight, Building, Users, Settings, BarChart2, Tag, ListChecks, ClipboardPenLine, GitBranch, Mail, ArrowRightLeft } from 'lucide-react';
+import { ChevronRight, Building, Users, Settings, BarChart2, Tag, ListChecks, ClipboardPenLine, GitBranch, Mail, ArrowRightLeft, ShieldCheck } from 'lucide-react';
 import packageJson from '@/../package.json';
 
 interface SettingsGroupProps {
@@ -112,6 +112,12 @@ export default function SettingsPage() {
             </SettingsGroup>
 
             <SettingsGroup title="Sistema">
+                 <SettingsLink 
+                    href="/settings/audit-log"
+                    icon={ShieldCheck}
+                    title="Registro de Auditoría"
+                    description="Visualiza el registro de todas las acciones importantes realizadas en el sistema."
+                />
                 <Card>
                     <CardHeader className="flex flex-row items-center gap-4">
                         <div className="p-3 bg-primary/10 rounded-lg">
