@@ -235,18 +235,14 @@ const getLastOtNumber = (prefix: string): string | null => {
   };
 
   const updateOrder = async (id: string, updatedData: Partial<WorkOrder>) => {
-    const originalOrder = workOrders.find(o => o.id === id);
     const orderRef = doc(db, 'work-orders', id);
     await updateDoc(orderRef, updatedData);
 
-    if (userProfile && originalOrder) {
-      if (updatedData.status && updatedData.status !== originalOrder.status) {
-          await logAction(`Cambió el estado de la OT ${originalOrder.ot_number} de "${originalOrder.status}" a "${updatedData.status}"`);
-      } else {
-          await logAction(`Actualizó la OT ${originalOrder.ot_number}`);
-      }
+    const order = workOrders.find(o => o.id === id);
+    if(order) {
+        await logAction(`Actualizó la OT ${order.ot_number}`);
     }
-    
+
     await fetchData();
   };
 
