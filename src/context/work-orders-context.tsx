@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
+import { predefinedReportTemplates } from '@/lib/predefined-templates';
 
 interface WorkOrdersContextType {
   workOrders: WorkOrder[];
@@ -98,9 +99,28 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
   const [orderToDelete, setOrderToDelete] = useState<WorkOrder | null>(null);
 
+  const checkAndCreatePredefinedTemplates = async () => {
+    const templatesCollection = collection(db, 'report-templates');
+    const existingTemplatesSnapshot = await getDocs(templatesCollection);
+    const existingTemplateNames = existingTemplatesSnapshot.docs.map(doc => doc.data().name);
+
+    for (const predefinedTemplate of predefinedReportTemplates) {
+      if (!existingTemplateNames.includes(predefinedTemplate.name)) {
+        try {
+          await addDoc(templatesCollection, predefinedTemplate);
+          console.log(`Created predefined template: ${predefinedTemplate.name}`);
+        } catch (error) {
+          console.error(`Failed to create predefined template ${predefinedTemplate.name}:`, error);
+        }
+      }
+    }
+  };
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
+        await checkAndCreatePredefinedTemplates();
+        
         const [
             workOrdersSnapshot,
             categoriesSnapshot,
