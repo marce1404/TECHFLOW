@@ -193,7 +193,7 @@ export default function EditOrderPage() {
             <h1 className="text-2xl font-headline font-bold tracking-tight">
                 Editar Orden de Trabajo
             </h1>
-            <p className="text-xl font-bold text-muted-foreground font-mono">{initialOrder.ot_number}</p>
+            <p className="text-3xl font-bold text-primary font-headline">{initialOrder.ot_number}</p>
         </div>
         {!canEdit && <p className="text-sm text-destructive font-medium">Modo de solo lectura.</p>}
       </div>
