@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -518,7 +519,6 @@ const SidebarMenuButton = React.forwardRef<
     asChild?: boolean
     isActive?: boolean
     tooltip?: string | React.ComponentProps<typeof TooltipContent>
-    isSubmenu?: boolean
   }
 >(
   (
