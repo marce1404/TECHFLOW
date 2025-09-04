@@ -189,9 +189,12 @@ export default function EditOrderPage() {
     <form onSubmit={methods.handleSubmit(handleUpdateOrder)} className="space-y-6">
     <div className="flex flex-col gap-8">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-headline font-bold tracking-tight">
-            Editar Orden de Trabajo
-        </h1>
+        <div className="flex items-end gap-4">
+            <h1 className="text-2xl font-headline font-bold tracking-tight">
+                Editar Orden de Trabajo
+            </h1>
+            <p className="text-xl font-bold text-muted-foreground font-mono">{initialOrder.ot_number}</p>
+        </div>
         {!canEdit && <p className="text-sm text-destructive font-medium">Modo de solo lectura.</p>}
       </div>
 
@@ -211,30 +214,24 @@ export default function EditOrderPage() {
                 
                 {/* Left Column */}
                 <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <Label htmlFor="ot-category">Categoría OT *</Label>
-                            <Select
-                              value={currentPrefix}
-                              onValueChange={(value) => {
-                                const currentNumber = methods.getValues('ot_number').split('-')[1];
-                                methods.setValue('ot_number', `${value}-${currentNumber}`);
-                              }}
-                            >
-                            <SelectTrigger id="ot-category">
-                                <SelectValue placeholder="Seleccionar categoría" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {otCategories.map(cat => (
-                                  <SelectItem key={cat.id} value={cat.prefix}>{cat.name} ({cat.prefix})</SelectItem>
-                                ))}
-                            </SelectContent>
-                            </Select>
-                        </div>
-                        <div>
-                            <Label htmlFor="ot_number">Número de OT</Label>
-                            <Input id="ot_number" {...methods.register('ot_number')} readOnly className="bg-muted"/>
-                        </div>
+                    <div>
+                        <Label htmlFor="ot-category">Categoría OT *</Label>
+                        <Select
+                            value={currentPrefix}
+                            onValueChange={(value) => {
+                            const currentNumber = methods.getValues('ot_number').split('-')[1];
+                            methods.setValue('ot_number', `${value}-${currentNumber}`);
+                            }}
+                        >
+                        <SelectTrigger id="ot-category">
+                            <SelectValue placeholder="Seleccionar categoría" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {otCategories.map(cat => (
+                                <SelectItem key={cat.id} value={cat.prefix}>{cat.name} ({cat.prefix})</SelectItem>
+                            ))}
+                        </SelectContent>
+                        </Select>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
