@@ -12,9 +12,6 @@ import {
   SidebarMenuButton,
   SidebarHeader,
   SidebarFooter,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import {
   LayoutGrid,
@@ -29,7 +26,6 @@ import {
   FilePlus2,
   Archive,
   AlertTriangle,
-  ChevronDown
 } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { signOut } from 'firebase/auth';
@@ -71,8 +67,6 @@ export default function AppSidebar() {
     }
     return pathname.startsWith(href);
   };
-  
-  const isAiToolsActive = isActive('/ai-tools', false);
 
   const menuItems = [
     {
@@ -117,7 +111,7 @@ export default function AppSidebar() {
       icon: Users,
       exact: true,
     },
-     {
+    {
       href: '/alerts',
       label: 'Alertas',
       icon: AlertTriangle,
@@ -128,6 +122,12 @@ export default function AppSidebar() {
       label: 'Vehículos',
       icon: Truck,
       exact: true,
+    },
+    {
+      href: '/ai-tools',
+      label: 'Asistente IA',
+      icon: Sparkles,
+      exact: false,
     },
   ];
 
@@ -181,19 +181,6 @@ export default function AppSidebar() {
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     ))}
-                    <SidebarMenuItem>
-                        <SidebarMenuButton
-                            asChild
-                            isActive={isAiToolsActive}
-                            tooltip="Asistente IA"
-                            variant={isAiToolsActive ? 'default' : 'ghost'}
-                            className="h-10 w-10"
-                        >
-                            <Link href="/ai-tools/resource-assignment">
-                                <Sparkles className="h-5 w-5" />
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarContent>
             <SidebarFooter>
@@ -270,32 +257,6 @@ export default function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
           )}
-           <SidebarMenuItem>
-              <SidebarMenuButton
-                isSubmenu
-                isActive={isAiToolsActive}
-                variant={isAiToolsActive ? 'default' : 'ghost'}
-                className="justify-between"
-              >
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5" />
-                  <span>Asistente IA</span>
-                </div>
-                <ChevronDown className="h-4 w-4" />
-              </SidebarMenuButton>
-              <SidebarMenuSub>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild isActive={pathname.includes('resource-assignment')}>
-                    <Link href="/ai-tools/resource-assignment">Sugerir Recursos</Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild isActive={pathname.includes('gantt-suggester')}>
-                    <Link href="/ai-tools/gantt-suggester">Sugerir Tareas Gantt</Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-              </SidebarMenuSub>
-            </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>

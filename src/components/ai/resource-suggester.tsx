@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
@@ -72,14 +73,7 @@ export default function ResourceSuggester() {
 
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-headline">Detalles de la Tarea</CardTitle>
-          <CardDescription>
-            Ingresa la información para que la IA genere una sugerencia.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        <div>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
@@ -135,28 +129,17 @@ export default function ResourceSuggester() {
               </Button>
             </form>
           </Form>
-        </CardContent>
-      </Card>
+        </div>
       
-      <div className="space-y-8">
-        <Card className="min-h-[200px]">
-          <CardHeader>
-            <CardTitle className="font-headline flex items-center gap-2">
-              <Sparkles className="text-primary" /> Sugerencia de la IA
-            </CardTitle>
-             <CardDescription>
-              Aquí se mostrará la asignación óptima recomendada.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        <div className="space-y-6">
             {loading && (
-              <div className="flex flex-col items-center justify-center gap-4 text-muted-foreground p-8">
+              <div className="flex flex-col items-center justify-center gap-4 text-muted-foreground p-8 border rounded-lg h-full">
                 <Loader2 className="h-8 w-8 animate-spin" />
                 <p>Analizando recursos y generando sugerencia...</p>
               </div>
             )}
             {result && !loading && !('error' in result) && (
-                <div className="space-y-6">
+                <>
                     <div>
                         <h3 className="font-semibold flex items-center gap-2 mb-2"><Users className="h-5 w-5"/>Técnicos Sugeridos</h3>
                         <p className="text-sm p-3 bg-secondary rounded-md">{result.suggestedTechnicians}</p>
@@ -169,11 +152,14 @@ export default function ResourceSuggester() {
                         <h3 className="font-semibold mb-2">Justificación</h3>
                         <p className="text-sm text-muted-foreground p-3 border rounded-md">{result.justification}</p>
                     </div>
+                </>
+            )}
+             {!result && !loading && (
+                <div className="flex items-center justify-center h-full border rounded-lg">
+                    <p className="text-sm text-muted-foreground">Las sugerencias aparecerán aquí.</p>
                 </div>
             )}
-          </CardContent>
-        </Card>
-      </div>
+        </div>
     </div>
   );
 }

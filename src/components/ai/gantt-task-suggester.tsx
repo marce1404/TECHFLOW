@@ -6,13 +6,6 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
@@ -101,14 +94,7 @@ export default function GanttTaskSuggester() {
 
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-headline">Descripción del Proyecto</CardTitle>
-          <CardDescription>
-            Cuanto más detallada sea la descripción, mejor será la sugerencia de la IA.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        <div>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
@@ -138,31 +124,19 @@ export default function GanttTaskSuggester() {
               </Button>
             </form>
           </Form>
-        </CardContent>
-      </Card>
+        </div>
       
-      <div className="space-y-8">
-        <Card className="min-h-[200px]">
-          <CardHeader>
-            <div className="flex justify-between items-start">
-                <div>
-                    <CardTitle className="font-headline flex items-center gap-2">
-                        <Sparkles className="text-primary" /> Plan de Tareas Sugerido
-                    </CardTitle>
-                    <CardDescription>
-                        Fases y tareas recomendadas para tu Carta Gantt.
-                    </CardDescription>
-                </div>
-                {result && (
+        <div className="space-y-4">
+            <div className="flex justify-between items-center">
+                <h3 className="font-semibold text-lg">Plan de Tareas Sugerido</h3>
+                 {result && (
                     <Button variant="outline" size="sm" onClick={copyToClipboard}>
                         {copied ? <Check className="h-4 w-4 text-green-500" /> : <Clipboard className="h-4 w-4" />}
                     </Button>
                 )}
             </div>
-          </CardHeader>
-          <CardContent>
             {loading && (
-              <div className="flex flex-col items-center justify-center gap-4 text-muted-foreground p-8">
+              <div className="flex flex-col items-center justify-center gap-4 text-muted-foreground p-8 border rounded-lg h-full">
                 <Loader2 className="h-8 w-8 animate-spin" />
                 <p>Analizando proyecto y generando tareas...</p>
               </div>
@@ -170,7 +144,7 @@ export default function GanttTaskSuggester() {
             {result && !loading && (
                 <div className="space-y-4">
                     <div>
-                        <h3 className="font-semibold mb-2">Justificación de la IA</h3>
+                        <h4 className="font-semibold mb-2">Justificación de la IA</h4>
                         <p className="text-sm text-muted-foreground p-3 border rounded-md bg-secondary/50">{result.justification}</p>
                     </div>
                      <Accordion type="multiple" defaultValue={Object.keys(groupedTasks)} className="w-full">
@@ -190,13 +164,11 @@ export default function GanttTaskSuggester() {
                 </div>
             )}
              {!result && !loading && (
-                 <div className="flex items-center justify-center h-48 text-center">
+                 <div className="flex items-center justify-center h-full border rounded-lg">
                     <p className="text-sm text-muted-foreground">Las sugerencias aparecerán aquí.</p>
                 </div>
             )}
-          </CardContent>
-        </Card>
-      </div>
+        </div>
     </div>
   );
 }
