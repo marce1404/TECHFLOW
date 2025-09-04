@@ -71,7 +71,7 @@ export function UserChangePasswordDialog({ open, onOpenChange, user }: UserChang
     if (!user) return;
     setLoading(true);
 
-    const loginUrl = `${window.location.origin}/login`;
+    const loginUrl = window.location.origin;
     const result = await changeUserPasswordAction(user, data.newPassword, smtpConfig, loginUrl);
     
     if (result.success) {

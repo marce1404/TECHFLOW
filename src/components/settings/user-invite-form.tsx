@@ -84,7 +84,7 @@ export function UserInviteForm({ onUserAdded }: UserInviteFormProps) {
         if (!smtpConfig) {
             toast({ variant: 'destructive', title: 'Advertencia', description: 'No se puede enviar la invitación. La configuración SMTP no está establecida.'});
         } else {
-            const loginUrl = `${window.location.origin}/login`;
+            const loginUrl = window.location.origin;
              const result = await sendInvitationEmailAction(creationResult.user, data.password, loginUrl, smtpConfig);
             if (result.success) {
                 toast({ title: 'Invitación Enviada', description: result.message });
