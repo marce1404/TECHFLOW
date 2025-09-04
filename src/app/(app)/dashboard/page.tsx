@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Expand, Shrink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ExpirationAlertsCard, type ExpirationAlertItem } from '@/components/dashboard/expiration-alerts-card';
-import { differenceInDays, parseISO } from 'date-fns';
+import { differenceInDays, parseISO, addYears } from 'date-fns';
 
 
 const ITEMS_PER_PAGE = 10;
@@ -96,15 +96,27 @@ export default function DashboardPage() {
             ];
 
             allItems.forEach(item => {
+                let expiration: Date | null = null;
+                let expirationDateStr: string | undefined = item.expirationDate;
+
                 if (item.expirationDate) {
-                    const expiration = parseISO(item.expirationDate);
+                    expiration = parseISO(item.expirationDate);
+                } else if ('deliveryDate' in item && item.deliveryDate) {
+                    expiration = addYears(parseISO(item.deliveryDate), 1);
+                    expirationDateStr = expiration.toISOString().split('T')[0];
+                } else if ('issueDate' in item && item.issueDate) {
+                    expiration = addYears(parseISO(item.issueDate), 1);
+                    expirationDateStr = expiration.toISOString().split('T')[0];
+                }
+
+                if (expiration && expirationDateStr) {
                     const daysUntilExpiration = differenceInDays(expiration, today);
                     if (daysUntilExpiration >= 0 && daysUntilExpiration <= 60) {
                         alerts.push({
                             collaboratorName: c.name,
                             itemName: item.item || item.name || 'Documento sin nombre',
                             daysUntilExpiration,
-                            expirationDate: item.expirationDate,
+                            expirationDate: expirationDateStr,
                         });
                     }
                 }
