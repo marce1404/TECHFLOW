@@ -130,24 +130,29 @@ export default function HistoryPage() {
     }
     
     const { totalPorFacturar, totalFacturado } = React.useMemo(() => {
-        return filteredOrders.reduce((acc, order) => {
+        // Calculate totals based on ALL historical orders, regardless of table filters.
+        return historicalWorkOrders.reduce((acc, order) => {
             const netPrice = order.netPrice || 0;
             const invoicedAmount = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
-            const isFullyInvoiced = order.facturado === true || (netPrice > 0 && invoicedAmount >= netPrice);
             
+            // Legacy support for 'facturado' flag
+            const isFullyInvoiced = order.facturado === true || (netPrice > 0 && invoicedAmount >= netPrice);
+
             if (isFullyInvoiced) {
                 acc.totalFacturado += netPrice;
             } else {
+                // If not fully invoiced, add what was actually invoiced to the total
                 acc.totalFacturado += invoicedAmount;
+                // The pending amount is the difference
                 const pendingAmount = netPrice - invoicedAmount;
                 if (pendingAmount > 0) {
                     acc.totalPorFacturar += pendingAmount;
                 }
             }
-
+            
             return acc;
         }, { totalPorFacturar: 0, totalFacturado: 0 });
-    }, [filteredOrders]);
+    }, [historicalWorkOrders]);
 
     return (
         <div className="flex flex-col gap-4">
