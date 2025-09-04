@@ -18,6 +18,7 @@ export default function AuditLogPage() {
     const itemsPerPage = 20;
 
     const filteredLogs = React.useMemo(() => {
+        if (!auditLog) return [];
         return auditLog.filter(log => 
             log.user.toLowerCase().includes(search.toLowerCase()) ||
             log.action.toLowerCase().includes(search.toLowerCase())
