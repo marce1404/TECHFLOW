@@ -194,6 +194,7 @@ export async function sendInvitationEmailAction(
     password_clear: string,
     loginUrl: string,
     config: SmtpConfig,
+    isPasswordChange: boolean = false,
 ): Promise<{ success: boolean; message: string }> {
     const { host, port, secure, user: smtpUser, pass, fromName, fromEmail } = config;
 
@@ -211,7 +212,14 @@ export async function sendInvitationEmailAction(
     
     const roleDetails = getRoleDetails(user.role);
 
-    const subject = `¡Bienvenido a Control de OT de OSESA! Tus credenciales de acceso`;
+    const subject = isPasswordChange 
+        ? `Actualización de Credenciales - Control de OT de OSESA`
+        : `¡Bienvenido a Control de OT de OSESA! Tus credenciales de acceso`;
+
+    const greeting = isPasswordChange
+        ? `Se ha actualizado tu contraseña para la plataforma de gestión de operaciones TechFlow. A continuación encontrarás tus credenciales actualizadas.`
+        : `Has sido invitado a unirte a la plataforma de gestión de operaciones TechFlow, CONTROL DE OT DE OSESA. A continuación encontrarás tus credenciales de acceso.`;
+    
     const htmlBody = `
     <!DOCTYPE html>
     <html lang="es">
@@ -233,10 +241,9 @@ export async function sendInvitationEmailAction(
     </head>
     <body>
         <div class="container">
-            <div class="header"><h1>¡Bienvenido a TechFlow!</h1></div>
+            <div class="header"><h1>¡Hola, ${user.displayName}!</h1></div>
             <div class="content">
-                <p>Hola ${user.displayName},</p>
-                <p>Has sido invitado a unirte a la plataforma de gestión de operaciones TechFlow, CONTROL DE OT DE OSESA. A continuación encontrarás tus credenciales de acceso.</p>
+                <p>${greeting}</p>
                 <div class="credentials">
                     <p style="margin: 4px 0;"><strong>Usuario:</strong> ${user.email}</p>
                     <p style="margin: 4px 0;"><strong>Contraseña:</strong> ${password_clear}</p>
@@ -262,9 +269,9 @@ export async function sendInvitationEmailAction(
 
     try {
         await transporter.sendMail(mailOptions);
-        return { success: true, message: '¡Correo de invitación enviado con éxito!' };
+        return { success: true, message: '¡Correo enviado con éxito!' };
     } catch (error: any) {
-        console.error("Error sending invitation email:", error);
+        console.error("Error sending user email:", error);
         return { success: false, message: `Error al enviar el correo: ${error.message}` };
     }
 }
@@ -350,11 +357,23 @@ export async function toggleUserStatusAction(uid: string, currentStatus: 'Activo
     }
 }
 
-export async function changeUserPasswordAction(uid: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+export async function changeUserPasswordAction(
+    user: AppUser, 
+    newPassword: string,
+    config: SmtpConfig | null,
+    loginUrl: string,
+): Promise<{ success: boolean; message: string }> {
     try {
-        await (auth as any).updateUser(uid, { password: newPassword });
+        await (auth as any).updateUser(user.uid, { password: newPassword });
+        
+        // After successfully changing the password, send the notification email
+        if (config) {
+            await sendInvitationEmailAction(user, newPassword, loginUrl, config, true);
+        }
+
         return { success: true, message: 'Contraseña cambiada exitosamente.' };
     } catch (error: any) {
         return { success: false, message: error.message };
     }
 }
+

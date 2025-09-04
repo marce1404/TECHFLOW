@@ -27,6 +27,7 @@ import type { AppUser } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { changeUserPasswordAction } from '@/app/actions';
+import { useWorkOrders } from '@/context/work-orders-context';
 
 const passwordFormSchema = z.object({
   newPassword: z.string().min(6, { message: 'La nueva contraseña debe tener al menos 6 caracteres.' }),
@@ -46,6 +47,7 @@ interface UserChangePasswordDialogProps {
 
 export function UserChangePasswordDialog({ open, onOpenChange, user }: UserChangePasswordDialogProps) {
   const { toast } = useToast();
+  const { smtpConfig } = useWorkOrders();
   const [loading, setLoading] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
 
@@ -69,12 +71,13 @@ export function UserChangePasswordDialog({ open, onOpenChange, user }: UserChang
     if (!user) return;
     setLoading(true);
 
-    const result = await changeUserPasswordAction(user.uid, data.newPassword);
+    const loginUrl = `${window.location.origin}/login`;
+    const result = await changeUserPasswordAction(user, data.newPassword, smtpConfig, loginUrl);
     
     if (result.success) {
         toast({
             title: 'Contraseña Cambiada',
-            description: `La contraseña para ${user.displayName} ha sido actualizada.`,
+            description: `La contraseña para ${user.displayName} ha sido actualizada y se ha enviado una notificación.`,
         });
         onOpenChange(false);
     } else {
@@ -94,7 +97,7 @@ export function UserChangePasswordDialog({ open, onOpenChange, user }: UserChang
         <DialogHeader>
           <DialogTitle>Cambiar Contraseña</DialogTitle>
           <DialogDescription>
-            Establecer una nueva contraseña para <span className="font-bold">{user?.displayName}</span>.
+            Establecer una nueva contraseña para <span className="font-bold">{user?.displayName}</span>. Se enviará una notificación al usuario con la nueva clave.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -141,7 +144,7 @@ export function UserChangePasswordDialog({ open, onOpenChange, user }: UserChang
                 </DialogClose>
                 <Button type="submit" disabled={loading}>
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Guardar Nueva Contraseña
+                    Guardar y Notificar
                 </Button>
             </DialogFooter>
           </form>
