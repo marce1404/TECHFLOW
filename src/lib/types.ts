@@ -50,6 +50,7 @@ export type WorkOrder = {
   hesEmMigo?: string;
   rentedVehicle?: string;
   manualProgress?: number;
+  facturado?: boolean;
 };
 
 export type WorkClothingItem = {
@@ -217,13 +218,6 @@ export type Filters = {
   statuses: string[];
   dateRange: import("react-day-picker").DateRange;
   invoicedStatus: 'all' | 'invoiced' | 'not_invoiced';
-};
-
-export type AuditLog = {
-  id: string;
-  user: string; // User's display name
-  action: string;
-  timestamp: Timestamp;
 };
 
 
