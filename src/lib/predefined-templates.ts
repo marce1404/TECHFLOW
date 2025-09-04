@@ -25,6 +25,25 @@ export const predefinedReportTemplates: Omit<ReportTemplate, 'id'>[] = [
     ],
   },
   {
+    name: 'Informe Técnico de Control de Acceso',
+    description: 'Informe detallado para servicios de mantenimiento y revisión de sistemas de control de acceso.',
+    type: 'service-guide',
+    fields: [
+      { id: 'itca_1', name: 'fecha', label: 'Fecha', type: 'date', required: true },
+      { id: 'itca_2', name: 'tag_nombre', label: 'Tag/Nombre', type: 'text', required: false },
+      { id: 'itca_3', name: 'area', label: 'Área', type: 'text', required: false },
+      { id: 'itca_4', name: 'ubicacion_unidad', label: 'Ubicación de unidad', type: 'text', required: false },
+      { id: 'itca_5', name: 'tecnico', label: 'Técnico', type: 'select', options: 'technicians', required: true },
+      { id: 'itca_6', name: 'supervisor', label: 'Supervisor', type: 'text', required: false },
+      { id: 'itca_7', name: 'requerimiento', label: 'Requerimiento', type: 'textarea', required: true },
+      { id: 'itca_8', name: 'servicios_realizados', label: 'Servicios / actividades realizadas', type: 'textarea', required: true },
+      { id: 'itca_9', name: 'equipamiento_utilizado', label: 'Equipamiento / material utilizado', type: 'textarea', required: false },
+      { id: 'itca_10', name: 'observaciones', label: 'Observaciones', type: 'textarea', required: true },
+      { id: 'itca_11', name: 'nombre_osesa', label: 'Nombre OSESA', type: 'text', required: true },
+      { id: 'itca_12', name: 'nombre_cmdic', label: 'Nombre Cliente', type: 'text', required: true },
+    ]
+  },
+  {
     name: 'Acta de Entrega de Proyecto',
     description: 'Formato para la entrega formal de un proyecto, validando alcance y conformidad.',
     type: 'project-delivery',
