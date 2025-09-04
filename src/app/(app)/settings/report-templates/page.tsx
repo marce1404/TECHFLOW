@@ -25,7 +25,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, Eye } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { ReportTemplate } from '@/lib/types';
 
@@ -89,6 +89,11 @@ export default function ReportTemplatesPage() {
                                                         <DropdownMenuItem asChild>
                                                             <Link href={`/settings/report-templates/${template.id}/edit`}>
                                                                 <Edit className="mr-2 h-4 w-4" /> Ver/Editar
+                                                            </Link>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem asChild>
+                                                            <Link href={`/settings/report-templates/${template.id}/preview`} target="_blank">
+                                                                <Eye className="mr-2 h-4 w-4" /> Ver Plantilla
                                                             </Link>
                                                         </DropdownMenuItem>
                                                         <AlertDialogTrigger asChild>
