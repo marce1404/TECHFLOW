@@ -12,6 +12,9 @@ import {
   SidebarMenuButton,
   SidebarHeader,
   SidebarFooter,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import {
   LayoutGrid,
@@ -26,6 +29,7 @@ import {
   FilePlus2,
   Archive,
   AlertTriangle,
+  ChevronDown
 } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { signOut } from 'firebase/auth';
@@ -59,6 +63,16 @@ export default function AppSidebar() {
       });
     }
   };
+  
+    const isActive = (href: string, isExact: boolean = true) => {
+    if (isExact) {
+        if (href === '/') return pathname === '/';
+        return pathname === href;
+    }
+    return pathname.startsWith(href);
+  };
+  
+  const isAiToolsActive = isActive('/ai-tools', false);
 
   const menuItems = [
     {
@@ -71,7 +85,7 @@ export default function AppSidebar() {
       href: '/orders',
       label: 'OTs Activas',
       icon: File,
-      exact: false, // Match /orders and /orders/new, etc.
+      exact: false, 
     },
      {
       href: '/orders/history',
@@ -89,7 +103,7 @@ export default function AppSidebar() {
       href: '/reports',
       label: 'Llenar Informe',
       icon: FilePlus2,
-      exact: false, // To catch /reports and /reports/new
+      exact: false,
     },
     {
       href: '/reports/history',
@@ -105,7 +119,7 @@ export default function AppSidebar() {
     },
      {
       href: '/alerts',
-      label: 'Alertas de Vencimiento',
+      label: 'Alertas',
       icon: AlertTriangle,
       exact: true,
     },
@@ -115,12 +129,6 @@ export default function AppSidebar() {
       icon: Truck,
       exact: true,
     },
-     {
-      href: '/ai-tools/resource-assignment',
-      label: 'Asistente IA',
-      icon: Sparkles,
-      exact: true,
-    }
   ];
 
   const settingsMenuItem = {
@@ -130,41 +138,24 @@ export default function AppSidebar() {
     exact: false
   };
 
-
-  const isActive = (href: string, isExact: boolean = true) => {
-    if (isExact) {
-        // Exact match for root should only be active on root
-        if (href === '/') return pathname === '/';
-        return pathname === href;
-    }
-    // For non-exact matches
-    if (href === '/reports') {
-        return pathname.startsWith('/reports') && !pathname.startsWith('/reports/history');
-    }
-    if (href === '/orders') {
-        // Make this active for /orders, /orders/new, /orders/[id]/edit, but not for /orders/history
-        return pathname.startsWith('/orders') && !pathname.startsWith('/orders/history');
-    }
-    return pathname.startsWith(href);
+  const getInitials = (name?: string) => {
+    if (!name) return 'U';
+    const names = name.split(' ');
+    const initials = names.map(n => n[0]).join('');
+    return initials.slice(0, 2).toUpperCase();
   };
-  
-    const getInitials = (name?: string) => {
-        if (!name) return 'U';
-        const names = name.split(' ');
-        const initials = names.map(n => n[0]).join('');
-        return initials.slice(0, 2).toUpperCase();
-    };
 
   if (state === 'collapsed') {
+    // Collapsed state rendering
     return (
         <>
             <SidebarHeader>
-                <div className="flex items-center justify-center p-2">
+                 <div className="flex items-center justify-center p-2">
                     <SidebarMenuButton
                         asChild
-                        isActive={isActive(menuItems[0].href, menuItems[0].exact)}
+                        isActive={isActive('/dashboard')}
                         tooltip="Dashboard"
-                        variant={isActive(menuItems[0].href, menuItems[0].exact) ? 'default' : 'ghost'}
+                        variant={isActive('/dashboard') ? 'default' : 'ghost'}
                         className="h-10 w-10"
                     >
                         <Link href="/dashboard">
@@ -176,24 +167,37 @@ export default function AppSidebar() {
             <SidebarContent>
                 <SidebarMenu>
                     {menuItems.slice(1).map((item) => (
-                        <SidebarMenuItem key={item.href}>
-                        <SidebarMenuButton
-                            asChild
-                            isActive={isActive(item.href, item.exact)}
-                            tooltip={item.label}
-                            variant={isActive(item.href, item.exact) ? 'default' : 'ghost'}
-                            className="h-10 w-10"
-                        >
-                            <Link href={item.href}>
-                                <item.icon className="h-5 w-5" />
-                            </Link>
-                        </SidebarMenuButton>
+                         <SidebarMenuItem key={item.href}>
+                            <SidebarMenuButton
+                                asChild
+                                isActive={isActive(item.href, item.exact)}
+                                tooltip={item.label}
+                                variant={isActive(item.href, item.exact) ? 'default' : 'ghost'}
+                                className="h-10 w-10"
+                            >
+                                <Link href={item.href}>
+                                    <item.icon className="h-5 w-5" />
+                                </Link>
+                            </SidebarMenuButton>
                         </SidebarMenuItem>
                     ))}
+                    <SidebarMenuItem>
+                        <SidebarMenuButton
+                            asChild
+                            isActive={isAiToolsActive}
+                            tooltip="Asistente IA"
+                            variant={isAiToolsActive ? 'default' : 'ghost'}
+                            className="h-10 w-10"
+                        >
+                            <Link href="/ai-tools/resource-assignment">
+                                <Sparkles className="h-5 w-5" />
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarContent>
             <SidebarFooter>
-                <SidebarMenu>
+                 <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton 
                         asChild 
@@ -222,7 +226,6 @@ export default function AppSidebar() {
         </>
     )
   }
-
 
   return (
     <>
@@ -267,6 +270,32 @@ export default function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
           )}
+           <SidebarMenuItem>
+              <SidebarMenuButton
+                isSubmenu
+                isActive={isAiToolsActive}
+                variant={isAiToolsActive ? 'default' : 'ghost'}
+                className="justify-between"
+              >
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5" />
+                  <span>Asistente IA</span>
+                </div>
+                <ChevronDown className="h-4 w-4" />
+              </SidebarMenuButton>
+              <SidebarMenuSub>
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton asChild isActive={pathname.includes('resource-assignment')}>
+                    <Link href="/ai-tools/resource-assignment">Sugerir Recursos</Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton asChild isActive={pathname.includes('gantt-suggester')}>
+                    <Link href="/ai-tools/gantt-suggester">Sugerir Tareas Gantt</Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              </SidebarMenuSub>
+            </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
