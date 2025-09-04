@@ -15,6 +15,7 @@ import nodemailer from 'nodemailer';
 import * as xlsx from 'xlsx';
 import { auth, db } from '@/lib/firebase-admin';
 import type { UserRecord } from 'firebase-admin/auth';
+import { suggestGanttTasks } from '@/ai/flows/suggest-gantt-tasks';
 
 // --- Server Actions ---
 
@@ -148,7 +149,7 @@ export async function exportOrdersToExcel(orders: WorkOrder[]): Promise<string> 
 export async function sendInvitationEmailAction(
     user: AppUser,
     password_clear: string,
-    appUrl: string,
+    loginUrl: string,
     config: SmtpConfig,
 ): Promise<{ success: boolean; message: string }> {
     const { host, port, secure, user: smtpUser, pass, fromName, fromEmail } = config;
@@ -196,7 +197,7 @@ export async function sendInvitationEmailAction(
                     <p><strong>Contraseña:</strong> ${password_clear}</p>
                 </div>
                 <p>Te recomendamos cambiar tu contraseña después de iniciar sesión por primera vez.</p>
-                <a href="${appUrl}" class="button">Iniciar Sesión en TechFlow</a>
+                <a href="${loginUrl}" class="button">Iniciar Sesión en TechFlow</a>
             </div>
             <div class="footer">
                 <p>Si tienes problemas para acceder, por favor contacta a tu administrador.</p>

@@ -1,5 +1,4 @@
 
-
 'use client';
 import * as React from 'react';
 import { z } from 'zod';
@@ -85,8 +84,8 @@ export function UserInviteForm({ onUserAdded }: UserInviteFormProps) {
         if (!smtpConfig) {
             toast({ variant: 'destructive', title: 'Advertencia', description: 'No se puede enviar la invitación. La configuración SMTP no está establecida.'});
         } else {
-            const appUrl = window.location.origin;
-             const result = await sendInvitationEmailAction(creationResult.user, data.password, appUrl, smtpConfig);
+            const loginUrl = `${window.location.origin}/login`;
+             const result = await sendInvitationEmailAction(creationResult.user, data.password, loginUrl, smtpConfig);
             if (result.success) {
                 toast({ title: 'Invitación Enviada', description: result.message });
             } else {
