@@ -340,7 +340,7 @@ const getLastOtNumber = (prefix: string): string | null => {
   const addGanttChart = async (ganttChart: Omit<GanttChart, 'id'>): Promise<GanttChart> => {
       const dataToSave = {
           ...ganttChart,
-          assignedOT: ganttChart.assignedOT === 'none' ? '' : ganttChart.assignedOT,
+          assignedOT: ganttChart.assignedOT === 'none' ? '' : ganttChart.assignedOT || '',
           tasks: ganttChart.tasks.map(task => ({
               ...task,
               startDate: Timestamp.fromDate(new Date(task.startDate)),
