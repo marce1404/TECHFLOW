@@ -508,6 +508,52 @@ export default function NewOrderPage() {
       
         <Card>
             <CardHeader>
+                <CardTitle>Añadir Nueva Factura</CardTitle>
+            </CardHeader>
+             <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div className="md:col-span-1">
+                    <Label htmlFor="new-invoice-number">Número de Factura</Label>
+                    <Input id="new-invoice-number" value={newInvoiceNumber} onChange={e => setNewInvoiceNumber(e.target.value)} />
+                </div>
+                 <div className="md:col-span-1">
+                    <Label htmlFor="new-invoice-date">Fecha</Label>
+                     <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" className={cn("w-full justify-start text-left font-normal")}>
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {newInvoiceDate ? format(newInvoiceDate, "PPP", { locale: es }) : <span>Elegir fecha</span>}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                            <Calendar mode="single" selected={newInvoiceDate} onSelect={setNewInvoiceDate} initialFocus locale={es} />
+                        </PopoverContent>
+                    </Popover>
+                </div>
+                 <div className="md:col-span-1">
+                    <Label htmlFor="new-invoice-amount">Monto (Neto)</Label>
+                    <Input 
+                        id="new-invoice-amount" 
+                        type="text" 
+                        className="text-right" 
+                        value={formatCurrency(newInvoiceAmount)} 
+                        onChange={(e) => {
+                            const rawValue = e.target.value.replace(/\./g, '');
+                            const numericValue = parseInt(rawValue, 10);
+                            setNewInvoiceAmount(isNaN(numericValue) ? 0 : numericValue);
+                        }}
+                    />
+                </div>
+                 <div className="md:col-span-1">
+                    <Button onClick={handleAddInvoice} size="sm">
+                        <PlusCircle className="mr-2 h-4 w-4"/>
+                        Agregar Factura a la Lista
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
               <CardTitle>Gestión de Facturas</CardTitle>
             </CardHeader>
             <CardContent>
@@ -549,52 +595,6 @@ export default function NewOrderPage() {
             </CardContent>
         </Card>
         
-        <Card>
-            <CardHeader>
-                <CardTitle>Añadir Nueva Factura</CardTitle>
-            </CardHeader>
-             <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                <div className="md:col-span-1">
-                    <Label htmlFor="new-invoice-number">Número de Factura</Label>
-                    <Input id="new-invoice-number" value={newInvoiceNumber} onChange={e => setNewInvoiceNumber(e.target.value)} />
-                </div>
-                 <div className="md:col-span-1">
-                    <Label htmlFor="new-invoice-date">Fecha</Label>
-                     <Popover>
-                        <PopoverTrigger asChild>
-                            <Button variant="outline" className={cn("w-full justify-start text-left font-normal")}>
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {newInvoiceDate ? format(newInvoiceDate, "PPP", { locale: es }) : <span>Elegir fecha</span>}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                            <Calendar mode="single" selected={newInvoiceDate} onSelect={setNewInvoiceDate} initialFocus locale={es} />
-                        </PopoverContent>
-                    </Popover>
-                </div>
-                 <div className="md:col-span-1">
-                    <Label htmlFor="new-invoice-amount">Monto (Neto)</Label>
-                    <Input 
-                        id="new-invoice-amount" 
-                        type="text" 
-                        className="text-right" 
-                        value={formatCurrency(newInvoiceAmount)} 
-                        onChange={(e) => {
-                            const rawValue = e.target.value.replace(/\./g, '');
-                            const numericValue = parseInt(rawValue, 10);
-                            setNewInvoiceAmount(isNaN(numericValue) ? 0 : numericValue);
-                        }}
-                    />
-                </div>
-                 <div className="md:col-span-1">
-                    <Button onClick={handleAddInvoice} className="w-full">
-                        <PlusCircle className="mr-2 h-4 w-4"/>
-                        Agregar Factura a la Lista
-                    </Button>
-                </div>
-            </CardContent>
-        </Card>
-
         <div className="flex justify-end gap-2 mt-8">
             <Button variant="outline" asChild><Link href="/orders">Cancelar</Link></Button>
             <Button onClick={handleCreateOrder}>Crear OT</Button>
