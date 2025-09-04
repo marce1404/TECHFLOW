@@ -25,6 +25,7 @@ import {
   LogOut,
   FilePlus2,
   Archive,
+  AlertTriangle,
 } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { signOut } from 'firebase/auth';
@@ -64,6 +65,12 @@ export default function AppSidebar() {
       href: '/dashboard',
       label: 'Dashboard',
       icon: LayoutGrid,
+      exact: true,
+    },
+    {
+      href: '/alerts',
+      label: 'Alertas de Vencimiento',
+      icon: AlertTriangle,
       exact: true,
     },
     {

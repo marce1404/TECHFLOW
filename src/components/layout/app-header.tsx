@@ -50,6 +50,7 @@ export default function AppHeader() {
 
   const getPageTitle = () => {
     if (pathname === '/dashboard') return 'Dashboard';
+    if (pathname === '/alerts') return 'Alertas de Vencimiento';
     if (pathname.startsWith('/orders/history')) return 'Historial de Órdenes';
     if (pathname.startsWith('/orders/new')) return 'Nueva Orden de Trabajo';
     if (pathname.startsWith('/orders/')) return 'Detalle Orden de Trabajo';

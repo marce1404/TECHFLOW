@@ -13,14 +13,16 @@ import { Carousel, CarouselContent, CarouselItem, type CarouselApi, CarouselPrev
 import { Button } from '@/components/ui/button';
 import { Expand, Shrink } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ExpirationAlertsCard, type ExpirationAlertItem } from '@/components/dashboard/expiration-alerts-card';
+import { ExpirationAlertsCard } from '@/components/dashboard/expiration-alerts-card';
 import { differenceInDays, parseISO, addYears } from 'date-fns';
+import { useAuth } from '@/context/auth-context';
 
 
 const ITEMS_PER_PAGE = 10;
 
 export default function DashboardPage() {
   const { workOrders, loading, ganttCharts, collaborators } = useWorkOrders();
+  const { user, loading: authLoading } = useAuth();
   const [api, setApi] = React.useState<CarouselApi>();
   const [current, setCurrent] = React.useState(0);
   const [count, setCount] = React.useState(0);
@@ -85,7 +87,14 @@ export default function DashboardPage() {
   });
 
     const expiringItems = React.useMemo(() => {
-        const alerts: ExpirationAlertItem[] = [];
+        if (loading || authLoading) return [];
+
+        const alerts: {
+            collaboratorName: string;
+            itemName: string;
+            daysUntilExpiration: number;
+            expirationDate: string;
+        }[] = [];
         const today = new Date();
         
         collaborators.forEach(c => {
@@ -114,7 +123,6 @@ export default function DashboardPage() {
 
                 if (expiration && expirationDateStr) {
                     const daysUntilExpiration = differenceInDays(expiration, today);
-                    // Show items that have already expired or will expire within the next 60 days.
                     if (daysUntilExpiration <= 60) {
                         alerts.push({
                             collaboratorName: c.name,
@@ -128,7 +136,7 @@ export default function DashboardPage() {
         });
 
         return alerts.sort((a,b) => a.daysUntilExpiration - b.daysUntilExpiration);
-    }, [collaborators]);
+    }, [collaborators, loading, authLoading]);
 
   const toggleFullscreen = () => {
     if (!dashboardRef.current) return;
@@ -183,7 +191,7 @@ export default function DashboardPage() {
   }, [api, isFullscreen]);
 
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="flex flex-col gap-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

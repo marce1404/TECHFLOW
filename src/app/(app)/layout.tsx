@@ -28,7 +28,7 @@ function ProtectedRoutes({ children }: { children: React.ReactNode }) {
             <div className="flex flex-1">
                 <div className="w-64 p-4 border-r hidden md:block">
                     <div className="space-y-4">
-                        {[...Array(6)].map((_, i) => (
+                        {[...Array(7)].map((_, i) => (
                             <Skeleton key={i} className="h-10 w-full" />
                         ))}
                     </div>

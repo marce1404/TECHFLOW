@@ -6,15 +6,17 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { AlertTriangle, CalendarDays } from 'lucide-react';
+import { AlertTriangle, CalendarDays, ArrowRight } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { Button } from '../ui/button';
 
 export type ExpirationAlertItem = {
     collaboratorName: string;
@@ -29,9 +31,16 @@ interface ExpirationAlertsCardProps {
 
 export function ExpirationAlertsCard({ items }: ExpirationAlertsCardProps) {
   const getBadgeColor = (days: number) => {
-    if (days <= 7) return 'bg-destructive/80 text-destructive-foreground';
-    if (days <= 30) return 'bg-yellow-500 text-black';
+    if (days < 0) return 'bg-destructive text-destructive-foreground'; // Expired
+    if (days <= 7) return 'bg-destructive/80 text-destructive-foreground'; // Urgent
+    if (days <= 30) return 'bg-yellow-500 text-black'; // Warning
     return 'bg-secondary text-secondary-foreground';
+  }
+
+  const getDayText = (days: number) => {
+    if (days < 0) return 'Vencido';
+    if (days === 0) return 'Hoy';
+    return `${days}d`;
   }
 
   return (
@@ -63,7 +72,7 @@ export function ExpirationAlertsCard({ items }: ExpirationAlertsCardProps) {
                         </div>
                     </div>
                      <div className={cn("flex-shrink-0 text-xs font-bold rounded-full h-8 w-8 flex items-center justify-center", getBadgeColor(item.daysUntilExpiration))}>
-                        {item.daysUntilExpiration}d
+                        {getDayText(item.daysUntilExpiration)}
                      </div>
                 </div>
               ))}
@@ -77,6 +86,14 @@ export function ExpirationAlertsCard({ items }: ExpirationAlertsCardProps) {
           </div>
         )}
       </CardContent>
+       <CardFooter className="pt-4 border-t">
+            <Button asChild variant="outline" className="w-full">
+                <Link href="/alerts">
+                    Ver Todas las Alertas
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+            </Button>
+        </CardFooter>
     </Card>
   );
 }
