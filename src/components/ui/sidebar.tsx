@@ -518,6 +518,7 @@ const SidebarMenuButton = React.forwardRef<
     asChild?: boolean
     isActive?: boolean
     tooltip?: string | React.ComponentProps<typeof TooltipContent>
+    isSubmenu?: boolean
   }
 >(
   (
@@ -528,6 +529,7 @@ const SidebarMenuButton = React.forwardRef<
       size = "default",
       tooltip,
       className,
+      isSubmenu,
       ...props
     },
     ref
