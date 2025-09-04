@@ -522,70 +522,6 @@ export default function EditOrderPage() {
             </fieldset>
       </Card>
       
-        <Card>
-            <CardHeader>
-              <CardTitle>Gestión de Facturas</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <fieldset disabled={!canEdit}>
-                    <div className="rounded-md border mb-4">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Número de Factura</TableHead>
-                                    <TableHead className="w-[180px]">Fecha</TableHead>
-                                    <TableHead className="w-[150px] text-right">Monto (Neto)</TableHead>
-                                    <TableHead className="w-[150px] text-right">Total (IVA Incl.)</TableHead>
-                                    <TableHead className="w-[50px]"></TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {invoiceFields.map((field, index) => (
-                                    <TableRow key={field.id}>
-                                        <TableCell>{methods.watch(`invoices.${index}.number`)}</TableCell>
-                                        <TableCell>{format(new Date(methods.watch(`invoices.${index}.date`).replace(/-/g, '/')), "PPP", { locale: es })}</TableCell>
-                                        <TableCell className="text-right">{formatCurrency(methods.watch(`invoices.${index}.amount`))}</TableCell>
-                                        <TableCell className="text-right">{formatCurrency(Math.round(methods.watch(`invoices.${index}.amount`) * 1.19))}</TableCell>
-                                        <TableCell>
-                                            <Button variant="ghost" size="icon" onClick={() => removeInvoice(index)}>
-                                                <Trash2 className="h-4 w-4 text-destructive"/>
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                                {invoiceFields.length === 0 && (
-                                    <TableRow>
-                                        <TableCell colSpan={5} className="h-24 text-center">
-                                            No se han añadido facturas.
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
-
-                    <div className="grid grid-cols-4 gap-4 pt-4 text-sm font-medium">
-                        <div className="p-2 border rounded-md">
-                            <p className="text-muted-foreground">Total Facturado (Neto)</p>
-                            <p className="text-lg font-bold">{formatCurrency(totalInvoicedNet)}</p>
-                        </div>
-                        <div className="p-2 border rounded-md">
-                            <p className="text-muted-foreground">Total Facturado (IVA Incl.)</p>
-                            <p className="text-lg font-bold">{formatCurrency(totalInvoicedGross)}</p>
-                        </div>
-                        <div className="p-2 border rounded-md">
-                            <p className="text-muted-foreground">Precio OT (Neto)</p>
-                            <p className="text-lg font-bold">{formatCurrency(watchNetPrice || 0)}</p>
-                        </div>
-                        <div className={cn("p-2 border rounded-md", balance < 0 ? "text-destructive" : "")}>
-                            <p className="text-muted-foreground">Saldo Pendiente (Neto)</p>
-                            <p className="text-lg font-bold">{formatCurrency(balance)}</p>
-                        </div>
-                    </div>
-                </fieldset>
-            </CardContent>
-        </Card>
-
         {canEdit && (
         <Card>
             <CardHeader>
@@ -626,14 +562,78 @@ export default function EditOrderPage() {
                     />
                 </div>
                  <div className="md:col-span-1">
-                    <Button onClick={handleAddInvoice} className="w-full" type="button">
+                    <Button onClick={handleAddInvoice} size="sm" className="w-full sm:w-auto" type="button">
                         <PlusCircle className="mr-2 h-4 w-4"/>
-                        Agregar Factura a la Lista
+                        Agregar Factura
                     </Button>
                 </div>
             </CardContent>
         </Card>
       )}
+
+      <Card>
+          <CardHeader>
+            <CardTitle>Gestión de Facturas</CardTitle>
+          </CardHeader>
+          <CardContent>
+              <fieldset disabled={!canEdit}>
+                  <div className="rounded-md border mb-4">
+                      <Table>
+                          <TableHeader>
+                              <TableRow>
+                                  <TableHead>Número de Factura</TableHead>
+                                  <TableHead className="w-[180px]">Fecha</TableHead>
+                                  <TableHead className="w-[150px] text-right">Monto (Neto)</TableHead>
+                                  <TableHead className="w-[150px] text-right">Total (IVA Incl.)</TableHead>
+                                  <TableHead className="w-[50px]"></TableHead>
+                              </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                              {invoiceFields.map((field, index) => (
+                                  <TableRow key={field.id}>
+                                      <TableCell>{methods.watch(`invoices.${index}.number`)}</TableCell>
+                                      <TableCell>{format(new Date(methods.watch(`invoices.${index}.date`).replace(/-/g, '/')), "PPP", { locale: es })}</TableCell>
+                                      <TableCell className="text-right">{formatCurrency(methods.watch(`invoices.${index}.amount`))}</TableCell>
+                                      <TableCell className="text-right">{formatCurrency(Math.round(methods.watch(`invoices.${index}.amount`) * 1.19))}</TableCell>
+                                      <TableCell>
+                                          <Button variant="ghost" size="icon" onClick={() => removeInvoice(index)}>
+                                              <Trash2 className="h-4 w-4 text-destructive"/>
+                                          </Button>
+                                      </TableCell>
+                                  </TableRow>
+                              ))}
+                              {invoiceFields.length === 0 && (
+                                  <TableRow>
+                                      <TableCell colSpan={5} className="h-24 text-center">
+                                          No se han añadido facturas.
+                                      </TableCell>
+                                  </TableRow>
+                              )}
+                          </TableBody>
+                      </Table>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-4 pt-4 text-sm font-medium">
+                      <div className="p-2 border rounded-md">
+                          <p className="text-muted-foreground">Total Facturado (Neto)</p>
+                          <p className="text-lg font-bold">{formatCurrency(totalInvoicedNet)}</p>
+                      </div>
+                      <div className="p-2 border rounded-md">
+                          <p className="text-muted-foreground">Total Facturado (IVA Incl.)</p>
+                          <p className="text-lg font-bold">{formatCurrency(totalInvoicedGross)}</p>
+                      </div>
+                      <div className="p-2 border rounded-md">
+                          <p className="text-muted-foreground">Precio OT (Neto)</p>
+                          <p className="text-lg font-bold">{formatCurrency(watchNetPrice || 0)}</p>
+                      </div>
+                      <div className={cn("p-2 border rounded-md", balance < 0 ? "text-destructive" : "")}>
+                          <p className="text-muted-foreground">Saldo Pendiente (Neto)</p>
+                          <p className="text-lg font-bold">{formatCurrency(balance)}</p>
+                      </div>
+                  </div>
+              </fieldset>
+          </CardContent>
+      </Card>
 
 
       {canEdit && (
