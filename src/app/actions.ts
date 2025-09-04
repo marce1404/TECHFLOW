@@ -145,27 +145,6 @@ export async function exportOrdersToExcel(orders: WorkOrder[]): Promise<string> 
     return buffer.toString('base64');
 }
 
-export async function importOrdersFromExcel(ordersData: CreateWorkOrderInput[]): Promise<{ successCount: number; errorCount: number; errors: string[] }> {
-    let successCount = 0;
-    let errorCount = 0;
-    const errors: string[] = [];
-
-    for (const orderData of ordersData) {
-        try {
-            // This function needs to be implemented or called from a client-side context
-            // that has access to the `addOrder` function from `useWorkOrders`.
-            // For now, we simulate a success to allow the structure to be correct.
-            // await createOrUpdateWorkOrder(orderData); 
-            successCount++;
-        } catch (error: any) {
-            errorCount++;
-            errors.push(`OT ${orderData.ot_number}: Error inesperado - ${error.message}`);
-        }
-    }
-
-    return { successCount, errorCount, errors };
-}
-
 export async function sendInvitationEmailAction(
     user: AppUser,
     password_clear: string,

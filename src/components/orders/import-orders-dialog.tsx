@@ -15,12 +15,10 @@ import { useToast } from '@/hooks/use-toast';
 import { Download, FileUp, Loader2, UploadCloud, CheckCircle, AlertCircle } from 'lucide-react';
 import * as xlsx from 'xlsx';
 import { z } from 'zod';
-import { importOrdersFromExcel } from '@/app/actions';
 import type { CreateWorkOrderInput } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { ScrollArea } from '../ui/scroll-area';
 import { useWorkOrders } from '@/context/work-orders-context';
-import { format } from 'date-fns';
 
 interface ImportOrdersDialogProps {
   open: boolean;
@@ -69,7 +67,7 @@ const CreateWorkOrderInputSchemaForExcel = z.object({
 
 
 export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: ImportOrdersDialogProps) {
-  const { collaborators, vehicles: availableVehicles } = useWorkOrders();
+  const { collaborators, vehicles: availableVehicles, addOrder } = useWorkOrders();
   const [file, setFile] = React.useState<File | null>(null);
   const [parsedData, setParsedData] = React.useState<CreateWorkOrderInput[]>([]);
   const [errors, setErrors] = React.useState<string[]>([]);
@@ -220,13 +218,26 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     }
     setLoading(true);
     setImportResult(null);
+    
+    let successCount = 0;
+    let errorCount = 0;
+    const batchErrors: string[] = [];
 
-    const result = await importOrdersFromExcel(parsedData);
-    setImportResult(result);
+    for (const orderData of parsedData) {
+        try {
+            await addOrder(orderData);
+            successCount++;
+        } catch (error: any) {
+            errorCount++;
+            batchErrors.push(`OT ${orderData.ot_number}: ${error.message}`);
+        }
+    }
+    
+    setImportResult({ successCount, errorCount, errors: batchErrors });
     setLoading(false);
 
-    if (result.successCount > 0) {
-        onImportSuccess();
+    if (successCount > 0) {
+        onImportSuccess(); // Refreshes the data in the main view
     }
   };
 
