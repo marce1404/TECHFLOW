@@ -96,11 +96,14 @@ export default function DashboardPage() {
             ];
 
             allItems.forEach(item => {
+                if (!item) return;
+                
                 let expiration: Date | null = null;
-                let expirationDateStr: string | undefined = item.expirationDate;
+                let expirationDateStr: string | undefined = undefined;
 
-                if (item.expirationDate) {
+                if ('expirationDate' in item && item.expirationDate) {
                     expiration = parseISO(item.expirationDate);
+                    expirationDateStr = item.expirationDate;
                 } else if ('deliveryDate' in item && item.deliveryDate) {
                     expiration = addYears(parseISO(item.deliveryDate), 1);
                     expirationDateStr = expiration.toISOString().split('T')[0];
@@ -111,10 +114,11 @@ export default function DashboardPage() {
 
                 if (expiration && expirationDateStr) {
                     const daysUntilExpiration = differenceInDays(expiration, today);
-                    if (daysUntilExpiration >= 0 && daysUntilExpiration <= 60) {
+                    // Show items that have already expired or will expire within the next 60 days.
+                    if (daysUntilExpiration <= 60) {
                         alerts.push({
                             collaboratorName: c.name,
-                            itemName: item.item || item.name || 'Documento sin nombre',
+                            itemName: ('item' in item ? item.item : item.name) || 'Documento sin nombre',
                             daysUntilExpiration,
                             expirationDate: expirationDateStr,
                         });
