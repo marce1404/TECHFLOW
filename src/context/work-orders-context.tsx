@@ -76,7 +76,6 @@ interface WorkOrdersContextType {
   updateCompanyInfo: (info: CompanyInfo) => Promise<void>;
   updateSmtpConfig: (config: SmtpConfig) => Promise<void>;
   promptToCloseOrder: (order: WorkOrder) => void;
-  deleteAllWorkOrdersAction: () => Promise<{success: boolean; message: string; deletedCount: number}>;
 }
 
 const WorkOrdersContext = createContext<WorkOrdersContextType | undefined>(undefined);
@@ -237,12 +236,10 @@ const getLastOtNumber = (prefix: string): string | null => {
   const updateOrder = async (id: string, updatedData: Partial<WorkOrder>) => {
     const orderRef = doc(db, 'work-orders', id);
     await updateDoc(orderRef, updatedData);
-
     const order = workOrders.find(o => o.id === id);
     if(order) {
         await logAction(`Actualizó la OT ${order.ot_number}`);
     }
-
     await fetchData();
   };
 
@@ -551,27 +548,6 @@ const getLastOtNumber = (prefix: string): string | null => {
     await logAction(`Actualizó la configuración SMTP`);
     await fetchData();
   };
-
-  const deleteAllWorkOrdersAction = async (): Promise<{ success: boolean; message: string; deletedCount: number }> => {
-    const collectionRef = collection(db, 'work-orders');
-    try {
-        let deletedCount = 0;
-        const snapshot = await getDocs(collectionRef);
-        const batch = writeBatch(db);
-        snapshot.docs.forEach(doc => {
-            batch.delete(doc.ref);
-        });
-        await batch.commit();
-        deletedCount = snapshot.size;
-
-        await logAction(`ELIMINÓ TODAS LAS ÓRDENES DE TRABAJO (${deletedCount} eliminadas)`);
-        await fetchData();
-        return { success: true, message: `Se eliminaron ${deletedCount} órdenes de trabajo.`, deletedCount };
-    } catch (error: any) {
-        console.error("Error deleting all work orders:", error);
-        return { success: false, message: `Error al limpiar la base de datos: ${error.message}`, deletedCount: 0 };
-    }
-  };
   
   return (
     <WorkOrdersContext.Provider value={{ 
@@ -629,7 +605,6 @@ const getLastOtNumber = (prefix: string): string | null => {
         updateCompanyInfo,
         updateSmtpConfig,
         promptToCloseOrder,
-        deleteAllWorkOrdersAction,
     }}>
       {children}
       <CloseWorkOrderDialog 
