@@ -46,15 +46,14 @@ export default function ActiveOrdersPage() {
         setActiveTab(categoryPrefix || 'todos');
     };
     
+    const activeOrders = React.useMemo(() => {
+        return workOrders.filter(o => normalizeString(o.status) !== 'cerrada');
+    }, [workOrders]);
+    
     const filteredOrders = React.useMemo(() => {
-        // 1. Determine the base data set.
-        // If simple search is active, use all orders. Otherwise, use only active orders.
-        const activeOrders = workOrders.filter(o => normalizeString(o.status) !== 'cerrada');
-        
-        let baseOrders = filters.search ? workOrders : activeOrders;
+        let ordersToFilter = [...activeOrders];
 
-        // 2. Apply simple search filter (if any)
-        let ordersToFilter = baseOrders;
+        // Apply simple search to all active orders
         if (filters.search) {
              ordersToFilter = ordersToFilter.filter(order =>
                 order.ot_number.toLowerCase().includes(filters.search.toLowerCase()) ||
@@ -63,8 +62,7 @@ export default function ActiveOrdersPage() {
             );
         }
 
-        // 3. Apply advanced filters (only if the base isn't the global search result)
-        // Or if it is, we still need to filter those results.
+        // Apply advanced filters to the already searched list
         if (filters.clients.length > 0) {
             ordersToFilter = ordersToFilter.filter(order => filters.clients.includes(order.client));
         }
@@ -90,30 +88,28 @@ export default function ActiveOrdersPage() {
             ordersToFilter = ordersToFilter.filter(order => new Date(order.date.replace(/-/g, '/')) <= filters.dateRange.to!);
         }
         
-        // 4. Apply the final invoice status filter on the already filtered list
+        // Apply the final invoice status filter on the already filtered list
         if (filters.invoicedStatus === 'invoiced') {
             ordersToFilter = ordersToFilter.filter(order => {
                 const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
-                // On this page, "Facturadas" means active orders with some amount invoiced.
-                return normalizeString(order.status) !== 'cerrada' && totalInvoiced > 0;
+                return totalInvoiced > 0;
             });
         } else if (filters.invoicedStatus === 'not_invoiced') {
              ordersToFilter = ordersToFilter.filter(order => {
                 const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
                 const netPrice = order.netPrice || 0;
-                // Only active orders with a pending balance
-                return normalizeString(order.status) !== 'cerrada' && netPrice > 0 && totalInvoiced < netPrice;
+                return netPrice > 0 && totalInvoiced < netPrice;
             });
         }
 
-        // 5. Apply tab filter as a final step
+        // Apply tab filter as a final step
         if (activeTab !== 'todos') {
             ordersToFilter = ordersToFilter.filter(order => order.ot_number.startsWith(activeTab));
         }
 
         return ordersToFilter;
 
-    }, [workOrders, activeTab, filters]);
+    }, [activeOrders, activeTab, filters]);
 
     const categories = [
         { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
@@ -136,13 +132,12 @@ export default function ActiveOrdersPage() {
     }
     
     const { totalPorFacturar, totalFacturado } = React.useMemo(() => {
-        // Calculate totals based on the currently visible filtered orders
-        return filteredOrders.reduce((acc, order) => {
+        // Calculate totals based on ALL active orders, regardless of filters.
+        return activeOrders.reduce((acc, order) => {
             const invoicedAmount = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
             const netPrice = order.netPrice || 0;
             
-            // Only add to "Por Facturar" if it's not fully invoiced and not closed
-            if (netPrice > invoicedAmount && normalizeString(order.status) !== 'cerrada') {
+            if (netPrice > invoicedAmount) {
                 acc.totalPorFacturar += (netPrice - invoicedAmount);
             }
             
@@ -150,7 +145,7 @@ export default function ActiveOrdersPage() {
 
             return acc;
         }, { totalPorFacturar: 0, totalFacturado: 0 });
-    }, [filteredOrders]);
+    }, [activeOrders]);
 
 
     return (
