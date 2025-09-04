@@ -8,10 +8,13 @@ import {
   WorkOrder,
   CreateWorkOrderInput,
   AppUser,
+  UpdateUserInput,
 } from '@/lib/types';
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
 import nodemailer from 'nodemailer';
 import * as xlsx from 'xlsx';
+import { auth, db } from '@/lib/firebase-admin';
+import type { UserRecord } from 'firebase-admin/auth';
 
 // --- Server Actions ---
 
@@ -237,5 +240,87 @@ export async function sendInvitationEmailAction(
     } catch (error: any) {
         console.error("Error sending invitation email:", error);
         return { success: false, message: `Error al enviar el correo: ${error.message}` };
+    }
+}
+
+// User Management Actions
+type CreateUserInput = {
+  email: string;
+  password?: string;
+  displayName: string;
+  role: 'Admin' | 'Supervisor' | 'Técnico' | 'Visor';
+};
+
+export async function createUserAction(userData: CreateUserInput): Promise<{ success: boolean; message: string; user?: AppUser }> {
+  try {
+    const userRecord: UserRecord = await (auth as any).createUser({
+      email: userData.email,
+      password: userData.password,
+      displayName: userData.displayName,
+      emailVerified: true,
+      disabled: false,
+    });
+
+    await (auth as any).setCustomUserClaims(userRecord.uid, { role: userData.role });
+
+    const newUser: AppUser = {
+      uid: userRecord.uid,
+      email: userRecord.email!,
+      displayName: userRecord.displayName!,
+      role: userData.role,
+      status: 'Activo',
+    };
+
+    await (db as any).collection('users').doc(userRecord.uid).set(newUser);
+    return { success: true, message: 'Usuario creado exitosamente.', user: newUser };
+  } catch (error: any) {
+    console.error('Error creating user:', error);
+    return { success: false, message: error.message };
+  }
+}
+
+export async function updateUserAction(uid: string, data: Partial<AppUser>): Promise<{ success: boolean; message: string }> {
+  try {
+    await (auth as any).updateUser(uid, {
+      displayName: data.displayName,
+    });
+    if (data.role) {
+        await (auth as any).setCustomUserClaims(uid, { role: data.role });
+    }
+    await (db as any).collection('users').doc(uid).update(data);
+    return { success: true, message: 'Usuario actualizado.' };
+  } catch (error: any) {
+    return { success: false, message: error.message };
+  }
+}
+
+export async function deleteUserAction(uid: string): Promise<{ success: boolean; message: string }> {
+    try {
+        await (auth as any).deleteUser(uid);
+        await (db as any).collection('users').doc(uid).delete();
+        return { success: true, message: 'Usuario eliminado exitosamente.' };
+    } catch (error: any) {
+        return { success: false, message: error.message };
+    }
+}
+
+export async function toggleUserStatusAction(uid: string, currentStatus: 'Activo' | 'Inactivo'): Promise<{ success: boolean; message: string }> {
+    const newStatus = currentStatus === 'Activo' ? 'Inactivo' : 'Activo';
+    const isDisabled = newStatus === 'Inactivo';
+    try {
+        await (auth as any).updateUser(uid, { disabled: isDisabled });
+        await (db as any).collection('users').doc(uid).update({ status: newStatus });
+        return { success: true, message: 'Estado del usuario actualizado.' };
+    } catch (error: any) {
+        return { success: false, message: error.message };
+    }
+}
+
+export async function changeUserPasswordAction(uid: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    try {
+        await (auth as any).updateUser(uid, { password: newPassword });
+        return { success: true, message: 'Contraseña cambiada exitosamente.' };
+    } catch (error: any) {
+        return { success: false, message: error.message };
     }
 }

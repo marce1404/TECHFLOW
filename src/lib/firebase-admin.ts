@@ -1,12 +1,9 @@
 
 import * as admin from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
-import * as dotenv from 'dotenv';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import type { AppUser } from './types';
-
-dotenv.config();
 
 let adminApp: admin.app.App | null = null;
 
