@@ -137,10 +137,12 @@ export default function ActiveOrdersPage() {
             const invoicedAmount = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
             const netPrice = order.netPrice || 0;
             
+            // "Por Facturar" is the sum of net prices of orders not yet fully invoiced.
             if (netPrice > invoicedAmount) {
-                acc.totalPorFacturar += (netPrice - invoicedAmount);
+                acc.totalPorFacturar += netPrice;
             }
             
+            // "Facturado" is the sum of what has actually been invoiced across all active orders.
             acc.totalFacturado += invoicedAmount;
 
             return acc;
