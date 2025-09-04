@@ -29,6 +29,7 @@ interface ExpirationAlertsCardProps {
 
 export function ExpirationAlertsCard({ items }: ExpirationAlertsCardProps) {
   const getBadgeColor = (days: number) => {
+    if (days < 0) return 'bg-destructive text-destructive-foreground';
     if (days <= 7) return 'bg-destructive/80 text-destructive-foreground';
     if (days <= 30) return 'bg-yellow-500 text-black';
     return 'bg-secondary text-secondary-foreground';

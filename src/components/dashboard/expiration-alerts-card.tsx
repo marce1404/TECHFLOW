@@ -71,7 +71,7 @@ export function ExpirationAlertsCard({ items }: ExpirationAlertsCardProps) {
                             <span>Vence el: {format(parseISO(item.expirationDate), 'dd/MM/yyyy', {locale: es})}</span>
                         </div>
                     </div>
-                     <div className={cn("flex-shrink-0 text-xs font-bold rounded-full h-8 w-8 flex items-center justify-center", getBadgeColor(item.daysUntilExpiration))}>
+                     <div className={cn("flex-shrink-0 text-sm font-bold rounded-full h-10 w-10 flex items-center justify-center", getBadgeColor(item.daysUntilExpiration))}>
                         {getDayText(item.daysUntilExpiration)}
                      </div>
                 </div>
