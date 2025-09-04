@@ -240,8 +240,8 @@ export default function DashboardPage() {
                 </CarouselContent>
                 {count > 1 && !isFullscreen && (
                     <>
-                        <CarouselPrevious className="left-[-5px]" />
-                        <CarouselNext className="right-[-5px]" />
+                        <CarouselPrevious variant="default" className="left-[-5px]" />
+                        <CarouselNext variant="default" className="right-[-5px]" />
                     </>
                 )}
             </Carousel>
@@ -261,3 +261,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
