@@ -191,12 +191,12 @@ export async function sendInvitationEmailAction(
             <div class="header"><h1>¡Bienvenido a TechFlow!</h1></div>
             <div class="content">
                 <p>Hola ${user.displayName},</p>
-                <p>Has sido invitado a unirte a la plataforma de gestión de operaciones TechFlow, CONTROL DE OT DE OSESA. A continuación encontrarás tus credenciales para acceder al sistema.</p>
+                <p>Has sido invitado a unirte a la plataforma de gestión de operaciones TechFlow, CONTROL DE OT DE OSESA. A continuación encontrarás tus credenciales de acceso.</p>
                 <div class="credentials">
                     <p><strong>Usuario:</strong> ${user.email}</p>
                     <p><strong>Contraseña:</strong> ${password_clear}</p>
+                    <p><strong>Nivel de Acceso:</strong> ${user.role}</p>
                 </div>
-                <p>Te recomendamos cambiar tu contraseña después de iniciar sesión por primera vez.</p>
                 <a href="${loginUrl}" class="button">Iniciar Sesión en TechFlow</a>
             </div>
             <div class="footer">
