@@ -68,12 +68,6 @@ export default function AppSidebar() {
       exact: true,
     },
     {
-      href: '/alerts',
-      label: 'Alertas de Vencimiento',
-      icon: AlertTriangle,
-      exact: true,
-    },
-    {
       href: '/orders',
       label: 'OTs Activas',
       icon: File,
@@ -107,6 +101,12 @@ export default function AppSidebar() {
       href: '/collaborators',
       label: 'Colaboradores',
       icon: Users,
+      exact: true,
+    },
+     {
+      href: '/alerts',
+      label: 'Alertas de Vencimiento',
+      icon: AlertTriangle,
       exact: true,
     },
     {
