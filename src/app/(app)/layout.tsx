@@ -5,18 +5,11 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/layout/app-layout';
 import { WorkOrdersProvider } from '@/context/work-orders-context';
-import { AuthProvider, useAuth } from '@/context/auth-context';
+import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
 
 function ProtectedRoutes({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  const router = useRouter();
-
-  React.useEffect(() => {
-    if (!loading && !user) {
-      router.replace('/login');
-    }
-  }, [user, loading, router]);
   
   if (loading || !user) {
       return (
@@ -52,12 +45,10 @@ export default function AppProtectedLayout({
 }) {
   
   return (
-    <AuthProvider>
       <WorkOrdersProvider>
         <ProtectedRoutes>
             {children}
         </ProtectedRoutes>
       </WorkOrdersProvider>
-    </AuthProvider>
   );
 }

@@ -48,7 +48,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
           <AuthProvider>
-              <div className="flex-1">
+              <div className="flex-1 flex flex-col">
                   {children}
               </div>
           </AuthProvider>
