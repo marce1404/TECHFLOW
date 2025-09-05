@@ -31,14 +31,19 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { CalendarIcon, ChevronsUpDown, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
+import { Separator } from '../ui/separator';
 
 
 const scheduleFormSchema = z.object({
-  workOrderId: z.string().min(1, { message: 'Debes seleccionar una OT.' }),
+  workOrderId: z.string().optional(),
+  activityName: z.string().optional(),
   startDate: z.date({ required_error: 'La fecha de inicio es requerida.'}),
   endDate: z.date().optional(),
   startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'Formato de hora inválido (HH:MM).' }),
   endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'Formato de hora inválido (HH:MM).' }),
+}).refine(data => !!data.workOrderId || !!data.activityName, {
+    message: "Debe seleccionar una OT o ingresar un nombre para la actividad.",
+    path: ["workOrderId"],
 });
 
 type ScheduleFormValues = z.infer<typeof scheduleFormSchema>;
@@ -48,7 +53,7 @@ interface ScheduleDialogProps {
   onOpenChange: (open: boolean) => void;
   date: Date | null;
   workOrders: WorkOrder[];
-  onSchedule: (otId: string, startTime: string, endTime: string, date: Date, endDate?: Date) => void;
+  onSchedule: (data: ScheduleFormValues) => void;
 }
 
 export function ScheduleDialog({ open, onOpenChange, date, workOrders, onSchedule }: ScheduleDialogProps) {
@@ -56,6 +61,7 @@ export function ScheduleDialog({ open, onOpenChange, date, workOrders, onSchedul
     resolver: zodResolver(scheduleFormSchema),
     defaultValues: {
       workOrderId: '',
+      activityName: '',
       startTime: '09:00',
       endTime: '18:00',
     },
@@ -65,6 +71,7 @@ export function ScheduleDialog({ open, onOpenChange, date, workOrders, onSchedul
     if (open && date) {
       form.reset({
         workOrderId: '',
+        activityName: '',
         startTime: '09:00',
         endTime: '18:00',
         startDate: date,
@@ -74,16 +81,14 @@ export function ScheduleDialog({ open, onOpenChange, date, workOrders, onSchedul
   }, [open, date, form]);
 
   const onSubmit = (data: ScheduleFormValues) => {
-    if (date) {
-      onSchedule(data.workOrderId, data.startTime, data.endTime, data.startDate, data.endDate);
-    }
+    onSchedule(data);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Agendar Orden de Trabajo</DialogTitle>
+          <DialogTitle>Agendar Orden de Trabajo o Actividad</DialogTitle>
            <DialogDescription>
             {date ? `Agendando para el ${format(date, "d 'de' MMMM, yyyy", { locale: es })}` : ''}
           </DialogDescription>
@@ -95,7 +100,7 @@ export function ScheduleDialog({ open, onOpenChange, date, workOrders, onSchedul
               name="workOrderId"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Orden de Trabajo</FormLabel>
+                  <FormLabel>Orden de Trabajo (Opcional)</FormLabel>
                    <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -150,6 +155,27 @@ export function ScheduleDialog({ open, onOpenChange, date, workOrders, onSchedul
                 </FormItem>
               )}
             />
+
+            <div className="flex items-center gap-2">
+                <Separator className="flex-1" />
+                <span className="text-xs text-muted-foreground">O</span>
+                <Separator className="flex-1" />
+            </div>
+
+             <FormField
+              control={form.control}
+              name="activityName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nombre de actividad (si no hay OT)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ej: Visita de diagnóstico Cliente X" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
              <div className="grid grid-cols-2 gap-4">
                <FormField
                   control={form.control}
@@ -264,7 +290,7 @@ export function ScheduleDialog({ open, onOpenChange, date, workOrders, onSchedul
               <DialogClose asChild>
                 <Button type="button" variant="outline">Cancelar</Button>
               </DialogClose>
-              <Button type="submit">Agendar OT</Button>
+              <Button type="submit">Agendar</Button>
             </DialogFooter>
           </form>
         </Form>

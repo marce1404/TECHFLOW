@@ -75,6 +75,8 @@ export function PlannerCalendar({ workOrders, onDayClick, canSchedule }: Planner
         return 'bg-primary/80 border-primary';
       case 'pendiente':
         return 'bg-yellow-500/80 border-yellow-600';
+       case 'actividad':
+        return 'bg-purple-500/80 border-purple-600';
       default:
         return 'bg-secondary border-border';
     }
@@ -93,15 +95,19 @@ export function PlannerCalendar({ workOrders, onDayClick, canSchedule }: Planner
   const handleUnschedule = async (orderId: string) => {
     const orderToUpdate = workOrders.find(ot => ot.id === orderId);
     if (orderToUpdate) {
-      const dataToUpdate: Partial<WorkOrder> = {
-        ...orderToUpdate,
-        date: '',
-        endDate: '',
-        startTime: '',
-        endTime: '',
-        status: 'Por Iniciar'
-      };
-      await updateOrder(orderId, dataToUpdate);
+      if (orderToUpdate.isActivity) {
+        // This should probably be a delete operation for activities
+      } else {
+         const dataToUpdate: Partial<WorkOrder> = {
+          ...orderToUpdate,
+          date: '',
+          endDate: '',
+          startTime: '',
+          endTime: '',
+          status: 'Por Iniciar'
+        };
+        await updateOrder(orderId, dataToUpdate);
+      }
     }
   };
 
@@ -195,7 +201,7 @@ export function PlannerCalendar({ workOrders, onDayClick, canSchedule }: Planner
                         )}
                       >
                         {order.startTime && <span className="font-bold">{order.startTime}</span>}
-                        <p className="font-semibold truncate">{order.ot_number}</p>
+                        <p className="font-semibold truncate">{order.isActivity ? order.activityName : order.ot_number}</p>
                         <p className="truncate text-white/90">{order.client}</p>
                       </div>
                     </Link>

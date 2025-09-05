@@ -27,7 +27,7 @@ export type Invoice = {
 };
 
 export type WorkOrder = {
-  id: string;
+  id:string;
   ot_number: string;
   date: string;
   endDate?: string;
@@ -39,7 +39,7 @@ export type WorkOrder = {
   service: string;
   assigned: string[];
   comercial: string;
-  status: 'Por Iniciar' | 'En Progreso' | 'Pendiente' | 'Atrasada' | 'Cerrada';
+  status: 'Por Iniciar' | 'En Progreso' | 'Pendiente' | 'Atrasada' | 'Cerrada' | 'Actividad';
   priority: 'Baja' | 'Media' | 'Alta';
   technicians: string[];
   vehicles: string[];
@@ -53,6 +53,8 @@ export type WorkOrder = {
   rentedVehicle?: string;
   manualProgress?: number;
   facturado?: boolean;
+  isActivity?: boolean;
+  activityName?: string;
 };
 
 export type WorkClothingItem = {
@@ -297,7 +299,7 @@ export const UpdateUserOutputSchema = z.object({
 export type UpdateUserOutput = z.infer<typeof UpdateUserOutputSchema>;
 
 // Excel Import Types & API Types
-const workOrderStatuses = z.enum(['Por Iniciar', 'En Progreso', 'En Proceso', 'Pendiente', 'Atrasada', 'Cerrada', 'CERRADA']);
+const workOrderStatuses = z.enum(['Por Iniciar', 'En Progreso', 'En Proceso', 'Pendiente', 'Atrasada', 'Cerrada', 'CERRADA', 'Actividad']);
 const invoiceSchema = z.object({
   id: z.string(),
   number: z.string().min(1, "El número de factura es requerido"),
@@ -319,7 +321,6 @@ export const CreateWorkOrderInputSchema = z.object({
   status: workOrderStatuses.describe("The initial status of the work order."),
   priority: z.enum(['Baja', 'Media', 'Alta']).optional().describe("The priority of the work order."),
   netPrice: z.number().optional().default(0).describe("The net price of the work order."),
-  ocNumber: z.string().optional().describe("The Purchase Order (OC) number, if available."),
   invoices: z.array(invoiceSchema).optional().default([]),
   assigned: z.array(z.string()).optional().default([]).describe("A list of names for assigned supervisors/managers."),
   technicians: z.array(z.string()).optional().default([]).describe("A list of names for assigned technicians."),

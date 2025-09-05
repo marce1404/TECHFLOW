@@ -9,9 +9,19 @@ import type { WorkOrder } from '@/lib/types';
 import { useAuth } from '@/context/auth-context';
 import { format } from 'date-fns';
 import { normalizeString } from '@/lib/utils';
+import { v4 as uuidv4 } from 'uuid';
+
+type ScheduleFormValues = {
+    workOrderId?: string;
+    activityName?: string;
+    startDate: Date;
+    endDate?: Date;
+    startTime: string;
+    endTime: string;
+}
 
 export default function PlannerPage() {
-    const { workOrders, loading, updateOrder } = useWorkOrders();
+    const { workOrders, loading, updateOrder, addOrder } = useWorkOrders();
     const { userProfile } = useAuth();
     const [selectedDate, setSelectedDate] = React.useState<Date | null>(null);
     const [isScheduling, setIsScheduling] = React.useState(false);
@@ -24,24 +34,49 @@ export default function PlannerPage() {
         setIsScheduling(true);
     };
     
-    const handleScheduleSubmit = async (otId: string, startTime: string, endTime: string, date: Date, endDate?: Date) => {
-        const orderToUpdate = workOrders.find(ot => ot.id === otId);
-        if (orderToUpdate) {
-            const dataToUpdate: Partial<WorkOrder> = {
-                ...orderToUpdate,
-                date: format(date, 'yyyy-MM-dd'),
-                startTime, 
-                endTime,
-                status: 'En Progreso',
-            };
+    const handleScheduleSubmit = async (data: ScheduleFormValues) => {
+        const { workOrderId, activityName, startDate, endDate, startTime, endTime } = data;
 
-            if (endDate) {
-                dataToUpdate.endDate = format(endDate, 'yyyy-MM-dd');
-            } else {
-                dataToUpdate.endDate = '';
+        if (workOrderId) {
+            const orderToUpdate = workOrders.find(ot => ot.id === workOrderId);
+            if (orderToUpdate) {
+                const dataToUpdate: Partial<WorkOrder> = {
+                    ...orderToUpdate,
+                    date: format(startDate, 'yyyy-MM-dd'),
+                    startTime, 
+                    endTime,
+                    status: 'En Progreso',
+                };
+
+                if (endDate) {
+                    dataToUpdate.endDate = format(endDate, 'yyyy-MM-dd');
+                } else {
+                    dataToUpdate.endDate = '';
+                }
+                
+                await updateOrder(workOrderId, dataToUpdate);
             }
-            
-            await updateOrder(otId, dataToUpdate);
+        } else if (activityName) {
+            const newActivity: Omit<WorkOrder, 'id'> = {
+                ot_number: `ACTIVIDAD-${uuidv4().substring(0,4).toUpperCase()}`,
+                description: activityName,
+                activityName: activityName,
+                isActivity: true,
+                client: userProfile?.displayName || 'Interno',
+                service: 'Actividad',
+                date: format(startDate, 'yyyy-MM-dd'),
+                endDate: endDate ? format(endDate, 'yyyy-MM-dd') : format(startDate, 'yyyy-MM-dd'),
+                startTime,
+                endTime,
+                status: 'Actividad',
+                priority: 'Baja',
+                assigned: userProfile?.displayName ? [userProfile.displayName] : [],
+                technicians: [],
+                vehicles: [],
+                comercial: '',
+                netPrice: 0,
+            };
+            await addOrder(newActivity);
         }
         setIsScheduling(false);
     };
