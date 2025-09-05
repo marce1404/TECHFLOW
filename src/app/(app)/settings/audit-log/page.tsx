@@ -1,8 +1,8 @@
 
+
 'use client';
 
 import * as React from 'react';
-import { useWorkOrders } from '@/context/work-orders-context';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useWorkOrders } from '@/context/work-orders-context';
 
 export default function AuditLogPage() {
     const { auditLog, loading } = useWorkOrders();
@@ -20,8 +21,8 @@ export default function AuditLogPage() {
     const filteredLogs = React.useMemo(() => {
         if (!auditLog) return [];
         return auditLog.filter(log => 
-            log.user.toLowerCase().includes(search.toLowerCase()) ||
-            log.action.toLowerCase().includes(search.toLowerCase())
+            (log.user && log.user.toLowerCase().includes(search.toLowerCase())) ||
+            (log.action && log.action.toLowerCase().includes(search.toLowerCase()))
         );
     }, [auditLog, search]);
     
@@ -51,7 +52,7 @@ export default function AuditLogPage() {
                         <div className="flex-1">
                             <CardTitle>Registro de Auditoría</CardTitle>
                             <CardDescription>
-                                Un registro de las acciones importantes realizadas en el sistema.
+                                Un registro de las acciones importantes realizadas en el sistema (últimos 30 días).
                             </CardDescription>
                         </div>
                         <div className="w-full md:w-auto md:max-w-sm">
@@ -85,7 +86,7 @@ export default function AuditLogPage() {
                                 ) : paginatedLogs.length > 0 ? (
                                     paginatedLogs.map((log) => (
                                         <TableRow key={log.id}>
-                                            <TableCell>{format(log.timestamp.toDate(), 'dd/MM/yyyy HH:mm:ss', { locale: es })}</TableCell>
+                                            <TableCell>{log.timestamp ? format(log.timestamp.toDate(), 'dd/MM/yyyy HH:mm:ss', { locale: es }) : 'N/A'}</TableCell>
                                             <TableCell className="font-medium">{log.user}</TableCell>
                                             <TableCell>{log.action}</TableCell>
                                         </TableRow>
