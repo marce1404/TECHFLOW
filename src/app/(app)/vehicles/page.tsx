@@ -10,9 +10,11 @@ import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import type { Vehicle } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { useAuth } from '@/context/auth-context';
+
+const ITEMS_PER_PAGE = 15;
 
 export default function VehiclesPage() {
     const { vehicles } = useWorkOrders();
@@ -21,7 +23,6 @@ export default function VehiclesPage() {
     const [statusFilter, setStatusFilter] = React.useState<Vehicle['status'] | 'Todos'>('Todos');
     const [sortConfig, setSortConfig] = React.useState<{ key: keyof Vehicle | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
     const [currentPage, setCurrentPage] = React.useState(1);
-    const itemsPerPage = 15;
     
     const canCreate = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
 
@@ -65,10 +66,10 @@ export default function VehiclesPage() {
 
     const vehicleStatuses: (Vehicle['status'] | 'Todos')[] = ['Todos', 'Disponible', 'Asignado', 'En Mantenimiento'];
     
-    const totalPages = Math.ceil(filteredVehicles.length / itemsPerPage);
+    const totalPages = Math.ceil(filteredVehicles.length / ITEMS_PER_PAGE);
     const paginatedData = filteredVehicles.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
     );
 
     const handlePreviousPage = () => {
@@ -87,6 +88,10 @@ export default function VehiclesPage() {
     return (
         <div className="flex flex-col gap-8">
             <Card>
+                <CardHeader>
+                    <CardTitle>Flota de Vehículos</CardTitle>
+                    <CardDescription>Gestiona todos los vehículos de la empresa.</CardDescription>
+                </CardHeader>
                 <CardContent className="p-4">
                     <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as Vehicle['status'] | 'Todos')}>
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
@@ -127,7 +132,7 @@ export default function VehiclesPage() {
                  {totalPages > 1 && (
                     <CardFooter>
                         <div className="text-xs text-muted-foreground">
-                            Mostrando {paginatedData.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} a {Math.min(currentPage * itemsPerPage, filteredVehicles.length)} de {filteredVehicles.length} vehículos.
+                            Página {currentPage} de {totalPages}
                         </div>
                         <div className="flex items-center space-x-2 ml-auto">
                             <Button
