@@ -2,7 +2,7 @@
 'use client';
 import * as React from 'react';
 import { z } from 'zod';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format, addYears } from "date-fns";
 import { es } from 'date-fns/locale';
@@ -269,27 +269,27 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
                           )}
                         />
                         <FormField
-                          control={form.control}
-                          name="role"
-                          render={({ field }) => (
-                              <FormItem>
-                                  <FormLabel>Cargo</FormLabel>
-                                  <Select onValueChange={field.onChange} value={field.value} disabled={disabled}>
-                                      <FormControl>
-                                      <SelectTrigger>
-                                          <SelectValue placeholder="Seleccionar cargo" />
-                                      </SelectTrigger>
-                                      </FormControl>
-                                      <SelectContent>
-                                          {roles.map(role => (
-                                              <SelectItem key={role} value={role}>{role}</SelectItem>
-                                          ))}
-                                      </SelectContent>
-                                  </Select>
-                                  <FormMessage />
-                              </FormItem>
-                          )}
-                          />
+                            control={form.control}
+                            name="role"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Cargo</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Seleccionar cargo" />
+                                        </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {roles.map(role => (
+                                                <SelectItem key={role} value={role}>{role}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                         <FormField
                         control={form.control}
                         name="area"
