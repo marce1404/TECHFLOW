@@ -84,10 +84,10 @@ export default function VehicleForm({ onSave, vehicle, collaborators, disabled =
   React.useEffect(() => {
     if (vehicle) {
       form.reset({
-        model: vehicle.model,
-        year: vehicle.year,
-        plate: vehicle.plate,
-        status: vehicle.status,
+        model: vehicle.model || '',
+        year: vehicle.year || new Date().getFullYear(),
+        plate: vehicle.plate || '',
+        status: vehicle.status || 'Disponible',
         assignedTo: vehicle.assignedTo || 'none',
         maintenanceLog: vehicle.maintenanceLog || [],
       });
@@ -167,7 +167,7 @@ export default function VehicleForm({ onSave, vehicle, collaborators, disabled =
                                 render={({ field }) => (
                                     <FormItem>
                                     <FormLabel>Asignado A</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value} disabled={disabled}>
+                                    <Select onValueChange={field.onChange} value={field.value || 'none'} disabled={disabled}>
                                         <FormControl>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Seleccionar colaborador (opcional)" />
@@ -246,7 +246,7 @@ export default function VehicleForm({ onSave, vehicle, collaborators, disabled =
                                                                 {field.value ? format(new Date(field.value.replace(/-/g, '/')), "dd/MM/yy", { locale: es }) : <span>Elegir</span>}
                                                             </Button>
                                                         </PopoverTrigger>
-                                                        <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={new Date(field.value.replace(/-/g, '/'))} onSelect={(d) => field.onChange(d ? format(d, 'yyyy-MM-dd') : '')} initialFocus locale={es} /></PopoverContent>
+                                                        <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value ? new Date(field.value.replace(/-/g, '/')) : undefined} onSelect={(d) => field.onChange(d ? format(d, 'yyyy-MM-dd') : '')} initialFocus locale={es} /></PopoverContent>
                                                     </Popover>
                                                 )} 
                                             />
