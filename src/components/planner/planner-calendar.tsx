@@ -22,20 +22,30 @@ import { WorkOrder } from '@/lib/types';
 import { cn, normalizeString } from '@/lib/utils';
 import Link from 'next/link';
 import { Badge } from '../ui/badge';
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+
 
 interface PlannerCalendarProps {
   workOrders: WorkOrder[];
 }
 
+type ViewType = 'month' | 'week';
+
 export function PlannerCalendar({ workOrders }: PlannerCalendarProps) {
-  const [currentMonth, setCurrentMonth] = React.useState(new Date());
+  const [currentDate, setCurrentDate] = React.useState(new Date());
+  const [view, setView] = React.useState<ViewType>('month');
 
-  const firstDayOfMonth = startOfMonth(currentMonth);
-  const lastDayOfMonth = endOfMonth(currentMonth);
+  const firstDayOfCurrentPeriod = view === 'month' 
+    ? startOfMonth(currentDate) 
+    : startOfWeek(currentDate, { locale: es });
+  
+  const lastDayOfCurrentPeriod = view === 'month'
+    ? endOfMonth(currentDate)
+    : endOfWeek(currentDate, { locale: es });
 
-  const daysInMonth = eachDayOfInterval({
-    start: startOfWeek(firstDayOfMonth, { locale: es }),
-    end: endOfWeek(lastDayOfMonth, { locale: es }),
+  const daysToShow = eachDayOfInterval({
+    start: startOfWeek(firstDayOfCurrentPeriod, { locale: es }),
+    end: endOfWeek(lastDayOfCurrentPeriod, { locale: es }),
   });
   
   const getStatusColorClass = (status: WorkOrder['status']) => {
@@ -55,38 +65,65 @@ export function PlannerCalendar({ workOrders }: PlannerCalendarProps) {
     }
   };
 
-  const handlePreviousMonth = () => {
-    setCurrentMonth(add(currentMonth, { months: -1 }));
+  const handlePrevious = () => {
+    const newDate = add(currentDate, view === 'month' ? { months: -1 } : { weeks: -1 });
+    setCurrentDate(newDate);
   };
 
-  const handleNextMonth = () => {
-    setCurrentMonth(add(currentMonth, { months: 1 }));
+  const handleNext = () => {
+    const newDate = add(currentDate, view === 'month' ? { months: 1 } : { weeks: 1 });
+    setCurrentDate(newDate);
   };
+
+  const getHeaderText = () => {
+    if (view === 'month') {
+        return format(currentDate, 'MMMM yyyy', { locale: es });
+    }
+    const start = startOfWeek(currentDate, { locale: es });
+    const end = endOfWeek(currentDate, { locale: es });
+    if (isSameMonth(start, end)) {
+        return format(start, 'MMMM yyyy', { locale: es });
+    }
+    return `${format(start, 'MMM', { locale: es })} - ${format(end, 'MMM yyyy', { locale: es })}`;
+  }
+  
+  const daysInWeek = 7;
+  const numWeeks = view === 'month' ? Math.ceil(daysToShow.length / daysInWeek) : 1;
+
 
   return (
     <div className="bg-card text-card-foreground rounded-xl border shadow">
       <div className="flex items-center justify-between p-4 border-b">
         <h2 className="text-xl font-semibold capitalize font-headline">
-          {format(currentMonth, 'MMMM yyyy', { locale: es })}
+          {getHeaderText()}
         </h2>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={handlePreviousMonth}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon" onClick={handleNextMonth}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+        <div className="flex items-center gap-4">
+             <ToggleGroup type="single" value={view} onValueChange={(value: ViewType) => value && setView(value)}>
+                <ToggleGroupItem value="month">Mes</ToggleGroupItem>
+                <ToggleGroupItem value="week">Semana</ToggleGroupItem>
+            </ToggleGroup>
+            <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" onClick={handlePrevious}>
+                    <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={handleNext}>
+                    <ChevronRight className="h-4 w-4" />
+                </Button>
+            </div>
         </div>
       </div>
       <div className="grid grid-cols-7">
-        {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((day) => (
+        {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map((day) => (
           <div key={day} className="py-2 text-center text-sm font-medium text-muted-foreground border-b border-r">
             {day}
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-7 grid-rows-5 h-[calc(100vh-20rem)]">
-        {daysInMonth.map((day, dayIdx) => {
+      <div 
+        className={cn("grid grid-cols-7", view === 'week' ? 'h-[calc(100vh-20rem)]' : `grid-rows-${numWeeks}`)}
+        style={{ gridTemplateRows: view === 'month' ? `repeat(${numWeeks}, minmax(0, 1fr))` : '1fr' }}
+       >
+        {(view === 'month' ? daysToShow : daysToShow.slice(0, 7)).map((day) => {
           const ordersForDay = workOrders.filter((order) =>
             isSameDay(parseISO(order.date), day)
           );
@@ -96,8 +133,9 @@ export function PlannerCalendar({ workOrders }: PlannerCalendarProps) {
               key={day.toString()}
               className={cn(
                 'border-b border-r p-2 flex flex-col',
-                isSameMonth(day, currentMonth) ? 'bg-card' : 'bg-muted/50',
-                'min-h-[120px]'
+                isSameMonth(day, currentDate) ? 'bg-card' : 'bg-muted/50',
+                view === 'month' && 'min-h-[120px]',
+                view === 'week' && 'h-full'
               )}
             >
               <time
