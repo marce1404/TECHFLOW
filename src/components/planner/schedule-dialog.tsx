@@ -22,15 +22,15 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import type { WorkOrder } from '@/lib/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Calendar } from '../ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, ChevronsUpDown, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
 
 
 const scheduleFormSchema = z.object({
@@ -90,26 +90,62 @@ export function ScheduleDialog({ open, onOpenChange, date, workOrders, onSchedul
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
+             <FormField
               control={form.control}
               name="workOrderId"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="flex flex-col">
                   <FormLabel>Orden de Trabajo</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar OT pendiente..." />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {workOrders.map((ot) => (
-                        <SelectItem key={ot.id} value={ot.id}>
-                          {ot.ot_number} - {ot.description}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                   <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className={cn(
+                            "w-full justify-between",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value
+                            ? workOrders.find(
+                                (ot) => ot.id === field.value
+                              )?.ot_number
+                            : "Seleccionar OT"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                      <Command>
+                        <CommandInput placeholder="Buscar OT por número o descripción..." />
+                        <CommandList>
+                            <CommandEmpty>No se encontraron OTs.</CommandEmpty>
+                            <CommandGroup>
+                            {workOrders.map((ot) => (
+                                <CommandItem
+                                value={`${ot.ot_number} ${ot.description} ${ot.client}`}
+                                key={ot.id}
+                                onSelect={() => {
+                                    form.setValue("workOrderId", ot.id)
+                                }}
+                                >
+                                <Check
+                                    className={cn(
+                                    "mr-2 h-4 w-4",
+                                    ot.id === field.value
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    )}
+                                />
+                                {ot.ot_number} - {ot.description}
+                                </CommandItem>
+                            ))}
+                            </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage />
                 </FormItem>
               )}
