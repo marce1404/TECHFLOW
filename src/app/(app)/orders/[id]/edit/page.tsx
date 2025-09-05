@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -325,6 +326,17 @@ export default function EditOrderPage() {
                                     />
                                 </PopoverContent>
                             </Popover>
+                        </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <Label htmlFor="start-time">Hora Inicio</Label>
+                            <Input id="start-time" type="time" {...methods.register('startTime')} />
+                        </div>
+                        <div>
+                            <Label htmlFor="end-time">Hora Término</Label>
+                            <Input id="end-time" type="time" {...methods.register('endTime')} />
                         </div>
                     </div>
                     

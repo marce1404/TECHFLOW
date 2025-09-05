@@ -31,6 +31,8 @@ export type WorkOrder = {
   ot_number: string;
   date: string;
   endDate?: string;
+  startTime?: string;
+  endTime?: string;
   description: string;
   notes: string;
   client: string;
@@ -311,6 +313,8 @@ export const CreateWorkOrderInputSchema = z.object({
   service: z.string().describe("The service category, e.g., 'CCTV', 'CCAA'."),
   date: z.string().describe("The start date of the work order in 'YYYY-MM-DD' format."),
   endDate: z.string().optional().describe("The potential end date in 'YYYY-MM-DD' format."),
+  startTime: z.string().optional().describe("The start time, e.g., '09:00'"),
+  endTime: z.string().optional().describe("The end time, e.g., '18:00'"),
   notes: z.string().optional().describe("Additional notes or a detailed description."),
   status: workOrderStatuses.describe("The initial status of the work order."),
   priority: z.enum(['Baja', 'Media', 'Alta']).optional().describe("The priority of the work order."),

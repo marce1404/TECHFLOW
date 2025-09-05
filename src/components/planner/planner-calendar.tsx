@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -27,11 +28,13 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
 interface PlannerCalendarProps {
   workOrders: WorkOrder[];
+  onDayClick: (day: Date) => void;
+  canSchedule: boolean;
 }
 
 type ViewType = 'month' | 'week';
 
-export function PlannerCalendar({ workOrders }: PlannerCalendarProps) {
+export function PlannerCalendar({ workOrders, onDayClick, canSchedule }: PlannerCalendarProps) {
   const [currentDate, setCurrentDate] = React.useState(new Date());
   const [view, setView] = React.useState<ViewType>('month');
 
@@ -124,18 +127,20 @@ export function PlannerCalendar({ workOrders }: PlannerCalendarProps) {
         style={{ gridTemplateRows: view === 'month' ? `repeat(${numWeeks}, minmax(0, 1fr))` : '1fr' }}
        >
         {(view === 'month' ? daysToShow : daysToShow.slice(0, 7)).map((day) => {
-          const ordersForDay = workOrders.filter((order) =>
-            isSameDay(parseISO(order.date), day)
-          );
+          const ordersForDay = workOrders
+            .filter((order) => isSameDay(parseISO(order.date), day))
+            .sort((a,b) => (a.startTime || '00:00').localeCompare(b.startTime || '00:00'));
 
           return (
             <div
               key={day.toString()}
+              onClick={() => onDayClick(day)}
               className={cn(
                 'border-b border-r p-2 flex flex-col',
                 isSameMonth(day, currentDate) ? 'bg-card' : 'bg-muted/50',
                 view === 'month' && 'min-h-[120px]',
-                view === 'week' && 'h-full'
+                view === 'week' && 'h-full',
+                canSchedule && 'cursor-pointer hover:bg-muted/70 transition-colors'
               )}
             >
               <time
@@ -156,7 +161,8 @@ export function PlannerCalendar({ workOrders }: PlannerCalendarProps) {
                         getStatusColorClass(order.status)
                       )}
                     >
-                      <p className="font-bold truncate">{order.ot_number}</p>
+                      {order.startTime && <span className="font-bold">{order.startTime}</span>}
+                      <p className="font-semibold truncate">{order.ot_number}</p>
                       <p className="truncate text-white/90">{order.client}</p>
                     </div>
                   </Link>

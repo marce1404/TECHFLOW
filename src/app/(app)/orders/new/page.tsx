@@ -42,6 +42,8 @@ export default function NewOrderPage() {
     const [service, setService] = React.useState('');
     const [startDate, setStartDate] = React.useState<Date>();
     const [endDate, setEndDate] = React.useState<Date>();
+    const [startTime, setStartTime] = React.useState('09:00');
+    const [endTime, setEndTime] = React.useState('18:00');
     const [selectedTechnicians, setSelectedTechnicians] = React.useState<string[]>([]);
     const [selectedVehicles, setSelectedVehicles] = React.useState<string[]>([]);
     const [rentedVehicle, setRentedVehicle] = React.useState('');
@@ -109,6 +111,8 @@ export default function NewOrderPage() {
         service,
         date: startDate ? format(startDate, 'yyyy-MM-dd') : '',
         endDate: endDate ? format(endDate, 'yyyy-MM-dd') : '',
+        startTime,
+        endTime,
         technicians: selectedTechnicians.map(id => collaborators.find(c => c.id === id)?.name || ''),
         vehicles: selectedVehicles,
         rentedVehicle,
@@ -323,6 +327,17 @@ export default function NewOrderPage() {
                                         />
                                     </PopoverContent>
                                 </Popover>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <Label htmlFor="start-time">Hora Inicio</Label>
+                                <Input type="time" id="start-time" value={startTime} onChange={e => setStartTime(e.target.value)} />
+                            </div>
+                            <div>
+                                <Label htmlFor="end-time">Hora Término</Label>
+                                <Input type="time" id="end-time" value={endTime} onChange={e => setEndTime(e.target.value)} />
                             </div>
                         </div>
                         

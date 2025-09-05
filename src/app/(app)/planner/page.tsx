@@ -1,12 +1,40 @@
 
+
 'use client';
 
 import * as React from 'react';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { PlannerCalendar } from '@/components/planner/planner-calendar';
+import { ScheduleDialog } from '@/components/planner/schedule-dialog';
+import type { WorkOrder } from '@/lib/types';
+import { useAuth } from '@/context/auth-context';
 
 export default function PlannerPage() {
-    const { workOrders, loading } = useWorkOrders();
+    const { workOrders, loading, updateOrder } = useWorkOrders();
+    const { userProfile } = useAuth();
+    const [selectedDate, setSelectedDate] = React.useState<Date | null>(null);
+    const [isScheduling, setIsScheduling] = React.useState(false);
+    
+    const canSchedule = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
+
+    const handleDayClick = (day: Date) => {
+        if (!canSchedule) return;
+        setSelectedDate(day);
+        setIsScheduling(true);
+    };
+    
+    const handleScheduleSubmit = async (otId: string, startTime: string, endTime: string, date: Date) => {
+        const orderToUpdate = workOrders.find(ot => ot.id === otId);
+        if (orderToUpdate) {
+            await updateOrder(otId, { 
+                ...orderToUpdate,
+                date: date.toISOString().split('T')[0],
+                startTime, 
+                endTime 
+            });
+        }
+        setIsScheduling(false);
+    };
 
     if (loading) {
         return <div>Cargando planificador...</div>;
@@ -22,7 +50,20 @@ export default function PlannerPage() {
                     </p>
                 </div>
             </div>
-            <PlannerCalendar workOrders={workOrders} />
+            <PlannerCalendar 
+                workOrders={workOrders} 
+                onDayClick={handleDayClick} 
+                canSchedule={canSchedule}
+            />
+            {canSchedule && (
+                 <ScheduleDialog
+                    open={isScheduling}
+                    onOpenChange={setIsScheduling}
+                    date={selectedDate}
+                    workOrders={workOrders.filter(ot => ot.status === 'Por Iniciar' || ot.status === 'Pendiente')}
+                    onSchedule={handleScheduleSubmit}
+                />
+            )}
         </div>
     );
 }
