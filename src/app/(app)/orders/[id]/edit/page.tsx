@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarIcon, ArrowRight, Trash2, PlusCircle, Send } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, normalizeString } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from 'date-fns/locale';
 import * as React from "react";
@@ -134,14 +135,20 @@ export default function EditOrderPage() {
       
       const orderWithDefaults = { ...defaults, ...initialOrder };
       
-      // Ensure all potentially undefined string fields are set to empty strings
+      // Ensure all potentially undefined string fields are set to empty strings to avoid uncontrolled component errors
+      orderWithDefaults.description = orderWithDefaults.description || '';
+      orderWithDefaults.ot_number = orderWithDefaults.ot_number || '';
+      orderWithDefaults.client = orderWithDefaults.client || '';
       orderWithDefaults.rut = orderWithDefaults.rut || '';
+      orderWithDefaults.service = orderWithDefaults.service || '';
       orderWithDefaults.rentedVehicle = orderWithDefaults.rentedVehicle || '';
       orderWithDefaults.ocNumber = orderWithDefaults.ocNumber || '';
       orderWithDefaults.saleNumber = orderWithDefaults.saleNumber || '';
       orderWithDefaults.hesEmMigo = orderWithDefaults.hesEmMigo || '';
       orderWithDefaults.notes = orderWithDefaults.notes || '';
       orderWithDefaults.comercial = orderWithDefaults.comercial || '';
+      orderWithDefaults.status = orderWithDefaults.status || 'Por Iniciar';
+      orderWithDefaults.priority = orderWithDefaults.priority || 'Baja';
 
 
       methods.reset(orderWithDefaults);
