@@ -111,12 +111,17 @@ export function SendToInvoiceDialog({ open, onOpenChange, order }: SendToInvoice
     
     const uniqueCcEmails = Array.from(new Set(ccEmails));
 
+    const serializableOrder = {
+        ...order,
+        invoices: order.invoices || []
+    };
+
     const result = await sendInvoiceRequestEmailAction({
         to: toCollaborator.email,
         cc: uniqueCcEmails.join(','),
         subject: data.subject,
         observations: data.observations,
-    }, order, smtpConfig);
+    }, serializableOrder, smtpConfig);
 
     if (result.success) {
       toast({
@@ -230,3 +235,5 @@ export function SendToInvoiceDialog({ open, onOpenChange, order }: SendToInvoice
     </Dialog>
   );
 }
+
+    

@@ -17,6 +17,7 @@ import { auth, db } from '@/lib/firebase-admin';
 import type { UserRecord } from 'firebase-admin/auth';
 import { suggestGanttTasks } from '@/ai/flows/suggest-gantt-tasks';
 import type { auth as adminAuth } from 'firebase-admin';
+import type { firestore as admin } from 'firebase-admin';
 
 // --- Server Actions ---
 
@@ -118,9 +119,15 @@ type InvoiceRequestEmailData = {
     observations?: string;
 };
 
+// Simplified WorkOrder type for the action payload
+type SerializableWorkOrder = Omit<WorkOrder, 'id' | 'invoices'> & {
+  invoices: { id: string, number: string, date: string, amount: number }[];
+};
+
+
 export async function sendInvoiceRequestEmailAction(
     data: InvoiceRequestEmailData,
-    order: WorkOrder,
+    order: SerializableWorkOrder,
     config: SmtpConfig
 ): Promise<{ success: boolean; message: string }> {
     const { host, port, secure, user, pass, fromName, fromEmail } = config;
@@ -498,3 +505,5 @@ export async function changeUserPasswordAction(
         return { success: false, message: error.message };
     }
 }
+
+    
