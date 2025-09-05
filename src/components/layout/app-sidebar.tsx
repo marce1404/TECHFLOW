@@ -97,7 +97,7 @@ export default function AppSidebar() {
       href: '/reports',
       label: 'Llenar Informe',
       icon: FilePlus2,
-      exact: false,
+      exact: false, // This should be false to catch /reports/new, but we need special handling
     },
     {
       href: '/reports/history',
@@ -144,6 +144,14 @@ export default function AppSidebar() {
     const initials = names.map(n => n[0]).join('');
     return initials.slice(0, 2).toUpperCase();
   };
+  
+  // Special check for reports nav link to avoid matching both
+  const isReportsActive = (href: string) => {
+      if (href === '/reports') {
+          return pathname.startsWith('/reports') && !pathname.startsWith('/reports/history');
+      }
+      return isActive(href);
+  }
 
   if (state === 'collapsed') {
     // Collapsed state rendering
@@ -170,9 +178,9 @@ export default function AppSidebar() {
                          <SidebarMenuItem key={item.href}>
                             <SidebarMenuButton
                                 asChild
-                                isActive={isActive(item.href, item.exact)}
+                                isActive={item.href === '/reports' ? isReportsActive(item.href) : isActive(item.href, item.exact)}
                                 tooltip={item.label}
-                                variant={isActive(item.href, item.exact) ? 'default' : 'ghost'}
+                                variant={item.href === '/reports' ? (isReportsActive(item.href) ? 'default' : 'ghost') : (isActive(item.href, item.exact) ? 'default' : 'ghost')}
                                 className="h-10 w-10"
                             >
                                 <Link href={item.href}>
@@ -247,8 +255,8 @@ export default function AppSidebar() {
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
-                  isActive={isActive(item.href, item.exact)}
-                  variant={isActive(item.href, item.exact) ? 'default' : 'ghost'}
+                  isActive={item.href === '/reports' ? isReportsActive(item.href) : isActive(item.href, item.exact)}
+                  variant={item.href === '/reports' ? (isReportsActive(item.href) ? 'default' : 'ghost') : (isActive(item.href, item.exact) ? 'default' : 'ghost')}
                 >
                   <Link href={item.href}>
                     <item.icon className="h-5 w-5" />
