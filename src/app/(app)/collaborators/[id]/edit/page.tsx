@@ -34,10 +34,16 @@ export default function EditCollaboratorPage() {
   const { userProfile, loading: authLoading } = useAuth();
   const collaboratorId = params.id as string;
   
-  const loading = contextLoading || authLoading;
-  const collaborator = React.useMemo(() => getCollaborator(collaboratorId), [collaboratorId, getCollaborator]);
+  const [collaborator, setCollaborator] = React.useState<Collaborator | undefined | null>(undefined);
   
   const canEdit = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
+
+  React.useEffect(() => {
+    if (!contextLoading) {
+      const foundCollaborator = getCollaborator(collaboratorId);
+      setCollaborator(foundCollaborator);
+    }
+  }, [collaboratorId, contextLoading, getCollaborator]);
 
   const handleSave = (data: CollaboratorFormValues) => {
     if (!collaborator || !canEdit) return;
@@ -66,7 +72,9 @@ export default function EditCollaboratorPage() {
     window.open(`/collaborators/${collaboratorId}/print`, '_blank');
   };
 
-  if (loading || !collaborator) {
+  const isLoading = contextLoading || authLoading || collaborator === undefined;
+
+  if (isLoading) {
     return (
         <div className="flex flex-col gap-8">
             <div className="flex justify-between items-center">
