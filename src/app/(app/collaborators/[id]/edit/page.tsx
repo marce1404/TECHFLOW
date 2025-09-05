@@ -23,6 +23,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from '@/context/auth-context';
+import { normalizeString } from '@/lib/utils';
 
 export default function EditCollaboratorPage() {
   const params = useParams();
@@ -43,17 +44,10 @@ export default function EditCollaboratorPage() {
     }
   }, [collaboratorId, loading, getCollaborator]);
 
-  if (loading || collaborator === undefined) {
-    return <div>Cargando colaborador...</div>;
-  }
-  
-  if (collaborator === null) {
-      return <div>Colaborador no encontrado.</div>;
-  }
-
   const handleSave = (data: CollaboratorFormValues) => {
     if (!collaborator || !canEdit) return;
-    updateCollaborator(collaborator.id, { id: collaborator.id, ...data });
+    const dataToSave = { ...collaborator, ...data };
+    updateCollaborator(collaborator.id, dataToSave);
     toast({
       title: 'Colaborador Actualizado',
       description: `El colaborador "${data.name}" ha sido actualizado exitosamente.`,
@@ -76,6 +70,14 @@ export default function EditCollaboratorPage() {
   const handlePrint = () => {
     window.open(`/collaborators/${collaboratorId}/print`, '_blank');
   };
+
+  if (loading || collaborator === undefined) {
+    return <div>Cargando colaborador...</div>;
+  }
+  
+  if (collaborator === null) {
+      return <div>Colaborador no encontrado.</div>;
+  }
 
   return (
     <div className="flex flex-col gap-8">

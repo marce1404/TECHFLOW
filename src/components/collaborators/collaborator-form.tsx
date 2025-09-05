@@ -55,9 +55,9 @@ const certificationSchema = z.object({
 const collaboratorFormSchema = z.object({
   name: z.string().min(3, { message: 'El nombre debe tener al menos 3 caracteres.' }),
   email: z.string().email({ message: 'Debe ser un correo electrónico válido.' }).optional().or(z.literal('')),
-  role: z.enum(['Técnico', 'Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado', 'Comercial']),
+  role: z.string(),
   area: z.string().optional(),
-  status: z.enum(['Activo', 'Licencia', 'Vacaciones']),
+  status: z.string(),
   license: z.string().optional(),
   workClothing: z.array(workClothingSchema),
   epp: z.array(eppSchema),
@@ -100,17 +100,6 @@ const defaultCertificationItems = [
 export default function CollaboratorForm({ onSave, collaborator, disabled = false }: CollaboratorFormProps) {
   const form = useForm<CollaboratorFormValues>({
     resolver: zodResolver(collaboratorFormSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      role: 'Técnico',
-      area: '',
-      status: 'Activo',
-      license: '',
-      workClothing: [],
-      epp: [],
-      certifications: [],
-    },
   });
   
   const { fields: workClothingFields, append: appendWorkClothing, remove: removeWorkClothing } = useFieldArray({
@@ -129,13 +118,13 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
   React.useEffect(() => {
     if (collaborator) {
       const findCaseInsensitive = (value: string | undefined, options: string[]) => {
-            if (!value) return options[0];
+            if (!value) return '';
             const normalizedValue = normalizeString(value);
             const found = options.find(opt => normalizeString(opt) === normalizedValue);
-            return found || options[0];
+            return found || '';
       };
-
-      form.reset({
+      
+      const defaults = {
         name: collaborator.name || '',
         email: collaborator.email || '',
         role: findCaseInsensitive(collaborator.role, roles) as Collaborator['role'],
@@ -145,7 +134,8 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
         workClothing: collaborator.workClothing || [],
         epp: collaborator.epp || [],
         certifications: collaborator.certifications || [],
-      });
+      };
+      form.reset(defaults);
     } else {
         const defaultWorkClothing = defaultClothingItems.map(item => ({
             id: crypto.randomUUID(),
