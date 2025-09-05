@@ -85,6 +85,10 @@ export default function EditOrderPage() {
     value: v.plate,
     label: `${v.model} (${v.plate})`,
   }));
+  
+  const serviceOptions = services.map(s => ({value: s.name, label: s.name}));
+  const statusOptions = otStatuses.map(s => ({value: s.name, label: s.name}));
+  const priorityOptions = [{value: 'Baja', label: 'Baja'}, {value: 'Media', label: 'Media'}, {value: 'Alta', label: 'Alta'}];
 
   const startDate = methods.watch('date') ? new Date(methods.watch('date').replace(/-/g, '/')) : undefined;
   const endDate = methods.watch('endDate') ? new Date(methods.watch('endDate')!.replace(/-/g, '/')) : undefined;
@@ -110,39 +114,47 @@ export default function EditOrderPage() {
   }, [orderId, contextLoading, getOrder]);
 
   React.useEffect(() => {
-    if (initialOrder) {
+    if (initialOrder && services.length > 0 && otStatuses.length > 0 && collaborators.length > 0) {
+        
+        const findCaseInsensitive = (value: string | undefined, options: {value: string, label: string}[]) => {
+            if (!value) return '';
+            const normalizedValue = normalizeString(value);
+            const found = options.find(opt => normalizeString(opt.value) === normalizedValue);
+            return found ? found.value : '';
+        };
+        
         const defaults = {
             ...initialOrder,
             description: initialOrder.description || '',
             ot_number: initialOrder.ot_number || '',
             client: initialOrder.client || '',
             rut: initialOrder.rut || '',
-            service: initialOrder.service || '',
+            service: findCaseInsensitive(initialOrder.service, serviceOptions),
             date: initialOrder.date || '',
             endDate: initialOrder.endDate || '',
             startTime: initialOrder.startTime || '09:00',
             endTime: initialOrder.endTime || '18:00',
-            technicians: initialOrder.technicians || [],
-            vehicles: initialOrder.vehicles || [],
+            technicians: Array.isArray(initialOrder.technicians) ? initialOrder.technicians : [],
+            vehicles: Array.isArray(initialOrder.vehicles) ? initialOrder.vehicles : [],
             rentedVehicle: initialOrder.rentedVehicle || '',
             notes: initialOrder.notes || '',
-            status: initialOrder.status || 'Por Iniciar',
-            priority: initialOrder.priority || 'Baja',
+            status: findCaseInsensitive(initialOrder.status, statusOptions),
+            priority: findCaseInsensitive(initialOrder.priority, priorityOptions) as WorkOrder['priority'] || 'Baja',
             netPrice: initialOrder.netPrice || 0,
             ocNumber: initialOrder.ocNumber || '',
             saleNumber: initialOrder.saleNumber || '',
             hesEmMigo: initialOrder.hesEmMigo || '',
-            assigned: initialOrder.assigned || [],
-            comercial: initialOrder.comercial || '',
+            assigned: Array.isArray(initialOrder.assigned) ? initialOrder.assigned : [],
+            comercial: findCaseInsensitive(initialOrder.comercial, vendors),
             manualProgress: initialOrder.manualProgress || 0,
             invoices: initialOrder.invoices || [],
         };
         methods.reset(defaults);
         setIsFormReady(true);
     }
-  }, [initialOrder, methods]);
+  }, [initialOrder, services, otStatuses, collaborators, methods]);
   
-  if (contextLoading || !isFormReady) {
+  if (contextLoading || !isFormReady || !initialOrder) {
       return <div>Cargando orden de trabajo...</div>
   }
 
@@ -151,7 +163,7 @@ export default function EditOrderPage() {
   }
   
   const handleStatusChange = (value: WorkOrder['status']) => {
-    if (value.toLowerCase() === 'cerrada') {
+    if (normalizeString(value) === 'cerrada') {
         promptToCloseOrder(initialOrder);
     } else {
         methods.setValue('status', value);
@@ -172,7 +184,7 @@ export default function EditOrderPage() {
       duration: 2000,
     });
     
-    const isClosed = finalData.status.toLowerCase() === 'cerrada';
+    const isClosed = normalizeString(finalData.status) === 'cerrada';
     if (isClosed) {
       router.push(`/orders/history`);
     } else {
@@ -309,8 +321,8 @@ export default function EditOrderPage() {
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        {services.map(service => (
-                                            <SelectItem key={service.id} value={service.name}>{service.name}</SelectItem>
+                                        {serviceOptions.map(option => (
+                                            <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
@@ -490,8 +502,8 @@ export default function EditOrderPage() {
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {otStatuses.map(status => (
-                                                <SelectItem key={status.id} value={status.name}>{status.name}</SelectItem>
+                                            {statusOptions.map(option => (
+                                                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
@@ -512,9 +524,9 @@ export default function EditOrderPage() {
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            <SelectItem value="Baja">Baja</SelectItem>
-                                            <SelectItem value="Media">Media</SelectItem>
-                                            <SelectItem value="Alta">Alta</SelectItem>
+                                            {priorityOptions.map(option => (
+                                                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -631,7 +643,7 @@ export default function EditOrderPage() {
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        {vendors.map(v => <SelectItem key={v.value} value={v.label}>{v.label}</SelectItem>)}
+                                        {vendors.map(v => <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />
@@ -842,4 +854,3 @@ export default function EditOrderPage() {
     </>
   );
 }
-
