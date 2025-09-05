@@ -26,16 +26,25 @@ export default function PlannerPage() {
     const handleScheduleSubmit = async (otId: string, startTime: string, endTime: string, date: Date, endDate?: Date) => {
         const orderToUpdate = workOrders.find(ot => ot.id === otId);
         if (orderToUpdate) {
-            await updateOrder(otId, { 
+            const dataToUpdate: Partial<WorkOrder> = {
                 ...orderToUpdate,
                 date: format(date, 'yyyy-MM-dd'),
-                endDate: endDate ? format(endDate, 'yyyy-MM-dd') : undefined,
                 startTime, 
                 endTime 
-            });
+            };
+
+            if (endDate) {
+                dataToUpdate.endDate = format(endDate, 'yyyy-MM-dd');
+            } else {
+                // Ensure we don't send undefined. If no end date, don't include the field.
+                delete dataToUpdate.endDate;
+            }
+            
+            await updateOrder(otId, dataToUpdate);
         }
         setIsScheduling(false);
     };
+
 
     if (loading) {
         return <div>Cargando planificador...</div>;
