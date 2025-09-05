@@ -77,7 +77,7 @@ export default function ReportsHistoryPage() {
       );
     }
     
-    return reports.sort((a, b) => b.submittedAt.toMillis() - a.submittedAt.toMillis());
+    return reports.sort((a, b) => (b.submittedAt as Date).getTime() - (a.submittedAt as Date).getTime());
   }, [submittedReports, search, activeTab]);
 
   const totalPages = Math.ceil(filteredReports.length / itemsPerPage) || 1;
@@ -177,7 +177,7 @@ export default function ReportsHistoryPage() {
                                         </TableCell>
                                         <TableCell>{report.otDetails.client}</TableCell>
                                         <TableCell>{report.templateName}</TableCell>
-                                        <TableCell>{report.submittedAt ? format(report.submittedAt.toDate(), 'dd/MM/yyyy HH:mm', { locale: es }) : 'N/A'}</TableCell>
+                                        <TableCell>{report.submittedAt ? format(report.submittedAt, 'dd/MM/yyyy HH:mm', { locale: es }) : 'N/A'}</TableCell>
                                         <TableCell className="text-right space-x-2">
                                             <AlertDialog>
                                                 <DropdownMenu>
@@ -256,7 +256,7 @@ export default function ReportsHistoryPage() {
                                     <CardContent>
                                         <p className="text-sm font-medium">{report.templateName}</p>
                                         <p className="text-xs text-muted-foreground">
-                                            {report.submittedAt ? format(report.submittedAt.toDate(), 'dd/MM/yyyy HH:mm', { locale: es }) : 'N/A'}
+                                            {report.submittedAt ? format(report.submittedAt, 'dd/MM/yyyy HH:mm', { locale: es }) : 'N/A'}
                                         </p>
                                     </CardContent>
                                     <CardFooter className="flex justify-end gap-2 relative z-20">

@@ -99,47 +99,22 @@ const defaultCertificationItems = [
     "Operador Elevador",
 ];
 
-const getDefaultValues = (collaborator: Collaborator | null | undefined): CollaboratorFormValues => {
-    if (collaborator) {
-        return {
-            name: collaborator.name || '',
-            email: collaborator.email || '',
-            role: collaborator.role || 'Técnico',
-            area: collaborator.area || '',
-            status: collaborator.status || 'Activo',
-            license: collaborator.license || '',
-            workClothing: collaborator.workClothing || [],
-            epp: collaborator.epp || [],
-            certifications: collaborator.certifications || [],
-        };
-    }
-    return {
+export default function CollaboratorForm({ onSave, collaborator, disabled = false }: CollaboratorFormProps) {
+  const { toast } = useToast();
+  
+  const form = useForm<CollaboratorFormValues>({
+    resolver: zodResolver(collaboratorFormSchema),
+    defaultValues: {
         name: '',
         email: '',
-        role: 'Técnico',
+        role: '',
         area: '',
         status: 'Activo',
         license: '',
-        workClothing: defaultClothingItems.map(item => ({
-            id: crypto.randomUUID(),
-            item, size: '', quantity: 0, deliveryDate: '', expirationDate: '',
-        })),
-        epp: defaultEppItems.map(item => ({
-            id: crypto.randomUUID(),
-            item, size: '', quantity: 0, deliveryDate: '', expirationDate: '',
-        })),
-        certifications: defaultCertificationItems.map(name => ({
-            id: crypto.randomUUID(),
-            name, issuingOrganization: '', issueDate: '', expirationDate: '',
-        })),
-    };
-};
-
-export default function CollaboratorForm({ onSave, collaborator, disabled = false }: CollaboratorFormProps) {
-  const { toast } = useToast();
-  const form = useForm<CollaboratorFormValues>({
-    resolver: zodResolver(collaboratorFormSchema),
-    defaultValues: getDefaultValues(collaborator),
+        workClothing: [],
+        epp: [],
+        certifications: [],
+    },
   });
   
   const { fields: workClothingFields, append: appendWorkClothing, remove: removeWorkClothing } = useFieldArray({
@@ -156,8 +131,41 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
   const statuses: Collaborator['status'][] = ['Activo', 'Licencia', 'Vacaciones'];
 
   React.useEffect(() => {
-    form.reset(getDefaultValues(collaborator));
-  }, [collaborator, form]);
+    if (collaborator) {
+        form.reset({
+            name: collaborator.name || '',
+            email: collaborator.email || '',
+            role: collaborator.role || 'Técnico',
+            area: collaborator.area || '',
+            status: collaborator.status || 'Activo',
+            license: collaborator.license || '',
+            workClothing: collaborator.workClothing || [],
+            epp: collaborator.epp || [],
+            certifications: collaborator.certifications || [],
+        });
+    } else {
+        form.reset({
+            name: '',
+            email: '',
+            role: 'Técnico',
+            area: '',
+            status: 'Activo',
+            license: '',
+            workClothing: defaultClothingItems.map(item => ({
+                id: crypto.randomUUID(),
+                item, size: '', quantity: 0, deliveryDate: '', expirationDate: '',
+            })),
+            epp: defaultEppItems.map(item => ({
+                id: crypto.randomUUID(),
+                item, size: '', quantity: 0, deliveryDate: '', expirationDate: '',
+            })),
+            certifications: defaultCertificationItems.map(name => ({
+                id: crypto.randomUUID(),
+                name, issuingOrganization: '', issueDate: '', expirationDate: '',
+            })),
+        });
+    }
+}, [collaborator, form]);
 
   const onSubmit = (data: CollaboratorFormValues) => {
     onSave(data);
@@ -204,13 +212,13 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
             disabled={disabled}
             >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {field.value ? format(new Date(field.value.replace(/-/g, '/')), "PPP", { locale: es }) : <span>Elegir fecha</span>}
+            {field.value ? format(new Date(field.value), "PPP", { locale: es }) : <span>Elegir fecha</span>}
             </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0">
             <Calendar
                 mode="single"
-                selected={field.value ? new Date(field.value.replace(/-/g, '/')) : undefined}
+                selected={field.value ? new Date(field.value) : undefined}
                 onSelect={(date) => {
                     if (fieldType === 'deliveryDate' || fieldType === 'issueDate') {
                          handleDeliveryDateChange(date, index, arrayName)

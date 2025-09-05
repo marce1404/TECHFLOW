@@ -1,7 +1,7 @@
 
 
 'use client';
-import { doc, getDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { SubmittedReport, ReportTemplate, CompanyInfo } from '@/lib/types';
 import * as React from 'react';
@@ -12,6 +12,8 @@ import { es } from 'date-fns/locale';
 import { CheckSquare, Square } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
+import { processFirestoreTimestamp } from '@/lib/utils';
+
 
 async function getReportForPrint(reportId: string): Promise<{ report: SubmittedReport; template: ReportTemplate, companyInfo: CompanyInfo | null } | null> {
   try {
@@ -23,12 +25,7 @@ async function getReportForPrint(reportId: string): Promise<{ report: SubmittedR
       return null;
     }
 
-    const reportData = reportSnap.data();
-    const report = { 
-        id: reportSnap.id, 
-        ...reportData,
-        submittedAt: reportData.submittedAt instanceof Timestamp ? reportData.submittedAt.toDate() : new Timestamp(reportData.submittedAt.seconds, reportData.submittedAt.nanoseconds).toDate()
-    } as SubmittedReport;
+    const report = processFirestoreTimestamp({ id: reportSnap.id, ...reportSnap.data() }) as SubmittedReport;
 
     if (!report.templateId) {
         console.error("Report is missing templateId");
@@ -171,7 +168,7 @@ export default function PrintReportPage() {
                     <tbody>
                         <tr>
                             <td className="border border-gray-400 p-2 bg-blue-100 font-bold w-1/6">Fecha</td>
-                            <td className="border border-gray-400 p-2 w-1/3">{getFieldValue('fecha') ? format(new Date(getFieldValue('fecha').replace(/-/g, '/')), 'dd/MM/yyyy') : 'N/A'}</td>
+                            <td className="border border-gray-400 p-2 w-1/3">{getFieldValue('fecha') ? format(new Date(getFieldValue('fecha')), 'dd/MM/yyyy') : 'N/A'}</td>
                             <td className="border border-gray-400 p-2 bg-blue-100 font-bold w-1/6">Técnico</td>
                             <td className="border border-gray-400 p-2 w-1/3">{getFieldValue('tecnico')}</td>
                         </tr>

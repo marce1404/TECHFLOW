@@ -6,8 +6,9 @@ import { addDays, differenceInCalendarDays, eachDayOfInterval, format } from 'da
 import { es } from 'date-fns/locale';
 import * as React from 'react';
 import { useParams } from 'next/navigation';
-import { doc, getDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { processFirestoreTimestamp } from '@/lib/utils';
 
 async function getGanttForPrint(ganttId: string): Promise<GanttChart | null> {
     try {
@@ -18,33 +19,8 @@ async function getGanttForPrint(ganttId: string): Promise<GanttChart | null> {
             console.log("No such Gantt Chart document!");
             return null;
         }
-
-        const data = ganttSnap.data();
-        if (!data) return null;
         
-        const tasks = (data.tasks || []).map((task: any) => {
-            let convertedDate: Date | null = null;
-            if (task.startDate && task.startDate.seconds) { 
-                convertedDate = new Timestamp(task.startDate.seconds, task.startDate.nanoseconds).toDate();
-            } else if (task.startDate && typeof task.startDate === 'string') {
-                convertedDate = new Date(task.startDate.replace(/-/g, '/'));
-            } else if (task.startDate) {
-                convertedDate = new Date(task.startDate)
-            }
-            return {
-                ...task,
-                startDate: convertedDate,
-            };
-        });
-
-        return {
-            id: ganttSnap.id,
-            name: data.name,
-            assignedOT: data.assignedOT,
-            workOnSaturdays: data.workOnSaturdays,
-            workOnSundays: data.workOnSundays,
-            tasks: tasks,
-        } as GanttChart;
+        return processFirestoreTimestamp({ id: ganttSnap.id, ...ganttSnap.data() }) as GanttChart;
 
     } catch (error) {
         console.error("Error getting Gantt chart for print:", error);

@@ -31,7 +31,6 @@ import { Loader2, Send } from 'lucide-react';
 import { sendReportEmailAction } from '@/app/actions';
 import { MultiSelect } from '../ui/multi-select';
 import { useWorkOrders } from '@/context/work-orders-context';
-import { Timestamp } from 'firebase/firestore';
 
 const emailFormSchema = z.object({
   to: z.string().email({ message: 'El correo del cliente no es válido.' }),
@@ -83,7 +82,7 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
     if (!template) return "<p>Error: Plantilla no encontrada.</p>";
 
     const submittedDate = report.submittedAt
-      ? new Date(report.submittedAt as any).toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric'}) 
+      ? new Date(report.submittedAt).toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric'}) 
       : 'N/A';
     const shortFolio = report.id.substring(report.id.length - 6).toUpperCase();
 
@@ -369,5 +368,3 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
     </Dialog>
   );
 }
-
-    

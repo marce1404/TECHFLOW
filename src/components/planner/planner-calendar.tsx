@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -13,7 +14,6 @@ import {
   isToday,
   add,
   isSameDay,
-  parseISO,
   isWithinInterval,
 } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -86,8 +86,8 @@ export function PlannerCalendar({ workOrders, onDayClick, canSchedule }: Planner
     return workOrders
       .filter(order => {
         if (!order.date) return false;
-        const startDate = parseISO(order.date);
-        const endDate = order.endDate ? parseISO(order.endDate) : startDate;
+        const startDate = new Date(order.date);
+        const endDate = order.endDate ? new Date(order.endDate) : startDate;
         return isWithinInterval(day, { start: startDate, end: endDate });
       })
       .sort((a, b) => (a.startTime || '00:00').localeCompare(b.startTime || '00:00'));

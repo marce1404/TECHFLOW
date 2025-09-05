@@ -40,7 +40,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Timestamp } from 'firebase/firestore';
 
 export default function ReportsHistoryPage() {
   const { submittedReports, otCategories, loading, deleteSubmittedReport, collaborators } = useWorkOrders();
@@ -80,8 +79,8 @@ export default function ReportsHistoryPage() {
     
     // Ensure submittedAt is a Date object for sorting
     return reports.sort((a, b) => {
-        const dateA = a.submittedAt instanceof Timestamp ? a.submittedAt.toMillis() : new Date(a.submittedAt).getTime();
-        const dateB = b.submittedAt instanceof Timestamp ? b.submittedAt.toMillis() : new Date(b.submittedAt).getTime();
+        const dateA = a.submittedAt instanceof Date ? a.submittedAt.getTime() : 0;
+        const dateB = b.submittedAt instanceof Date ? b.submittedAt.getTime() : 0;
         return dateB - dateA;
     });
   }, [submittedReports, search, activeTab]);
@@ -183,7 +182,7 @@ export default function ReportsHistoryPage() {
                                         </TableCell>
                                         <TableCell>{report.otDetails.client}</TableCell>
                                         <TableCell>{report.templateName}</TableCell>
-                                        <TableCell>{report.submittedAt ? format(new Date(report.submittedAt as any), 'dd/MM/yyyy HH:mm', { locale: es }) : 'N/A'}</TableCell>
+                                        <TableCell>{report.submittedAt ? format(report.submittedAt, 'dd/MM/yyyy HH:mm', { locale: es }) : 'N/A'}</TableCell>
                                         <TableCell className="text-right space-x-2">
                                             <AlertDialog>
                                                 <DropdownMenu>
@@ -262,7 +261,7 @@ export default function ReportsHistoryPage() {
                                     <CardContent>
                                         <p className="text-sm font-medium">{report.templateName}</p>
                                         <p className="text-xs text-muted-foreground">
-                                            {report.submittedAt ? format(new Date(report.submittedAt as any), 'dd/MM/yyyy HH:mm', { locale: es }) : 'N/A'}
+                                            {report.submittedAt ? format(report.submittedAt, 'dd/MM/yyyy HH:mm', { locale: es }) : 'N/A'}
                                         </p>
                                     </CardContent>
                                     <CardFooter className="flex justify-end gap-2 relative z-20">
