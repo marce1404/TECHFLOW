@@ -23,7 +23,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Calendar } from '../ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
-import { cn, normalizeString } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 
@@ -107,7 +107,7 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
         email: '',
         role: '',
         area: '',
-        status: '',
+        status: 'Activo',
         license: '',
         workClothing: [],
         epp: [],
@@ -135,7 +135,7 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
         email: collaborator.email || '',
         role: collaborator.role || '',
         area: collaborator.area || '',
-        status: collaborator.status || '',
+        status: collaborator.status || 'Activo',
         license: collaborator.license || '',
         workClothing: collaborator.workClothing || [],
         epp: collaborator.epp || [],

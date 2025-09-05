@@ -8,7 +8,6 @@ import { useWorkOrders } from '@/context/work-orders-context';
 import type { Collaborator } from '@/lib/types';
 import CollaboratorForm, { type CollaboratorFormValues } from '@/components/collaborators/collaborator-form';
 import { Button } from '@/components/ui/button';
-import Link from 'next/link';
 import { Printer, Trash2 } from 'lucide-react';
 import AssignmentHistory from '@/components/shared/assignment-history';
 import {
@@ -23,7 +22,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from '@/context/auth-context';
-import { normalizeString } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function EditCollaboratorPage() {
@@ -34,7 +32,7 @@ export default function EditCollaboratorPage() {
   const { userProfile, loading: authLoading } = useAuth();
   const collaboratorId = params.id as string;
   
-  const [collaborator, setCollaborator] = React.useState<Collaborator | undefined | null>(undefined);
+  const [collaborator, setCollaborator] = React.useState<Collaborator | null | undefined>(undefined);
   
   const canEdit = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
 
@@ -71,7 +69,7 @@ export default function EditCollaboratorPage() {
   const handlePrint = () => {
     window.open(`/collaborators/${collaboratorId}/print`, '_blank');
   };
-
+  
   const isLoading = contextLoading || authLoading || collaborator === undefined;
 
   if (isLoading) {
@@ -113,6 +111,7 @@ export default function EditCollaboratorPage() {
             Imprimir Ficha
         </Button>
       </div>
+      
       <CollaboratorForm onSave={handleSave} collaborator={collaborator} disabled={!canEdit} />
 
         {canEdit && (
