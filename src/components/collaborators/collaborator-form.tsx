@@ -232,6 +232,7 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
   );
   
   const roles: Collaborator['role'][] = ['Técnico', 'Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado', 'Comercial'];
+  const statuses: Collaborator['status'][] = ['Activo', 'Licencia', 'Vacaciones'];
 
 
   return (
@@ -309,16 +310,16 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Estado</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value} disabled={disabled}>
+                                    <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Seleccionar estado" />
                                         </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            <SelectItem value="Activo">Activo</SelectItem>
-                                            <SelectItem value="Licencia">Licencia</SelectItem>
-                                            <SelectItem value="Vacaciones">Vacaciones</SelectItem>
+                                             {statuses.map(status => (
+                                                <SelectItem key={status} value={status}>{status}</SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
