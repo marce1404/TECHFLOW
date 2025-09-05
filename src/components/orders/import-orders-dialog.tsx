@@ -23,7 +23,6 @@ import { useWorkOrders } from '@/context/work-orders-context';
 interface ImportOrdersDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onImportSuccess: () => void;
 }
 
 const workOrderStatuses = ['Por Iniciar', 'En Progreso', 'En Proceso', 'Pendiente', 'Atrasada', 'Cerrada', 'CERRADA'] as const;
@@ -66,7 +65,7 @@ const CreateWorkOrderInputSchemaForExcel = z.object({
 });
 
 
-export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: ImportOrdersDialogProps) {
+export function ImportOrdersDialog({ open, onOpenChange }: ImportOrdersDialogProps) {
   const { collaborators, vehicles: availableVehicles, addOrder } = useWorkOrders();
   const [file, setFile] = React.useState<File | null>(null);
   const [parsedData, setParsedData] = React.useState<CreateWorkOrderInput[]>([]);
@@ -235,10 +234,6 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     
     setImportResult({ successCount, errorCount, errors: batchErrors });
     setLoading(false);
-
-    if (successCount > 0) {
-        onImportSuccess(); // Refreshes the data in the main view
-    }
   };
 
   const handleClose = () => {

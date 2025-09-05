@@ -18,7 +18,7 @@ import { useWorkOrders } from '@/context/work-orders-context';
 import { Separator } from '../ui/separator';
 
 export default function DataManagementCard() {
-    const { workOrders, otStatuses, fetchData, collaborators, vehicles, ganttCharts, otCategories, services, suggestedTasks, reportTemplates, submittedReports } = useWorkOrders();
+    const { workOrders, otStatuses, collaborators, vehicles, ganttCharts, otCategories, services, suggestedTasks, reportTemplates, submittedReports } = useWorkOrders();
     const [date, setDate] = React.useState<DateRange | undefined>();
     const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>([]);
     const [isExporting, setIsExporting] = React.useState(false);
@@ -211,7 +211,6 @@ export default function DataManagementCard() {
             <ImportOrdersDialog
                 open={isImporting}
                 onOpenChange={setIsImporting}
-                onImportSuccess={fetchData}
             />
         </>
     );

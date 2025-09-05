@@ -1,12 +1,11 @@
 
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { collection, doc, getDoc, getDocs, setDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, onSnapshot, setDoc, Unsubscribe, writeBatch } from 'firebase/firestore';
 import type { AppUser } from '@/lib/types';
 import { useRouter, usePathname } from 'next/navigation';
 
@@ -29,49 +28,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname();
 
   const fetchUsers = useCallback(async () => {
+    // This now only fetches users once if needed, but the listener below handles real-time.
     try {
         const usersCollection = await getDocs(collection(db, 'users'));
         const userList = usersCollection.docs.map(doc => doc.data() as AppUser);
         setUsers(userList);
-        // Also update the current user's profile if they are in the list
-        if (user) {
-            const currentUserProfile = userList.find(u => u.uid === user.uid);
-            if (currentUserProfile) {
-                setUserProfile(currentUserProfile);
-            }
-        }
     } catch (e) {
         console.error("Error fetching users: ", e);
-        setUsers([]);
     }
-  }, [user]);
+  }, []);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    let unsubscribeUsers: Unsubscribe | undefined;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
+      setLoading(true);
+
+      // Clean up previous listeners
+      if (unsubscribeUsers) unsubscribeUsers();
+
       if (currentUser) {
         setUser(currentUser);
         const userDocRef = doc(db, 'users', currentUser.uid);
-        const userDocSnap = await getDoc(userDocRef);
+
+        onSnapshot(userDocRef, (doc) => {
+             if (doc.exists()) {
+                setUserProfile(doc.data() as AppUser);
+            }
+        });
         
-        if (userDocSnap.exists()) {
-          setUserProfile(userDocSnap.data() as AppUser);
-        } else {
-          try {
-            const newUserProfile: AppUser = {
-              uid: currentUser.uid,
-              email: currentUser.email!,
-              displayName: currentUser.displayName || currentUser.email!.split('@')[0],
-              role: 'Visor', 
-              status: 'Activo',
-            };
-            await setDoc(userDocRef, newUserProfile);
-            setUserProfile(newUserProfile);
-          } catch (error) {
-             console.error("Error creating fallback user profile in Firestore:", error);
-             setUserProfile(null);
-          }
-        }
-        await fetchUsers();
+        // Listen for real-time updates to all users
+        unsubscribeUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+            const userList = snapshot.docs.map(doc => doc.data() as AppUser);
+            setUsers(userList);
+        });
+
       } else {
         setUser(null);
         setUserProfile(null);
@@ -80,8 +71,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, [fetchUsers]);
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeUsers) unsubscribeUsers();
+    };
+  }, []);
   
   useEffect(() => {
     if (!loading) {
