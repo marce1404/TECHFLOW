@@ -150,73 +150,64 @@ export async function sendInvoiceRequestEmailAction(
     }
     
     const netPrice = order.netPrice || 0;
-    const iva = Math.round(netPrice * 0.19);
-    const totalPrice = netPrice + iva;
-
-    let invoicesHtml = '';
-    if (order.invoices && order.invoices.length > 0) {
-        invoicesHtml = `
-            <h3 style="color: #334155; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-top: 20px;">Facturas Emitidas</h3>
-            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-                <thead>
-                    <tr>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Nº Factura</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Fecha</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Monto Neto</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${order.invoices.map(inv => `
-                        <tr>
-                            <td style="border: 1px solid #ddd; padding: 8px;">${inv.number}</td>
-                            <td style="border: 1px solid #ddd; padding: 8px;">${inv.date}</td>
-                            <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${formatCurrency(inv.amount)}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `;
-    }
 
     const htmlBody = `
         <!DOCTYPE html>
         <html lang="es">
         <head>
             <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
-                body { font-family: sans-serif; color: #333; }
-                .container { max-width: 700px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 8px; }
-                .header { text-align: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
-                h1 { color: #0284c7; } /* primary color */
-                .details { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-                .details > div { background-color: #f8fafc; padding: 10px; border-radius: 5px; }
-                .details strong { color: #475569; }
-                .observations { margin-top: 20px; padding: 15px; background-color: #ffedd5; border-left: 4px solid #f97316; }
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #333; line-height: 1.5; }
+                .container { max-width: 600px; margin: 20px auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #f8fafc; }
+                .header { text-align: center; padding-bottom: 15px; margin-bottom: 15px; border-bottom: 2px solid #3CA7FA; }
+                .header h1 { font-size: 24px; color: #3CA7FA; margin: 0; }
+                .section { margin-bottom: 25px; }
+                .section h2 { font-size: 18px; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; margin-top: 0; }
+                .details-table { width: 100%; border-collapse: collapse; }
+                .details-table td { padding: 8px 4px; font-size: 14px; }
+                .details-table td:first-child { font-weight: 600; color: #475569; width: 40%; }
+                .observations { margin-top: 20px; padding: 15px; background-color: #fffbeb; border-left: 4px solid #f59e0b; }
+                .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #64748b; }
             </style>
         </head>
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>Solicitud de Facturación de OT</h1>
+                    <h1>Solicitud de Facturación</h1>
                 </div>
-                <h2>Detalles de la Orden de Trabajo</h2>
-                <div class="details">
-                    <div><strong>Nº OT:</strong> ${order.ot_number}</div>
-                    <div><strong>Cliente:</strong> ${order.client}</div>
-                    <div><strong>Descripción:</strong> ${order.description}</div>
-                    <div><strong>Nº OC:</strong> ${order.ocNumber || 'N/A'}</div>
-                    <div><strong>Monto Neto:</strong> ${formatCurrency(netPrice)}</div>
-                    <div><strong>Monto Total (IVA incl.):</strong> ${formatCurrency(totalPrice)}</div>
+                <p>Se ha generado una solicitud para facturar la siguiente Orden de Trabajo:</p>
+
+                <div class="section">
+                    <h2>Datos de la Orden de Trabajo</h2>
+                    <table class="details-table">
+                        <tr><td>Nº OT</td><td>${order.ot_number}</td></tr>
+                        <tr><td>Descripción</td><td>${order.description}</td></tr>
+                        <tr><td>Cliente</td><td>${order.client}</td></tr>
+                        <tr><td>RUT Cliente</td><td>${order.rut || 'No especificado'}</td></tr>
+                    </table>
                 </div>
-                
-                ${invoicesHtml}
+
+                <div class="section">
+                    <h2>Datos de Facturación</h2>
+                    <table class="details-table">
+                        <tr><td>Monto Neto</td><td>${formatCurrency(netPrice)}</td></tr>
+                        <tr><td>Nº Orden de Compra (OC)</td><td>${order.ocNumber || 'No especificado'}</td></tr>
+                        <tr><td>Nº Venta</td><td>${order.saleNumber || 'No especificado'}</td></tr>
+                        <tr><td>HES / EM / MIGO</td><td>${order.hesEmMigo || 'No especificado'}</td></tr>
+                    </table>
+                </div>
 
                 ${data.observations ? `
-                <div class="observations">
-                    <h3>Observaciones Importantes:</h3>
+                <div class="section observations">
+                    <h2>Observaciones Adicionales</h2>
                     <p>${data.observations.replace(/\n/g, '<br>')}</p>
                 </div>
                 ` : ''}
+
+                <div class="footer">
+                    <p>Este es un correo generado automáticamente por el sistema de gestión TechFlow.</p>
+                </div>
             </div>
         </body>
         </html>
@@ -505,5 +496,3 @@ export async function changeUserPasswordAction(
         return { success: false, message: error.message };
     }
 }
-
-    
