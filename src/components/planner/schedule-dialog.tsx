@@ -1,5 +1,4 @@
 
-
 'use client';
 import * as React from 'react';
 import { z } from 'zod';
@@ -28,9 +27,16 @@ import { Input } from '@/components/ui/input';
 import type { WorkOrder } from '@/lib/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Calendar } from '../ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
 
 const scheduleFormSchema = z.object({
   workOrderId: z.string().min(1, { message: 'Debes seleccionar una OT.' }),
+  startDate: z.date({ required_error: 'La fecha de inicio es requerida.'}),
+  endDate: z.date().optional(),
   startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'Formato de hora inválido (HH:MM).' }),
   endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'Formato de hora inválido (HH:MM).' }),
 });
@@ -42,7 +48,7 @@ interface ScheduleDialogProps {
   onOpenChange: (open: boolean) => void;
   date: Date | null;
   workOrders: WorkOrder[];
-  onSchedule: (otId: string, startTime: string, endTime: string, date: Date) => void;
+  onSchedule: (otId: string, startTime: string, endTime: string, date: Date, endDate?: Date) => void;
 }
 
 export function ScheduleDialog({ open, onOpenChange, date, workOrders, onSchedule }: ScheduleDialogProps) {
@@ -56,14 +62,20 @@ export function ScheduleDialog({ open, onOpenChange, date, workOrders, onSchedul
   });
 
   React.useEffect(() => {
-    if (!open) {
-      form.reset();
+    if (open && date) {
+      form.reset({
+        workOrderId: '',
+        startTime: '09:00',
+        endTime: '18:00',
+        startDate: date,
+        endDate: undefined,
+      });
     }
-  }, [open, form]);
+  }, [open, date, form]);
 
   const onSubmit = (data: ScheduleFormValues) => {
     if (date) {
-      onSchedule(data.workOrderId, data.startTime, data.endTime, date);
+      onSchedule(data.workOrderId, data.startTime, data.endTime, data.startDate, data.endDate);
     }
   };
 
@@ -72,7 +84,7 @@ export function ScheduleDialog({ open, onOpenChange, date, workOrders, onSchedul
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Agendar Orden de Trabajo</DialogTitle>
-          <DialogDescription>
+           <DialogDescription>
             {date ? `Agendando para el ${format(date, "d 'de' MMMM, yyyy", { locale: es })}` : ''}
           </DialogDescription>
         </DialogHeader>
@@ -102,6 +114,88 @@ export function ScheduleDialog({ open, onOpenChange, date, workOrders, onSchedul
                 </FormItem>
               )}
             />
+             <div className="grid grid-cols-2 gap-4">
+               <FormField
+                  control={form.control}
+                  name="startDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fecha Inicio</FormLabel>
+                       <Popover>
+                            <PopoverTrigger asChild>
+                                <FormControl>
+                                <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                        "w-full pl-3 text-left font-normal",
+                                        !field.value && "text-muted-foreground"
+                                    )}
+                                >
+                                    {field.value ? (
+                                    format(field.value, "PPP", { locale: es })
+                                    ) : (
+                                    <span>Elegir fecha</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                                </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) => date < new Date("1900-01-01")}
+                                initialFocus
+                                locale={es}
+                                />
+                            </PopoverContent>
+                        </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="endDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fecha Término (Opcional)</FormLabel>
+                       <Popover>
+                            <PopoverTrigger asChild>
+                                <FormControl>
+                                <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                        "w-full pl-3 text-left font-normal",
+                                        !field.value && "text-muted-foreground"
+                                    )}
+                                >
+                                    {field.value ? (
+                                    format(field.value, "PPP", { locale: es })
+                                    ) : (
+                                    <span>Elegir fecha</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                                </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) => date < new Date("1900-01-01")}
+                                initialFocus
+                                locale={es}
+                                />
+                            </PopoverContent>
+                        </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}

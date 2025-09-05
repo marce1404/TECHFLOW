@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -8,6 +7,7 @@ import { PlannerCalendar } from '@/components/planner/planner-calendar';
 import { ScheduleDialog } from '@/components/planner/schedule-dialog';
 import type { WorkOrder } from '@/lib/types';
 import { useAuth } from '@/context/auth-context';
+import { format } from 'date-fns';
 
 export default function PlannerPage() {
     const { workOrders, loading, updateOrder } = useWorkOrders();
@@ -23,12 +23,13 @@ export default function PlannerPage() {
         setIsScheduling(true);
     };
     
-    const handleScheduleSubmit = async (otId: string, startTime: string, endTime: string, date: Date) => {
+    const handleScheduleSubmit = async (otId: string, startTime: string, endTime: string, date: Date, endDate?: Date) => {
         const orderToUpdate = workOrders.find(ot => ot.id === otId);
         if (orderToUpdate) {
             await updateOrder(otId, { 
                 ...orderToUpdate,
-                date: date.toISOString().split('T')[0],
+                date: format(date, 'yyyy-MM-dd'),
+                endDate: endDate ? format(endDate, 'yyyy-MM-dd') : undefined,
                 startTime, 
                 endTime 
             });
