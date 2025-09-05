@@ -50,34 +50,10 @@ export default function EditOrderPage() {
   const orderId = params.id as string;
   const [initialOrder, setInitialOrder] = React.useState<WorkOrder | null | undefined>(undefined);
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = React.useState(false);
+  const [isFormReady, setIsFormReady] = React.useState(false);
+
   
-  const methods = useForm<WorkOrder>({
-    defaultValues: {
-      description: '',
-      ot_number: '',
-      client: '',
-      rut: '',
-      service: '',
-      date: '',
-      endDate: '',
-      startTime: '09:00',
-      endTime: '18:00',
-      technicians: [],
-      vehicles: [],
-      rentedVehicle: '',
-      notes: '',
-      status: 'Por Iniciar',
-      priority: 'Baja',
-      netPrice: 0,
-      ocNumber: '',
-      saleNumber: '',
-      hesEmMigo: '',
-      assigned: [],
-      comercial: '',
-      manualProgress: 0,
-      invoices: [],
-    }
-  });
+  const methods = useForm<WorkOrder>();
 
   const { fields: invoiceFields, append: appendInvoice, remove: removeInvoice } = useFieldArray({
       control: methods.control,
@@ -162,10 +138,11 @@ export default function EditOrderPage() {
             invoices: initialOrder.invoices || [],
         };
         methods.reset(defaults);
+        setIsFormReady(true);
     }
   }, [initialOrder, methods]);
   
-  if (initialOrder === undefined || contextLoading) {
+  if (contextLoading || !isFormReady) {
       return <div>Cargando orden de trabajo...</div>
   }
 
@@ -865,3 +842,4 @@ export default function EditOrderPage() {
     </>
   );
 }
+
