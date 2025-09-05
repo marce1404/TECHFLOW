@@ -11,13 +11,15 @@ import { format } from 'date-fns';
 import { normalizeString } from '@/lib/utils';
 import { v4 as uuidv4 } from 'uuid';
 
-type ScheduleFormValues = {
+export type ScheduleFormValues = {
     workOrderId?: string;
     activityName?: string;
     startDate: Date;
     endDate?: Date;
     startTime: string;
     endTime: string;
+    assigned?: string[];
+    technicians?: string[];
 }
 
 export default function PlannerPage() {
@@ -35,7 +37,7 @@ export default function PlannerPage() {
     };
     
     const handleScheduleSubmit = async (data: ScheduleFormValues) => {
-        const { workOrderId, activityName, startDate, endDate, startTime, endTime } = data;
+        const { workOrderId, activityName, startDate, endDate, startTime, endTime, assigned, technicians } = data;
 
         if (workOrderId) {
             const orderToUpdate = workOrders.find(ot => ot.id === workOrderId);
@@ -46,6 +48,8 @@ export default function PlannerPage() {
                     startTime, 
                     endTime,
                     status: 'En Progreso',
+                    assigned,
+                    technicians,
                 };
 
                 if (endDate) {
@@ -70,8 +74,8 @@ export default function PlannerPage() {
                 endTime,
                 status: 'Actividad',
                 priority: 'Baja',
-                assigned: userProfile?.displayName ? [userProfile.displayName] : [],
-                technicians: [],
+                assigned: assigned || [],
+                technicians: technicians || [],
                 vehicles: [],
                 comercial: '',
                 netPrice: 0,

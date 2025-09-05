@@ -23,7 +23,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import type { WorkOrder } from '@/lib/types';
+import type { Collaborator, WorkOrder } from '@/lib/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Calendar } from '../ui/calendar';
@@ -32,6 +32,8 @@ import { CalendarIcon, ChevronsUpDown, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
 import { Separator } from '../ui/separator';
+import { useWorkOrders } from '@/context/work-orders-context';
+import { MultiSelect } from '../ui/multi-select';
 
 
 const scheduleFormSchema = z.object({
@@ -41,12 +43,14 @@ const scheduleFormSchema = z.object({
   endDate: z.date().optional(),
   startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'Formato de hora inválido (HH:MM).' }),
   endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'Formato de hora inválido (HH:MM).' }),
+  assigned: z.array(z.string()).optional(),
+  technicians: z.array(z.string()).optional(),
 }).refine(data => !!data.workOrderId || !!data.activityName, {
     message: "Debe seleccionar una OT o ingresar un nombre para la actividad.",
     path: ["workOrderId"],
 });
 
-type ScheduleFormValues = z.infer<typeof scheduleFormSchema>;
+export type ScheduleFormValues = z.infer<typeof scheduleFormSchema>;
 
 interface ScheduleDialogProps {
   open: boolean;
@@ -57,32 +61,55 @@ interface ScheduleDialogProps {
 }
 
 export function ScheduleDialog({ open, onOpenChange, date, workOrders, onSchedule }: ScheduleDialogProps) {
-  const form = useForm<ScheduleFormValues>({
-    resolver: zodResolver(scheduleFormSchema),
-    defaultValues: {
-      workOrderId: '',
-      activityName: '',
-      startTime: '09:00',
-      endTime: '18:00',
-    },
-  });
+    const { collaborators } = useWorkOrders();
 
-  React.useEffect(() => {
-    if (open && date) {
-      form.reset({
-        workOrderId: '',
-        activityName: '',
-        startTime: '09:00',
-        endTime: '18:00',
-        startDate: date,
-        endDate: undefined,
-      });
-    }
-  }, [open, date, form]);
+    const form = useForm<ScheduleFormValues>({
+        resolver: zodResolver(scheduleFormSchema),
+        defaultValues: {
+            workOrderId: '',
+            activityName: '',
+            startTime: '09:00',
+            endTime: '18:00',
+            assigned: [],
+            technicians: [],
+        },
+    });
 
-  const onSubmit = (data: ScheduleFormValues) => {
-    onSchedule(data);
-  };
+    const workOrderId = form.watch('workOrderId');
+
+    React.useEffect(() => {
+        if (open && date) {
+        form.reset({
+            workOrderId: '',
+            activityName: '',
+            startTime: '09:00',
+            endTime: '18:00',
+            startDate: date,
+            endDate: undefined,
+            assigned: [],
+            technicians: [],
+        });
+        }
+    }, [open, date, form]);
+
+    React.useEffect(() => {
+        if(workOrderId) {
+            const selectedOrder = workOrders.find(o => o.id === workOrderId);
+            if(selectedOrder) {
+                form.setValue('assigned', selectedOrder.assigned);
+                form.setValue('technicians', selectedOrder.technicians);
+            }
+        }
+    }, [workOrderId, workOrders, form]);
+
+
+    const onSubmit = (data: ScheduleFormValues) => {
+        onSchedule(data);
+    };
+
+    const supervisorOptions = collaborators.filter(c => ['Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado'].includes(c.role)).map(c => ({ value: c.name, label: c.name }));
+    const technicianOptions = collaborators.filter(c => c.role === 'Técnico').map(c => ({ value: c.name, label: c.name }));
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -175,6 +202,41 @@ export function ScheduleDialog({ open, onOpenChange, date, workOrders, onSchedul
                 </FormItem>
               )}
             />
+            
+            <FormField
+                control={form.control}
+                name="assigned"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Encargados</FormLabel>
+                        <MultiSelect
+                            options={supervisorOptions}
+                            selected={field.value || []}
+                            onChange={field.onChange}
+                            placeholder="Seleccionar encargados..."
+                        />
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+            
+             <FormField
+                control={form.control}
+                name="technicians"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Técnicos</FormLabel>
+                        <MultiSelect
+                            options={technicianOptions}
+                            selected={field.value || []}
+                            onChange={field.onChange}
+                            placeholder="Seleccionar técnicos..."
+                        />
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+
 
              <div className="grid grid-cols-2 gap-4">
                <FormField

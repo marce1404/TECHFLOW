@@ -77,15 +77,15 @@ export default function NewOrderPage() {
 
     const technicians = collaborators
       .filter(c => c.role === 'Técnico' && c.status === 'Activo')
-      .map(c => ({ value: c.id, label: c.name }));
+      .map(c => ({ value: c.name, label: c.name }));
     
     const supervisors = collaborators
       .filter(c => (['Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado'].includes(c.role)) && c.status === 'Activo')
-      .map(c => ({ value: c.id, label: c.name }));
+      .map(c => ({ value: c.name, label: c.name }));
 
     const vendors = collaborators
       .filter(c => c.role === 'Comercial' && c.status === 'Activo')
-      .map(c => ({ value: c.id, label: c.name }));
+      .map(c => ({ value: c.name, label: c.name }));
 
   const vehicleOptions = vehicles.map(v => ({
     value: v.plate,
@@ -113,7 +113,7 @@ export default function NewOrderPage() {
         endDate: endDate ? format(endDate, 'yyyy-MM-dd') : '',
         startTime,
         endTime,
-        technicians: selectedTechnicians.map(id => collaborators.find(c => c.id === id)?.name || ''),
+        technicians: selectedTechnicians,
         vehicles: selectedVehicles,
         rentedVehicle,
         notes,
@@ -124,8 +124,8 @@ export default function NewOrderPage() {
         ocNumber,
         saleNumber,
         hesEmMigo,
-        assigned: assigned.map(id => collaborators.find(c => c.id === id)?.name || ''),
-        comercial: collaborators.find(c => c.id === comercial)?.name || '',
+        assigned,
+        comercial,
         manualProgress,
     };
     
@@ -500,7 +500,7 @@ export default function NewOrderPage() {
                                     <SelectValue placeholder="Seleccionar comercial" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {vendors.map(v => <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>)}
+                                    {vendors.map(v => <SelectItem key={v.value} value={v.label}>{v.label}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
