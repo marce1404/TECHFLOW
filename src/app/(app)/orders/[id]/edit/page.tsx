@@ -49,7 +49,34 @@ export default function EditOrderPage() {
   const [initialOrder, setInitialOrder] = React.useState<WorkOrder | null | undefined>(undefined);
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = React.useState(false);
   
-  const methods = useForm<WorkOrder>();
+  const methods = useForm<WorkOrder>({
+    defaultValues: {
+        description: '',
+        ot_number: '',
+        client: '',
+        rut: '',
+        service: '',
+        date: '',
+        endDate: '',
+        startTime: '09:00',
+        endTime: '18:00',
+        technicians: [],
+        vehicles: [],
+        rentedVehicle: '',
+        notes: '',
+        status: 'Por Iniciar',
+        priority: 'Baja',
+        netPrice: 0,
+        ocNumber: '',
+        saleNumber: '',
+        hesEmMigo: '',
+        assigned: [],
+        comercial: '',
+        manualProgress: 0,
+        invoices: [],
+    }
+  });
+
   const { fields: invoiceFields, append: appendInvoice, remove: removeInvoice } = useFieldArray({
       control: methods.control,
       name: "invoices",
@@ -106,32 +133,31 @@ export default function EditOrderPage() {
 
   React.useEffect(() => {
     if (initialOrder) {
-        const orderData = { ...initialOrder };
-        const defaults: WorkOrder = {
-            id: orderData.id || '',
-            description: orderData.description || '',
-            ot_number: orderData.ot_number || '',
-            client: orderData.client || '',
-            rut: orderData.rut || '',
-            service: orderData.service || '',
-            date: orderData.date || '',
-            endDate: orderData.endDate || '',
-            startTime: orderData.startTime || '09:00',
-            endTime: orderData.endTime || '18:00',
-            technicians: orderData.technicians || [],
-            vehicles: orderData.vehicles || [],
-            rentedVehicle: orderData.rentedVehicle || '',
-            notes: orderData.notes || '',
-            status: orderData.status || 'Por Iniciar',
-            priority: orderData.priority || 'Baja',
-            netPrice: orderData.netPrice || 0,
-            ocNumber: orderData.ocNumber || '',
-            saleNumber: orderData.saleNumber || '',
-            hesEmMigo: orderData.hesEmMigo || '',
-            assigned: orderData.assigned || [],
-            comercial: orderData.comercial || '',
-            manualProgress: orderData.manualProgress || 0,
-            invoices: orderData.invoices || [],
+        const defaults = {
+            ...initialOrder,
+            description: initialOrder.description || '',
+            ot_number: initialOrder.ot_number || '',
+            client: initialOrder.client || '',
+            rut: initialOrder.rut || '',
+            service: initialOrder.service || '',
+            date: initialOrder.date || '',
+            endDate: initialOrder.endDate || '',
+            startTime: initialOrder.startTime || '09:00',
+            endTime: initialOrder.endTime || '18:00',
+            technicians: initialOrder.technicians || [],
+            vehicles: initialOrder.vehicles || [],
+            rentedVehicle: initialOrder.rentedVehicle || '',
+            notes: initialOrder.notes || '',
+            status: initialOrder.status || 'Por Iniciar',
+            priority: initialOrder.priority || 'Baja',
+            netPrice: initialOrder.netPrice || 0,
+            ocNumber: initialOrder.ocNumber || '',
+            saleNumber: initialOrder.saleNumber || '',
+            hesEmMigo: initialOrder.hesEmMigo || '',
+            assigned: initialOrder.assigned || [],
+            comercial: initialOrder.comercial || '',
+            manualProgress: initialOrder.manualProgress || 0,
+            invoices: initialOrder.invoices || [],
         };
         methods.reset(defaults);
     }
