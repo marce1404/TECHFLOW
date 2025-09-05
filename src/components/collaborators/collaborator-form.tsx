@@ -26,6 +26,7 @@ import { CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
+import { Textarea } from '../ui/textarea';
 
 const workClothingSchema = z.object({
   id: z.string(),
@@ -98,21 +99,47 @@ const defaultCertificationItems = [
     "Operador Elevador",
 ];
 
+const getDefaultValues = (collaborator: Collaborator | null | undefined): CollaboratorFormValues => {
+    if (collaborator) {
+        return {
+            name: collaborator.name || '',
+            email: collaborator.email || '',
+            role: collaborator.role || 'Técnico',
+            area: collaborator.area || '',
+            status: collaborator.status || 'Activo',
+            license: collaborator.license || '',
+            workClothing: collaborator.workClothing || [],
+            epp: collaborator.epp || [],
+            certifications: collaborator.certifications || [],
+        };
+    }
+    return {
+        name: '',
+        email: '',
+        role: 'Técnico',
+        area: '',
+        status: 'Activo',
+        license: '',
+        workClothing: defaultClothingItems.map(item => ({
+            id: crypto.randomUUID(),
+            item, size: '', quantity: 0, deliveryDate: '', expirationDate: '',
+        })),
+        epp: defaultEppItems.map(item => ({
+            id: crypto.randomUUID(),
+            item, size: '', quantity: 0, deliveryDate: '', expirationDate: '',
+        })),
+        certifications: defaultCertificationItems.map(name => ({
+            id: crypto.randomUUID(),
+            name, issuingOrganization: '', issueDate: '', expirationDate: '',
+        })),
+    };
+};
+
 export default function CollaboratorForm({ onSave, collaborator, disabled = false }: CollaboratorFormProps) {
   const { toast } = useToast();
   const form = useForm<CollaboratorFormValues>({
     resolver: zodResolver(collaboratorFormSchema),
-    defaultValues: {
-        name: '',
-        email: '',
-        role: '',
-        area: '',
-        status: 'Activo',
-        license: '',
-        workClothing: [],
-        epp: [],
-        certifications: [],
-    }
+    defaultValues: getDefaultValues(collaborator),
   });
   
   const { fields: workClothingFields, append: appendWorkClothing, remove: removeWorkClothing } = useFieldArray({
@@ -129,54 +156,7 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
   const statuses: Collaborator['status'][] = ['Activo', 'Licencia', 'Vacaciones'];
 
   React.useEffect(() => {
-    if (collaborator) {
-      form.reset({
-        name: collaborator.name || '',
-        email: collaborator.email || '',
-        role: collaborator.role || '',
-        area: collaborator.area || '',
-        status: collaborator.status || 'Activo',
-        license: collaborator.license || '',
-        workClothing: collaborator.workClothing || [],
-        epp: collaborator.epp || [],
-        certifications: collaborator.certifications || [],
-      });
-    } else {
-        const defaultWorkClothing = defaultClothingItems.map(item => ({
-            id: crypto.randomUUID(),
-            item,
-            size: '',
-            quantity: 0,
-            deliveryDate: '',
-            expirationDate: '',
-        }));
-        const defaultEpp = defaultEppItems.map(item => ({
-            id: crypto.randomUUID(),
-            item,
-            size: '',
-            quantity: 0,
-            deliveryDate: '',
-            expirationDate: '',
-        }));
-        const defaultCertifications = defaultCertificationItems.map(name => ({
-            id: crypto.randomUUID(),
-            name,
-            issuingOrganization: '',
-            issueDate: '',
-            expirationDate: '',
-        }));
-      form.reset({
-        name: '',
-        email: '',
-        role: 'Técnico',
-        area: '',
-        status: 'Activo',
-        license: '',
-        workClothing: defaultWorkClothing,
-        epp: defaultEpp,
-        certifications: defaultCertifications,
-      });
-    }
+    form.reset(getDefaultValues(collaborator));
   }, [collaborator, form]);
 
   const onSubmit = (data: CollaboratorFormValues) => {
