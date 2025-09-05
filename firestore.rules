@@ -1,11 +1,8 @@
-
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Regla global que se aplica a todas las colecciones.
-    // Permite a cualquier usuario autenticado leer y escribir datos.
+    // Permite a cualquier usuario autenticado leer y escribir en cualquier colección.
+    // Esto es apropiado para una aplicación interna donde todos los usuarios son de confianza.
     match /{document=**} {
       allow read, write: if request.auth != null;
     }
