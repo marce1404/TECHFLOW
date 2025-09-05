@@ -1,10 +1,9 @@
 
-
 'use client';
 import * as React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/card';
 import { Button } from '../ui/button';
-import { FileUp, FileDown, Loader2, Calendar as CalendarIcon } from 'lucide-react';
+import { FileUp, FileDown, Loader2, Calendar as CalendarIcon, HardDriveDownload } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
 import { es } from 'date-fns/locale';
 import { format } from 'date-fns';
@@ -16,9 +15,10 @@ import { useToast } from '@/hooks/use-toast';
 import { exportOrdersToExcel } from '@/app/actions';
 import { ImportOrdersDialog } from '@/components/orders/import-orders-dialog';
 import { useWorkOrders } from '@/context/work-orders-context';
+import { Separator } from '../ui/separator';
 
 export default function DataManagementCard() {
-    const { activeWorkOrders, historicalWorkOrders, otStatuses, fetchData } = useWorkOrders();
+    const { workOrders, otStatuses, fetchData, collaborators, vehicles, ganttCharts, otCategories, services, suggestedTasks, reportTemplates, submittedReports } = useWorkOrders();
     const [date, setDate] = React.useState<DateRange | undefined>();
     const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>([]);
     const [isExporting, setIsExporting] = React.useState(false);
@@ -30,8 +30,7 @@ export default function DataManagementCard() {
     const handleExport = async () => {
         setIsExporting(true);
         try {
-            const allOrders = [...activeWorkOrders, ...historicalWorkOrders];
-            let filteredForExport = [...allOrders];
+            let filteredForExport = [...workOrders];
 
             if (date?.from) {
                 filteredForExport = filteredForExport.filter(order => {
@@ -78,13 +77,54 @@ export default function DataManagementCard() {
         }
     };
     
+    const handleDownloadJson = (data: any[], fileName: string) => {
+        try {
+            // Firestore Timestamps need to be converted for JSON serialization
+            const replacer = (key: string, value: any) => {
+                if (value && typeof value === 'object' && value.hasOwnProperty('seconds') && value.hasOwnProperty('nanoseconds')) {
+                    return new Date(value.seconds * 1000 + value.nanoseconds / 1000000).toISOString();
+                }
+                return value;
+            };
+
+            const jsonString = JSON.stringify(data, replacer, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${fileName}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            toast({ title: "Descarga Exitosa", description: `Se ha descargado el archivo ${fileName}.json.` });
+        } catch (error) {
+             console.error(`Error downloading ${fileName}: `, error);
+             toast({ variant: "destructive", title: "Error de Descarga", description: `No se pudo generar el archivo para ${fileName}.` });
+        }
+    }
+    
+    const backupSections = [
+        { title: 'Órdenes de Trabajo', data: workOrders, fileName: 'ordenes_de_trabajo' },
+        { title: 'Colaboradores', data: collaborators, fileName: 'colaboradores' },
+        { title: 'Vehículos', data: vehicles, fileName: 'vehiculos' },
+        { title: 'Cartas Gantt', data: ganttCharts, fileName: 'cartas_gantt' },
+        { title: 'Plantillas de Informes', data: reportTemplates, fileName: 'plantillas_informes' },
+        { title: 'Informes Enviados', data: submittedReports, fileName: 'informes_enviados' },
+        { title: 'Categorías OT', data: otCategories, fileName: 'categorias_ot' },
+        { title: 'Estados OT', data: otStatuses, fileName: 'estados_ot' },
+        { title: 'Servicios', data: services, fileName: 'servicios' },
+        { title: 'Tareas Sugeridas', data: suggestedTasks, fileName: 'tareas_sugeridas' },
+    ];
+
+
     return (
         <>
             <Card>
                 <CardHeader>
-                    <CardTitle>Importar y Exportar Órdenes de Trabajo</CardTitle>
+                    <CardTitle>Importar y Exportar a Excel</CardTitle>
                     <CardDescription>
-                        Gestiona tus órdenes masivamente. Puedes aplicar filtros antes de exportar todas las órdenes del sistema (activas e históricas).
+                        Gestiona tus órdenes de trabajo masivamente. Puedes aplicar filtros antes de exportar.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -141,16 +181,37 @@ export default function DataManagementCard() {
                         </Button>
                         <Button onClick={handleExport} disabled={isExporting} className="h-10">
                             {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileUp className="mr-2 h-4 w-4" />}
-                            Exportar Órdenes
+                            Exportar a Excel
                         </Button>
                     </div>
                 </CardContent>
             </Card>
-
+            
+            <Card>
+                <CardHeader>
+                    <CardTitle>Respaldo Completo de Datos</CardTitle>
+                    <CardDescription>
+                        Descarga una copia de seguridad de cada conjunto de datos de tu aplicación en formato JSON.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                   {backupSections.map(section => (
+                       <Button 
+                            key={section.fileName} 
+                            variant="outline" 
+                            onClick={() => handleDownloadJson(section.data, section.fileName)}
+                        >
+                           <HardDriveDownload className="mr-2 h-4 w-4" />
+                           {section.title}
+                       </Button>
+                   ))}
+                </CardContent>
+            </Card>
+            
             <ImportOrdersDialog
                 open={isImporting}
                 onOpenChange={setIsImporting}
-                onImportSuccess={() => {}}
+                onImportSuccess={fetchData}
             />
         </>
     );
