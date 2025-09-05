@@ -8,7 +8,6 @@ import { useWorkOrders } from '@/context/work-orders-context';
 import type { Collaborator } from '@/lib/types';
 import CollaboratorForm, { type CollaboratorFormValues } from '@/components/collaborators/collaborator-form';
 import { Button } from '@/components/ui/button';
-import Link from 'next/link';
 import { Printer, Trash2 } from 'lucide-react';
 import AssignmentHistory from '@/components/shared/assignment-history';
 import {
@@ -23,19 +22,20 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from '@/context/auth-context';
-import { normalizeString } from '@/lib/utils';
 
 export default function EditCollaboratorPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
-  const { getCollaborator, updateCollaborator, loading, deleteCollaborator } = useWorkOrders();
-  const { userProfile } = useAuth();
+  const { getCollaborator, updateCollaborator, loading: contextLoading, deleteCollaborator } = useWorkOrders();
+  const { userProfile, loading: authLoading } = useAuth();
   const collaboratorId = params.id as string;
   
   const [collaborator, setCollaborator] = React.useState<Collaborator | undefined | null>(undefined);
-  
+  const [isFormReady, setIsFormReady] = React.useState(false);
+
   const canEdit = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
+  const loading = contextLoading || authLoading;
 
   React.useEffect(() => {
     if (!loading) {
@@ -43,6 +43,12 @@ export default function EditCollaboratorPage() {
       setCollaborator(foundCollaborator);
     }
   }, [collaboratorId, loading, getCollaborator]);
+
+  React.useEffect(() => {
+    if (collaborator) {
+      setIsFormReady(true);
+    }
+  }, [collaborator]);
 
   const handleSave = (data: CollaboratorFormValues) => {
     if (!collaborator || !canEdit) return;
@@ -53,7 +59,7 @@ export default function EditCollaboratorPage() {
       description: `El colaborador "${data.name}" ha sido actualizado exitosamente.`,
       duration: 2000,
     });
-    setTimeout(() => router.push('/collaborators'), 2000);
+    router.push('/collaborators');
   };
   
   const handleDelete = async () => {
@@ -71,7 +77,7 @@ export default function EditCollaboratorPage() {
     window.open(`/collaborators/${collaboratorId}/print`, '_blank');
   };
 
-  if (loading || collaborator === undefined) {
+  if (loading || !isFormReady || collaborator === undefined) {
     return <div>Cargando colaborador...</div>;
   }
   

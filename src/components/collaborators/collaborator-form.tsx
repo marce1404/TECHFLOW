@@ -2,7 +2,7 @@
 'use client';
 import * as React from 'react';
 import { z } from 'zod';
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format, addYears } from "date-fns";
 import { es } from 'date-fns/locale';
@@ -138,9 +138,9 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
       const defaults = {
         name: collaborator.name || '',
         email: collaborator.email || '',
-        role: findCaseInsensitive(collaborator.role, roles) as Collaborator['role'],
+        role: findCaseInsensitive(collaborator.role, roles) as Collaborator['role'] || '',
         area: collaborator.area || '',
-        status: findCaseInsensitive(collaborator.status, statuses) as Collaborator['status'],
+        status: findCaseInsensitive(collaborator.status, statuses) as Collaborator['status'] || '',
         license: collaborator.license || '',
         workClothing: collaborator.workClothing || [],
         epp: collaborator.epp || [],
