@@ -14,7 +14,8 @@ import {
   add,
   isSameDay,
   parseISO,
-  isWithinInterval
+  isWithinInterval,
+  differenceInDays
 } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, XIcon } from 'lucide-react';
@@ -123,8 +124,53 @@ export function PlannerCalendar({ workOrders, onDayClick, canSchedule }: Planner
     return `${format(start, 'MMM', { locale: es })} - ${format(end, 'MMM yyyy', { locale: es })}`;
   }
   
-  const daysInWeek = 7;
-  const numWeeks = view === 'month' ? Math.ceil(daysToShow.length / daysInWeek) : 1;
+    const daysInPeriod = view === 'month' ? daysToShow : daysToShow.slice(0, 7);
+
+    const getWeekIndex = (day: Date) => {
+        const start = startOfWeek(firstDayOfCurrentPeriod, { locale: es });
+        return Math.floor(differenceInDays(day, start) / 7);
+    };
+
+    const getDayIndex = (day: Date) => {
+        return (day.getDay() + 6) % 7; // Lunes = 0, Domingo = 6
+    };
+
+
+    const eventsByWeek = React.useMemo(() => {
+        const events: { [key: number]: { order: WorkOrder; startCol: number; span: number; }[] } = {};
+        
+        const periodStart = daysInPeriod[0];
+        const periodEnd = daysInPeriod[daysInPeriod.length - 1];
+
+        workOrders.forEach(order => {
+            if (!order.date) return;
+            
+            const startDate = parseISO(order.date);
+            const endDate = order.endDate ? parseISO(order.endDate) : startDate;
+
+            if (isWithinInterval(startDate, { start: periodStart, end: periodEnd }) || isWithinInterval(endDate, { start: periodStart, end: periodEnd }) || (startDate < periodStart && endDate > periodEnd)) {
+                
+                const clampedStartDate = startDate < periodStart ? periodStart : startDate;
+                const clampedEndDate = endDate > periodEnd ? periodEnd : endDate;
+
+                const startWeek = getWeekIndex(clampedStartDate);
+                const endWeek = getWeekIndex(clampedEndDate);
+
+                for (let week = startWeek; week <= endWeek; week++) {
+                    if (!events[week]) events[week] = [];
+
+                    const weekStartDate = week === startWeek ? clampedStartDate : startOfWeek(clampedStartDate, { weekStartsOn: 1 });
+                    const weekEndDate = week === endWeek ? clampedEndDate : endOfWeek(clampedStartDate, { weekStartsOn: 1 });
+
+                    const startCol = getDayIndex(weekStartDate);
+                    const span = differenceInDays(weekEndDate, weekStartDate) + 1;
+                    
+                    events[week].push({ order, startCol, span });
+                }
+            }
+        });
+        return events;
+    }, [workOrders, daysInPeriod, firstDayOfCurrentPeriod]);
 
 
   return (
@@ -155,90 +201,86 @@ export function PlannerCalendar({ workOrders, onDayClick, canSchedule }: Planner
           </div>
         ))}
       </div>
-      <div 
-        className={cn("grid grid-cols-7", view === 'week' ? 'h-[calc(100vh-20rem)]' : `grid-rows-${numWeeks}`)}
-        style={{ gridTemplateRows: view === 'month' ? `repeat(${numWeeks}, minmax(0, 1fr))` : '1fr' }}
-       >
-        {(view === 'month' ? daysToShow : daysToShow.slice(0, 7)).map((day) => {
-          const ordersForDay = workOrders
-            .filter((order) => {
-              const startDate = order.date ? parseISO(order.date) : null;
-              if (!startDate) return false;
-              const endDate = order.endDate ? parseISO(order.endDate) : startDate;
-              return isWithinInterval(day, { start: startDate, end: endDate });
-            })
-            .sort((a,b) => (a.startTime || '00:00').localeCompare(b.startTime || '00:00'));
-
-          return (
-            <div
-              key={day.toString()}
-              onClick={() => onDayClick(day)}
-              className={cn(
-                'border-b border-r p-2 flex flex-col',
-                isSameMonth(day, currentDate) ? 'bg-card' : 'bg-muted/50',
-                view === 'month' && 'min-h-[120px]',
-                view === 'week' && 'h-full',
-                canSchedule && 'cursor-pointer hover:bg-muted/70 transition-colors'
-              )}
-            >
-              <time
-                dateTime={format(day, 'yyyy-MM-dd')}
-                className={cn(
-                  'text-sm font-medium',
-                  isToday(day) && 'flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground'
-                )}
-              >
-                {format(day, 'd')}
-              </time>
-              <div className="flex-1 mt-1 space-y-1 overflow-y-auto">
-                {ordersForDay.map((order) => (
-                  <div key={order.id} className="relative group">
-                    <Link href={`/orders/${order.id}/edit`}>
-                      <div
-                        className={cn(
-                          'text-xs rounded-md p-1 text-white hover:opacity-80 transition-opacity',
-                          getStatusColorClass(order.status)
-                        )}
-                      >
-                        {order.startTime && <span className="font-bold">{order.startTime}</span>}
-                        <p className="font-semibold truncate">{order.isActivity ? order.activityName : order.ot_number}</p>
-                        <p className="truncate text-white/90">{order.client}</p>
-                      </div>
-                    </Link>
-                    {canSchedule && (
-                       <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                              <Button
-                                size="icon"
-                                variant="destructive"
-                                className="absolute top-0 right-0 h-4 w-4 p-0.5 rounded-full z-10 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <XIcon className="h-3 w-3" />
-                                <span className="sr-only">Desprogramar</span>
-                              </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                              <AlertDialogHeader>
-                                  <AlertDialogTitle>¿Desprogramar esta OT?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                      Esta acción quitará la OT <span className="font-bold">{order.ot_number}</span> del calendario y la marcará como "Por Iniciar". No se eliminará la OT.
-                                  </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleUnschedule(order.id)}>Sí, desprogramar</AlertDialogAction>
-                              </AlertDialogFooter>
-                          </AlertDialogContent>
-                       </AlertDialog>
+       <div className="grid grid-cols-7 relative">
+            {daysInPeriod.map((day, dayIndex) => (
+                <div
+                    key={day.toString()}
+                    onClick={() => onDayClick(day)}
+                    className={cn(
+                        'border-b border-r p-2 flex flex-col',
+                        isSameMonth(day, currentDate) ? 'bg-card' : 'bg-muted/50',
+                        view === 'month' ? 'min-h-[120px]' : 'h-[calc(100vh-20rem)]',
+                        canSchedule && 'cursor-pointer hover:bg-muted/70 transition-colors'
                     )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+                >
+                    <time
+                        dateTime={format(day, 'yyyy-MM-dd')}
+                        className={cn(
+                            'text-sm font-medium',
+                            isToday(day) && 'flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground'
+                        )}
+                    >
+                        {format(day, 'd')}
+                    </time>
+                </div>
+            ))}
+            
+            {Object.entries(eventsByWeek).map(([weekIndex, weekEvents]) => 
+                weekEvents.sort((a, b) => a.order.date.localeCompare(b.order.date)).map(({ order, startCol, span }, eventIndex) => (
+                    <div
+                        key={order.id}
+                        className="absolute p-1"
+                        style={{
+                            top: `calc(${Number(weekIndex)} * (100% / ${Object.keys(eventsByWeek).length}) + ${eventIndex * 2 + 1.75}rem)`,
+                            left: `calc(${startCol} * (100% / 7))`,
+                            width: `calc(${span} * (100% / 7) - 0.5rem)`,
+                        }}
+                    >
+                         <div className="relative group w-full">
+                            <Link href={`/orders/${order.id}/edit`}>
+                                <div
+                                    className={cn(
+                                    'text-xs rounded-md p-1 text-white hover:opacity-80 transition-opacity w-full',
+                                    getStatusColorClass(order.status)
+                                    )}
+                                >
+                                    {order.startTime && <span className="font-bold">{order.startTime}</span>}
+                                    <p className="font-semibold truncate">{order.isActivity ? order.activityName : order.ot_number}</p>
+                                    <p className="truncate text-white/90">{order.client}</p>
+                                </div>
+                            </Link>
+                            {canSchedule && (
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button
+                                        size="icon"
+                                        variant="destructive"
+                                        className="absolute top-0 right-0 h-4 w-4 p-0.5 rounded-full z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <XIcon className="h-3 w-3" />
+                                        <span className="sr-only">Desprogramar</span>
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>¿Desprogramar esta OT?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Esta acción quitará la OT <span className="font-bold">{order.ot_number}</span> del calendario y la marcará como "Por Iniciar". No se eliminará la OT.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleUnschedule(order.id)}>Sí, desprogramar</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                            )}
+                        </div>
+                    </div>
+                ))
+            )}
+        </div>
     </div>
   );
 }
