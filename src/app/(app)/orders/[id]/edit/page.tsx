@@ -209,11 +209,17 @@ export default function EditOrderPage() {
                 </div>
                  <div>
                   <Label htmlFor="ot_number">Número de OT *</Label>
-                  <Input
-                    id="ot_number"
-                    {...methods.register('ot_number')}
-                    placeholder="Ej: OT-1234"
-                  />
+                  <Controller
+                      control={methods.control}
+                      name="ot_number"
+                      render={({ field }) => (
+                          <Input
+                            id="ot_number"
+                            {...field}
+                            placeholder="Ej: OT-1234"
+                          />
+                      )}
+                    />
                 </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
@@ -251,7 +257,7 @@ export default function EditOrderPage() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         {services.map(service => (
-                                            <SelectItem key={service.id} value={service.name.toLowerCase()}>{service.name.toUpperCase()}</SelectItem>
+                                            <SelectItem key={service.id} value={service.name}>{service.name}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
@@ -404,7 +410,7 @@ export default function EditOrderPage() {
                                         </SelectTrigger>
                                         <SelectContent>
                                             {otStatuses.map(status => (
-                                                <SelectItem key={status.id} value={status.name}>{status.name.toUpperCase()}</SelectItem>
+                                                <SelectItem key={status.id} value={status.name}>{status.name}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>

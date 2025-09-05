@@ -269,7 +269,7 @@ export default function NewOrderPage() {
                             </SelectTrigger>
                             <SelectContent>
                                 {services.filter(s => s.status === 'Activa').map(service => (
-                                    <SelectItem key={service.id} value={service.name.toLowerCase()}>{service.name}</SelectItem>
+                                    <SelectItem key={service.id} value={service.name}>{service.name}</SelectItem>
                                 ))}
                             </SelectContent>
                             </Select>
