@@ -49,33 +49,7 @@ export default function EditOrderPage() {
   const [initialOrder, setInitialOrder] = React.useState<WorkOrder | null | undefined>(undefined);
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = React.useState(false);
   
-  const methods = useForm<WorkOrder>({
-    defaultValues: {
-        description: '',
-        ot_number: '',
-        client: '',
-        rut: '',
-        service: '',
-        date: '',
-        endDate: '',
-        startTime: '09:00',
-        endTime: '18:00',
-        technicians: [],
-        vehicles: [],
-        rentedVehicle: '',
-        notes: '',
-        status: 'Por Iniciar',
-        priority: 'Baja',
-        netPrice: 0,
-        ocNumber: '',
-        saleNumber: '',
-        hesEmMigo: '',
-        assigned: [],
-        comercial: '',
-        manualProgress: 0,
-        invoices: [],
-    }
-  });
+  const methods = useForm<WorkOrder>();
 
   const { fields: invoiceFields, append: appendInvoice, remove: removeInvoice } = useFieldArray({
       control: methods.control,
