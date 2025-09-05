@@ -23,7 +23,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Calendar } from '../ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, normalizeString } from '@/lib/utils';
 import Link from 'next/link';
 
 const workClothingSchema = z.object({
@@ -123,14 +123,24 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
     control: form.control, name: "certifications"
   });
 
+  const roles: Collaborator['role'][] = ['Técnico', 'Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado', 'Comercial'];
+  const statuses: Collaborator['status'][] = ['Activo', 'Licencia', 'Vacaciones'];
+
   React.useEffect(() => {
     if (collaborator) {
+      const findCaseInsensitive = (value: string | undefined, options: string[]) => {
+            if (!value) return options[0];
+            const normalizedValue = normalizeString(value);
+            const found = options.find(opt => normalizeString(opt) === normalizedValue);
+            return found || options[0];
+      };
+
       form.reset({
         name: collaborator.name || '',
         email: collaborator.email || '',
-        role: collaborator.role || 'Técnico',
+        role: findCaseInsensitive(collaborator.role, roles) as Collaborator['role'],
         area: collaborator.area || '',
-        status: collaborator.status || 'Activo',
+        status: findCaseInsensitive(collaborator.status, statuses) as Collaborator['status'],
         license: collaborator.license || '',
         workClothing: collaborator.workClothing || [],
         epp: collaborator.epp || [],
@@ -230,10 +240,6 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
         </PopoverContent>
     </Popover>
   );
-  
-  const roles: Collaborator['role'][] = ['Técnico', 'Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado', 'Comercial'];
-  const statuses: Collaborator['status'][] = ['Activo', 'Licencia', 'Vacaciones'];
-
 
   return (
     <Form {...form}>
