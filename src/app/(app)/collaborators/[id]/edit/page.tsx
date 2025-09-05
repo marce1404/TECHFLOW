@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -24,6 +23,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from '@/context/auth-context';
+import { normalizeString } from '@/lib/utils';
 
 export default function EditCollaboratorPage() {
   const params = useParams();
@@ -46,7 +46,8 @@ export default function EditCollaboratorPage() {
 
   const handleSave = (data: CollaboratorFormValues) => {
     if (!collaborator || !canEdit) return;
-    updateCollaborator(collaborator.id, { id: collaborator.id, ...data });
+    const dataToSave = { ...collaborator, ...data };
+    updateCollaborator(collaborator.id, dataToSave);
     toast({
       title: 'Colaborador Actualizado',
       description: `El colaborador "${data.name}" ha sido actualizado exitosamente.`,
