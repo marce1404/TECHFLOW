@@ -133,6 +133,17 @@ export default function EditOrderPage() {
       };
       
       const orderWithDefaults = { ...defaults, ...initialOrder };
+      
+      // Ensure all potentially undefined string fields are set to empty strings
+      orderWithDefaults.rut = orderWithDefaults.rut || '';
+      orderWithDefaults.rentedVehicle = orderWithDefaults.rentedVehicle || '';
+      orderWithDefaults.ocNumber = orderWithDefaults.ocNumber || '';
+      orderWithDefaults.saleNumber = orderWithDefaults.saleNumber || '';
+      orderWithDefaults.hesEmMigo = orderWithDefaults.hesEmMigo || '';
+      orderWithDefaults.notes = orderWithDefaults.notes || '';
+      orderWithDefaults.comercial = orderWithDefaults.comercial || '';
+
+
       methods.reset(orderWithDefaults);
     }
   }, [initialOrder, methods]);
