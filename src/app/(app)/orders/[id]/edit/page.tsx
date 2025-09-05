@@ -94,7 +94,6 @@ export default function EditOrderPage() {
   const totalInvoicedGross = Math.round(totalInvoicedNet * 1.19);
   const balance = (watchNetPrice || 0) - totalInvoicedNet;
 
-  const currentPrefix = (methods.watch('ot_number') || '').split('-')[0];
   const assignedGantt = ganttCharts.find(g => g.assignedOT === methods.watch('ot_number'));
   const isGanttAssigned = !!assignedGantt;
   
@@ -200,7 +199,6 @@ export default function EditOrderPage() {
             <h1 className="text-2xl font-headline font-bold tracking-tight">
                 Editar Orden de Trabajo
             </h1>
-            <p className="text-2xl font-bold text-primary font-headline">{initialOrder.ot_number}</p>
         </div>
         {!canEdit && <p className="text-sm text-destructive font-medium">Modo de solo lectura.</p>}
       </div>
@@ -209,39 +207,29 @@ export default function EditOrderPage() {
         <fieldset disabled={!canEdit}>
         <CardContent className="p-6">
           <div className="space-y-6">
-            <div>
-              <Label htmlFor="ot-name">Nombre de OT *</Label>
-              <Input
-                id="ot-name"
-                {...methods.register('description')}
-                placeholder="Escribe el nombre o descripción de la OT..."
-              />
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="ot-name">Nombre de OT *</Label>
+                  <Input
+                    id="ot-name"
+                    {...methods.register('description')}
+                    placeholder="Escribe el nombre o descripción de la OT..."
+                  />
+                </div>
+                 <div>
+                  <Label htmlFor="ot_number">Número de OT *</Label>
+                  <Input
+                    id="ot_number"
+                    {...methods.register('ot_number')}
+                    placeholder="Ej: OT-1234"
+                  />
+                </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                 
                 {/* Left Column */}
                 <div className="space-y-4">
-                    <div>
-                        <Label htmlFor="ot-category">Categoría OT *</Label>
-                        <Select
-                            value={currentPrefix}
-                            onValueChange={(value) => {
-                            const currentNumber = methods.getValues('ot_number').split('-')[1];
-                            methods.setValue('ot_number', `${value}-${currentNumber}`);
-                            }}
-                        >
-                        <SelectTrigger id="ot-category">
-                            <SelectValue placeholder="Seleccionar categoría" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {otCategories.map(cat => (
-                                <SelectItem key={cat.id} value={cat.prefix}>{cat.name} ({cat.prefix})</SelectItem>
-                            ))}
-                        </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
+                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <Label htmlFor="client">Cliente</Label>
                             <Input 
@@ -702,3 +690,5 @@ export default function EditOrderPage() {
     </>
   );
 }
+
+    
