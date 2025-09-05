@@ -25,6 +25,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
 import { cn, normalizeString } from '@/lib/utils';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
 
 const workClothingSchema = z.object({
   id: z.string(),
@@ -98,6 +99,7 @@ const defaultCertificationItems = [
 ];
 
 export default function CollaboratorForm({ onSave, collaborator, disabled = false }: CollaboratorFormProps) {
+  const { toast } = useToast();
   const form = useForm<CollaboratorFormValues>({
     resolver: zodResolver(collaboratorFormSchema),
     defaultValues: {
@@ -128,25 +130,17 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
 
   React.useEffect(() => {
     if (collaborator) {
-      const findCaseInsensitive = (value: string | undefined, options: string[]) => {
-            if (!value) return '';
-            const normalizedValue = normalizeString(value);
-            const found = options.find(opt => normalizeString(opt) === normalizedValue);
-            return found || '';
-      };
-      
-      const defaults = {
+      form.reset({
         name: collaborator.name || '',
         email: collaborator.email || '',
-        role: findCaseInsensitive(collaborator.role, roles) as Collaborator['role'] || '',
+        role: collaborator.role || '',
         area: collaborator.area || '',
-        status: findCaseInsensitive(collaborator.status, statuses) as Collaborator['status'] || '',
+        status: collaborator.status || '',
         license: collaborator.license || '',
         workClothing: collaborator.workClothing || [],
         epp: collaborator.epp || [],
         certifications: collaborator.certifications || [],
-      };
-      form.reset(defaults);
+      });
     } else {
         const defaultWorkClothing = defaultClothingItems.map(item => ({
             id: crypto.randomUUID(),
@@ -187,6 +181,15 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
 
   const onSubmit = (data: CollaboratorFormValues) => {
     onSave(data);
+  };
+  
+  const onInvalid = (errors: any) => {
+    console.error("Form errors:", errors);
+    toast({
+        variant: "destructive",
+        title: "Faltan Datos Obligatorios",
+        description: "Por favor, revisa el formulario y completa los campos marcados en rojo.",
+    });
   };
 
   const handleDeliveryDateChange = (date: Date | undefined, index: number, fieldName: 'workClothing' | 'epp' | 'certifications') => {
@@ -244,7 +247,7 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
 
   return (
     <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-6">
           <fieldset disabled={disabled} className="space-y-6">
             <Card>
                 <CardHeader><CardTitle>Información del Colaborador</CardTitle></CardHeader>
@@ -282,7 +285,7 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Cargo</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value}>
+                                     <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Seleccionar cargo" />
@@ -317,7 +320,7 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Estado</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value}>
+                                     <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Seleccionar estado" />
