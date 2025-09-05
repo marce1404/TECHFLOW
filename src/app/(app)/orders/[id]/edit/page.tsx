@@ -106,7 +106,34 @@ export default function EditOrderPage() {
 
   React.useEffect(() => {
     if (initialOrder) {
-      methods.reset(initialOrder);
+      const defaults: Partial<WorkOrder> = {
+        description: '',
+        ot_number: '',
+        client: '',
+        rut: '',
+        service: '',
+        date: '',
+        endDate: '',
+        startTime: '09:00',
+        endTime: '18:00',
+        technicians: [],
+        vehicles: [],
+        rentedVehicle: '',
+        notes: '',
+        status: 'Por Iniciar',
+        priority: 'Baja',
+        netPrice: 0,
+        ocNumber: '',
+        saleNumber: '',
+        hesEmMigo: '',
+        assigned: [],
+        comercial: '',
+        manualProgress: 0,
+        invoices: [],
+      };
+      
+      const orderWithDefaults = { ...defaults, ...initialOrder };
+      methods.reset(orderWithDefaults);
     }
   }, [initialOrder, methods]);
   
@@ -201,11 +228,17 @@ export default function EditOrderPage() {
             <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="ot-name">Nombre de OT *</Label>
-                  <Input
-                    id="ot-name"
-                    {...methods.register('description')}
-                    placeholder="Escribe el nombre o descripción de la OT..."
-                  />
+                  <Controller
+                    control={methods.control}
+                    name="description"
+                    render={({ field }) => (
+                      <Input
+                        id="ot-name"
+                        {...field}
+                        placeholder="Escribe el nombre o descripción de la OT..."
+                      />
+                    )}
+                   />
                 </div>
                  <div>
                   <Label htmlFor="ot_number">Número de OT *</Label>
@@ -229,18 +262,30 @@ export default function EditOrderPage() {
                      <div className="grid grid-cols-2 gap-4">
                         <div>
                             <Label htmlFor="client">Cliente</Label>
-                            <Input 
-                                id="client" 
-                                {...methods.register('client')}
-                                placeholder="Escribe el nombre del cliente..." 
+                            <Controller
+                                control={methods.control}
+                                name="client"
+                                render={({ field }) => (
+                                    <Input 
+                                        id="client" 
+                                        {...field}
+                                        placeholder="Escribe el nombre del cliente..." 
+                                    />
+                                )}
                             />
                         </div>
                          <div>
                             <Label htmlFor="rut">RUT Cliente</Label>
-                            <Input 
-                                id="rut" 
-                                {...methods.register('rut')}
-                                placeholder="Ej: 12.345.678-9" 
+                            <Controller
+                                control={methods.control}
+                                name="rut"
+                                render={({ field }) => (
+                                    <Input 
+                                        id="rut" 
+                                        {...field}
+                                        placeholder="Ej: 12.345.678-9" 
+                                    />
+                                )}
                             />
                         </div>
                     </div>
@@ -335,11 +380,23 @@ export default function EditOrderPage() {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <Label htmlFor="start-time">Hora Inicio</Label>
-                            <Input id="start-time" type="time" {...methods.register('startTime')} />
+                            <Controller
+                                control={methods.control}
+                                name="startTime"
+                                render={({ field }) => (
+                                    <Input id="start-time" type="time" {...field} />
+                                )}
+                            />
                         </div>
                         <div>
                             <Label htmlFor="end-time">Hora Término</Label>
-                            <Input id="end-time" type="time" {...methods.register('endTime')} />
+                            <Controller
+                                control={methods.control}
+                                name="endTime"
+                                render={({ field }) => (
+                                    <Input id="end-time" type="time" {...field} />
+                                )}
+                            />
                         </div>
                     </div>
                     
@@ -377,19 +434,31 @@ export default function EditOrderPage() {
                     
                     <div>
                         <Label htmlFor="rented-vehicle">Vehículo Arrendado (Opcional)</Label>
-                        <Input 
-                            id="rented-vehicle" 
-                             {...methods.register('rentedVehicle')}
+                        <Controller
+                            control={methods.control}
+                            name="rentedVehicle"
+                            render={({ field }) => (
+                                <Input 
+                                    id="rented-vehicle" 
+                                     {...field}
+                                />
+                            )}
                         />
                     </div>
 
                     <div>
                         <Label htmlFor="notes">Descripción / Notas Adicionales</Label>
-                        <Textarea 
-                          id="notes" 
-                          {...methods.register('notes')}
-                          placeholder="Añadir descripción detallada, materiales, notas..." 
-                          rows={5} 
+                        <Controller
+                            control={methods.control}
+                            name="notes"
+                            render={({ field }) => (
+                                <Textarea 
+                                  id="notes" 
+                                  {...field}
+                                  placeholder="Añadir descripción detallada, materiales, notas..." 
+                                  rows={5} 
+                                />
+                            )}
                         />
                     </div>
                 </div>
@@ -477,24 +546,42 @@ export default function EditOrderPage() {
                     <div className="grid grid-cols-2 gap-4">
                          <div>
                             <Label htmlFor="oc-number">OC</Label>
-                            <Input 
-                                id="oc-number"
-                                {...methods.register('ocNumber')}
+                            <Controller
+                                control={methods.control}
+                                name="ocNumber"
+                                render={({ field }) => (
+                                    <Input 
+                                        id="oc-number"
+                                        {...field}
+                                    />
+                                )}
                             />
                         </div>
                         <div>
                             <Label htmlFor="sale-number">Nº Venta</Label>
-                            <Input 
-                                id="sale-number" 
-                                {...methods.register('saleNumber')}
+                            <Controller
+                                control={methods.control}
+                                name="saleNumber"
+                                render={({ field }) => (
+                                    <Input 
+                                        id="sale-number" 
+                                        {...field}
+                                    />
+                                )}
                             />
                         </div>
                     </div>
                      <div>
                         <Label htmlFor="hes-em-migo">HES / EM / MIGO</Label>
-                        <Input 
-                            id="hes-em-migo" 
-                            {...methods.register('hesEmMigo')}
+                        <Controller
+                            control={methods.control}
+                            name="hesEmMigo"
+                            render={({ field }) => (
+                                <Input 
+                                    id="hes-em-migo" 
+                                    {...field}
+                                />
+                            )}
                         />
                     </div>
 
