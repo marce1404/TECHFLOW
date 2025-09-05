@@ -110,6 +110,127 @@ export async function sendReportEmailAction(
     }
 }
 
+type InvoiceRequestEmailData = {
+    to: string;
+    cc?: string;
+    subject: string;
+    observations?: string;
+};
+
+export async function sendInvoiceRequestEmailAction(
+    data: InvoiceRequestEmailData,
+    order: WorkOrder,
+    config: SmtpConfig
+): Promise<{ success: boolean; message: string }> {
+    const { host, port, secure, user, pass, fromName, fromEmail } = config;
+
+    let transporter;
+    try {
+        transporter = nodemailer.createTransport({
+            host, port, secure: secure === 'ssl', auth: { user, pass },
+             ...(secure === 'starttls' && { tls: { ciphers: 'SSLv3' }})
+        });
+        await transporter.verify();
+    } catch (error: any) {
+        console.error("Error verifying SMTP transporter for invoice request:", error);
+        return { success: false, message: `Error de conexión SMTP: ${error.message}` };
+    }
+    
+    const formatCurrency = (value?: number) => {
+        if (typeof value !== 'number') return '$0';
+        return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(value);
+    }
+    
+    const netPrice = order.netPrice || 0;
+    const iva = Math.round(netPrice * 0.19);
+    const totalPrice = netPrice + iva;
+
+    let invoicesHtml = '';
+    if (order.invoices && order.invoices.length > 0) {
+        invoicesHtml = `
+            <h3 style="color: #334155; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-top: 20px;">Facturas Emitidas</h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                <thead>
+                    <tr>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Nº Factura</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Fecha</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Monto Neto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${order.invoices.map(inv => `
+                        <tr>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${inv.number}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${inv.date}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${formatCurrency(inv.amount)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    const htmlBody = `
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body { font-family: sans-serif; color: #333; }
+                .container { max-width: 700px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 8px; }
+                .header { text-align: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
+                h1 { color: #0284c7; } /* primary color */
+                .details { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+                .details > div { background-color: #f8fafc; padding: 10px; border-radius: 5px; }
+                .details strong { color: #475569; }
+                .observations { margin-top: 20px; padding: 15px; background-color: #ffedd5; border-left: 4px solid #f97316; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>Solicitud de Facturación de OT</h1>
+                </div>
+                <h2>Detalles de la Orden de Trabajo</h2>
+                <div class="details">
+                    <div><strong>Nº OT:</strong> ${order.ot_number}</div>
+                    <div><strong>Cliente:</strong> ${order.client}</div>
+                    <div><strong>Descripción:</strong> ${order.description}</div>
+                    <div><strong>Nº OC:</strong> ${order.ocNumber || 'N/A'}</div>
+                    <div><strong>Monto Neto:</strong> ${formatCurrency(netPrice)}</div>
+                    <div><strong>Monto Total (IVA incl.):</strong> ${formatCurrency(totalPrice)}</div>
+                </div>
+                
+                ${invoicesHtml}
+
+                ${data.observations ? `
+                <div class="observations">
+                    <h3>Observaciones Importantes:</h3>
+                    <p>${data.observations.replace(/\n/g, '<br>')}</p>
+                </div>
+                ` : ''}
+            </div>
+        </body>
+        </html>
+    `;
+
+    const mailOptions = {
+        from: `"${fromName}" <${fromEmail}>`,
+        to: data.to,
+        cc: data.cc,
+        subject: data.subject,
+        html: htmlBody,
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        return { success: true, message: '¡Correo enviado con éxito!' };
+    } catch (error: any) {
+        console.error("Error sending invoice request email:", error);
+        return { success: false, message: `Error al enviar el correo: ${error.message}` };
+    }
+}
+
 
 export async function exportOrdersToExcel(orders: WorkOrder[]): Promise<string> {
     const dataToExport = orders.map(order => {
@@ -376,4 +497,3 @@ export async function changeUserPasswordAction(
         return { success: false, message: error.message };
     }
 }
-

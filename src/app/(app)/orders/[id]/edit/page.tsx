@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon, ArrowRight, Trash2, PlusCircle } from "lucide-react";
+import { Calendar as CalendarIcon, ArrowRight, Trash2, PlusCircle, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from 'date-fns/locale';
@@ -35,6 +35,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { SendToInvoiceDialog } from "@/components/orders/send-to-invoice-dialog";
 
 
 export default function EditOrderPage() {
@@ -46,6 +47,7 @@ export default function EditOrderPage() {
   
   const orderId = params.id as string;
   const [initialOrder, setInitialOrder] = React.useState<WorkOrder | null | undefined>(undefined);
+  const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = React.useState(false);
   
   const methods = useForm<WorkOrder>();
   const { fields: invoiceFields, append: appendInvoice, remove: removeInvoice } = useFieldArray({
@@ -185,6 +187,7 @@ export default function EditOrderPage() {
   };
 
   return (
+    <>
     <FormProvider {...methods}>
     <form onSubmit={methods.handleSubmit(handleUpdateOrder)} className="space-y-6">
     <div className="flex flex-col gap-8">
@@ -665,6 +668,10 @@ export default function EditOrderPage() {
                 </AlertDialog>
               <div className="flex gap-2">
                   <Button variant="outline" asChild><Link href="/orders">Cancelar</Link></Button>
+                  <Button variant="outline" type="button" onClick={() => setIsInvoiceDialogOpen(true)}>
+                    <Send className="mr-2 h-4 w-4" />
+                    Enviar a Facturar
+                  </Button>
                   <Button type="submit">Guardar Cambios</Button>
               </div>
           </div>
@@ -672,5 +679,11 @@ export default function EditOrderPage() {
     </div>
     </form>
     </FormProvider>
+    <SendToInvoiceDialog
+        open={isInvoiceDialogOpen}
+        onOpenChange={setIsInvoiceDialogOpen}
+        order={initialOrder}
+      />
+    </>
   );
 }
