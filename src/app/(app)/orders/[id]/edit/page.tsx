@@ -106,51 +106,34 @@ export default function EditOrderPage() {
 
   React.useEffect(() => {
     if (initialOrder) {
-      const defaults: Partial<WorkOrder> = {
-        description: '',
-        ot_number: '',
-        client: '',
-        rut: '',
-        service: '',
-        date: '',
-        endDate: '',
-        startTime: '09:00',
-        endTime: '18:00',
-        technicians: [],
-        vehicles: [],
-        rentedVehicle: '',
-        notes: '',
-        status: 'Por Iniciar',
-        priority: 'Baja',
-        netPrice: 0,
-        ocNumber: '',
-        saleNumber: '',
-        hesEmMigo: '',
-        assigned: [],
-        comercial: '',
-        manualProgress: 0,
-        invoices: [],
-      };
-      
-      const orderWithDefaults = { ...defaults, ...initialOrder };
-      
-      // Ensure all potentially undefined string fields are set to empty strings to avoid uncontrolled component errors
-      orderWithDefaults.description = orderWithDefaults.description || '';
-      orderWithDefaults.ot_number = orderWithDefaults.ot_number || '';
-      orderWithDefaults.client = orderWithDefaults.client || '';
-      orderWithDefaults.rut = orderWithDefaults.rut || '';
-      orderWithDefaults.service = orderWithDefaults.service || '';
-      orderWithDefaults.rentedVehicle = orderWithDefaults.rentedVehicle || '';
-      orderWithDefaults.ocNumber = orderWithDefaults.ocNumber || '';
-      orderWithDefaults.saleNumber = orderWithDefaults.saleNumber || '';
-      orderWithDefaults.hesEmMigo = orderWithDefaults.hesEmMigo || '';
-      orderWithDefaults.notes = orderWithDefaults.notes || '';
-      orderWithDefaults.comercial = orderWithDefaults.comercial || '';
-      orderWithDefaults.status = orderWithDefaults.status || 'Por Iniciar';
-      orderWithDefaults.priority = orderWithDefaults.priority || 'Baja';
-
-
-      methods.reset(orderWithDefaults);
+        const orderData = { ...initialOrder };
+        const defaults: WorkOrder = {
+            id: orderData.id || '',
+            description: orderData.description || '',
+            ot_number: orderData.ot_number || '',
+            client: orderData.client || '',
+            rut: orderData.rut || '',
+            service: orderData.service || '',
+            date: orderData.date || '',
+            endDate: orderData.endDate || '',
+            startTime: orderData.startTime || '09:00',
+            endTime: orderData.endTime || '18:00',
+            technicians: orderData.technicians || [],
+            vehicles: orderData.vehicles || [],
+            rentedVehicle: orderData.rentedVehicle || '',
+            notes: orderData.notes || '',
+            status: orderData.status || 'Por Iniciar',
+            priority: orderData.priority || 'Baja',
+            netPrice: orderData.netPrice || 0,
+            ocNumber: orderData.ocNumber || '',
+            saleNumber: orderData.saleNumber || '',
+            hesEmMigo: orderData.hesEmMigo || '',
+            assigned: orderData.assigned || [],
+            comercial: orderData.comercial || '',
+            manualProgress: orderData.manualProgress || 0,
+            invoices: orderData.invoices || [],
+        };
+        methods.reset(defaults);
     }
   }, [initialOrder, methods]);
   
@@ -839,5 +822,3 @@ export default function EditOrderPage() {
     </>
   );
 }
-
-    
