@@ -2,7 +2,7 @@
 'use client';
 import * as React from 'react';
 import { z } from 'zod';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format, addYears } from "date-fns";
 import { es } from 'date-fns/locale';

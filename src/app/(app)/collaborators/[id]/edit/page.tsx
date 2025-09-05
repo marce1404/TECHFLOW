@@ -8,6 +8,7 @@ import { useWorkOrders } from '@/context/work-orders-context';
 import type { Collaborator } from '@/lib/types';
 import CollaboratorForm, { type CollaboratorFormValues } from '@/components/collaborators/collaborator-form';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 import { Printer, Trash2 } from 'lucide-react';
 import AssignmentHistory from '@/components/shared/assignment-history';
 import {
@@ -22,6 +23,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from '@/context/auth-context';
+import { normalizeString } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function EditCollaboratorPage() {
   const params = useParams();
@@ -31,24 +34,10 @@ export default function EditCollaboratorPage() {
   const { userProfile, loading: authLoading } = useAuth();
   const collaboratorId = params.id as string;
   
-  const [collaborator, setCollaborator] = React.useState<Collaborator | undefined | null>(undefined);
-  const [isFormReady, setIsFormReady] = React.useState(false);
-
-  const canEdit = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
   const loading = contextLoading || authLoading;
-
-  React.useEffect(() => {
-    if (!loading) {
-      const foundCollaborator = getCollaborator(collaboratorId);
-      setCollaborator(foundCollaborator);
-    }
-  }, [collaboratorId, loading, getCollaborator]);
-
-  React.useEffect(() => {
-    if (collaborator) {
-      setIsFormReady(true);
-    }
-  }, [collaborator]);
+  const collaborator = React.useMemo(() => getCollaborator(collaboratorId), [collaboratorId, getCollaborator]);
+  
+  const canEdit = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
 
   const handleSave = (data: CollaboratorFormValues) => {
     if (!collaborator || !canEdit) return;
@@ -77,8 +66,23 @@ export default function EditCollaboratorPage() {
     window.open(`/collaborators/${collaboratorId}/print`, '_blank');
   };
 
-  if (loading || !isFormReady || collaborator === undefined) {
-    return <div>Cargando colaborador...</div>;
+  if (loading || !collaborator) {
+    return (
+        <div className="flex flex-col gap-8">
+            <div className="flex justify-between items-center">
+                <div className="space-y-2">
+                    <Skeleton className="h-8 w-64" />
+                    <Skeleton className="h-4 w-80" />
+                </div>
+                <Skeleton className="h-10 w-32" />
+            </div>
+             <div className="space-y-4">
+                <Skeleton className="h-48 w-full" />
+                <Skeleton className="h-48 w-full" />
+                <Skeleton className="h-48 w-full" />
+            </div>
+        </div>
+    )
   }
   
   if (collaborator === null) {
