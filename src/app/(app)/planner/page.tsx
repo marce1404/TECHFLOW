@@ -8,6 +8,7 @@ import { ScheduleDialog } from '@/components/planner/schedule-dialog';
 import type { WorkOrder } from '@/lib/types';
 import { useAuth } from '@/context/auth-context';
 import { format } from 'date-fns';
+import { normalizeString } from '@/lib/utils';
 
 export default function PlannerPage() {
     const { workOrders, loading, updateOrder } = useWorkOrders();
@@ -30,14 +31,14 @@ export default function PlannerPage() {
                 ...orderToUpdate,
                 date: format(date, 'yyyy-MM-dd'),
                 startTime, 
-                endTime 
+                endTime,
+                status: 'En Progreso',
             };
 
             if (endDate) {
                 dataToUpdate.endDate = format(endDate, 'yyyy-MM-dd');
             } else {
-                // Ensure we don't send undefined. If no end date, don't include the field.
-                delete dataToUpdate.endDate;
+                dataToUpdate.endDate = '';
             }
             
             await updateOrder(otId, dataToUpdate);
@@ -70,7 +71,7 @@ export default function PlannerPage() {
                     open={isScheduling}
                     onOpenChange={setIsScheduling}
                     date={selectedDate}
-                    workOrders={workOrders.filter(ot => ot.status === 'Por Iniciar' || ot.status === 'Pendiente')}
+                    workOrders={workOrders.filter(ot => normalizeString(ot.status) !== 'cerrada')}
                     onSchedule={handleScheduleSubmit}
                 />
             )}
