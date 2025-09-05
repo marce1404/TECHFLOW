@@ -55,9 +55,9 @@ const certificationSchema = z.object({
 const collaboratorFormSchema = z.object({
   name: z.string().min(3, { message: 'El nombre debe tener al menos 3 caracteres.' }),
   email: z.string().email({ message: 'Debe ser un correo electrónico válido.' }).optional().or(z.literal('')),
-  role: z.string(),
+  role: z.string().min(1, "El cargo es requerido."),
   area: z.string().optional(),
-  status: z.string(),
+  status: z.string().min(1, "El estado es requerido."),
   license: z.string().optional(),
   workClothing: z.array(workClothingSchema),
   epp: z.array(eppSchema),
@@ -294,13 +294,13 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
                             <FormItem>
                             <FormLabel>Área</FormLabel>
                             <FormControl>
-                                <Input placeholder="Ej: RM, Zona Norte..." {...field} />
+                                <Input placeholder="Ej: RM, Zona Norte..." {...field} value={field.value ?? ''} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
                         )}
                         />
-                            <FormField
+                        <FormField
                             control={form.control}
                             name="status"
                             render={({ field }) => (
@@ -329,7 +329,7 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
                             <FormItem>
                             <FormLabel>Licencia de Conducir</FormLabel>
                             <FormControl>
-                                <Input placeholder="Ej: Clase B" {...field} />
+                                <Input placeholder="Ej: Clase B" {...field} value={field.value ?? ''} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
@@ -510,5 +510,3 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
     </Form>
   );
 }
-
-    
