@@ -100,6 +100,17 @@ const defaultCertificationItems = [
 export default function CollaboratorForm({ onSave, collaborator, disabled = false }: CollaboratorFormProps) {
   const form = useForm<CollaboratorFormValues>({
     resolver: zodResolver(collaboratorFormSchema),
+    defaultValues: {
+        name: '',
+        email: '',
+        role: '',
+        area: '',
+        status: '',
+        license: '',
+        workClothing: [],
+        epp: [],
+        certifications: [],
+    }
   });
   
   const { fields: workClothingFields, append: appendWorkClothing, remove: removeWorkClothing } = useFieldArray({
