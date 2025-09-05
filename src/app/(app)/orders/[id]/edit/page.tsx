@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { SendToInvoiceDialog } from "@/components/orders/send-to-invoice-dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
 
 export default function EditOrderPage() {
@@ -49,7 +51,33 @@ export default function EditOrderPage() {
   const [initialOrder, setInitialOrder] = React.useState<WorkOrder | null | undefined>(undefined);
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = React.useState(false);
   
-  const methods = useForm<WorkOrder>();
+  const methods = useForm<WorkOrder>({
+    defaultValues: {
+      description: '',
+      ot_number: '',
+      client: '',
+      rut: '',
+      service: '',
+      date: '',
+      endDate: '',
+      startTime: '09:00',
+      endTime: '18:00',
+      technicians: [],
+      vehicles: [],
+      rentedVehicle: '',
+      notes: '',
+      status: 'Por Iniciar',
+      priority: 'Baja',
+      netPrice: 0,
+      ocNumber: '',
+      saleNumber: '',
+      hesEmMigo: '',
+      assigned: [],
+      comercial: '',
+      manualProgress: 0,
+      invoices: [],
+    }
+  });
 
   const { fields: invoiceFields, append: appendInvoice, remove: removeInvoice } = useFieldArray({
       control: methods.control,
@@ -210,6 +238,7 @@ export default function EditOrderPage() {
   return (
     <>
     <FormProvider {...methods}>
+    <Form {...methods}>
     <form onSubmit={methods.handleSubmit(handleUpdateOrder)} className="space-y-6">
     <div className="flex flex-col gap-8">
       <div className="flex justify-between items-center">
@@ -290,25 +319,29 @@ export default function EditOrderPage() {
                         </div>
                     </div>
 
-                    <div>
-                        <Label htmlFor="service">Servicio</Label>
-                        <Controller
-                            control={methods.control}
-                            name="service"
-                            render={({ field }) => (
+                    <FormField
+                        control={methods.control}
+                        name="service"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Servicio</FormLabel>
                                 <Select onValueChange={field.onChange} value={field.value}>
-                                    <SelectTrigger id="service">
-                                        <SelectValue placeholder="Elegir servicio..." />
-                                    </SelectTrigger>
+                                    <FormControl>
+                                        <SelectTrigger id="service">
+                                            <SelectValue placeholder="Elegir servicio..." />
+                                        </SelectTrigger>
+                                    </FormControl>
                                     <SelectContent>
                                         {services.map(service => (
                                             <SelectItem key={service.id} value={service.name}>{service.name}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
-                            )}
-                        />
-                    </div>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -467,44 +500,50 @@ export default function EditOrderPage() {
                 <div className="space-y-4">
                     
                     <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <Label htmlFor="status">Estado</Label>
-                            <Controller
-                                control={methods.control}
-                                name="status"
-                                render={({ field }) => (
+                        <FormField
+                            control={methods.control}
+                            name="status"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Estado</FormLabel>
                                     <Select onValueChange={(value) => handleStatusChange(value as WorkOrder['status'])} value={field.value}>
-                                        <SelectTrigger id="status">
-                                            <SelectValue />
-                                        </SelectTrigger>
+                                        <FormControl>
+                                            <SelectTrigger id="status">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                        </FormControl>
                                         <SelectContent>
                                             {otStatuses.map(status => (
                                                 <SelectItem key={status.id} value={status.name}>{status.name}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                )}
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor="priority">Prioridad</Label>
-                            <Controller
-                                control={methods.control}
-                                name="priority"
-                                render={({ field }) => (
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={methods.control}
+                            name="priority"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Prioridad</FormLabel>
                                     <Select onValueChange={field.onChange} value={field.value}>
-                                        <SelectTrigger id="priority">
-                                            <SelectValue />
-                                        </SelectTrigger>
+                                        <FormControl>
+                                            <SelectTrigger id="priority">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                        </FormControl>
                                         <SelectContent>
                                             <SelectItem value="Baja">Baja</SelectItem>
                                             <SelectItem value="Media">Media</SelectItem>
                                             <SelectItem value="Alta">Alta</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                )}
-                            />
-                        </div>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                     </div>
                     
                      <div className="grid grid-cols-3 gap-4">
@@ -602,23 +641,26 @@ export default function EditOrderPage() {
                         />
                     </div>
 
-                    <div>
-                        <Label htmlFor="vendor">Comercial</Label>
-                        <Controller
-                            control={methods.control}
-                            name="comercial"
-                            render={({ field }) => (
+                    <FormField
+                        control={methods.control}
+                        name="comercial"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Comercial</FormLabel>
                                 <Select onValueChange={field.onChange} value={field.value}>
-                                    <SelectTrigger id="vendor">
-                                        <SelectValue placeholder="Seleccionar comercial" />
-                                    </SelectTrigger>
+                                    <FormControl>
+                                        <SelectTrigger id="vendor">
+                                            <SelectValue placeholder="Seleccionar comercial" />
+                                        </SelectTrigger>
+                                    </FormControl>
                                     <SelectContent>
                                         {vendors.map(v => <SelectItem key={v.value} value={v.label}>{v.label}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
-                            )}
-                        />
-                    </div>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
 
                      {isGanttAssigned ? (
                         <div>
@@ -813,6 +855,7 @@ export default function EditOrderPage() {
       )}
     </div>
     </form>
+    </Form>
     </FormProvider>
     <SendToInvoiceDialog
         open={isInvoiceDialogOpen}
