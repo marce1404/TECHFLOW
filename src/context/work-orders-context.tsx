@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { predefinedReportTemplates } from '@/lib/predefined-templates';
+import { normalizeString } from '@/lib/utils';
 
 interface WorkOrdersContextType {
   workOrders: WorkOrder[];
@@ -173,10 +174,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             result.setter(data as any);
         }
 
-        const allOrders = workOrders;
-        setActiveWorkOrders(allOrders.filter(o => o.status !== 'Cerrada'));
-        setHistoricalWorkOrders(allOrders.filter(o => o.status === 'Cerrada'));
-
         // Fetch single docs
         const companyInfoDoc = await getDoc(doc(db, 'settings', 'companyInfo'));
         setCompanyInfo(companyInfoDoc.exists() ? companyInfoDoc.data() as CompanyInfo : null);
@@ -203,8 +200,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
       // User is logged out
       setLoading(false);
       setWorkOrders([]);
-      setActiveWorkOrders([]);
-      setHistoricalWorkOrders([]);
       setOtCategories([]);
       setOtStatuses([]);
       setServices([]);
@@ -219,6 +214,12 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
       setAuditLog([]);
     }
   }, [user, authLoading, fetchData]);
+
+  // Derived state for active/historical orders
+  useEffect(() => {
+    setActiveWorkOrders(workOrders.filter(o => normalizeString(o.status) !== 'cerrada'));
+    setHistoricalWorkOrders(workOrders.filter(o => normalizeString(o.status) === 'cerrada'));
+  }, [workOrders]);
 
   const addLogEntry = async (action: string) => {
     if (!userProfile) return;
@@ -273,9 +274,9 @@ const getLastOtNumber = (prefix: string): string | null => {
 
   const addOrder = async (order: Omit<WorkOrder, 'id'>): Promise<WorkOrder> => {
     const docRef = await addDoc(collection(db, "work-orders"), order);
-    await addLogEntry(`Creó la OT: ${order.ot_number} - ${order.description}`);
-    await fetchData();
     const newOrder = { id: docRef.id, ...order } as WorkOrder;
+    setWorkOrders(prev => [newOrder, ...prev]);
+    await addLogEntry(`Creó la OT: ${order.ot_number} - ${order.description}`);
     return newOrder;
   };
   
@@ -286,16 +287,16 @@ const getLastOtNumber = (prefix: string): string | null => {
   const updateOrder = async (id: string, updatedData: Partial<WorkOrder>) => {
     const orderRef = doc(db, 'work-orders', id);
     await updateDoc(orderRef, updatedData);
-     const order = getOrder(id);
+    setWorkOrders(prev => prev.map(o => o.id === id ? { ...o, ...updatedData } : o));
+    const order = getOrder(id);
     await addLogEntry(`Actualizó la OT: ${order?.ot_number}`);
-    await fetchData();
   };
 
   const deleteOrder = async (id: string) => {
-     const order = getOrder(id);
+    const order = getOrder(id);
     await deleteDoc(doc(db, 'work-orders', id));
+    setWorkOrders(prev => prev.filter(o => o.id !== id));
     await addLogEntry(`Eliminó la OT: ${order?.ot_number}`);
-    await fetchData();
   };
   
   const promptToCloseOrder = (order: WorkOrder) => {
@@ -314,65 +315,69 @@ const getLastOtNumber = (prefix: string): string | null => {
   
   const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory> => {
     const docRef = await addDoc(collection(db, "ot-categories"), category);
+    const newCategory = { id: docRef.id, ...category } as OTCategory;
+    setOtCategories(prev => [...prev, newCategory]);
     await addLogEntry(`Creó la categoría de OT: ${category.name}`);
-    await fetchData();
-    return { id: docRef.id, ...category } as OTCategory;
+    return newCategory;
   };
 
   const updateCategory = async (id: string, updatedCategory: Partial<OTCategory>) => {
     const docRef = doc(db, "ot-categories", id);
     await updateDoc(docRef, updatedCategory);
+    setOtCategories(prev => prev.map(c => c.id === id ? { ...c, ...updatedCategory } as OTCategory : c));
     await addLogEntry(`Actualizó la categoría de OT: ${updatedCategory.name}`);
-    await fetchData();
   };
 
   const addStatus = async (status: Omit<OTStatus, 'id'>): Promise<OTStatus> => {
     const docRef = await addDoc(collection(db, "ot-statuses"), status);
+    const newStatus = { id: docRef.id, ...status } as OTStatus;
+    setOtStatuses(prev => [...prev, newStatus]);
     await addLogEntry(`Creó el estado de OT: ${status.name}`);
-    await fetchData();
-    return { id: docRef.id, ...status } as OTStatus;
+    return newStatus;
   };
 
   const updateStatus = async (id: string, updatedStatus: Partial<OTStatus>) => {
     const docRef = doc(db, "ot-statuses", id);
     await updateDoc(docRef, updatedStatus);
+    setOtStatuses(prev => prev.map(s => s.id === id ? { ...s, ...updatedStatus } as OTStatus : s));
     await addLogEntry(`Actualizó el estado de OT: ${updatedStatus.name}`);
-    await fetchData();
   };
 
   const deleteStatus = async (id: string) => {
     const status = otStatuses.find(s => s.id === id);
     await deleteDoc(doc(db, "ot-statuses", id));
+    setOtStatuses(prev => prev.filter(s => s.id !== id));
     await addLogEntry(`Eliminó el estado de OT: ${status?.name}`);
-    await fetchData();
   };
 
   const addService = async (service: Omit<Service, 'id'>): Promise<Service> => {
     const docRef = await addDoc(collection(db, "services"), service);
+    const newService = { id: docRef.id, ...service } as Service;
+    setServices(prev => [...prev, newService]);
     await addLogEntry(`Creó el servicio: ${service.name}`);
-    await fetchData();
-    return { id: docRef.id, ...service } as Service;
+    return newService;
   };
 
   const updateService = async (id: string, updatedService: Partial<Service>) => {
     const docRef = doc(db, "services", id);
     await updateDoc(docRef, updatedService);
+    setServices(prev => prev.map(s => s.id === id ? { ...s, ...updatedService } as Service : s));
     await addLogEntry(`Actualizó el servicio: ${updatedService.name}`);
-    await fetchData();
   };
   
   const deleteService = async (id: string) => {
     const service = services.find(s => s.id === id);
     await deleteDoc(doc(db, "services", id));
+    setServices(prev => prev.filter(s => s.id !== id));
     await addLogEntry(`Eliminó el servicio: ${service?.name}`);
-    await fetchData();
   };
   
   const addCollaborator = async (collaborator: Omit<Collaborator, 'id'>): Promise<Collaborator> => {
     const docRef = await addDoc(collection(db, "collaborators"), collaborator);
+    const newCollaborator = { ...collaborator, id: docRef.id } as Collaborator;
+    setCollaborators(prev => [...prev, newCollaborator]);
     await addLogEntry(`Creó al colaborador: ${collaborator.name}`);
-    await fetchData();
-    return { ...collaborator, id: docRef.id } as Collaborator;
+    return newCollaborator;
   };
   
   const getCollaborator = (id: string) => {
@@ -390,37 +395,38 @@ const getLastOtNumber = (prefix: string): string | null => {
     });
 
     await updateDoc(docRef, cleanData);
+    setCollaborators(prev => prev.map(c => c.id === id ? { ...c, ...cleanData } as Collaborator : c));
     await addLogEntry(`Actualizó al colaborador: ${updatedCollaborator.name}`);
-    await fetchData();
   };
 
   const deleteCollaborator = async (id: string) => {
     const collaborator = getCollaborator(id);
     await deleteDoc(doc(db, "collaborators", id));
+    setCollaborators(prev => prev.filter(c => c.id !== id));
     await addLogEntry(`Eliminó al colaborador: ${collaborator?.name}`);
-    await fetchData();
   };
   
   const addVehicle = async (vehicle: Omit<Vehicle, 'id'>): Promise<Vehicle> => {
     const vehicleData = { ...vehicle, maintenanceLog: vehicle.maintenanceLog || [] };
     const docRef = await addDoc(collection(db, "vehicles"), vehicleData);
+    const newVehicle = { ...vehicleData, id: docRef.id } as Vehicle;
+    setVehicles(prev => [...prev, newVehicle]);
     await addLogEntry(`Añadió el vehículo: ${vehicle.model} (${vehicle.plate})`);
-    await fetchData();
-    return { ...vehicleData, id: docRef.id } as Vehicle;
+    return newVehicle;
   };
 
   const updateVehicle = async (id: string, updatedVehicle: Partial<Omit<Vehicle, 'id'>>) => {
     const docRef = doc(db, "vehicles", id);
     await updateDoc(docRef, updatedVehicle);
+    setVehicles(prev => prev.map(v => v.id === id ? { ...v, ...updatedVehicle } as Vehicle : v));
     await addLogEntry(`Actualizó el vehículo: ${updatedVehicle.model} (${updatedVehicle.plate})`);
-    await fetchData();
   };
 
   const deleteVehicle = async (id: string) => {
     const vehicle = vehicles.find(v => v.id === id);
     await deleteDoc(doc(db, "vehicles", id));
+    setVehicles(prev => prev.filter(v => v.id !== id));
     await addLogEntry(`Eliminó el vehículo: ${vehicle?.model} (${vehicle?.plate})`);
-    await fetchData();
   };
 
   const addGanttChart = async (ganttChart: Omit<GanttChart, 'id'>): Promise<GanttChart> => {
@@ -433,9 +439,10 @@ const getLastOtNumber = (prefix: string): string | null => {
           }))
       };
       const docRef = await addDoc(collection(db, "gantt-charts"), dataToSave);
+      const newChart = { ...ganttChart, id: docRef.id };
+      setGanttCharts(prev => [...prev, newChart]);
       await addLogEntry(`Creó la Carta Gantt: ${ganttChart.name}`);
-      await fetchData();
-      return { ...ganttChart, id: docRef.id };
+      return newChart;
   };
   
   const getGanttChart = (id: string) => {
@@ -462,36 +469,37 @@ const getLastOtNumber = (prefix: string): string | null => {
       }
 
       await updateDoc(docRef, dataToSave);
+      setGanttCharts(prev => prev.map(g => g.id === id ? { ...g, ...ganttChartData } as GanttChart : g));
       await addLogEntry(`Actualizó la Carta Gantt: ${ganttChartData.name}`);
-      await fetchData();
   };
 
   const deleteGanttChart = async (id: string) => {
     const chart = getGanttChart(id);
     await deleteDoc(doc(db, "gantt-charts", id));
+    setGanttCharts(prev => prev.filter(g => g.id !== id));
     await addLogEntry(`Eliminó la Carta Gantt: ${chart?.name}`);
-    await fetchData();
   };
   
   const addSuggestedTask = async (task: Omit<SuggestedTask, 'id'>): Promise<SuggestedTask> => {
     const docRef = await addDoc(collection(db, "suggested-tasks"), task);
+    const newTask = { id: docRef.id, ...task } as SuggestedTask;
+    setSuggestedTasks(prev => [...prev, newTask]);
     await addLogEntry(`Añadió tarea sugerida: ${task.name}`);
-    await fetchData();
-    return { id: docRef.id, ...task } as SuggestedTask;
+    return newTask;
   };
 
   const updateSuggestedTask = async (id: string, updatedTask: Partial<SuggestedTask>) => {
     const docRef = doc(db, "suggested-tasks", id);
     await updateDoc(docRef, updatedTask);
+    setSuggestedTasks(prev => prev.map(t => t.id === id ? { ...t, ...updatedTask } as SuggestedTask : t));
     await addLogEntry(`Actualizó tarea sugerida: ${updatedTask.name}`);
-    await fetchData();
   };
 
   const deleteSuggestedTask = async (id: string) => {
     const task = suggestedTasks.find(t => t.id === id);
     await deleteDoc(doc(db, "suggested-tasks", id));
+    setSuggestedTasks(prev => prev.filter(t => t.id !== id));
     await addLogEntry(`Eliminó tarea sugerida: ${task?.name}`);
-    await fetchData();
   };
   
   const updatePhaseName = async (category: string, oldPhaseName: string, newPhaseName: string) => {
@@ -502,8 +510,15 @@ const getLastOtNumber = (prefix: string): string | null => {
       batch.update(doc.ref, { phase: newPhaseName });
     });
     await batch.commit();
+    
+    setSuggestedTasks(prev => prev.map(t => {
+        if(t.category === category && t.phase === oldPhaseName) {
+            return { ...t, phase: newPhaseName };
+        }
+        return t;
+    }));
+
     await addLogEntry(`Renombró la fase '${oldPhaseName}' a '${newPhaseName}' en la categoría '${category}'`);
-    await fetchData();
   };
 
   const deletePhase = async (category: string, phaseName: string) => {
@@ -514,30 +529,31 @@ const getLastOtNumber = (prefix: string): string | null => {
       batch.delete(doc.ref);
     });
     await batch.commit();
+    setSuggestedTasks(prev => prev.filter(t => !(t.category === category && t.phase === phaseName)));
     await addLogEntry(`Eliminó la fase '${phaseName}' en la categoría '${category}'`);
-    await fetchData();
   };
   
   const addReportTemplate = async (template: Omit<ReportTemplate, 'id'>): Promise<ReportTemplate> => {
     const docRef = await addDoc(collection(db, "report-templates"), template);
+    const newTemplate = { id: docRef.id, ...template } as ReportTemplate;
+    setReportTemplates(prev => [...prev, newTemplate]);
     await addLogEntry(`Creó la plantilla de informe: ${template.name}`);
-    await fetchData();
-    return { id: docRef.id, ...template } as ReportTemplate;
+    return newTemplate;
   };
 
   const updateReportTemplate = async (id: string, updatedTemplate: Partial<ReportTemplate>) => {
     const docRef = doc(db, "report-templates", id);
     await updateDoc(docRef, updatedTemplate);
+    setReportTemplates(prev => prev.map(t => t.id === id ? { ...t, ...updatedTemplate } as ReportTemplate : t));
     await addLogEntry(`Actualizó la plantilla de informe: ${updatedTemplate.name}`);
-    await fetchData();
   };
 
 
   const deleteReportTemplate = async (id: string) => {
     const template = reportTemplates.find(t => t.id === id);
     await deleteDoc(doc(db, "report-templates", id));
+    setReportTemplates(prev => prev.filter(t => t.id !== id));
     await addLogEntry(`Eliminó la plantilla de informe: ${template?.name}`);
-    await fetchData();
   };
 
   const addSubmittedReport = async (report: Omit<SubmittedReport, 'id' | 'submittedAt'>): Promise<SubmittedReport> => {
@@ -546,38 +562,39 @@ const getLastOtNumber = (prefix: string): string | null => {
         submittedAt: serverTimestamp(),
     };
     const docRef = await addDoc(collection(db, "submitted-reports"), reportData);
+    const newReport = { ...report, id: docRef.id, submittedAt: Timestamp.now() } as SubmittedReport; 
+    setSubmittedReports(prev => [newReport, ...prev]);
     await addLogEntry(`Envió el informe '${report.templateName}' para la OT ${report.otDetails.ot_number}`);
-    await fetchData();
-    return { ...report, id: docRef.id, submittedAt: Timestamp.now() } as SubmittedReport; 
+    return newReport; 
   };
 
   const updateSubmittedReport = async (id: string, report: Partial<SubmittedReport>) => {
     const docRef = doc(db, "submitted-reports", id);
     await updateDoc(docRef, report);
+    setSubmittedReports(prev => prev.map(r => r.id === id ? { ...r, ...report } as SubmittedReport : r));
     const originalReport = submittedReports.find(r => r.id === id);
     await addLogEntry(`Actualizó el informe para la OT ${originalReport?.otDetails.ot_number}`);
-    await fetchData();
   };
 
   const deleteSubmittedReport = async (id: string) => {
     const report = submittedReports.find(r => r.id === id);
     await deleteDoc(doc(db, "submitted-reports", id));
+    setSubmittedReports(prev => prev.filter(r => r.id !== id));
     await addLogEntry(`Eliminó el informe para la OT ${report?.otDetails.ot_number}`);
-    await fetchData();
   };
 
   const updateCompanyInfo = async (info: CompanyInfo) => {
     const docRef = doc(db, 'settings', 'companyInfo');
     await setDoc(docRef, info, { merge: true });
+    setCompanyInfo(info);
     await addLogEntry(`Actualizó la información de la empresa.`);
-    await fetchData();
   };
 
   const updateSmtpConfig = async (config: SmtpConfig) => {
     const docRef = doc(db, 'settings', 'smtpConfig');
     await setDoc(docRef, config, { merge: true });
+    setSmtpConfig(config);
     await addLogEntry(`Actualizó la configuración SMTP.`);
-    await fetchData();
   };
   
   return (
