@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
@@ -30,12 +31,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchUsers = useCallback(async () => {
     try {
         const usersCollection = await getDocs(collection(db, 'users'));
-        setUsers(usersCollection.docs.map(doc => doc.data() as AppUser));
+        const userList = usersCollection.docs.map(doc => doc.data() as AppUser);
+        setUsers(userList);
+        // Also update the current user's profile if they are in the list
+        if (user) {
+            const currentUserProfile = userList.find(u => u.uid === user.uid);
+            if (currentUserProfile) {
+                setUserProfile(currentUserProfile);
+            }
+        }
     } catch (e) {
         console.error("Error fetching users: ", e);
         setUsers([]);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {

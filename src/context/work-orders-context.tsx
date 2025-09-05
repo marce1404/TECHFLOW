@@ -39,7 +39,7 @@ interface WorkOrdersContextType {
   companyInfo: CompanyInfo | null;
   smtpConfig: SmtpConfig | null;
   loading: boolean;
-  fetchData: () => Promise<void>;
+  addOrder: (order: Omit<WorkOrder, 'id'>) => Promise<WorkOrder>;
   updateOrder: (id: string, updatedOrder: Partial<WorkOrder>) => Promise<void>;
   getOrder: (id: string) => WorkOrder | undefined;
   addCategory: (category: Omit<OTCategory, 'id' | 'status'> & { status: string }) => Promise<OTCategory>;
@@ -50,7 +50,6 @@ interface WorkOrdersContextType {
   addService: (service: Omit<Service, 'id' | 'status'> & { status: string }) => Promise<Service>;
   updateService: (id: string, service: Partial<Service>) => Promise<void>;
   deleteService: (id: string) => Promise<void>;
-  addOrder: (order: Omit<WorkOrder, 'id'>) => Promise<WorkOrder>;
   deleteOrder: (id: string) => Promise<void>;
   getNextOtNumber: (prefix: string) => string;
   getLastOtNumber: (prefix: string) => string | null;
@@ -139,7 +138,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         onSnapshot(collection(db, "suggested-tasks"), snapshot => setSuggestedTasks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SuggestedTask[])),
         onSnapshot(collection(db, 'report-templates'), snapshot => setReportTemplates(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ReportTemplate[])),
         onSnapshot(query(collection(db, "submitted-reports"), orderBy("submittedAt", "desc")), snapshot => setSubmittedReports(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SubmittedReport[])),
-        onSnapshot(query(collection(db, "audit-log"), orderBy("timestamp", "desc"), where("timestamp", ">", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))), snapshot => setAuditLog(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[])),
         onSnapshot(doc(db, "settings", "companyInfo"), doc => setCompanyInfo(doc.data() as CompanyInfo | null)),
         onSnapshot(doc(db, "settings", "smtpConfig"), doc => setSmtpConfig(doc.data() as SmtpConfig | null)),
         onSnapshot(collection(db, 'gantt-charts'), (snapshot) => {
@@ -527,7 +525,6 @@ const getLastOtNumber = (prefix: string): string | null => {
         companyInfo,
         smtpConfig,
         loading,
-        fetchData: async () => {},
         updateOrder,
         deleteOrder, 
         getOrder, 
@@ -568,6 +565,8 @@ const getLastOtNumber = (prefix: string): string | null => {
         updateSmtpConfig,
         promptToCloseOrder,
         auditLog,
+        // The fetchData function is now a no-op as data is handled by realtime listeners
+        fetchData: async () => { console.log("Realtime listeners are active."); },
     }}>
       {children}
       <CloseWorkOrderDialog 

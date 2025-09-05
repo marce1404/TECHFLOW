@@ -10,13 +10,46 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useWorkOrders } from '@/context/work-orders-context';
+import { db } from '@/lib/firebase';
+import { collection, query, orderBy, getDocs, where } from 'firebase/firestore';
+import { useAuth } from '@/context/auth-context';
 
 export default function AuditLogPage() {
-    const { auditLog, loading } = useWorkOrders();
+    const [auditLog, setAuditLog] = React.useState<any[]>([]);
+    const [loading, setLoading] = React.useState(true);
+    const { user } = useAuth();
     const [currentPage, setCurrentPage] = React.useState(1);
     const [search, setSearch] = React.useState('');
     const itemsPerPage = 20;
+
+    React.useEffect(() => {
+        const fetchAuditLog = async () => {
+            if (!user) {
+                setLoading(false);
+                return;
+            };
+
+            setLoading(true);
+            try {
+                const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+                const logQuery = query(
+                    collection(db, "audit-log"),
+                    orderBy("timestamp", "desc"),
+                    where("timestamp", ">", thirtyDaysAgo)
+                );
+                const snapshot = await getDocs(logQuery);
+                const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setAuditLog(logs);
+            } catch (e) {
+                console.error("Error fetching audit log: ", e);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchAuditLog();
+    }, [user]);
+
 
     const filteredLogs = React.useMemo(() => {
         if (!auditLog) return [];
