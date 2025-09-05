@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -138,16 +137,20 @@ export default function EditOrderPage() {
   };
 
   const handleUpdateOrder = async (data: WorkOrder) => {
-    if (!canEdit) return;
-    await updateOrder(data.id, data);
+    if (!canEdit || !initialOrder) return;
+    
+    // Merge original data with form data to prevent data loss
+    const finalData = { ...initialOrder, ...data };
+
+    await updateOrder(finalData.id, finalData);
 
     toast({
       title: "Orden de Trabajo Actualizada",
-      description: `La OT "${data.description}" ha sido actualizada.`,
+      description: `La OT "${finalData.description}" ha sido actualizada.`,
       duration: 2000,
     });
     
-    const isClosed = data.status.toLowerCase() === 'cerrada';
+    const isClosed = finalData.status.toLowerCase() === 'cerrada';
     if (isClosed) {
       router.push(`/orders/history`);
     } else {
