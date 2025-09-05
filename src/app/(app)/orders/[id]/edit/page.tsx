@@ -22,7 +22,7 @@ import type { WorkOrder, Invoice } from "@/lib/types";
 import { useWorkOrders } from "@/context/work-orders-context";
 import { Slider } from "@/components/ui/slider";
 import { useAuth } from "@/context/auth-context";
-import { useForm, FormProvider, useFieldArray } from "react-hook-form";
+import { useForm, FormProvider, useFieldArray, Controller } from "react-hook-form";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   AlertDialog,
@@ -106,16 +106,7 @@ export default function EditOrderPage() {
 
   React.useEffect(() => {
     if (initialOrder) {
-      let finalOrderData = { ...initialOrder };
-      if (!initialOrder.invoices && initialOrder.invoiceNumber) {
-        finalOrderData.invoices = [{
-          id: crypto.randomUUID(),
-          number: initialOrder.invoiceNumber,
-          amount: initialOrder.netPrice || 0,
-          date: initialOrder.date,
-        }];
-      }
-      methods.reset(finalOrderData);
+      methods.reset(initialOrder);
     }
   }, [initialOrder, methods]);
   
@@ -250,73 +241,88 @@ export default function EditOrderPage() {
 
                     <div>
                         <Label htmlFor="service">Servicio</Label>
-                        <Select 
-                           value={methods.watch('service')}
-                           onValueChange={(value) => methods.setValue('service', value)}
-                        >
-                        <SelectTrigger id="service">
-                            <SelectValue placeholder="Elegir servicio..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {services.map(service => (
-                                <SelectItem key={service.id} value={service.name.toLowerCase()}>{service.name.toUpperCase()}</SelectItem>
-                            ))}
-                        </SelectContent>
-                        </Select>
+                        <Controller
+                            control={methods.control}
+                            name="service"
+                            render={({ field }) => (
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <SelectTrigger id="service">
+                                        <SelectValue placeholder="Elegir servicio..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {services.map(service => (
+                                            <SelectItem key={service.id} value={service.name.toLowerCase()}>{service.name.toUpperCase()}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <Label htmlFor="start-date">Fecha Inicio</Label>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                        "w-full justify-start text-left font-normal",
-                                        !startDate && "text-muted-foreground"
-                                    )}
-                                    >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {startDate ? format(startDate, "PPP", { locale: es }) : <span>Elegir fecha</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <Calendar
-                                    mode="single"
-                                    selected={startDate}
-                                    onSelect={(date) => methods.setValue('date', date ? format(date, 'yyyy-MM-dd') : '')}
-                                    initialFocus
-                                    locale={es}
-                                    />
-                                </PopoverContent>
-                            </Popover>
+                            <Controller
+                                control={methods.control}
+                                name="date"
+                                render={({ field }) => (
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                            variant={"outline"}
+                                            className={cn(
+                                                "w-full justify-start text-left font-normal",
+                                                !field.value && "text-muted-foreground"
+                                            )}
+                                            >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {field.value ? format(new Date(field.value.replace(/-/g, '/')), "PPP", { locale: es }) : <span>Elegir fecha</span>}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0">
+                                            <Calendar
+                                            mode="single"
+                                            selected={field.value ? new Date(field.value.replace(/-/g, '/')) : undefined}
+                                            onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+                                            initialFocus
+                                            locale={es}
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
+                                )}
+                            />
                         </div>
                         <div>
                             <Label htmlFor="end-date">Fecha T. Posible</Label>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant={"outline"}
-                                        className={cn(
-                                            "w-full justify-start text-left font-normal",
-                                            !endDate && "text-muted-foreground"
-                                        )}
-                                    >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {endDate ? format(endDate, "PPP", { locale: es }) : <span>Elegir fecha</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <Calendar
-                                    mode="single"
-                                    selected={endDate}
-                                    onSelect={(date) => methods.setValue('endDate', date ? format(date, 'yyyy-MM-dd') : undefined)}
-                                    initialFocus
-                                    locale={es}
-                                    />
-                                </PopoverContent>
-                            </Popover>
+                             <Controller
+                                control={methods.control}
+                                name="endDate"
+                                render={({ field }) => (
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant={"outline"}
+                                                className={cn(
+                                                    "w-full justify-start text-left font-normal",
+                                                    !field.value && "text-muted-foreground"
+                                                )}
+                                            >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {field.value ? format(new Date(field.value.replace(/-/g, '/')), "PPP", { locale: es }) : <span>Elegir fecha</span>}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0">
+                                            <Calendar
+                                            mode="single"
+                                            selected={field.value ? new Date(field.value.replace(/-/g, '/')) : undefined}
+                                            onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : undefined)}
+                                            initialFocus
+                                            locale={es}
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
+                                )}
+                            />
                         </div>
                     </div>
                     
@@ -333,21 +339,33 @@ export default function EditOrderPage() {
                     
                     <div>
                         <Label>Técnicos Asignados</Label>
-                        <MultiSelect
-                            options={technicians}
-                            selected={methods.watch('technicians') || []}
-                            onChange={(selected) => methods.setValue('technicians', selected)}
-                            placeholder="Seleccionar técnicos..."
+                        <Controller
+                            control={methods.control}
+                            name="technicians"
+                            render={({ field }) => (
+                                <MultiSelect
+                                    options={technicians}
+                                    selected={field.value || []}
+                                    onChange={field.onChange}
+                                    placeholder="Seleccionar técnicos..."
+                                />
+                            )}
                         />
                     </div>
                     
                     <div>
                         <Label>Vehículos Asignados</Label>
-                         <MultiSelect
-                            options={vehicleOptions}
-                            selected={methods.watch('vehicles') || []}
-                            onChange={(selected) => methods.setValue('vehicles', selected)}
-                            placeholder="Seleccionar vehículos..."
+                         <Controller
+                            control={methods.control}
+                            name="vehicles"
+                            render={({ field }) => (
+                                <MultiSelect
+                                    options={vehicleOptions}
+                                    selected={field.value || []}
+                                    onChange={field.onChange}
+                                    placeholder="Seleccionar vehículos..."
+                                />
+                            )}
                         />
                     </div>
                     
@@ -376,35 +394,41 @@ export default function EditOrderPage() {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <Label htmlFor="status">Estado</Label>
-                            <Select 
-                              value={methods.watch('status')}
-                              onValueChange={(value) => handleStatusChange(value as WorkOrder['status'])}
-                            >
-                                <SelectTrigger id="status">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {otStatuses.map(status => (
-                                        <SelectItem key={status.id} value={status.name}>{status.name.toUpperCase()}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <Controller
+                                control={methods.control}
+                                name="status"
+                                render={({ field }) => (
+                                    <Select onValueChange={(value) => handleStatusChange(value as WorkOrder['status'])} value={field.value}>
+                                        <SelectTrigger id="status">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {otStatuses.map(status => (
+                                                <SelectItem key={status.id} value={status.name}>{status.name.toUpperCase()}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
                         </div>
                         <div>
                             <Label htmlFor="priority">Prioridad</Label>
-                            <Select 
-                              value={methods.watch('priority')}
-                              onValueChange={(value) => methods.setValue('priority', value as WorkOrder['priority'])}
-                            >
-                                <SelectTrigger id="priority">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Baja">Baja</SelectItem>
-                                    <SelectItem value="Media">Media</SelectItem>
-                                    <SelectItem value="Alta">Alta</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <Controller
+                                control={methods.control}
+                                name="priority"
+                                render={({ field }) => (
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <SelectTrigger id="priority">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Baja">Baja</SelectItem>
+                                            <SelectItem value="Media">Media</SelectItem>
+                                            <SelectItem value="Alta">Alta</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
                         </div>
                     </div>
                     
@@ -471,27 +495,36 @@ export default function EditOrderPage() {
 
                     <div>
                         <Label>Encargados</Label>
-                        <MultiSelect
-                            options={supervisors}
-                            selected={methods.watch('assigned') || []}
-                            onChange={(selected) => methods.setValue('assigned', selected)}
-                            placeholder="Seleccionar encargados..."
+                         <Controller
+                            control={methods.control}
+                            name="assigned"
+                            render={({ field }) => (
+                                <MultiSelect
+                                    options={supervisors}
+                                    selected={field.value || []}
+                                    onChange={field.onChange}
+                                    placeholder="Seleccionar encargados..."
+                                />
+                            )}
                         />
                     </div>
 
                     <div>
                         <Label htmlFor="vendor">Comercial</Label>
-                        <Select
-                          value={methods.watch('comercial')}
-                          onValueChange={(value) => methods.setValue('comercial', value)}
-                        >
-                            <SelectTrigger id="vendor">
-                                <SelectValue placeholder="Seleccionar comercial" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {vendors.map(v => <SelectItem key={v.value} value={v.label}>{v.label}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
+                        <Controller
+                            control={methods.control}
+                            name="comercial"
+                            render={({ field }) => (
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <SelectTrigger id="vendor">
+                                        <SelectValue placeholder="Seleccionar comercial" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {vendors.map(v => <SelectItem key={v.value} value={v.label}>{v.label}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        />
                     </div>
 
                      {isGanttAssigned ? (
@@ -509,11 +542,17 @@ export default function EditOrderPage() {
                     ) : (
                         <div>
                             <Label>Avance Manual ({methods.watch('manualProgress') || 0}%)</Label>
-                            <Slider
-                                value={[methods.watch('manualProgress') || 0]}
-                                onValueChange={(value) => methods.setValue('manualProgress', value[0])}
-                                max={100}
-                                step={5}
+                            <Controller
+                                control={methods.control}
+                                name="manualProgress"
+                                render={({ field }) => (
+                                    <Slider
+                                        value={[field.value || 0]}
+                                        onValueChange={(value) => field.onChange(value[0])}
+                                        max={100}
+                                        step={5}
+                                    />
+                                )}
                             />
                         </div>
                     )}
@@ -690,5 +729,3 @@ export default function EditOrderPage() {
     </>
   );
 }
-
-    
