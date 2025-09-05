@@ -17,12 +17,23 @@ import {
   isWithinInterval
 } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, XIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { WorkOrder } from '@/lib/types';
 import { cn, normalizeString } from '@/lib/utils';
 import Link from 'next/link';
-import { Badge } from '../ui/badge';
+import { useWorkOrders } from '@/context/work-orders-context';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
 
@@ -37,6 +48,7 @@ type ViewType = 'month' | 'week';
 export function PlannerCalendar({ workOrders, onDayClick, canSchedule }: PlannerCalendarProps) {
   const [currentDate, setCurrentDate] = React.useState(new Date());
   const [view, setView] = React.useState<ViewType>('month');
+  const { updateOrder } = useWorkOrders();
 
   const firstDayOfCurrentPeriod = view === 'month' 
     ? startOfMonth(currentDate) 
@@ -76,6 +88,21 @@ export function PlannerCalendar({ workOrders, onDayClick, canSchedule }: Planner
   const handleNext = () => {
     const newDate = add(currentDate, view === 'month' ? { months: 1 } : { weeks: 1 });
     setCurrentDate(newDate);
+  };
+  
+  const handleUnschedule = async (orderId: string) => {
+    const orderToUpdate = workOrders.find(ot => ot.id === orderId);
+    if (orderToUpdate) {
+      const dataToUpdate: Partial<WorkOrder> = {
+        ...orderToUpdate,
+        date: '',
+        endDate: '',
+        startTime: '',
+        endTime: '',
+        status: 'Por Iniciar'
+      };
+      await updateOrder(orderId, dataToUpdate);
+    }
   };
 
   const getHeaderText = () => {
@@ -129,7 +156,8 @@ export function PlannerCalendar({ workOrders, onDayClick, canSchedule }: Planner
         {(view === 'month' ? daysToShow : daysToShow.slice(0, 7)).map((day) => {
           const ordersForDay = workOrders
             .filter((order) => {
-              const startDate = parseISO(order.date);
+              const startDate = order.date ? parseISO(order.date) : null;
+              if (!startDate) return false;
               const endDate = order.endDate ? parseISO(order.endDate) : startDate;
               return isWithinInterval(day, { start: startDate, end: endDate });
             })
@@ -158,18 +186,47 @@ export function PlannerCalendar({ workOrders, onDayClick, canSchedule }: Planner
               </time>
               <div className="flex-1 mt-1 space-y-1 overflow-y-auto">
                 {ordersForDay.map((order) => (
-                  <Link key={order.id} href={`/orders/${order.id}/edit`}>
-                    <div
-                      className={cn(
-                        'text-xs rounded-md p-1 text-white hover:opacity-80 transition-opacity',
-                        getStatusColorClass(order.status)
-                      )}
-                    >
-                      {order.startTime && <span className="font-bold">{order.startTime}</span>}
-                      <p className="font-semibold truncate">{order.ot_number}</p>
-                      <p className="truncate text-white/90">{order.client}</p>
-                    </div>
-                  </Link>
+                  <div key={order.id} className="relative group">
+                    <Link href={`/orders/${order.id}/edit`}>
+                      <div
+                        className={cn(
+                          'text-xs rounded-md p-1 text-white hover:opacity-80 transition-opacity',
+                          getStatusColorClass(order.status)
+                        )}
+                      >
+                        {order.startTime && <span className="font-bold">{order.startTime}</span>}
+                        <p className="font-semibold truncate">{order.ot_number}</p>
+                        <p className="truncate text-white/90">{order.client}</p>
+                      </div>
+                    </Link>
+                    {canSchedule && (
+                       <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                              <Button
+                                size="icon"
+                                variant="destructive"
+                                className="absolute top-0 right-0 h-4 w-4 p-0.5 rounded-full z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <XIcon className="h-3 w-3" />
+                                <span className="sr-only">Desprogramar</span>
+                              </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                              <AlertDialogHeader>
+                                  <AlertDialogTitle>¿Desprogramar esta OT?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                      Esta acción quitará la OT <span className="font-bold">{order.ot_number}</span> del calendario y la marcará como "Por Iniciar". No se eliminará la OT.
+                                  </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleUnschedule(order.id)}>Sí, desprogramar</AlertDialogAction>
+                              </AlertDialogFooter>
+                          </AlertDialogContent>
+                       </AlertDialog>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
