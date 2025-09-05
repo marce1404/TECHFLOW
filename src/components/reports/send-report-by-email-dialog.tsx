@@ -1,4 +1,5 @@
 
+
 'use client';
 import * as React from 'react';
 import { z } from 'zod';
@@ -81,9 +82,9 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
   const generateReportHtml = (report: SubmittedReport, template: ReportTemplate | undefined): string => {
     if (!template) return "<p>Error: Plantilla no encontrada.</p>";
 
-    const submittedDate = report.submittedAt instanceof Timestamp 
-        ? report.submittedAt.toDate().toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric'}) 
-        : 'N/A';
+    const submittedDate = report.submittedAt
+      ? new Date(report.submittedAt as any).toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric'}) 
+      : 'N/A';
     const shortFolio = report.id.substring(report.id.length - 6).toUpperCase();
 
     let fieldsHtml = '';
@@ -368,3 +369,5 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
     </Dialog>
   );
 }
+
+    

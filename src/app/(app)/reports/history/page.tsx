@@ -40,10 +40,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Timestamp } from 'firebase/firestore';
 
 export default function ReportsHistoryPage() {
-  const { submittedReports, otCategories, loading, deleteSubmittedReport } = useWorkOrders();
-  const { users, userProfile } = useAuth();
+  const { submittedReports, otCategories, loading, deleteSubmittedReport, collaborators } = useWorkOrders();
+  const { userProfile } = useAuth();
   const [search, setSearch] = React.useState('');
   const [activeTab, setActiveTab] = React.useState('todos');
   const [selectedReport, setSelectedReport] = React.useState<SubmittedReport | null>(null);
@@ -77,7 +78,12 @@ export default function ReportsHistoryPage() {
       );
     }
     
-    return reports.sort((a, b) => b.submittedAt.toMillis() - a.submittedAt.toMillis());
+    // Ensure submittedAt is a Date object for sorting
+    return reports.sort((a, b) => {
+        const dateA = a.submittedAt instanceof Timestamp ? a.submittedAt.toMillis() : new Date(a.submittedAt).getTime();
+        const dateB = b.submittedAt instanceof Timestamp ? b.submittedAt.toMillis() : new Date(b.submittedAt).getTime();
+        return dateB - dateA;
+    });
   }, [submittedReports, search, activeTab]);
 
   const totalPages = Math.ceil(filteredReports.length / itemsPerPage) || 1;
@@ -106,8 +112,17 @@ export default function ReportsHistoryPage() {
   
   const getReportManager = (report: SubmittedReport): AppUser | undefined => {
       const managerName = report.otDetails.comercial;
-      if (!managerName || !users) return undefined;
-      return users.find(u => u.displayName === managerName);
+      if (!managerName) return undefined;
+      // This is a simplified lookup from collaborators, not the full AppUser list
+      const collaborator = collaborators.find(u => u.name === managerName);
+      if (!collaborator || !collaborator.email) return undefined;
+      return { 
+          uid: collaborator.id, 
+          displayName: collaborator.name, 
+          email: collaborator.email,
+          role: 'Comercial', // Role is assumed here as we don't have the full AppUser
+          status: 'Activo'
+      };
   };
 
   if (loading) {
@@ -168,7 +183,7 @@ export default function ReportsHistoryPage() {
                                         </TableCell>
                                         <TableCell>{report.otDetails.client}</TableCell>
                                         <TableCell>{report.templateName}</TableCell>
-                                        <TableCell>{report.submittedAt ? format(report.submittedAt.toDate(), 'dd/MM/yyyy HH:mm', { locale: es }) : 'N/A'}</TableCell>
+                                        <TableCell>{report.submittedAt ? format(new Date(report.submittedAt as any), 'dd/MM/yyyy HH:mm', { locale: es }) : 'N/A'}</TableCell>
                                         <TableCell className="text-right space-x-2">
                                             <AlertDialog>
                                                 <DropdownMenu>
@@ -247,7 +262,7 @@ export default function ReportsHistoryPage() {
                                     <CardContent>
                                         <p className="text-sm font-medium">{report.templateName}</p>
                                         <p className="text-xs text-muted-foreground">
-                                            {report.submittedAt ? format(report.submittedAt.toDate(), 'dd/MM/yyyy HH:mm', { locale: es }) : 'N/A'}
+                                            {report.submittedAt ? format(new Date(report.submittedAt as any), 'dd/MM/yyyy HH:mm', { locale: es }) : 'N/A'}
                                         </p>
                                     </CardContent>
                                     <CardFooter className="flex justify-end gap-2 relative z-20">
@@ -308,3 +323,5 @@ export default function ReportsHistoryPage() {
     </>
   );
 }
+
+    

@@ -27,7 +27,7 @@ async function getReportForPrint(reportId: string): Promise<{ report: SubmittedR
     const report = { 
         id: reportSnap.id, 
         ...reportData,
-        submittedAt: reportData.submittedAt instanceof Timestamp ? reportData.submittedAt : new Timestamp(reportData.submittedAt.seconds, reportData.submittedAt.nanoseconds)
+        submittedAt: reportData.submittedAt instanceof Timestamp ? reportData.submittedAt.toDate() : new Timestamp(reportData.submittedAt.seconds, reportData.submittedAt.nanoseconds).toDate()
     } as SubmittedReport;
 
     if (!report.templateId) {
@@ -276,3 +276,4 @@ export default function PrintReportPage() {
     );
 }
 
+    
