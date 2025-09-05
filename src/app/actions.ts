@@ -9,6 +9,7 @@ import {
   CreateWorkOrderInput,
   AppUser,
   UpdateUserInput,
+  MailAttachment,
 } from '@/lib/types';
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
 import nodemailer from 'nodemailer';
@@ -117,6 +118,7 @@ type InvoiceRequestEmailData = {
     cc: string;
     subject: string;
     observations?: string;
+    attachments?: MailAttachment[];
 };
 
 // Simplified WorkOrder type for the action payload
@@ -219,6 +221,11 @@ export async function sendInvoiceRequestEmailAction(
         cc: data.cc,
         subject: data.subject,
         html: htmlBody,
+        attachments: data.attachments?.map(att => ({
+            filename: att.filename,
+            content: att.content,
+            encoding: 'base64',
+        })) || [],
     };
 
     try {

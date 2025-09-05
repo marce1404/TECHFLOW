@@ -1,4 +1,3 @@
-
 'use client';
 import * as React from 'react';
 import { z } from 'zod';
@@ -24,7 +23,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Send } from 'lucide-react';
+import { Loader2, Send, Paperclip, File as FileIcon, X } from 'lucide-react';
 import { sendInvoiceRequestEmailAction } from '@/app/actions';
 import { useWorkOrders } from '@/context/work-orders-context';
 import type { WorkOrder } from '@/lib/types';
@@ -32,6 +31,9 @@ import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { MultiSelect } from '../ui/multi-select';
 import { useAuth } from '@/context/auth-context';
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_FILE_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'];
 
 const emailFormSchema = z.object({
   to: z.string().min(1, 'Debes seleccionar un destinatario.'),
@@ -53,6 +55,8 @@ export function SendToInvoiceDialog({ open, onOpenChange, order }: SendToInvoice
   const { smtpConfig, collaborators } = useWorkOrders();
   const { userProfile } = useAuth();
   const [loading, setLoading] = React.useState(false);
+  const [attachments, setAttachments] = React.useState<File[]>([]);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   const canSend = smtpConfig !== null;
 
@@ -65,13 +69,12 @@ export function SendToInvoiceDialog({ open, onOpenChange, order }: SendToInvoice
       observations: '',
     },
   });
-
+  
   const collaboratorOptions = React.useMemo(() => {
     return collaborators
         .filter(c => c.email)
         .map(c => ({ value: c.id, label: `${c.name} (${c.email})`}));
   }, [collaborators]);
-
 
   React.useEffect(() => {
     if (open && order) {
@@ -83,8 +86,34 @@ export function SendToInvoiceDialog({ open, onOpenChange, order }: SendToInvoice
             subject: `Solicitud de Facturación - OT ${order.ot_number} - ${order.client}`,
             observations: '',
         });
+        setAttachments([]);
     }
   }, [order, open, form, collaborators, userProfile]);
+  
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+      const files = Array.from(event.target.files);
+      const newAttachments = [...attachments];
+      let hasError = false;
+
+      for (const file of files) {
+        if (file.size > MAX_FILE_SIZE) {
+          toast({ variant: 'destructive', title: 'Archivo demasiado grande', description: `El archivo "${file.name}" excede los 5MB.`});
+          hasError = true;
+          continue;
+        }
+        newAttachments.push(file);
+      }
+      if (!hasError) {
+        setAttachments(newAttachments);
+      }
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(attachments.filter((_, i) => i !== index));
+  };
+
 
   const onSubmit = async (data: EmailFormValues) => {
     if (!order || !smtpConfig) {
@@ -110,6 +139,24 @@ export function SendToInvoiceDialog({ open, onOpenChange, order }: SendToInvoice
         .filter((email): email is string => !!email);
     
     const uniqueCcEmails = Array.from(new Set(ccEmails));
+    
+    const attachmentData: { filename: string; content: string }[] = [];
+    for (const file of attachments) {
+      const reader = new FileReader();
+      const filePromise = new Promise<{ filename: string; content: string }>((resolve, reject) => {
+        reader.onload = (event) => {
+          const base64 = (event.target?.result as string).split(',')[1];
+          if (base64) {
+            resolve({ filename: file.name, content: base64 });
+          } else {
+            reject(new Error(`No se pudo leer el archivo ${file.name}`));
+          }
+        };
+        reader.onerror = (error) => reject(error);
+        reader.readAsDataURL(file);
+      });
+      attachmentData.push(await filePromise);
+    }
 
     const serializableOrder = {
         ...order,
@@ -121,6 +168,7 @@ export function SendToInvoiceDialog({ open, onOpenChange, order }: SendToInvoice
         cc: uniqueCcEmails.join(','),
         subject: data.subject,
         observations: data.observations,
+        attachments: attachmentData,
     }, serializableOrder, smtpConfig);
 
     if (result.success) {
@@ -210,12 +258,50 @@ export function SendToInvoiceDialog({ open, onOpenChange, order }: SendToInvoice
                 <FormItem>
                   <FormLabel>Observaciones Adicionales</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Ej: Facturar el 50% del total. Adjuntar HES." {...field} />
+                    <Textarea placeholder="Ej: Facturar el 50% del total..." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
+            <div>
+              <FormLabel>Archivos Adjuntos</FormLabel>
+              <p className="text-xs text-muted-foreground mb-2">Se recomienda adjuntar Orden de Compra (OC) y Nota de Venta (NV).</p>
+              <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                <Paperclip className="mr-2 h-4 w-4" />
+                Adjuntar Archivos
+              </Button>
+              <Input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                multiple
+                onChange={handleFileChange}
+              />
+               {attachments.length > 0 && (
+                <div className="mt-2 space-y-2">
+                  {attachments.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between text-sm p-2 bg-muted rounded-md">
+                        <div className="flex items-center gap-2 truncate">
+                            <FileIcon className="h-4 w-4 shrink-0" />
+                            <span className="truncate">{file.name}</span>
+                        </div>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => removeAttachment(index)}
+                        >
+                            <X className="h-4 w-4 text-destructive" />
+                        </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {!canSend && (
                 <p className="text-sm text-destructive">La configuración SMTP no está establecida. Por favor, configúrela en los ajustes para poder enviar correos.</p>
             )}
@@ -235,5 +321,3 @@ export function SendToInvoiceDialog({ open, onOpenChange, order }: SendToInvoice
     </Dialog>
   );
 }
-
-    

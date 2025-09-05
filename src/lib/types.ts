@@ -343,3 +343,9 @@ export const CreateWorkOrderOutputSchema = z.object({
   message: z.string(),
 });
 export type CreateWorkOrderOutput = z.infer<typeof CreateWorkOrderOutputSchema>;
+
+// Attachment type for emails
+export type MailAttachment = {
+  filename: string;
+  content: string; // base64 encoded
+};
