@@ -126,15 +126,15 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
   React.useEffect(() => {
     if (collaborator) {
       form.reset({
-        name: collaborator.name,
-        email: collaborator.email,
-        role: collaborator.role,
-        area: collaborator.area,
-        status: collaborator.status,
-        license: collaborator.license,
-        workClothing: collaborator.workClothing,
-        epp: collaborator.epp,
-        certifications: collaborator.certifications,
+        name: collaborator.name || '',
+        email: collaborator.email || '',
+        role: collaborator.role || 'Técnico',
+        area: collaborator.area || '',
+        status: collaborator.status || 'Activo',
+        license: collaborator.license || '',
+        workClothing: collaborator.workClothing || [],
+        epp: collaborator.epp || [],
+        certifications: collaborator.certifications || [],
       });
     } else {
         const defaultWorkClothing = defaultClothingItems.map(item => ({
