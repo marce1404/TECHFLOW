@@ -1,8 +1,9 @@
 
+
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
-import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, query, where, writeBatch, serverTimestamp, orderBy, getDoc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, query, where, writeBatch, serverTimestamp, orderBy, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { WorkOrder, OTCategory, Service, Collaborator, Vehicle, GanttChart, SuggestedTask, OTStatus, ReportTemplate, SubmittedReport, CompanyInfo, AppUser, SmtpConfig } from '@/lib/types';
 import { Timestamp } from 'firebase/firestore';
@@ -24,6 +25,8 @@ import { predefinedReportTemplates } from '@/lib/predefined-templates';
 
 interface WorkOrdersContextType {
   workOrders: WorkOrder[];
+  activeWorkOrders: WorkOrder[];
+  historicalWorkOrders: WorkOrder[];
   otCategories: OTCategory[];
   otStatuses: OTStatus[];
   services: Service[];
@@ -76,12 +79,15 @@ interface WorkOrdersContextType {
   updateCompanyInfo: (info: CompanyInfo) => Promise<void>;
   updateSmtpConfig: (config: SmtpConfig) => Promise<void>;
   promptToCloseOrder: (order: WorkOrder) => void;
+  auditLog: any[];
 }
 
 const WorkOrdersContext = createContext<WorkOrdersContextType | undefined>(undefined);
 
 export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
+  const [activeWorkOrders, setActiveWorkOrders] = useState<WorkOrder[]>([]);
+  const [historicalWorkOrders, setHistoricalWorkOrders] = useState<WorkOrder[]>([]);
   const [otCategories, setOtCategories] = useState<OTCategory[]>([]);
   const [otStatuses, setOtStatuses] = useState<OTStatus[]>([]);
   const [services, setServices] = useState<Service[]>([]);
@@ -93,104 +99,103 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [submittedReports, setSubmittedReports] = useState<SubmittedReport[]>([]);
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
   const [smtpConfig, setSmtpConfig] = useState<SmtpConfig | null>(null);
+  const [auditLog, setAuditLog] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { user, userProfile, loading: authLoading } = useAuth();
   const [orderToClose, setOrderToClose] = useState<WorkOrder | null>(null);
   const { toast } = useToast();
-  const [orderToDelete, setOrderToDelete] = useState<WorkOrder | null>(null);
 
   const checkAndCreatePredefinedTemplates = async () => {
     const templatesCollection = collection(db, 'report-templates');
     const existingTemplatesSnapshot = await getDocs(templatesCollection);
-    const existingTemplateNames = existingTemplatesSnapshot.docs.map(doc => doc.data().name);
-
-    for (const predefinedTemplate of predefinedReportTemplates) {
-      if (!existingTemplateNames.includes(predefinedTemplate.name)) {
-        try {
-          await addDoc(templatesCollection, predefinedTemplate);
-          console.log(`Created predefined template: ${predefinedTemplate.name}`);
-        } catch (error) {
-          console.error(`Failed to create predefined template ${predefinedTemplate.name}:`, error);
+    if (existingTemplatesSnapshot.empty) {
+        const batch = writeBatch(db);
+        for (const predefinedTemplate of predefinedReportTemplates) {
+            const docRef = doc(templatesCollection);
+            batch.set(docRef, predefinedTemplate);
         }
-      }
+        await batch.commit();
+        console.log("Created all predefined templates.");
     }
   };
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-        await checkAndCreatePredefinedTemplates();
-        
-        const [
-            workOrdersSnapshot,
-            categoriesSnapshot,
-            statusesSnapshot,
-            servicesSnapshot,
-            collaboratorsSnapshot,
-            vehiclesSnapshot,
-            ganttChartsSnapshot,
-            suggestedTasksSnapshot,
-            reportTemplatesSnapshot,
-            submittedReportsSnapshot,
-            companyInfoSnapshot,
-            smtpConfigSnapshot,
-        ] = await Promise.all([
-            getDocs(query(collection(db, "work-orders"), orderBy("date", "desc"))),
-            getDocs(collection(db, "ot-categories")),
-            getDocs(collection(db, "ot-statuses")),
-            getDocs(collection(db, "services")),
-            getDocs(collection(db, "collaborators")),
-            getDocs(collection(db, "vehicles")),
-            getDocs(collection(db, "gantt-charts")),
-            getDocs(collection(db, 'suggested-tasks')),
-            getDocs(collection(db, 'report-templates')),
-            getDocs(query(collection(db, "submitted-reports"), orderBy("submittedAt", "desc"))),
-            getDoc(doc(db, "settings", "companyInfo")),
-            getDoc(doc(db, "settings", "smtpConfig")),
-        ]);
-        
-        setWorkOrders(workOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[]);
-        setOtCategories(categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as OTCategory[]);
-        setOtStatuses(statusesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as OTStatus[]);
-        setServices(servicesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Service[]);
-        setCollaborators(collaboratorsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Collaborator[]);
-        setVehicles(vehiclesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Vehicle[]);
-        setSuggestedTasks(suggestedTasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SuggestedTask[]);
-        setReportTemplates(reportTemplatesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ReportTemplate[]);
-        setSubmittedReports(submittedReportsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SubmittedReport[]);
-        
-        if (companyInfoSnapshot.exists()) {
-            setCompanyInfo(companyInfoSnapshot.data() as CompanyInfo);
-        }
-
-        if (smtpConfigSnapshot.exists()) {
-            setSmtpConfig(smtpConfigSnapshot.data() as SmtpConfig);
-        }
-
-        setGanttCharts(ganttChartsSnapshot.docs.map(doc => {
-            const data = doc.data();
-            const tasks = (data.tasks || []).map((task: any) => ({
-                ...task,
-                startDate: task.startDate instanceof Timestamp ? task.startDate.toDate() : new Date(task.startDate),
-            }));
-            return { id: doc.id, ...data, tasks };
-        }) as GanttChart[]);
-
-    } catch (error) {
-        console.error("Error en fetchData: ", error);
-    } finally {
-        setLoading(false);
-    }
-  }, []);
-
-
   useEffect(() => {
     if (user && !authLoading) {
-      fetchData();
-    } else if (!authLoading) {
+      setLoading(true);
+      checkAndCreatePredefinedTemplates();
+
+      const listeners = [
+        onSnapshot(query(collection(db, "work-orders"), orderBy("date", "desc")), (snapshot) => {
+          const allOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WorkOrder[];
+          setWorkOrders(allOrders);
+          setActiveWorkOrders(allOrders.filter(o => o.status !== 'Cerrada'));
+          setHistoricalWorkOrders(allOrders.filter(o => o.status === 'Cerrada'));
+        }),
+        onSnapshot(collection(db, "ot-categories"), snapshot => setOtCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as OTCategory[])),
+        onSnapshot(collection(db, "ot-statuses"), snapshot => setOtStatuses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as OTStatus[])),
+        onSnapshot(collection(db, "services"), snapshot => setServices(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Service[])),
+        onSnapshot(collection(db, "collaborators"), snapshot => setCollaborators(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Collaborator[])),
+        onSnapshot(collection(db, "vehicles"), snapshot => setVehicles(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Vehicle[])),
+        onSnapshot(collection(db, "suggested-tasks"), snapshot => setSuggestedTasks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SuggestedTask[])),
+        onSnapshot(collection(db, 'report-templates'), snapshot => setReportTemplates(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ReportTemplate[])),
+        onSnapshot(query(collection(db, "submitted-reports"), orderBy("submittedAt", "desc")), snapshot => setSubmittedReports(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SubmittedReport[])),
+        onSnapshot(query(collection(db, "audit-log"), orderBy("timestamp", "desc"), where("timestamp", ">", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))), snapshot => setAuditLog(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[])),
+        onSnapshot(doc(db, "settings", "companyInfo"), doc => setCompanyInfo(doc.data() as CompanyInfo | null)),
+        onSnapshot(doc(db, "settings", "smtpConfig"), doc => setSmtpConfig(doc.data() as SmtpConfig | null)),
+        onSnapshot(collection(db, 'gantt-charts'), (snapshot) => {
+            const charts = snapshot.docs.map(doc => {
+                const data = doc.data();
+                const tasks = (data.tasks || []).map((task: any) => ({
+                    ...task,
+                    startDate: task.startDate instanceof Timestamp ? task.startDate.toDate() : new Date(task.startDate),
+                }));
+                return { id: doc.id, ...data, tasks };
+            }) as GanttChart[];
+            setGanttCharts(charts);
+        }),
+      ];
+
       setLoading(false);
+
+      // Cleanup listeners on unmount or user change
+      return () => {
+        listeners.forEach(unsubscribe => unsubscribe());
+      };
+    } else if (!authLoading) {
+      // User is logged out
+      setLoading(false);
+      // Clear all data
+      setWorkOrders([]);
+      setActiveWorkOrders([]);
+      setHistoricalWorkOrders([]);
+      setOtCategories([]);
+      setOtStatuses([]);
+      setServices([]);
+      setCollaborators([]);
+      setVehicles([]);
+      setGanttCharts([]);
+      setSuggestedTasks([]);
+      setReportTemplates([]);
+      setSubmittedReports([]);
+      setCompanyInfo(null);
+      setSmtpConfig(null);
+      setAuditLog([]);
     }
-  }, [user, authLoading, fetchData]);
+  }, [user, authLoading]);
+
+  const addLogEntry = async (action: string) => {
+    if (!userProfile) return;
+    try {
+        await addDoc(collection(db, 'audit-log'), {
+            user: userProfile.displayName,
+            email: userProfile.email,
+            action,
+            timestamp: serverTimestamp()
+        });
+    } catch (e) {
+        console.error("Error adding log entry: ", e);
+    }
+  };
 
   const getNextOtNumber = (prefix: string): string => {
     if (!prefix) return '';
@@ -231,7 +236,7 @@ const getLastOtNumber = (prefix: string): string | null => {
 
   const addOrder = async (order: Omit<WorkOrder, 'id'>): Promise<WorkOrder> => {
     const docRef = await addDoc(collection(db, "work-orders"), order);
-    await fetchData(); 
+    await addLogEntry(`Creó la OT: ${order.ot_number} - ${order.description}`);
     const newOrder = { id: docRef.id, ...order } as WorkOrder;
     return newOrder;
   };
@@ -243,12 +248,14 @@ const getLastOtNumber = (prefix: string): string | null => {
   const updateOrder = async (id: string, updatedData: Partial<WorkOrder>) => {
     const orderRef = doc(db, 'work-orders', id);
     await updateDoc(orderRef, updatedData);
-    await fetchData();
+     const order = getOrder(id);
+    await addLogEntry(`Actualizó la OT: ${order?.ot_number}`);
   };
 
   const deleteOrder = async (id: string) => {
+     const order = getOrder(id);
     await deleteDoc(doc(db, 'work-orders', id));
-    await fetchData();
+    await addLogEntry(`Eliminó la OT: ${order?.ot_number}`);
   };
   
   const promptToCloseOrder = (order: WorkOrder) => {
@@ -261,58 +268,61 @@ const getLastOtNumber = (prefix: string): string | null => {
         endDate: format(closingDate, 'yyyy-MM-dd'),
     };
     await updateOrder(order.id, dataToUpdate);
+    await addLogEntry(`Cerró la OT: ${order.ot_number}`);
     setOrderToClose(null);
   };
   
   const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory> => {
     const docRef = await addDoc(collection(db, "ot-categories"), category);
-    await fetchData();
+    await addLogEntry(`Creó la categoría de OT: ${category.name}`);
     return { id: docRef.id, ...category } as OTCategory;
   };
 
   const updateCategory = async (id: string, updatedCategory: Partial<OTCategory>) => {
     const docRef = doc(db, "ot-categories", id);
     await updateDoc(docRef, updatedCategory);
-    await fetchData();
+    await addLogEntry(`Actualizó la categoría de OT: ${updatedCategory.name}`);
   };
 
   const addStatus = async (status: Omit<OTStatus, 'id'>): Promise<OTStatus> => {
     const docRef = await addDoc(collection(db, "ot-statuses"), status);
-    await fetchData();
+    await addLogEntry(`Creó el estado de OT: ${status.name}`);
     return { id: docRef.id, ...status } as OTStatus;
   };
 
   const updateStatus = async (id: string, updatedStatus: Partial<OTStatus>) => {
     const docRef = doc(db, "ot-statuses", id);
     await updateDoc(docRef, updatedStatus);
-    await fetchData();
+    await addLogEntry(`Actualizó el estado de OT: ${updatedStatus.name}`);
   };
 
   const deleteStatus = async (id: string) => {
+    const status = otStatuses.find(s => s.id === id);
     await deleteDoc(doc(db, "ot-statuses", id));
-    await fetchData();
+    await addLogEntry(`Eliminó el estado de OT: ${status?.name}`);
   };
 
   const addService = async (service: Omit<Service, 'id'>): Promise<Service> => {
     const docRef = await addDoc(collection(db, "services"), service);
-    await fetchData();
+    await addLogEntry(`Creó el servicio: ${service.name}`);
     return { id: docRef.id, ...service } as Service;
   };
 
   const updateService = async (id: string, updatedService: Partial<Service>) => {
     const docRef = doc(db, "services", id);
     await updateDoc(docRef, updatedService);
-    await fetchData();
+    await addLogEntry(`Actualizó el servicio: ${updatedService.name}`);
   };
   
   const deleteService = async (id: string) => {
+    const service = services.find(s => s.id === id);
     await deleteDoc(doc(db, "services", id));
-    await fetchData();
+    await addLogEntry(`Eliminó el servicio: ${service?.name}`);
   };
   
   const addCollaborator = async (collaborator: Omit<Collaborator, 'id'>): Promise<Collaborator> => {
     const docRef = await addDoc(collection(db, "collaborators"), collaborator);
-    await fetchData();
+    await addLogEntry(`Creó al colaborador: ${collaborator.name}`);
     return { ...collaborator, id: docRef.id } as Collaborator;
   };
   
@@ -331,30 +341,32 @@ const getLastOtNumber = (prefix: string): string | null => {
     });
 
     await updateDoc(docRef, cleanData);
-    await fetchData();
+    await addLogEntry(`Actualizó al colaborador: ${updatedCollaborator.name}`);
   };
 
   const deleteCollaborator = async (id: string) => {
+    const collaborator = getCollaborator(id);
     await deleteDoc(doc(db, "collaborators", id));
-    await fetchData();
+    await addLogEntry(`Eliminó al colaborador: ${collaborator?.name}`);
   };
   
   const addVehicle = async (vehicle: Omit<Vehicle, 'id'>): Promise<Vehicle> => {
     const vehicleData = { ...vehicle, maintenanceLog: vehicle.maintenanceLog || [] };
     const docRef = await addDoc(collection(db, "vehicles"), vehicleData);
-    await fetchData();
+    await addLogEntry(`Añadió el vehículo: ${vehicle.model} (${vehicle.plate})`);
     return { ...vehicleData, id: docRef.id } as Vehicle;
   };
 
   const updateVehicle = async (id: string, updatedVehicle: Partial<Omit<Vehicle, 'id'>>) => {
     const docRef = doc(db, "vehicles", id);
     await updateDoc(docRef, updatedVehicle);
-    await fetchData();
+    await addLogEntry(`Actualizó el vehículo: ${updatedVehicle.model} (${updatedVehicle.plate})`);
   };
 
   const deleteVehicle = async (id: string) => {
+    const vehicle = vehicles.find(v => v.id === id);
     await deleteDoc(doc(db, "vehicles", id));
-    await fetchData();
+    await addLogEntry(`Eliminó el vehículo: ${vehicle?.model} (${vehicle?.plate})`);
   };
 
   const addGanttChart = async (ganttChart: Omit<GanttChart, 'id'>): Promise<GanttChart> => {
@@ -367,7 +379,7 @@ const getLastOtNumber = (prefix: string): string | null => {
           }))
       };
       const docRef = await addDoc(collection(db, "gantt-charts"), dataToSave);
-      await fetchData(); 
+      await addLogEntry(`Creó la Carta Gantt: ${ganttChart.name}`);
       return { ...ganttChart, id: docRef.id };
   };
   
@@ -395,29 +407,31 @@ const getLastOtNumber = (prefix: string): string | null => {
       }
 
       await updateDoc(docRef, dataToSave);
-      await fetchData();
+      await addLogEntry(`Actualizó la Carta Gantt: ${ganttChartData.name}`);
   };
 
   const deleteGanttChart = async (id: string) => {
+    const chart = getGanttChart(id);
     await deleteDoc(doc(db, "gantt-charts", id));
-    await fetchData();
+    await addLogEntry(`Eliminó la Carta Gantt: ${chart?.name}`);
   };
   
   const addSuggestedTask = async (task: Omit<SuggestedTask, 'id'>): Promise<SuggestedTask> => {
     const docRef = await addDoc(collection(db, "suggested-tasks"), task);
-    await fetchData();
+    await addLogEntry(`Añadió tarea sugerida: ${task.name}`);
     return { id: docRef.id, ...task } as SuggestedTask;
   };
 
   const updateSuggestedTask = async (id: string, updatedTask: Partial<SuggestedTask>) => {
     const docRef = doc(db, "suggested-tasks", id);
     await updateDoc(docRef, updatedTask);
-    await fetchData();
+    await addLogEntry(`Actualizó tarea sugerida: ${updatedTask.name}`);
   };
 
   const deleteSuggestedTask = async (id: string) => {
+    const task = suggestedTasks.find(t => t.id === id);
     await deleteDoc(doc(db, "suggested-tasks", id));
-    await fetchData();
+    await addLogEntry(`Eliminó tarea sugerida: ${task?.name}`);
   };
   
   const updatePhaseName = async (category: string, oldPhaseName: string, newPhaseName: string) => {
@@ -428,7 +442,7 @@ const getLastOtNumber = (prefix: string): string | null => {
       batch.update(doc.ref, { phase: newPhaseName });
     });
     await batch.commit();
-    await fetchData();
+    await addLogEntry(`Renombró la fase '${oldPhaseName}' a '${newPhaseName}' en la categoría '${category}'`);
   };
 
   const deletePhase = async (category: string, phaseName: string) => {
@@ -439,25 +453,26 @@ const getLastOtNumber = (prefix: string): string | null => {
       batch.delete(doc.ref);
     });
     await batch.commit();
-    await fetchData();
+    await addLogEntry(`Eliminó la fase '${phaseName}' en la categoría '${category}'`);
   };
   
   const addReportTemplate = async (template: Omit<ReportTemplate, 'id'>): Promise<ReportTemplate> => {
     const docRef = await addDoc(collection(db, "report-templates"), template);
-    await fetchData();
+    await addLogEntry(`Creó la plantilla de informe: ${template.name}`);
     return { id: docRef.id, ...template } as ReportTemplate;
   };
 
   const updateReportTemplate = async (id: string, updatedTemplate: Partial<ReportTemplate>) => {
     const docRef = doc(db, "report-templates", id);
     await updateDoc(docRef, updatedTemplate);
-    await fetchData();
+    await addLogEntry(`Actualizó la plantilla de informe: ${updatedTemplate.name}`);
   };
 
 
   const deleteReportTemplate = async (id: string) => {
+    const template = reportTemplates.find(t => t.id === id);
     await deleteDoc(doc(db, "report-templates", id));
-    await fetchData();
+    await addLogEntry(`Eliminó la plantilla de informe: ${template?.name}`);
   };
 
   const addSubmittedReport = async (report: Omit<SubmittedReport, 'id' | 'submittedAt'>): Promise<SubmittedReport> => {
@@ -466,37 +481,40 @@ const getLastOtNumber = (prefix: string): string | null => {
         submittedAt: serverTimestamp(),
     };
     const docRef = await addDoc(collection(db, "submitted-reports"), reportData);
-    await fetchData();
-    // Simulate serverTimestamp for immediate UI update
+    await addLogEntry(`Envió el informe '${report.templateName}' para la OT ${report.otDetails.ot_number}`);
     return { ...report, id: docRef.id, submittedAt: Timestamp.now() } as SubmittedReport; 
   };
 
   const updateSubmittedReport = async (id: string, report: Partial<SubmittedReport>) => {
     const docRef = doc(db, "submitted-reports", id);
     await updateDoc(docRef, report);
-    await fetchData();
+    const originalReport = submittedReports.find(r => r.id === id);
+    await addLogEntry(`Actualizó el informe para la OT ${originalReport?.otDetails.ot_number}`);
   };
 
   const deleteSubmittedReport = async (id: string) => {
+    const report = submittedReports.find(r => r.id === id);
     await deleteDoc(doc(db, "submitted-reports", id));
-    await fetchData();
+    await addLogEntry(`Eliminó el informe para la OT ${report?.otDetails.ot_number}`);
   };
 
   const updateCompanyInfo = async (info: CompanyInfo) => {
     const docRef = doc(db, 'settings', 'companyInfo');
     await setDoc(docRef, info, { merge: true });
-    await fetchData();
+    await addLogEntry(`Actualizó la información de la empresa.`);
   };
 
   const updateSmtpConfig = async (config: SmtpConfig) => {
     const docRef = doc(db, 'settings', 'smtpConfig');
     await setDoc(docRef, config, { merge: true });
-    await fetchData();
+    await addLogEntry(`Actualizó la configuración SMTP.`);
   };
   
   return (
     <WorkOrdersContext.Provider value={{ 
         workOrders, 
+        activeWorkOrders,
+        historicalWorkOrders,
         otCategories,
         otStatuses,
         services,
@@ -509,7 +527,7 @@ const getLastOtNumber = (prefix: string): string | null => {
         companyInfo,
         smtpConfig,
         loading,
-        fetchData,
+        fetchData: async () => {},
         updateOrder,
         deleteOrder, 
         getOrder, 
@@ -549,6 +567,7 @@ const getLastOtNumber = (prefix: string): string | null => {
         updateCompanyInfo,
         updateSmtpConfig,
         promptToCloseOrder,
+        auditLog,
     }}>
       {children}
       <CloseWorkOrderDialog 
@@ -567,4 +586,3 @@ export const useWorkOrders = () => {
   }
   return context;
 };
-

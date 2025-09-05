@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -26,7 +27,7 @@ type CompanyFormValues = z.infer<typeof companyFormSchema>;
 
 export default function CompanyDetailsPage() {
   const { toast } = useToast();
-  const { companyInfo, updateCompanyInfo, loading, fetchData } = useWorkOrders();
+  const { companyInfo, updateCompanyInfo, loading } = useWorkOrders();
 
   const form = useForm<CompanyFormValues>({
     resolver: zodResolver(companyFormSchema),
@@ -50,7 +51,6 @@ export default function CompanyDetailsPage() {
         description: 'La información de tu empresa ha sido guardada exitosamente.',
         duration: 2000,
     });
-    await fetchData(); // Re-fetch data to ensure UI is up to date
   };
 
   return (

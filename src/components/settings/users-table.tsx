@@ -263,4 +263,3 @@ export default function UsersTable({ users, loading, onDataChange }: UsersTableP
         </>
     );
 }
-

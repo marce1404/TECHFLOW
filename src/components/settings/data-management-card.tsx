@@ -1,4 +1,5 @@
 
+
 'use client';
 import * as React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/card';
@@ -149,7 +150,7 @@ export default function DataManagementCard() {
             <ImportOrdersDialog
                 open={isImporting}
                 onOpenChange={setIsImporting}
-                onImportSuccess={fetchData}
+                onImportSuccess={() => {}}
             />
         </>
     );

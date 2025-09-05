@@ -13,7 +13,7 @@ import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/ca
 export default function NewCollaboratorPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { addCollaborator, fetchData } = useWorkOrders();
+  const { addCollaborator } = useWorkOrders();
   const { userProfile } = useAuth();
   
   const canCreate = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
@@ -27,11 +27,6 @@ export default function NewCollaboratorPage() {
       duration: 2000,
     });
     router.push('/collaborators');
-    // After pushing, fetch the data again to ensure the list is up-to-date.
-    // A small delay can help ensure the navigation has completed.
-    setTimeout(() => {
-        fetchData();
-    }, 100);
   };
 
   if (!canCreate) {
