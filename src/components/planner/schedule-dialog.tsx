@@ -1,4 +1,3 @@
-
 'use client';
 import * as React from 'react';
 import { z } from 'zod';
@@ -62,6 +61,7 @@ interface ScheduleDialogProps {
 
 export function ScheduleDialog({ open, onOpenChange, date, workOrders, onSchedule }: ScheduleDialogProps) {
     const { collaborators } = useWorkOrders();
+    const [isOtPopoverOpen, setIsOtPopoverOpen] = React.useState(false);
 
     const form = useForm<ScheduleFormValues>({
         resolver: zodResolver(scheduleFormSchema),
@@ -128,7 +128,7 @@ export function ScheduleDialog({ open, onOpenChange, date, workOrders, onSchedul
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Orden de Trabajo (Opcional)</FormLabel>
-                   <Popover>
+                   <Popover open={isOtPopoverOpen} onOpenChange={setIsOtPopoverOpen}>
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
@@ -159,7 +159,8 @@ export function ScheduleDialog({ open, onOpenChange, date, workOrders, onSchedul
                                 value={`${ot.ot_number} ${ot.description} ${ot.client}`}
                                 key={ot.id}
                                 onSelect={() => {
-                                    form.setValue("workOrderId", ot.id)
+                                    form.setValue("workOrderId", ot.id);
+                                    setIsOtPopoverOpen(false);
                                 }}
                                 >
                                 <Check
