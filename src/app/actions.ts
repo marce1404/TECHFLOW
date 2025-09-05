@@ -16,6 +16,7 @@ import * as xlsx from 'xlsx';
 import { auth, db } from '@/lib/firebase-admin';
 import type { UserRecord } from 'firebase-admin/auth';
 import { suggestGanttTasks } from '@/ai/flows/suggest-gantt-tasks';
+import type { auth as adminAuth } from 'firebase-admin';
 
 // --- Server Actions ---
 
@@ -112,7 +113,7 @@ export async function sendReportEmailAction(
 
 type InvoiceRequestEmailData = {
     to: string;
-    cc?: string;
+    cc: string;
     subject: string;
     observations?: string;
 };
@@ -407,7 +408,7 @@ type CreateUserInput = {
 
 export async function createUserAction(userData: CreateUserInput): Promise<{ success: boolean; message: string; user?: AppUser }> {
   try {
-    const userRecord: UserRecord = await (auth as any).createUser({
+    const userRecord: UserRecord = await (auth as adminAuth.Auth).createUser({
       email: userData.email,
       password: userData.password,
       displayName: userData.displayName,
@@ -415,7 +416,7 @@ export async function createUserAction(userData: CreateUserInput): Promise<{ suc
       disabled: false,
     });
 
-    await (auth as any).setCustomUserClaims(userRecord.uid, { role: userData.role });
+    await (auth as adminAuth.Auth).setCustomUserClaims(userRecord.uid, { role: userData.role });
 
     const newUser: AppUser = {
       uid: userRecord.uid,
@@ -425,7 +426,7 @@ export async function createUserAction(userData: CreateUserInput): Promise<{ suc
       status: 'Activo',
     };
 
-    await (db as any).collection('users').doc(userRecord.uid).set(newUser);
+    await (db as admin.firestore.Firestore).collection('users').doc(userRecord.uid).set(newUser);
     return { success: true, message: 'Usuario creado exitosamente.', user: newUser };
   } catch (error: any) {
     console.error('Error creating user:', error);
@@ -435,7 +436,7 @@ export async function createUserAction(userData: CreateUserInput): Promise<{ suc
 
 export async function updateUserAction(uid: string, data: Partial<AppUser>): Promise<{ success: boolean; message: string }> {
   try {
-    const updatePayload: Partial<admin.auth.UpdateRequest> = {};
+    const updatePayload: Partial<adminAuth.UpdateRequest> = {};
     if (data.displayName) {
         updatePayload.displayName = data.displayName;
     }
@@ -443,13 +444,13 @@ export async function updateUserAction(uid: string, data: Partial<AppUser>): Pro
         updatePayload.email = data.email;
     }
     if (Object.keys(updatePayload).length > 0) {
-        await (auth as any).updateUser(uid, updatePayload);
+        await (auth as adminAuth.Auth).updateUser(uid, updatePayload);
     }
     
     if (data.role) {
-        await (auth as any).setCustomUserClaims(uid, { role: data.role });
+        await (auth as adminAuth.Auth).setCustomUserClaims(uid, { role: data.role });
     }
-    await (db as any).collection('users').doc(uid).update(data);
+    await (db as admin.firestore.Firestore).collection('users').doc(uid).update(data);
     return { success: true, message: 'Usuario actualizado.' };
   } catch (error: any) {
     return { success: false, message: error.message };
@@ -458,8 +459,8 @@ export async function updateUserAction(uid: string, data: Partial<AppUser>): Pro
 
 export async function deleteUserAction(uid: string): Promise<{ success: boolean; message: string }> {
     try {
-        await (auth as any).deleteUser(uid);
-        await (db as any).collection('users').doc(uid).delete();
+        await (auth as adminAuth.Auth).deleteUser(uid);
+        await (db as admin.firestore.Firestore).collection('users').doc(uid).delete();
         return { success: true, message: 'Usuario eliminado exitosamente.' };
     } catch (error: any) {
         return { success: false, message: error.message };
@@ -470,8 +471,8 @@ export async function toggleUserStatusAction(uid: string, currentStatus: 'Activo
     const newStatus = currentStatus === 'Activo' ? 'Inactivo' : 'Activo';
     const isDisabled = newStatus === 'Inactivo';
     try {
-        await (auth as any).updateUser(uid, { disabled: isDisabled });
-        await (db as any).collection('users').doc(uid).update({ status: newStatus });
+        await (auth as adminAuth.Auth).updateUser(uid, { disabled: isDisabled });
+        await (db as admin.firestore.Firestore).collection('users').doc(uid).update({ status: newStatus });
         return { success: true, message: 'Estado del usuario actualizado.' };
     } catch (error: any) {
         return { success: false, message: error.message };
@@ -485,7 +486,7 @@ export async function changeUserPasswordAction(
     loginUrl: string,
 ): Promise<{ success: boolean; message: string }> {
     try {
-        await (auth as any).updateUser(user.uid, { password: newPassword });
+        await (auth as adminAuth.Auth).updateUser(user.uid, { password: newPassword });
         
         // After successfully changing the password, send the notification email
         if (config) {

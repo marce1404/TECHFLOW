@@ -29,10 +29,13 @@ import { sendInvoiceRequestEmailAction } from '@/app/actions';
 import { useWorkOrders } from '@/context/work-orders-context';
 import type { WorkOrder } from '@/lib/types';
 import { Textarea } from '../ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { MultiSelect } from '../ui/multi-select';
+import { useAuth } from '@/context/auth-context';
 
 const emailFormSchema = z.object({
-  to: z.string().email({ message: 'El correo del destinatario no es válido.' }),
-  cc: z.string().optional(),
+  to: z.string().min(1, 'Debes seleccionar un destinatario.'),
+  cc: z.array(z.string()).optional(),
   subject: z.string().min(1, 'El asunto es requerido.'),
   observations: z.string().optional(),
 });
@@ -47,7 +50,8 @@ interface SendToInvoiceDialogProps {
 
 export function SendToInvoiceDialog({ open, onOpenChange, order }: SendToInvoiceDialogProps) {
   const { toast } = useToast();
-  const { smtpConfig } = useWorkOrders();
+  const { smtpConfig, collaborators } = useWorkOrders();
+  const { userProfile } = useAuth();
   const [loading, setLoading] = React.useState(false);
   
   const canSend = smtpConfig !== null;
@@ -56,22 +60,31 @@ export function SendToInvoiceDialog({ open, onOpenChange, order }: SendToInvoice
     resolver: zodResolver(emailFormSchema),
     defaultValues: {
       to: '',
-      cc: '',
+      cc: [],
       subject: '',
       observations: '',
     },
   });
 
+  const collaboratorOptions = React.useMemo(() => {
+    return collaborators
+        .filter(c => c.email)
+        .map(c => ({ value: c.id, label: `${c.name} (${c.email})`}));
+  }, [collaborators]);
+
+
   React.useEffect(() => {
-    if (order) {
-      form.reset({
-        to: 'facturacion@osesa.cl',
-        cc: '',
-        subject: `Solicitud de Facturación - OT ${order.ot_number} - ${order.client}`,
-        observations: '',
-      });
+    if (open && order) {
+        const debora = collaborators.find(c => c.name.toLowerCase().includes('debora'));
+        
+        form.reset({
+            to: debora?.id || '',
+            cc: userProfile?.uid ? [userProfile.uid] : [],
+            subject: `Solicitud de Facturación - OT ${order.ot_number} - ${order.client}`,
+            observations: '',
+        });
     }
-  }, [order, form, open]);
+  }, [order, open, form, collaborators, userProfile]);
 
   const onSubmit = async (data: EmailFormValues) => {
     if (!order || !smtpConfig) {
@@ -85,7 +98,25 @@ export function SendToInvoiceDialog({ open, onOpenChange, order }: SendToInvoice
     
     setLoading(true);
 
-    const result = await sendInvoiceRequestEmailAction(data, order, smtpConfig);
+    const toCollaborator = collaborators.find(c => c.id === data.to);
+    if (!toCollaborator || !toCollaborator.email) {
+        toast({ variant: 'destructive', title: 'Error', description: 'El destinatario seleccionado no tiene un correo válido.'});
+        setLoading(false);
+        return;
+    }
+
+    const ccEmails = (data.cc || [])
+        .map(id => collaborators.find(c => c.id === id)?.email)
+        .filter((email): email is string => !!email);
+    
+    const uniqueCcEmails = Array.from(new Set(ccEmails));
+
+    const result = await sendInvoiceRequestEmailAction({
+        to: toCollaborator.email,
+        cc: uniqueCcEmails.join(','),
+        subject: data.subject,
+        observations: data.observations,
+    }, order, smtpConfig);
 
     if (result.success) {
       toast({
@@ -122,18 +153,36 @@ export function SendToInvoiceDialog({ open, onOpenChange, order }: SendToInvoice
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Para</FormLabel>
-                  <FormControl><Input type="email" {...field} /></FormControl>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar destinatario..." />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {collaborators.filter(c => c.email).map(c => (
+                                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
-             <FormField
+            <FormField
               control={form.control}
               name="cc"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>CC (Opcional, separar con comas)</FormLabel>
-                  <FormControl><Input type="text" {...field} /></FormControl>
+                  <FormLabel>CC (Opcional)</FormLabel>
+                  <FormControl>
+                     <MultiSelect
+                        options={collaboratorOptions}
+                        selected={field.value || []}
+                        onChange={field.onChange}
+                        placeholder="Añadir en copia a..."
+                     />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
