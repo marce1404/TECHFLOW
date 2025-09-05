@@ -57,6 +57,7 @@ export default function AppHeader() {
     if (pathname.startsWith('/orders')) return 'Órdenes de Trabajo Activas';
     if (pathname === '/') return 'Órdenes de Trabajo Activas';
     if (pathname.startsWith('/gantt')) return 'Cartas Gantt';
+    if (pathname.startsWith('/planner')) return 'Planificador';
     if (pathname.startsWith('/reports/history')) return 'Historial de Informes';
     if (pathname.startsWith('/reports')) return 'Llenar Informe';
     if (pathname.startsWith('/collaborators')) return 'Colaboradores';

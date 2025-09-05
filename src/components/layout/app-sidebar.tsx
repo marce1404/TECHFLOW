@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -26,6 +25,7 @@ import {
   FilePlus2,
   Archive,
   AlertTriangle,
+  CalendarDays,
 } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { signOut } from 'firebase/auth';
@@ -85,6 +85,12 @@ export default function AppSidebar() {
       href: '/orders/history',
       label: 'Historial OTs',
       icon: History,
+      exact: true,
+    },
+    {
+      href: '/planner',
+      label: 'Planificador',
+      icon: CalendarDays,
       exact: true,
     },
     {
@@ -150,7 +156,7 @@ export default function AppSidebar() {
       if (href === '/reports') {
           return pathname.startsWith('/reports') && !pathname.startsWith('/reports/history');
       }
-      return isActive(href);
+      return isActive(href, true);
   }
 
   if (state === 'collapsed') {
@@ -277,7 +283,7 @@ export default function AppSidebar() {
             >
               <Link href={settingsMenuItem.href}>
                 <Settings className="h-5 w-5" />
-                <span>Configuración</span>
+                <span>{settingsMenuItem.label}</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
