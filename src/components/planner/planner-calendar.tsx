@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -14,7 +13,8 @@ import {
   isToday,
   add,
   isSameDay,
-  parseISO
+  parseISO,
+  isWithinInterval
 } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -128,7 +128,11 @@ export function PlannerCalendar({ workOrders, onDayClick, canSchedule }: Planner
        >
         {(view === 'month' ? daysToShow : daysToShow.slice(0, 7)).map((day) => {
           const ordersForDay = workOrders
-            .filter((order) => isSameDay(parseISO(order.date), day))
+            .filter((order) => {
+              const startDate = parseISO(order.date);
+              const endDate = order.endDate ? parseISO(order.endDate) : startDate;
+              return isWithinInterval(day, { start: startDate, end: endDate });
+            })
             .sort((a,b) => (a.startTime || '00:00').localeCompare(b.startTime || '00:00'));
 
           return (
