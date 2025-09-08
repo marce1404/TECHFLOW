@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -8,9 +7,40 @@ import UsersTable from '@/components/settings/users-table';
 import { useAuth } from '@/context/auth-context';
 import { UserInviteForm } from '@/components/settings/user-invite-form';
 import { Shield, Eye, HardHat, UserCog } from 'lucide-react';
+import type { AppUser } from '@/lib/types';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
 
 export default function UsersPage() {
-    const { userProfile, users, loading, refetchUsers } = useAuth();
+    const { userProfile } = useAuth();
+    const { toast } = useToast();
+    const [users, setUsers] = React.useState<AppUser[]>([]);
+    const [loading, setLoading] = React.useState(true);
+
+    const refetchUsers = React.useCallback(async () => {
+        setLoading(true);
+        try {
+            const usersCollection = await getDocs(collection(db, 'users'));
+            const userList = usersCollection.docs.map(doc => doc.data() as AppUser);
+            setUsers(userList);
+        } catch (e) {
+            console.error("Error fetching users: ", e);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'No se pudo cargar la lista de usuarios.',
+            });
+        } finally {
+            setLoading(false);
+        }
+    }, [toast]);
+
+    React.useEffect(() => {
+        if (userProfile?.role === 'Admin') {
+            refetchUsers();
+        }
+    }, [userProfile, refetchUsers]);
     
     if (userProfile?.role !== 'Admin') {
         return (

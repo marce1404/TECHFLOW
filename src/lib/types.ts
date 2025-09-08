@@ -284,12 +284,19 @@ export type DonutChartData = {
 
 export const UpdateUserInputSchema = z.object({
   uid: z.string().describe('The unique ID of the user to update.'),
-  name: z.string().min(3).describe("The user's new full name."),
+  displayName: z.string().min(3).describe("The user's new full name."),
+  email: z.string().email().describe("The user's new email."),
   role: z.enum(['Admin', 'Supervisor', 'Técnico', 'Visor']).describe('The new role for the user.'),
   status: z.enum(['Activo', 'Inactivo']).describe('The new status for the user.'),
 });
 
 export type UpdateUserInput = z.infer<typeof UpdateUserInputSchema>;
+
+export const CreateUserInputSchema = UpdateUserInputSchema.extend({
+    password: z.string().min(6).describe('The new password for the user.')
+}).omit({uid: true});
+export type CreateUserInput = z.infer<typeof CreateUserInputSchema>;
+
 
 export const UpdateUserOutputSchema = z.object({
   success: z.boolean(),
