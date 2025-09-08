@@ -172,12 +172,13 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
   };
   
   const onInvalid = (errors: any) => {
-    console.error("Form errors:", errors);
-    toast({
-        variant: "destructive",
-        title: "Faltan Datos Obligatorios",
-        description: "Por favor, revisa el formulario y completa los campos marcados en rojo.",
-    });
+    if (Object.keys(errors).length > 0) {
+      toast({
+          variant: "destructive",
+          title: "Faltan Datos Obligatorios",
+          description: "Por favor, revisa el formulario y completa los campos marcados en rojo.",
+      });
+    }
   };
 
   const handleDeliveryDateChange = (date: Date | undefined, index: number, fieldName: 'workClothing' | 'epp' | 'certifications') => {
@@ -261,7 +262,7 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
                               <FormItem>
                                   <FormLabel>Correo Electrónico</FormLabel>
                                   <FormControl>
-                                      <Input type="email" placeholder="ejemplo@correo.com" {...field} />
+                                      <Input type="email" placeholder="ejemplo@correo.com" {...field} value={field.value ?? ''} />
                                   </FormControl>
                                   <FormMessage />
                               </FormItem>
