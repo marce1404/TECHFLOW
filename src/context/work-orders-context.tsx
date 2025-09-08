@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
@@ -171,6 +170,19 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         unsubscribes.push(unsubscribe);
     });
 
+    // Conditionally listen to audit-log only for Admins
+    if (userProfile?.role === 'Admin') {
+        const auditLogQuery = query(collection(db, 'audit-log'), orderBy('timestamp', 'desc'));
+        const auditLogUnsubscribe = onSnapshot(auditLogQuery, (snapshot) => {
+            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setAuditLog(data);
+        }, (error) => {
+            console.error("Error fetching audit-log: ", error);
+        });
+        unsubscribes.push(auditLogUnsubscribe);
+    }
+
+
     const singleDocsToListen = [
       { path: 'settings/companyInfo', setter: setCompanyInfo },
       { path: 'settings/smtpConfig', setter: setSmtpConfig }
@@ -190,7 +202,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       unsubscribes.forEach(unsub => unsub());
     };
-  }, [user, authLoading, toast, checkAndCreatePredefinedTemplates]);
+  }, [user, userProfile, authLoading, toast, checkAndCreatePredefinedTemplates]);
 
 
   // Derived state for active/historical orders
