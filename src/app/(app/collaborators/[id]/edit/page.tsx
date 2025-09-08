@@ -44,16 +44,16 @@ export default function EditCollaboratorPage() {
     }
   }, [collaboratorId, loading, getCollaborator]);
 
-  const handleSave = (data: CollaboratorFormValues) => {
+  const handleSave = async (data: CollaboratorFormValues) => {
     if (!collaborator || !canEdit) return;
     const dataToSave = { ...collaborator, ...data };
-    updateCollaborator(collaborator.id, dataToSave);
+    await updateCollaborator(collaborator.id, dataToSave);
     toast({
       title: 'Colaborador Actualizado',
       description: `El colaborador "${data.name}" ha sido actualizado exitosamente.`,
       duration: 2000,
     });
-    setTimeout(() => router.push('/collaborators'), 2000);
+    router.push('/collaborators');
   };
   
   const handleDelete = async () => {
