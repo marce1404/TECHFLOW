@@ -27,8 +27,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
   const pathname = usePathname();
 
-  const fetchUsers = useCallback(async () => {
-    // This now only fetches users once if needed, but the listener below handles real-time.
+  const refetchUsers = useCallback(async () => {
     try {
         const usersCollection = await getDocs(collection(db, 'users'));
         const userList = usersCollection.docs.map(doc => doc.data() as AppUser);
@@ -39,30 +38,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    let unsubscribeUsers: Unsubscribe | undefined;
+    let unsubscribeProfile: Unsubscribe | undefined;
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       setLoading(true);
 
-      // Clean up previous listeners
-      if (unsubscribeUsers) unsubscribeUsers();
+      if (unsubscribeProfile) unsubscribeProfile();
 
       if (currentUser) {
         setUser(currentUser);
         const userDocRef = doc(db, 'users', currentUser.uid);
 
-        onSnapshot(userDocRef, (doc) => {
+        unsubscribeProfile = onSnapshot(userDocRef, (doc) => {
              if (doc.exists()) {
                 setUserProfile(doc.data() as AppUser);
+            } else {
+                setUserProfile(null);
             }
+        }, (error) => {
+            console.error("Error listening to user profile:", error);
+            setUserProfile(null);
         });
         
-        // Listen for real-time updates to all users
-        unsubscribeUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
-            const userList = snapshot.docs.map(doc => doc.data() as AppUser);
-            setUsers(userList);
-        });
-
       } else {
         setUser(null);
         setUserProfile(null);
@@ -73,7 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       unsubscribeAuth();
-      if (unsubscribeUsers) unsubscribeUsers();
+      if (unsubscribeProfile) unsubscribeProfile();
     };
   }, []);
   
@@ -89,7 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 
   return (
-    <AuthContext.Provider value={{ user, userProfile, users, loading, refetchUsers: fetchUsers }}>
+    <AuthContext.Provider value={{ user, userProfile, users, loading, refetchUsers }}>
       {children}
     </AuthContext.Provider>
   );
