@@ -1,11 +1,10 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { collection, doc, getDoc, getDocs, onSnapshot, Unsubscribe, writeBatch } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import type { AppUser } from '@/lib/types';
 import { useRouter, usePathname } from 'next/navigation';
 
@@ -25,28 +24,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname();
 
   useEffect(() => {
-    let unsubscribeProfile: Unsubscribe | undefined;
-
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
-      setLoading(true);
-
-      if (unsubscribeProfile) unsubscribeProfile();
-
       if (currentUser) {
         setUser(currentUser);
+        // Fetch user profile only once on auth state change
         const userDocRef = doc(db, 'users', currentUser.uid);
-
-        unsubscribeProfile = onSnapshot(userDocRef, (doc) => {
-             if (doc.exists()) {
-                setUserProfile(doc.data() as AppUser);
+        try {
+            const docSnap = await getDoc(userDocRef);
+            if (docSnap.exists()) {
+                setUserProfile(docSnap.data() as AppUser);
             } else {
+                console.warn(`No user profile found for UID: ${currentUser.uid}`);
                 setUserProfile(null);
             }
-        }, (error) => {
-            console.error("Error listening to user profile:", error);
+        } catch (error) {
+            console.error("Error fetching user profile:", error);
             setUserProfile(null);
-        });
-        
+        }
       } else {
         setUser(null);
         setUserProfile(null);
@@ -54,10 +48,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
     });
 
-    return () => {
-      unsubscribeAuth();
-      if (unsubscribeProfile) unsubscribeProfile();
-    };
+    return () => unsubscribeAuth();
   }, []);
   
   useEffect(() => {
