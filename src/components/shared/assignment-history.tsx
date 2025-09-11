@@ -7,7 +7,7 @@ import { DateRange } from 'react-day-picker';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Calendar as CalendarIcon } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -25,11 +25,14 @@ interface AssignmentHistoryProps {
   filterValue: string;
 }
 
+const ITEMS_PER_PAGE = 10;
+
 export default function AssignmentHistory({ title, description, filterKey, filterValue }: AssignmentHistoryProps) {
   const { workOrders } = useWorkOrders();
   const allWorkOrders = workOrders;
 
   const [date, setDate] = React.useState<DateRange | undefined>();
+  const [currentPage, setCurrentPage] = React.useState(1);
 
   const getStatusVariant = (
     status: WorkOrder['status']
@@ -49,7 +52,7 @@ export default function AssignmentHistory({ title, description, filterKey, filte
   
   const getStatusBadgeClass = (status: WorkOrder['status']) => {
     const normalizedStatus = normalizeString(status);
-    if (normalizedStatus === 'en proceso') {
+    if (normalizedStatus === 'en progreso') {
       return 'bg-green-500 text-white border-transparent';
     }
     if (normalizedStatus === 'por iniciar') {
@@ -90,6 +93,24 @@ export default function AssignmentHistory({ title, description, filterKey, filte
     return orders.sort((a, b) => new Date(b.date.replace(/-/g, '/')).getTime() - new Date(a.date.replace(/-/g, '/')).getTime());
 
   }, [allWorkOrders, date, filterKey, filterValue]);
+  
+  const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE);
+  const paginatedOrders = filteredOrders.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const handlePreviousPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
+  
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [date]);
 
   return (
     <Card>
@@ -113,11 +134,11 @@ export default function AssignmentHistory({ title, description, filterKey, filte
                 {date?.from ? (
                   date.to ? (
                     <>
-                      {format(date.from, "dd/MM/yyyy", {locale: es})} -{" "}
-                      {format(date.to, "dd/MM/yyyy", {locale: es})}
+                      {format(date.from, "yyyy-MM-dd", {locale: es})} -{" "}
+                      {format(date.to, "yyyy-MM-dd", {locale: es})}
                     </>
                   ) : (
-                    format(date.from, "dd/MM/yyyy", {locale: es})
+                    format(date.from, "yyyy-MM-dd", {locale: es})
                   )
                 ) : (
                   <span>Seleccionar rango de fechas</span>
@@ -149,8 +170,8 @@ export default function AssignmentHistory({ title, description, filterKey, filte
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {filteredOrders.length > 0 ? (
-                        filteredOrders.map(order => (
+                    {paginatedOrders.length > 0 ? (
+                        paginatedOrders.map(order => (
                             <TableRow key={order.id}>
                                 <TableCell>
                                     <Link href={`/orders/${order.id}/edit`} className="text-primary hover:underline">
@@ -158,7 +179,7 @@ export default function AssignmentHistory({ title, description, filterKey, filte
                                     </Link>
                                 </TableCell>
                                 <TableCell>{order.description}</TableCell>
-                                <TableCell>{format(new Date(order.date.replace(/-/g, '/')), 'dd/MM/yyyy', { locale: es })}</TableCell>
+                                <TableCell>{format(new Date(order.date.replace(/-/g, '/')), 'yyyy-MM-dd', { locale: es })}</TableCell>
                                 <TableCell>
                                     <Badge 
                                         variant={getStatusVariant(order.status)}
@@ -180,6 +201,31 @@ export default function AssignmentHistory({ title, description, filterKey, filte
             </Table>
         </div>
       </CardContent>
+        {totalPages > 1 && (
+            <CardFooter>
+                <div className="text-xs text-muted-foreground">
+                    Página {currentPage} de {totalPages}
+                </div>
+                <div className="flex items-center space-x-2 ml-auto">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handlePreviousPage}
+                        disabled={currentPage === 1}
+                    >
+                        Anterior
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleNextPage}
+                        disabled={currentPage === totalPages}
+                    >
+                        Siguiente
+                    </Button>
+                </div>
+            </CardFooter>
+        )}
     </Card>
   );
 }
