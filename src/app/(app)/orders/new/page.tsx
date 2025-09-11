@@ -40,7 +40,7 @@ export default function NewOrderPage() {
     const [client, setClient] = React.useState('');
     const [rut, setRut] = React.useState('');
     const [service, setService] = React.useState('');
-    const [startDate, setStartDate] = React.useState<Date>();
+    const [startDate, setStartDate] = React.useState<Date | undefined>(new Date());
     const [endDate, setEndDate] = React.useState<Date>();
     const [startTime, setStartTime] = React.useState('09:00');
     const [endTime, setEndTime] = React.useState('18:00');
@@ -277,7 +277,7 @@ export default function NewOrderPage() {
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <Label htmlFor="start-date">Fecha Inicio</Label>
+                                <Label htmlFor="start-date">Fecha de Creación (OT)</Label>
                                 <Popover>
                                     <PopoverTrigger asChild>
                                         <Button

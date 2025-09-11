@@ -344,7 +344,7 @@ export default function EditOrderPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label htmlFor="start-date">Fecha Inicio</Label>
+                            <Label htmlFor="start-date">Fecha Creación (OT)</Label>
                             <Controller
                                 control={methods.control}
                                 name="date"
