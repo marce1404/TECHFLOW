@@ -58,6 +58,8 @@ export default function NewOrderPage() {
     const [comercial, setComercial] = React.useState('');
     const [manualProgress, setManualProgress] = React.useState(0);
     
+    const [otNumber, setOtNumber] = React.useState('');
+
     // Invoice Management State
     const [invoices, setInvoices] = React.useState<Invoice[]>([]);
     const [newInvoiceNumber, setNewInvoiceNumber] = React.useState('');
@@ -65,7 +67,15 @@ export default function NewOrderPage() {
     const [newInvoiceAmount, setNewInvoiceAmount] = React.useState(0);
 
     const lastUsedOt = React.useMemo(() => getLastOtNumber(categoryPrefix), [categoryPrefix, getLastOtNumber, workOrders]);
-    const otNumber = React.useMemo(() => getNextOtNumber(categoryPrefix), [categoryPrefix, getNextOtNumber, workOrders]);
+    
+    React.useEffect(() => {
+        if (categoryPrefix) {
+            const nextOt = getNextOtNumber(categoryPrefix);
+            setOtNumber(nextOt);
+        } else {
+            setOtNumber('');
+        }
+    }, [categoryPrefix, workOrders, getNextOtNumber]);
 
 
     const technicians = collaborators
@@ -87,11 +97,11 @@ export default function NewOrderPage() {
 
 
   const handleCreateOrder = () => {
-    if (!description || !categoryPrefix || !otNumber) {
+    if (!description || !otNumber) {
         toast({
             variant: "destructive",
             title: "Campos Requeridos",
-            description: "Por favor, completa el número de OT, nombre y la categoría de la OT.",
+            description: "Por favor, completa el número de OT y el nombre de la OT.",
         });
         return;
     }
@@ -248,8 +258,8 @@ export default function NewOrderPage() {
                             id="ot_number" 
                             placeholder="N/A" 
                             value={otNumber}
-                            readOnly
-                            className="bg-muted w-32"
+                            onChange={(e) => setOtNumber(e.target.value)}
+                            className="w-48"
                         />
                     </div>
                      {lastUsedOt && (
@@ -639,3 +649,4 @@ export default function NewOrderPage() {
     </div>
   );
 }
+
