@@ -51,18 +51,22 @@ export default function ActiveOrdersPage() {
     }, [workOrders]);
     
     const filteredOrders = React.useMemo(() => {
-        let ordersToFilter = [...activeOrders];
+        // Start with all work orders for the simple search
+        let searchedOrders = workOrders;
 
-        // Apply simple search to all active orders
+        // Apply simple search across all orders first
         if (filters.search) {
-             ordersToFilter = ordersToFilter.filter(order =>
+             searchedOrders = searchedOrders.filter(order =>
                 order.ot_number.toLowerCase().includes(filters.search.toLowerCase()) ||
                 order.description.toLowerCase().includes(filters.search.toLowerCase()) ||
                 (order.client && order.client.toLowerCase().includes(filters.search.toLowerCase()))
             );
         }
 
-        // Apply advanced filters to the already searched list
+        // Now, from the searched results, take only the active ones for display on this page
+        let ordersToFilter = searchedOrders.filter(o => normalizeString(o.status) !== 'cerrada');
+
+        // Apply advanced filters to the remaining active orders
         if (filters.clients.length > 0) {
             ordersToFilter = ordersToFilter.filter(order => filters.clients.includes(order.client));
         }
@@ -88,7 +92,6 @@ export default function ActiveOrdersPage() {
             ordersToFilter = ordersToFilter.filter(order => new Date(order.date.replace(/-/g, '/')) <= filters.dateRange.to!);
         }
         
-        // Apply the final invoice status filter on the already filtered list
         if (filters.invoicedStatus === 'invoiced') {
             ordersToFilter = ordersToFilter.filter(order => {
                 const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
@@ -109,7 +112,7 @@ export default function ActiveOrdersPage() {
 
         return ordersToFilter;
 
-    }, [activeOrders, activeTab, filters]);
+    }, [workOrders, activeTab, filters]);
 
     const categories = [
         { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
@@ -132,7 +135,6 @@ export default function ActiveOrdersPage() {
     }
     
     const { totalPorFacturar, totalFacturado } = React.useMemo(() => {
-        // Calculate totals based on ALL active orders, regardless of table filters.
         return activeOrders.reduce((acc, order) => {
             const invoicedAmount = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
             const netPrice = order.netPrice || 0;
