@@ -33,10 +33,6 @@ export default function DashboardPage() {
     return workOrders.filter(o => normalizeString(o.status) !== 'cerrada');
   }, [workOrders]);
   
-  const historicalWorkOrders = React.useMemo(() => {
-    return workOrders.filter(o => normalizeString(o.status) === 'cerrada');
-  }, [workOrders]);
-
   const statusOrder: WorkOrder['status'][] = ['Atrasada', 'En Progreso', 'Pendiente', 'Por Iniciar'];
   
   const finalStatuses = ['cerrada'];
@@ -75,31 +71,18 @@ export default function DashboardPage() {
     return order.manualProgress || 0;
   };
   
-    const closedOrdersThisMonth = historicalWorkOrders.filter(order => {
+    const closedOrdersThisMonth = workOrders.filter(order => {
+        if (normalizeString(order.status) !== 'cerrada' || !order.endDate) {
+            return false;
+        }
+
         const today = new Date();
         const currentMonth = today.getMonth();
         const currentYear = today.getFullYear();
-
-        // Check if the closing date is in the current month
-        if (order.endDate) {
-            const closingDate = new Date(order.endDate.replace(/-/g, '/'));
-            if (closingDate.getMonth() === currentMonth && closingDate.getFullYear() === currentYear) {
-                return true;
-            }
-        }
         
-        // Fallback for imported/legacy data: check if 'facturado' is true and creation date is this month
-        if (order.facturado) {
-            const creationDateStr = order.createdAt || order.date;
-            if (creationDateStr) {
-                 const creationDate = new Date(creationDateStr.replace(/-/g, '/'));
-                 if (creationDate.getMonth() === currentMonth && creationDate.getFullYear() === currentYear) {
-                    return true;
-                 }
-            }
-        }
+        const closingDate = new Date(order.endDate.replace(/-/g, '/'));
 
-        return false;
+        return closingDate.getMonth() === currentMonth && closingDate.getFullYear() === currentYear;
     });
 
     const expiringItems = React.useMemo(() => {
