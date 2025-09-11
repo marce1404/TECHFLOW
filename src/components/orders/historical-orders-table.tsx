@@ -206,7 +206,7 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                             <Link href={`/orders/${order.id}/edit`} className="text-primary hover:underline">
                               {order.ot_number}
                             </Link>
-                             <div className="text-xs text-muted-foreground">{order.createdAt ? format(parseISO(order.createdAt), 'dd/MM/yy') : order.date}</div>
+                             <div className="text-xs text-muted-foreground">{order.createdAt || order.date}</div>
                           </TableCell>
                           <TableCell>{order.description}</TableCell>
                           <TableCell>{order.client}</TableCell>
