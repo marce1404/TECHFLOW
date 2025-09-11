@@ -240,64 +240,47 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const getNextOtNumber = useCallback((prefix: string): string => {
     if (!prefix) return '';
 
-    // Filter orders that have the correct prefix (e.g., "OT-123")
-    const prefixedOrders = workOrders.filter(o => 
-        o.ot_number && 
-        typeof o.ot_number === 'string' && 
-        o.ot_number.startsWith(prefix + '-')
+    const prefixedOrders = workOrders.filter(o =>
+      o.ot_number && typeof o.ot_number === 'string' && o.ot_number.startsWith(prefix)
     );
 
-    // Filter orders that are purely numeric (only for "OT" prefix)
     let numericOrders: WorkOrder[] = [];
     if (prefix === 'OT') {
-        numericOrders = workOrders.filter(o => 
-            o.ot_number && 
-            /^\d+$/.test(o.ot_number)
-        );
+      numericOrders = workOrders.filter(o =>
+        o.ot_number && /^\d+$/.test(o.ot_number)
+      );
     }
 
     const allRelevantOrders = [...prefixedOrders, ...numericOrders];
 
-    if (allRelevantOrders.length === 0) return `${prefix}-1`;
+    if (allRelevantOrders.length === 0) return `${prefix}1`;
 
     const maxNumber = allRelevantOrders.reduce((max, o) => {
-        let numberPart: string | undefined;
-        if (o.ot_number.includes('-')) {
-            numberPart = o.ot_number.split('-')[1];
-        } else {
-            numberPart = o.ot_number;
-        }
-
-        if (numberPart) {
-            const numericPart = parseInt(numberPart, 10);
-            if (!isNaN(numericPart) && numericPart > max) {
-                return numericPart;
-            }
-        }
-        return max;
+      const numberPart = o.ot_number.replace(prefix, '');
+      const numericPart = parseInt(numberPart, 10);
+      
+      if (!isNaN(numericPart) && numericPart > max) {
+        return numericPart;
+      }
+      return max;
     }, 0);
     
-    return `${prefix}-${maxNumber + 1}`;
+    return `${prefix}${maxNumber + 1}`;
   }, [workOrders]);
 
 
   const getLastOtNumber = useCallback((prefix: string): string | null => {
     if (!prefix) return null;
-
-    // Filter orders that have the correct prefix (e.g., "OT-123")
-    const prefixedOrders = workOrders.filter(o => 
-        o.ot_number && 
-        typeof o.ot_number === 'string' && 
-        o.ot_number.startsWith(prefix + '-')
+    
+    const prefixedOrders = workOrders.filter(o =>
+      o.ot_number && typeof o.ot_number === 'string' && o.ot_number.startsWith(prefix)
     );
 
-    // Filter orders that are purely numeric (only for "OT" prefix)
     let numericOrders: WorkOrder[] = [];
     if (prefix === 'OT') {
-        numericOrders = workOrders.filter(o => 
-            o.ot_number && 
-            /^\d+$/.test(o.ot_number)
-        );
+      numericOrders = workOrders.filter(o =>
+        o.ot_number && /^\d+$/.test(o.ot_number)
+      );
     }
     
     const allRelevantOrders = [...prefixedOrders, ...numericOrders];
@@ -308,20 +291,12 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     let lastOtNumber: string | null = null;
 
     allRelevantOrders.forEach(o => {
-        let numberPart: string | undefined;
-        if (o.ot_number.includes('-')) {
-            numberPart = o.ot_number.split('-')[1];
-        } else {
-            numberPart = o.ot_number;
-        }
-
-        if (numberPart) {
-            const numericPart = parseInt(numberPart, 10);
-            if (!isNaN(numericPart) && numericPart > maxNumber) {
-                maxNumber = numericPart;
-                lastOtNumber = o.ot_number;
-            }
-        }
+      const numberPart = o.ot_number.replace(prefix, '');
+      const numericPart = parseInt(numberPart, 10);
+      if (!isNaN(numericPart) && numericPart > maxNumber) {
+        maxNumber = numericPart;
+        lastOtNumber = o.ot_number;
+      }
     });
 
     return lastOtNumber;
@@ -670,5 +645,7 @@ export const useWorkOrders = () => {
   }
   return context;
 };
+
+
 
 

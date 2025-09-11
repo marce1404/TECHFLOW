@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 export default function NewOrderPage() {
     const router = useRouter();
     const { toast } = useToast();
-    const { otCategories, services, addOrder, getNextOtNumber, collaborators, otStatuses, vehicles, getLastOtNumber, workOrders } = useWorkOrders();
+    const { otCategories, services, addOrder, getNextOtNumber, collaborators, otStatuses, vehicles, getLastOtNumber } = useWorkOrders();
     const { userProfile } = useAuth();
     
     const canCreate = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
@@ -62,13 +63,8 @@ export default function NewOrderPage() {
     const [newInvoiceDate, setNewInvoiceDate] = React.useState<Date | undefined>(new Date());
     const [newInvoiceAmount, setNewInvoiceAmount] = React.useState(0);
 
-    const lastUsedOt = React.useMemo(() => {
-        return getLastOtNumber(categoryPrefix);
-    }, [categoryPrefix, getLastOtNumber]);
-    
-    const otNumber = React.useMemo(() => {
-        return getNextOtNumber(categoryPrefix);
-    }, [categoryPrefix, getNextOtNumber]);
+    const lastUsedOt = React.useMemo(() => getLastOtNumber(categoryPrefix), [categoryPrefix, getLastOtNumber]);
+    const otNumber = React.useMemo(() => getNextOtNumber(categoryPrefix), [categoryPrefix, getNextOtNumber]);
 
 
     const technicians = collaborators
@@ -614,3 +610,5 @@ export default function NewOrderPage() {
     </div>
   );
 }
+
+
