@@ -207,7 +207,7 @@ export default function ActiveOrdersPage() {
                             </div>
                         </div>
                         <TabsContent value={activeTab} className="mt-4">
-                            <OrdersTable orders={filteredOrders} />
+                            <OrdersTable orders={filteredOrders} isActivityTab={activeTab === 'actividades'} />
                         </TabsContent>
                     </Tabs>
                 </CardHeader>

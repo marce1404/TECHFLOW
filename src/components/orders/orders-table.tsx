@@ -19,6 +19,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { cn, normalizeString } from '@/lib/utils';
@@ -28,13 +31,14 @@ import { es } from 'date-fns/locale';
 
 interface OrdersTableProps {
     orders: WorkOrder[];
+    isActivityTab?: boolean;
 }
 
-export default function OrdersTable({ orders }: OrdersTableProps) {
+export default function OrdersTable({ orders, isActivityTab = false }: OrdersTableProps) {
   const [sortConfig, setSortConfig] = useState<{ key: keyof WorkOrder | 'facturado' | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
-  const { updateOrder, otStatuses, promptToCloseOrder } = useWorkOrders();
+  const { updateOrder, otStatuses, promptToCloseOrder, otCategories, convertActivityToWorkOrder } = useWorkOrders();
   const { userProfile } = useAuth();
 
   const canChangeStatus = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
@@ -50,6 +54,8 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
       case 'suspendida':
       case 'pendiente':
         return 'secondary';
+      case 'actividad':
+        return 'default';
       default: // Por Iniciar
         return 'outline';
     }
@@ -65,6 +71,9 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
     }
      if (normalizedStatus === 'cerrada') {
         return 'bg-background text-foreground'
+    }
+    if (normalizedStatus === 'actividad') {
+        return 'bg-purple-500 text-white border-transparent';
     }
     return '';
   };
@@ -233,11 +242,25 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                                     </Badge>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
-                                    {otStatuses.map(status => (
-                                        <DropdownMenuItem key={status.id} onSelect={() => handleStatusChange(order, status.name as WorkOrder['status'])}>
-                                            {status.name.toUpperCase()}
-                                        </DropdownMenuItem>
-                                    ))}
+                                    {isActivityTab ? (
+                                        <>
+                                            <DropdownMenuItem onSelect={() => handleStatusChange(order, 'Actividad')}>Actividad</DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleStatusChange(order, 'Cerrada')}>Cerrada</DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuLabel>Convertir en...</DropdownMenuLabel>
+                                            {otCategories.filter(c => c.status === 'Activa').map(cat => (
+                                                <DropdownMenuItem key={cat.id} onSelect={() => convertActivityToWorkOrder(order.id, cat.prefix)}>
+                                                    {cat.name} ({cat.prefix})
+                                                </DropdownMenuItem>
+                                            ))}
+                                        </>
+                                    ) : (
+                                        otStatuses.map(status => (
+                                            <DropdownMenuItem key={status.id} onSelect={() => handleStatusChange(order, status.name as WorkOrder['status'])}>
+                                                {status.name.toUpperCase()}
+                                            </DropdownMenuItem>
+                                        ))
+                                    )}
                                 </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>

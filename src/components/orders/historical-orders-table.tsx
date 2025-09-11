@@ -50,6 +50,8 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
       case 'suspendida':
       case 'pendiente':
         return 'secondary';
+       case 'actividad':
+        return 'outline';
       default:
         return 'outline';
     }
@@ -65,6 +67,9 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
     }
      if (normalizedStatus === 'cerrada') {
         return 'bg-background text-foreground'
+    }
+    if (normalizedStatus === 'actividad') {
+        return 'bg-purple-500 text-white border-transparent';
     }
     return '';
   };
@@ -141,7 +146,7 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
   ];
 
   const handleStatusChange = (order: WorkOrder, newStatus: WorkOrder['status']) => {
-    if (newStatus.toLowerCase() === 'cerrada') {
+    if (normalizeString(newStatus) === 'cerrada' && !order.isActivity) {
         promptToCloseOrder(order);
     } else {
         updateOrder(order.id, { ...order, status: newStatus });

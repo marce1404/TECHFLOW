@@ -68,6 +68,7 @@ interface WorkOrdersContextType {
   updateCompanyInfo: (info: CompanyInfo) => Promise<void>;
   updateSmtpConfig: (config: SmtpConfig) => Promise<void>;
   promptToCloseOrder: (order: WorkOrder) => void;
+  convertActivityToWorkOrder: (activityId: string, newPrefix: string) => Promise<void>;
   auditLog: any[];
   fetchData: () => Promise<void>;
 }
@@ -578,6 +579,26 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     await fetchData(); // Refetch settings
   };
   
+  const convertActivityToWorkOrder = async (activityId: string, newPrefix: string) => {
+    const activity = workOrders.find(o => o.id === activityId);
+    if (!activity || !activity.isActivity) {
+        toast({ variant: "destructive", title: "Error", description: "No se puede convertir este item." });
+        return;
+    }
+    
+    const newOtNumber = getNextOtNumber(newPrefix);
+
+    const updatedData: Partial<WorkOrder> = {
+        isActivity: false,
+        ot_number: newOtNumber,
+        status: 'Por Iniciar',
+    };
+
+    await updateOrder(activityId, updatedData);
+    toast({ title: "Actividad Convertida", description: `La actividad ahora es la OT ${newOtNumber}.` });
+    await addLogEntry(`Convirtió la actividad '${activity.description}' a la OT ${newOtNumber}`);
+  };
+
   return (
     <WorkOrdersContext.Provider value={{ 
         workOrders, 
@@ -634,6 +655,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         updateCompanyInfo,
         updateSmtpConfig,
         promptToCloseOrder,
+        convertActivityToWorkOrder,
         auditLog,
         fetchData,
     }}>
