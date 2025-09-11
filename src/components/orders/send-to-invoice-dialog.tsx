@@ -206,9 +206,9 @@ export function SendToInvoiceDialog({ open, onOpenChange, order }: SendToInvoice
           <DialogDescription>
             Se enviará un correo con los detalles de la OT <span className="font-bold">{order?.ot_number}</span> para que sea facturada.
             {order?.invoiceRequestDates && order.invoiceRequestDates.length > 0 && (
-                <div className="text-xs text-muted-foreground pt-2">
+                <span className="text-xs text-muted-foreground block mt-2">
                     Último envío: {format(new Date(order.invoiceRequestDates[order.invoiceRequestDates.length - 1]), 'dd/MM/yyyy HH:mm', { locale: es })}
-                </div>
+                </span>
             )}
           </DialogDescription>
         </DialogHeader>
