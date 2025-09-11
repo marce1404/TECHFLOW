@@ -51,22 +51,19 @@ export default function ActiveOrdersPage() {
     }, [workOrders]);
     
     const filteredOrders = React.useMemo(() => {
-        // Start with all work orders for the simple search
-        let searchedOrders = workOrders;
-
-        // Apply simple search across all orders first
+        // If there's a search term, search all orders and return matches.
         if (filters.search) {
-             searchedOrders = searchedOrders.filter(order =>
+             return workOrders.filter(order =>
                 order.ot_number.toLowerCase().includes(filters.search.toLowerCase()) ||
                 order.description.toLowerCase().includes(filters.search.toLowerCase()) ||
                 (order.client && order.client.toLowerCase().includes(filters.search.toLowerCase()))
             );
         }
 
-        // Now, from the searched results, take only the active ones for display on this page
-        let ordersToFilter = searchedOrders.filter(o => normalizeString(o.status) !== 'cerrada');
+        // If no search term, proceed with advanced filters and tabs on active orders.
+        let ordersToFilter = activeOrders;
 
-        // Apply advanced filters to the remaining active orders
+        // Apply advanced filters to the active orders
         if (filters.clients.length > 0) {
             ordersToFilter = ordersToFilter.filter(order => filters.clients.includes(order.client));
         }
@@ -112,7 +109,7 @@ export default function ActiveOrdersPage() {
 
         return ordersToFilter;
 
-    }, [workOrders, activeTab, filters]);
+    }, [workOrders, activeOrders, activeTab, filters]);
 
     const categories = [
         { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
