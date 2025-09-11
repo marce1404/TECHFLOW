@@ -77,9 +77,28 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
     setSortConfig({ key, direction });
     setCurrentPage(1);
   };
+  
+    const getInvoiceStatusSortValue = (order: WorkOrder): number => {
+        if (order.facturado) return 3; // Fully invoiced (legacy)
+        const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
+        const netPrice = order.netPrice || 0;
+        if (netPrice > 0 && totalInvoiced >= netPrice) return 3; // Fully invoiced
+        if (totalInvoiced > 0) return 2; // Partially invoiced
+        if (netPrice > 0) return 1; // Invoiceable but not invoiced
+        return 0; // Not invoiceable
+    }
+
 
   const sortedData = [...orders].sort((a, b) => {
     if (sortConfig.key) {
+        if (sortConfig.key === 'facturado') {
+            const aValue = getInvoiceStatusSortValue(a);
+            const bValue = getInvoiceStatusSortValue(b);
+             if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
+             if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
+             return 0;
+        }
+
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
       
@@ -178,7 +197,12 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                             </Button>
                         </TableHead>
                     ))}
-                    <TableHead className="w-[5%] text-center">Facturado</TableHead>
+                    <TableHead className="w-[5%] text-center">
+                         <Button variant="ghost" onClick={() => requestSort('facturado')}>
+                            Facturado
+                            <ArrowUpDown className="ml-2 h-4 w-4" />
+                        </Button>
+                    </TableHead>
                 </TableRow>
                 </TableHeader>
                 <TableBody>

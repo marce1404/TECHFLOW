@@ -30,7 +30,7 @@ interface HistoricalOrdersTableProps {
 }
 
 export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableProps) {
-  const [sortConfig, setSortConfig] = useState<{ key: keyof WorkOrder | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
+  const [sortConfig, setSortConfig] = useState<{ key: keyof WorkOrder | 'facturado' | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
   const { updateOrder, otStatuses, promptToCloseOrder } = useWorkOrders();
@@ -69,7 +69,7 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
   };
 
 
-  const requestSort = (key: keyof WorkOrder) => {
+  const requestSort = (key: keyof WorkOrder | 'facturado') => {
     let direction: 'ascending' | 'descending' = 'ascending';
     if (sortConfig.key === key && sortConfig.direction === 'ascending') {
       direction = 'descending';
@@ -77,9 +77,27 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
     setSortConfig({ key, direction });
     setCurrentPage(1);
   };
+  
+   const getInvoiceStatusSortValue = (order: WorkOrder): number => {
+        if (order.facturado) return 3; // Fully invoiced (legacy)
+        const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
+        const netPrice = order.netPrice || 0;
+        if (netPrice > 0 && totalInvoiced >= netPrice) return 3; // Fully invoiced
+        if (totalInvoiced > 0) return 2; // Partially invoiced
+        if (netPrice > 0) return 1; // Invoiceable but not invoiced
+        return 0; // Not invoiceable
+    }
 
   const sortedData = [...orders].sort((a, b) => {
     if (sortConfig.key) {
+        if (sortConfig.key === 'facturado') {
+            const aValue = getInvoiceStatusSortValue(a);
+            const bValue = getInvoiceStatusSortValue(b);
+             if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
+             if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
+             return 0;
+        }
+
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
       
@@ -152,7 +170,12 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                             </Button>
                         </TableHead>
                     ))}
-                    <TableHead className="w-[5%] text-center">Facturado</TableHead>
+                    <TableHead className="w-[5%] text-center">
+                        <Button variant="ghost" onClick={() => requestSort('facturado')}>
+                            Facturado
+                            <ArrowUpDown className="ml-2 h-4 w-4" />
+                        </Button>
+                    </TableHead>
                 </TableRow>
                 </TableHeader>
                 <TableBody>
