@@ -192,8 +192,8 @@ export default function NewOrderPage() {
       <Card>
         <CardContent className="p-6">
             <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="md:col-span-2">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="md:col-span-3">
                         <Label htmlFor="ot-name">Nombre de OT *</Label>
                         <Input 
                             id="ot-name" 
@@ -202,7 +202,7 @@ export default function NewOrderPage() {
                             onChange={(e) => setDescription(e.target.value)}
                         />
                     </div>
-                     <div>
+                     <div className="md:col-span-1">
                         <Label htmlFor="creation-date">Fecha de Creación (OT)</Label>
                         <Popover>
                             <PopoverTrigger asChild>
@@ -229,7 +229,7 @@ export default function NewOrderPage() {
                         </Popover>
                     </div>
                 </div>
-                 <div>
+                 <div className="space-y-1">
                     <Label htmlFor="ot_number">Número de OT *</Label>
                     <div className="flex items-center gap-4">
                          <div className="w-48">
@@ -246,10 +246,10 @@ export default function NewOrderPage() {
                          </div>
                         <Input 
                             id="ot_number" 
-                            placeholder="Seleccione categoría para generar" 
+                            placeholder="N/A" 
                             value={otNumber}
                             readOnly
-                            className="bg-muted flex-1"
+                            className="bg-muted w-32"
                         />
                     </div>
                      {lastUsedOt && (

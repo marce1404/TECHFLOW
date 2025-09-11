@@ -254,8 +254,8 @@ export default function EditOrderPage() {
         <fieldset disabled={!canEdit}>
         <CardContent className="p-6">
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="md:col-span-2">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="md:col-span-3">
                   <Label htmlFor="ot-name">Nombre de OT *</Label>
                   <Controller
                     control={methods.control}
@@ -269,7 +269,7 @@ export default function EditOrderPage() {
                     )}
                    />
                 </div>
-                 <div>
+                 <div className="md:col-span-1">
                     <Label htmlFor="createdAt">Fecha de Creación (OT)</Label>
                     <Controller
                         control={methods.control}
@@ -302,19 +302,16 @@ export default function EditOrderPage() {
                     />
                 </div>
             </div>
-             <div>
-                <Label htmlFor="ot_number">Número de OT *</Label>
-                <Controller
-                    control={methods.control}
-                    name="ot_number"
-                    render={({ field }) => (
-                        <Input
+             <div className="flex items-center gap-4">
+                <div className="w-48">
+                    <Label htmlFor="ot_number">Número de OT *</Label>
+                     <Input
                         id="ot_number"
-                        {...field}
-                        placeholder="Ej: OT1234"
-                        />
-                    )}
-                />
+                        value={methods.watch('ot_number')}
+                        readOnly
+                        className="bg-muted"
+                    />
+                </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                 
@@ -918,3 +915,4 @@ export default function EditOrderPage() {
     </>
   );
 }
+
