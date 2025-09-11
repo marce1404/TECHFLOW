@@ -16,7 +16,7 @@ import { normalizeString } from "@/lib/utils";
 
 
 export default function HistoryPage() {
-    const { historicalWorkOrders, otCategories } = useWorkOrders();
+    const { workOrders, otCategories } = useWorkOrders();
     const [activeTab, setActiveTab] = React.useState('todos');
     const [filters, setFilters] = React.useState<Filters>({
       search: '',
@@ -43,49 +43,61 @@ export default function HistoryPage() {
         setActiveTab(categoryPrefix || 'todos');
     }
     
-    const filteredOrders = React.useMemo(() => {
-        let orders = historicalWorkOrders;
+    const historicalItems = React.useMemo(() => {
+        return workOrders.filter(o => normalizeString(o.status) === 'cerrada');
+    }, [workOrders]);
 
-        if (activeTab !== 'todos') {
-            orders = orders.filter(order => order.ot_number.startsWith(activeTab));
-        }
+    const historicalWorkOrders = React.useMemo(() => historicalItems.filter(item => !item.isActivity), [historicalItems]);
+    const historicalActivities = React.useMemo(() => historicalItems.filter(item => item.isActivity), [historicalItems]);
+
+    const filteredOrders = React.useMemo(() => {
+        let baseItems: WorkOrder[];
         
+        if (activeTab === 'actividades') {
+            baseItems = historicalActivities;
+        } else if (activeTab === 'todos') {
+            baseItems = historicalWorkOrders;
+        } else {
+            baseItems = historicalWorkOrders.filter(order => order.ot_number.startsWith(activeTab));
+        }
+
         // Apply simple search
+        let ordersToFilter = baseItems;
         if (filters.search) {
-             orders = orders.filter(order =>
+             ordersToFilter = baseItems.filter(order =>
                 order.ot_number.toLowerCase().includes(filters.search.toLowerCase()) ||
-                order.description.toLowerCase().includes(filters.search.toLowerCase()) ||
-                order.client.toLowerCase().includes(filters.search.toLowerCase())
+                (order.description && order.description.toLowerCase().includes(filters.search.toLowerCase())) ||
+                (order.client && order.client.toLowerCase().includes(filters.search.toLowerCase()))
             );
         }
         
         // Apply advanced filters
         if (filters.clients.length > 0) {
-            orders = orders.filter(order => filters.clients.includes(order.client));
+            ordersToFilter = ordersToFilter.filter(order => filters.clients.includes(order.client));
         }
         if (filters.services.length > 0) {
-            orders = orders.filter(order => filters.services.includes(order.service));
+            ordersToFilter = ordersToFilter.filter(order => filters.services.includes(order.service));
         }
         if (filters.technicians.length > 0) {
-            orders = orders.filter(order => (order.technicians || []).some(t => filters.technicians.includes(t)));
+            ordersToFilter = ordersToFilter.filter(order => (order.technicians || []).some(t => filters.technicians.includes(t)));
         }
         if (filters.supervisors.length > 0) {
-            orders = orders.filter(order => (order.assigned || []).some(s => filters.supervisors.includes(s)));
+            ordersToFilter = ordersToFilter.filter(order => (order.assigned || []).some(s => filters.supervisors.includes(s)));
         }
         if (filters.priorities.length > 0) {
-            orders = orders.filter(order => filters.priorities.includes(order.priority));
+            ordersToFilter = ordersToFilter.filter(order => filters.priorities.includes(order.priority));
         }
         if (filters.statuses.length > 0) {
-            orders = orders.filter(order => filters.statuses.includes(order.status));
+            ordersToFilter = ordersToFilter.filter(order => filters.statuses.includes(order.status));
         }
         if (filters.dateRange.from) {
-            orders = orders.filter(order => new Date(order.date.replace(/-/g, '/')) >= filters.dateRange.from!);
+            ordersToFilter = ordersToFilter.filter(order => new Date(order.date.replace(/-/g, '/')) >= filters.dateRange.from!);
         }
         if (filters.dateRange.to) {
-            orders = orders.filter(order => new Date(order.date.replace(/-/g, '/')) <= filters.dateRange.to!);
+            ordersToFilter = ordersToFilter.filter(order => new Date(order.date.replace(/-/g, '/')) <= filters.dateRange.to!);
         }
         if (filters.invoicedStatus !== 'all') {
-            orders = orders.filter(order => {
+            ordersToFilter = ordersToFilter.filter(order => {
                 const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
                 const netPrice = order.netPrice || 0;
                 
@@ -102,8 +114,8 @@ export default function HistoryPage() {
         }
 
 
-        return orders;
-    }, [historicalWorkOrders, activeTab, filters]);
+        return ordersToFilter;
+    }, [historicalWorkOrders, historicalActivities, activeTab, filters]);
 
 
     const categories = [
@@ -114,7 +126,8 @@ export default function HistoryPage() {
                 value: cat.prefix,
                 label: `${cat.name} (${cat.prefix})`,
                 prefix: cat.prefix,
-            }))
+            })),
+        { id: "actividades", value: "actividades", label: "Actividades", prefix: 'actividades' },
     ];
     
     const formatCurrency = (value: number) => {

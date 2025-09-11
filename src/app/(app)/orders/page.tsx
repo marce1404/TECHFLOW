@@ -46,24 +46,35 @@ export default function ActiveOrdersPage() {
         setActiveTab(categoryPrefix || 'todos');
     };
     
-    const activeOrders = React.useMemo(() => {
+    const activeItems = React.useMemo(() => {
         return workOrders.filter(o => normalizeString(o.status) !== 'cerrada');
     }, [workOrders]);
+
+    const activeWorkOrders = React.useMemo(() => activeItems.filter(item => !item.isActivity), [activeItems]);
+    const activeActivities = React.useMemo(() => activeItems.filter(item => item.isActivity), [activeItems]);
     
     const filteredOrders = React.useMemo(() => {
-        // If there's a search term, search all orders and return matches.
+        let baseItems: WorkOrder[];
+
+        if (activeTab === 'actividades') {
+            baseItems = activeActivities;
+        } else if (activeTab === 'todos') {
+            baseItems = activeWorkOrders;
+        } else {
+            baseItems = activeWorkOrders.filter(order => order.ot_number.startsWith(activeTab));
+        }
+
+        // Apply search first
+        let ordersToFilter = baseItems;
         if (filters.search) {
-             return workOrders.filter(order =>
+             ordersToFilter = baseItems.filter(order =>
                 order.ot_number.toLowerCase().includes(filters.search.toLowerCase()) ||
-                order.description.toLowerCase().includes(filters.search.toLowerCase()) ||
+                (order.description && order.description.toLowerCase().includes(filters.search.toLowerCase())) ||
                 (order.client && order.client.toLowerCase().includes(filters.search.toLowerCase()))
             );
         }
 
-        // If no search term, proceed with advanced filters and tabs on active orders.
-        let ordersToFilter = activeOrders;
-
-        // Apply advanced filters to the active orders
+        // Then apply advanced filters
         if (filters.clients.length > 0) {
             ordersToFilter = ordersToFilter.filter(order => filters.clients.includes(order.client));
         }
@@ -102,14 +113,9 @@ export default function ActiveOrdersPage() {
             });
         }
 
-        // Apply tab filter as a final step
-        if (activeTab !== 'todos') {
-            ordersToFilter = ordersToFilter.filter(order => order.ot_number.startsWith(activeTab));
-        }
-
         return ordersToFilter;
 
-    }, [workOrders, activeOrders, activeTab, filters]);
+    }, [workOrders, activeTab, filters, activeActivities, activeWorkOrders]);
 
     const categories = [
         { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
@@ -120,7 +126,8 @@ export default function ActiveOrdersPage() {
                 value: cat.prefix,
                 label: `${cat.name} (${cat.prefix})`,
                 prefix: cat.prefix,
-            }))
+            })),
+        { id: "actividades", value: "actividades", label: "Actividades", prefix: 'actividades' },
     ];
     
     const formatCurrency = (value: number) => {
@@ -132,7 +139,7 @@ export default function ActiveOrdersPage() {
     }
     
     const { totalPorFacturar, totalFacturado } = React.useMemo(() => {
-        return activeOrders.reduce((acc, order) => {
+        return activeWorkOrders.reduce((acc, order) => {
             const invoicedAmount = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
             const netPrice = order.netPrice || 0;
             const pendingAmount = netPrice - invoicedAmount;
@@ -145,7 +152,7 @@ export default function ActiveOrdersPage() {
 
             return acc;
         }, { totalPorFacturar: 0, totalFacturado: 0 });
-    }, [activeOrders]);
+    }, [activeWorkOrders]);
 
 
     return (
