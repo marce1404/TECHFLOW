@@ -56,7 +56,7 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
   
   const getStatusBadgeClass = (status: WorkOrder['status']) => {
     const normalizedStatus = normalizeString(status);
-    if (normalizedStatus === 'en proceso') {
+    if (normalizedStatus === 'en progreso') {
       return 'bg-green-500 text-white border-transparent';
     }
      if (normalizedStatus === 'por iniciar') {
@@ -187,7 +187,7 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                           <TableCell>{order.description}</TableCell>
                           <TableCell>{order.client}</TableCell>
                           <TableCell>{order.service}</TableCell>
-                          <TableCell>{(order.assigned || []).join(', ')}</TableCell>
+                          <TableCell>{Array.isArray(order.assigned) ? order.assigned.join(', ') : order.assigned}</TableCell>
                           <TableCell>{order.comercial}</TableCell>
                            <TableCell className="text-right">{formatCurrency(order.netPrice)}</TableCell>
                           <TableCell>

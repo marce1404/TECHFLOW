@@ -194,7 +194,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                           <TableCell>{order.description}</TableCell>
                           <TableCell>{order.client}</TableCell>
                           <TableCell>{order.service}</TableCell>
-                          <TableCell>{(order.assigned || []).join(', ')}</TableCell>
+                          <TableCell>{Array.isArray(order.assigned) ? order.assigned.join(', ') : order.assigned}</TableCell>
                           <TableCell>{order.comercial}</TableCell>
                           <TableCell className="text-right">{formatCurrency(order.netPrice)}</TableCell>
                           <TableCell>
