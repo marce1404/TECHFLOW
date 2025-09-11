@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -15,6 +14,9 @@ import {
   add,
   isSameDay,
   isWithinInterval,
+  parseISO,
+  startOfDay,
+  endOfDay,
 } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, XIcon } from 'lucide-react';
@@ -86,8 +88,14 @@ export function PlannerCalendar({ workOrders, onDayClick, canSchedule }: Planner
     return workOrders
       .filter(order => {
         if (!order.date) return false;
-        const startDate = new Date(order.date);
-        const endDate = order.endDate ? new Date(order.endDate) : startDate; // Fallback to startDate if endDate is missing
+        // The date from firestore might be a string, so we parse it.
+        // Adding replace to handle both '2024-01-01' and '2024/01/01'
+        const startDate = startOfDay(new Date(order.date.replace(/-/g, '/')));
+        // If endDate is missing or empty, use startDate. Ensure end of day for interval checks.
+        const endDate = order.endDate 
+            ? endOfDay(new Date(order.endDate.replace(/-/g, '/')))
+            : endOfDay(startDate);
+
         return isWithinInterval(day, { start: startDate, end: endDate });
       })
       .sort((a, b) => (a.startTime || '00:00').localeCompare(b.startTime || '00:00'));

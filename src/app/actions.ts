@@ -503,3 +503,97 @@ export async function changeUserPasswordAction(
         return { success: false, message: error.message };
     }
 }
+
+type ActivityEmailData = {
+    activityName: string;
+    startDate: string;
+    startTime: string;
+    endTime: string;
+    organizer: string;
+    assigned: string;
+    technicians: string;
+};
+
+export async function sendActivityEmailAction(
+    to: string[],
+    data: ActivityEmailData,
+    config: SmtpConfig,
+): Promise<{ success: boolean; message: string }> {
+    const { host, port, secure, user, pass, fromName, fromEmail } = config;
+
+    let transporter;
+    try {
+        transporter = nodemailer.createTransport({
+            host, port, secure: secure === 'ssl', auth: { user, pass },
+             ...(secure === 'starttls' && { tls: { ciphers: 'SSLv3' }})
+        });
+        await transporter.verify();
+    } catch (error: any) {
+        console.error("Error verifying SMTP transporter for activity:", error);
+        return { success: false, message: `Error de conexión SMTP: ${error.message}` };
+    }
+
+    const subject = `Nueva Actividad Agendada: ${data.activityName}`;
+    
+    const htmlBody = `
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #333; line-height: 1.5; }
+                .container { max-width: 600px; margin: 20px auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #f8fafc; }
+                .header { text-align: center; padding-bottom: 15px; margin-bottom: 15px; border-bottom: 2px solid #8b5cf6; } /* Purple */
+                .header h1 { font-size: 24px; color: #8b5cf6; margin: 0; }
+                .section { margin-bottom: 25px; }
+                .section h2 { font-size: 18px; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; margin-top: 0; }
+                .details-table { width: 100%; border-collapse: collapse; }
+                .details-table td { padding: 8px 4px; font-size: 14px; }
+                .details-table td:first-child { font-weight: 600; color: #475569; width: 40%; }
+                .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #64748b; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>Nueva Actividad Agendada</h1>
+                </div>
+                <p>Hola,</p>
+                <p>Se ha agendado una nueva actividad en el planificador con los siguientes detalles:</p>
+
+                <div class="section">
+                    <h2>Detalles de la Actividad</h2>
+                    <table class="details-table">
+                        <tr><td>Actividad</td><td>${data.activityName}</td></tr>
+                        <tr><td>Fecha</td><td>${data.startDate}</td></tr>
+                        <tr><td>Horario</td><td>${data.startTime} - ${data.endTime}</td></tr>
+                        <tr><td>Organizador</td><td>${data.organizer}</td></tr>
+                        <tr><td>Encargados</td><td>${data.assigned}</td></tr>
+                        <tr><td>Técnicos</td><td>${data.technicians}</td></tr>
+                    </table>
+                </div>
+
+                <div class="footer">
+                    <p>Este es un correo generado automáticamente por el sistema de gestión OSESA.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+
+    const mailOptions = {
+        from: `"${fromName}" <${fromEmail}>`,
+        to: to.join(','),
+        subject,
+        html: htmlBody,
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        return { success: true, message: '¡Notificación de actividad enviada con éxito!' };
+    } catch (error: any) {
+        console.error("Error sending activity email:", error);
+        return { success: false, message: `Error al enviar el correo de actividad: ${error.message}` };
+    }
+}
