@@ -40,7 +40,7 @@ export default function NewOrderPage() {
     const [client, setClient] = React.useState('');
     const [rut, setRut] = React.useState('');
     const [service, setService] = React.useState('');
-    const [startDate, setStartDate] = React.useState<Date | undefined>(new Date());
+    const [creationDate, setCreationDate] = React.useState<Date | undefined>(new Date());
     const [endDate, setEndDate] = React.useState<Date>();
     const [startTime, setStartTime] = React.useState('09:00');
     const [endTime, setEndTime] = React.useState('18:00');
@@ -109,7 +109,7 @@ export default function NewOrderPage() {
         client,
         rut,
         service,
-        date: startDate ? format(startDate, 'yyyy-MM-dd') : '',
+        date: creationDate ? format(creationDate, 'yyyy-MM-dd') : '',
         endDate: endDate ? format(endDate, 'yyyy-MM-dd') : '',
         startTime,
         endTime,
@@ -284,18 +284,18 @@ export default function NewOrderPage() {
                                         variant={"outline"}
                                         className={cn(
                                             "w-full justify-start text-left font-normal",
-                                            !startDate && "text-muted-foreground"
+                                            !creationDate && "text-muted-foreground"
                                         )}
                                         >
                                         <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {startDate ? format(startDate, "PPP", { locale: es }) : <span>Elegir fecha</span>}
+                                        {creationDate ? format(creationDate, "PPP", { locale: es }) : <span>Elegir fecha</span>}
                                         </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0">
                                         <Calendar
                                         mode="single"
-                                        selected={startDate}
-                                        onSelect={setStartDate}
+                                        selected={creationDate}
+                                        onSelect={setCreationDate}
                                         initialFocus
                                         locale={es}
                                         />
