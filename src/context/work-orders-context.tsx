@@ -104,7 +104,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const { user, userProfile, loading: authLoading } = useAuth();
   const [orderToClose, setOrderToClose] = useState<WorkOrder | null>(null);
   const { toast } = useToast();
-  const [patchApplied, setPatchApplied] = React.useState(false);
 
 
   const checkAndCreatePredefinedTemplates = useCallback(async () => {
@@ -238,39 +237,8 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [workOrders]);
 
-
-    // TEMPORARY PATCH: This useEffect will add the invoice request date for specific OTs
-    useEffect(() => {
-        if (workOrders.length > 0 && !patchApplied) {
-            const oTNumbersToPatch = ['OT1590', 'OT1591'];
-            const ordersToPatch = workOrders.filter(o => 
-                oTNumbersToPatch.includes(o.ot_number) && 
-                (!o.invoiceRequestDates || o.invoiceRequestDates.length === 0)
-            );
-
-            if (ordersToPatch.length > 0) {
-                const patchPromises = ordersToPatch.map(order => {
-                    console.log(`Patching OT: ${order.ot_number}`);
-                    const newRequestDate = new Date().toISOString();
-                    return updateOrder(order.id, { invoiceRequestDates: [newRequestDate] });
-                });
-
-                Promise.all(patchPromises).then(() => {
-                    console.log("Patch applied to OTs.");
-                    setPatchApplied(true);
-                }).catch(err => {
-                    console.error("Error applying patch:", err);
-                    setPatchApplied(true); // Still set to true to avoid retries
-                });
-            } else {
-                 setPatchApplied(true); // Set to true if no orders needed patching
-            }
-        }
-    }, [workOrders, patchApplied, updateOrder]);
-
-
   const getNextOtNumber = useCallback((prefix: string): string => {
-    if (!prefix) return `${prefix}-1`;
+    if (!prefix) return '';
 
     const relevantOrders = workOrders.filter(o => 
         o.ot_number && 
@@ -665,3 +633,4 @@ export const useWorkOrders = () => {
   }
   return context;
 };
+
