@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon, ArrowRight, Trash2, PlusCircle, Send, Info } from "lucide-react";
+import { Calendar as CalendarIcon, ArrowRight, Trash2, PlusCircle, Send, Info, FileClock } from "lucide-react";
 import { cn, normalizeString } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from 'date-fns/locale';
@@ -44,6 +44,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Separator } from "@/components/ui/separator";
 
 
 export default function EditOrderPage() {
@@ -706,20 +707,7 @@ export default function EditOrderPage() {
         {canEdit && (
         <Card>
             <CardHeader>
-                <div className="flex items-center gap-2">
-                    <CardTitle>Añadir Nueva Factura</CardTitle>
-                    {watchedInvoiceRequests && watchedInvoiceRequests.length > 0 && (
-                        <Tooltip>
-                            <TooltipTrigger>
-                                <Info className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p className="text-sm">Último envío a facturar:</p>
-                                <p className="text-xs font-semibold">{format(new Date(watchedInvoiceRequests[watchedInvoiceRequests.length - 1]), 'dd/MM/yyyy HH:mm', { locale: es })}</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    )}
-                </div>
+                <CardTitle>Añadir Nueva Factura</CardTitle>
                 <CardDescription>Completa los datos y presiona "Agregar" para añadir una factura a la lista.</CardDescription>
             </CardHeader>
              <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
@@ -806,8 +794,29 @@ export default function EditOrderPage() {
                           </TableBody>
                       </Table>
                   </div>
+              </fieldset>
+              
+              <Separator className="my-6"/>
 
-                  <div className="grid grid-cols-4 gap-4 pt-4 text-sm font-medium">
+                <div>
+                    <h3 className="text-md font-semibold mb-2 flex items-center gap-2"><FileClock className="h-5 w-5 text-primary"/>Historial de Solicitudes de Facturación</h3>
+                    {(watchedInvoiceRequests && watchedInvoiceRequests.length > 0) ? (
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                            {watchedInvoiceRequests.map((date, index) => (
+                                <li key={index} className="flex items-center gap-2 p-2 border-b">
+                                    <Send className="h-4 w-4"/>
+                                    <span>Solicitud enviada el: {format(new Date(date), 'dd/MM/yyyy \'a las\' HH:mm', { locale: es })}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p className="text-sm text-muted-foreground text-center py-4">No se han enviado solicitudes de facturación.</p>
+                    )}
+                </div>
+
+              <Separator className="my-6"/>
+              
+              <div className="grid grid-cols-4 gap-4 pt-4 text-sm font-medium">
                       <div className="p-2 border rounded-md">
                           <p className="text-muted-foreground">Total Facturado (Neto)</p>
                           <p className="text-lg font-bold">{formatCurrency(totalInvoicedNet)}</p>
@@ -825,7 +834,6 @@ export default function EditOrderPage() {
                           <p className="text-lg font-bold">{formatCurrency(balance)}</p>
                       </div>
                   </div>
-              </fieldset>
           </CardContent>
       </Card>
 
