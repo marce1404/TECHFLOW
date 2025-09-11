@@ -13,7 +13,7 @@ import { Carousel, CarouselContent, CarouselItem, type CarouselApi, CarouselPrev
 import { Button } from '@/components/ui/button';
 import { Expand, Shrink } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ExpirationAlertsCard } from '@/components/dashboard/expiration-alerts-card';
+import { ExpirationAlertsCard } from '@/app/(app)/dashboard/expiration-alerts-card';
 import { differenceInDays, parseISO, addYears } from 'date-fns';
 import { useAuth } from '@/context/auth-context';
 
@@ -75,14 +75,32 @@ export default function DashboardPage() {
     return order.manualProgress || 0;
   };
   
-  const closedOrdersThisMonth = historicalWorkOrders.filter(order => {
-      const closingDateStr = order.endDate;
-      if (!closingDateStr) return false;
+    const closedOrdersThisMonth = historicalWorkOrders.filter(order => {
+        const today = new Date();
+        const currentMonth = today.getMonth();
+        const currentYear = today.getFullYear();
 
-      const orderDate = new Date(closingDateStr.replace(/-/g, '/'));
-      const today = new Date();
-      return orderDate.getMonth() === today.getMonth() && orderDate.getFullYear() === today.getFullYear();
-  });
+        // Check if the closing date is in the current month
+        if (order.endDate) {
+            const closingDate = new Date(order.endDate.replace(/-/g, '/'));
+            if (closingDate.getMonth() === currentMonth && closingDate.getFullYear() === currentYear) {
+                return true;
+            }
+        }
+        
+        // Fallback for imported/legacy data: check if 'facturado' is true and creation date is this month
+        if (order.facturado) {
+            const creationDateStr = order.createdAt || order.date;
+            if (creationDateStr) {
+                 const creationDate = new Date(creationDateStr.replace(/-/g, '/'));
+                 if (creationDate.getMonth() === currentMonth && creationDate.getFullYear() === currentYear) {
+                    return true;
+                 }
+            }
+        }
+
+        return false;
+    });
 
     const expiringItems = React.useMemo(() => {
         if (loading || authLoading) return [];
@@ -259,5 +277,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
