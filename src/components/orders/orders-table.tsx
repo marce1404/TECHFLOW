@@ -30,7 +30,7 @@ interface OrdersTableProps {
 }
 
 export default function OrdersTable({ orders }: OrdersTableProps) {
-  const [sortConfig, setSortConfig] = useState<{ key: keyof WorkOrder | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
+  const [sortConfig, setSortConfig] = useState<{ key: keyof WorkOrder | 'facturado' | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
   const { updateOrder, otStatuses, promptToCloseOrder } = useWorkOrders();
@@ -69,7 +69,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
   };
 
   
-  const requestSort = (key: keyof WorkOrder) => {
+  const requestSort = (key: keyof WorkOrder | 'facturado') => {
     let direction: 'ascending' | 'descending' = 'ascending';
     if (sortConfig.key === key && sortConfig.direction === 'ascending') {
       direction = 'descending';
@@ -99,8 +99,8 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
              return 0;
         }
 
-      const aValue = a[sortConfig.key];
-      const bValue = b[sortConfig.key];
+      const aValue = a[sortConfig.key as keyof WorkOrder];
+      const bValue = b[sortConfig.key as keyof WorkOrder];
       
       const valA = Array.isArray(aValue) ? aValue.join(', ') : aValue;
       const valB = Array.isArray(bValue) ? bValue.join(', ') : bValue;
@@ -191,7 +191,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                 <TableRow>
                     {headerItems.map((item) => (
                          <TableHead key={item.key} className={item.className}>
-                            <Button variant="ghost" onClick={() => requestSort(item.key)}>
+                            <Button variant="ghost" onClick={() => requestSort(item.key as keyof WorkOrder)}>
                                 {item.label}
                                 <ArrowUpDown className="ml-2 h-4 w-4" />
                             </Button>
@@ -218,7 +218,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                           <TableCell>{order.description}</TableCell>
                           <TableCell>{order.client}</TableCell>
                           <TableCell>{order.service}</TableCell>
-                          <TableCell>{Array.isArray(order.assigned) ? order.assigned.join(', ') : order.assigned}</TableCell>
+                          <TableCell>{Array.isArray(order.assigned) ? order.assigned.join(', ') : ''}</TableCell>
                           <TableCell>{order.comercial}</TableCell>
                           <TableCell className="text-right">{formatCurrency(order.netPrice)}</TableCell>
                           <TableCell>

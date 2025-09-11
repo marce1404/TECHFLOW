@@ -25,7 +25,12 @@ export function processFirestoreTimestamp(docData: any): any {
       if (value instanceof Timestamp) {
         newDocData[key] = value.toDate();
       } else if (Array.isArray(value)) {
-         newDocData[key] = value.map(item => (item !== undefined && item !== null) ? processFirestoreTimestamp(item) : null).filter(Boolean);
+         newDocData[key] = value.map(item => {
+            if (item && typeof item === 'object') {
+              return processFirestoreTimestamp(item);
+            }
+            return item;
+         }).filter(item => item !== null && item !== undefined);
       } else if (value && typeof value === 'object' && !Array.isArray(value)) {
         newDocData[key] = processFirestoreTimestamp(value);
       } else {

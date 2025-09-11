@@ -98,8 +98,8 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
              return 0;
         }
 
-      const aValue = a[sortConfig.key];
-      const bValue = b[sortConfig.key];
+      const aValue = a[sortConfig.key as keyof WorkOrder];
+      const bValue = b[sortConfig.key as keyof WorkOrder];
       
       const valA = Array.isArray(aValue) ? aValue.join(', ') : aValue;
       const valB = Array.isArray(bValue) ? bValue.join(', ') : bValue;
@@ -164,7 +164,7 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                 <TableRow>
                     {headerItems.map((item) => (
                         <TableHead key={item.key} className={item.className}>
-                            <Button variant="ghost" onClick={() => requestSort(item.key)}>
+                            <Button variant="ghost" onClick={() => requestSort(item.key as keyof WorkOrder)}>
                                 {item.label}
                                 <ArrowUpDown className="ml-2 h-4 w-4" />
                             </Button>
@@ -210,7 +210,7 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                           <TableCell>{order.description}</TableCell>
                           <TableCell>{order.client}</TableCell>
                           <TableCell>{order.service}</TableCell>
-                          <TableCell>{Array.isArray(order.assigned) ? order.assigned.join(', ') : order.assigned}</TableCell>
+                          <TableCell>{Array.isArray(order.assigned) ? order.assigned.join(', ') : ''}</TableCell>
                           <TableCell>{order.comercial}</TableCell>
                            <TableCell className="text-right">{formatCurrency(order.netPrice)}</TableCell>
                           <TableCell>
