@@ -1,3 +1,4 @@
+
 'use client';
 import * as React from 'react';
 import { z } from 'zod';
@@ -32,6 +33,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { MultiSelect } from '../ui/multi-select';
 import { useAuth } from '@/context/auth-context';
 import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_FILE_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'];
