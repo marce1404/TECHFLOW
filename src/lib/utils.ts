@@ -14,7 +14,7 @@ export function normalizeString(str: string): string {
     .replace(/[\u0300-\u036f]/g, '');
 }
 
-export function processFirestoreTimestamp(docData: any) {
+export function processFirestoreTimestamp(docData: any): any {
   if (!docData) return docData;
 
   const newDocData: { [key: string]: any } = {};
@@ -24,10 +24,10 @@ export function processFirestoreTimestamp(docData: any) {
       const value = docData[key];
       if (value instanceof Timestamp) {
         newDocData[key] = value.toDate();
+      } else if (Array.isArray(value)) {
+         newDocData[key] = value.map(item => (item !== undefined && item !== null) ? processFirestoreTimestamp(item) : null).filter(Boolean);
       } else if (value && typeof value === 'object' && !Array.isArray(value)) {
         newDocData[key] = processFirestoreTimestamp(value);
-      } else if (Array.isArray(value)) {
-        newDocData[key] = value.map(item => processFirestoreTimestamp(item));
       } else {
         newDocData[key] = value;
       }
