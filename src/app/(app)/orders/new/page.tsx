@@ -29,7 +29,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 export default function NewOrderPage() {
     const router = useRouter();
     const { toast } = useToast();
-    const { otCategories, services, addOrder, getNextOtNumber, collaborators, otStatuses, vehicles, getLastOtNumber } = useWorkOrders();
+    const { otCategories, services, addOrder, getNextOtNumber, collaborators, otStatuses, vehicles, getLastOtNumber, workOrders } = useWorkOrders();
     const { userProfile } = useAuth();
     
     const canCreate = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
@@ -64,7 +64,9 @@ export default function NewOrderPage() {
     const [newInvoiceDate, setNewInvoiceDate] = React.useState<Date | undefined>(new Date());
     const [newInvoiceAmount, setNewInvoiceAmount] = React.useState(0);
 
-    const lastUsedOt = getLastOtNumber(categoryPrefix);
+    const lastUsedOt = React.useMemo(() => {
+        return getLastOtNumber(categoryPrefix);
+    }, [categoryPrefix, workOrders, getLastOtNumber]);
 
     React.useEffect(() => {
         if (categoryPrefix) {
@@ -72,7 +74,7 @@ export default function NewOrderPage() {
         } else {
             setOtNumber('');
         }
-    }, [categoryPrefix, getNextOtNumber]);
+    }, [categoryPrefix, workOrders, getNextOtNumber]);
 
 
     const technicians = collaborators

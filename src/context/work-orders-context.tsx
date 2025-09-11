@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
@@ -268,42 +269,42 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     }, [workOrders, patchApplied, updateOrder]);
 
 
-  const getNextOtNumber = (prefix: string): string => {
+  const getNextOtNumber = useCallback((prefix: string): string => {
     if (!prefix) return '';
-    const relevantOrders = workOrders.filter(o => o.ot_number.startsWith(prefix));
+    const relevantOrders = workOrders.filter(o => o.ot_number && o.ot_number.startsWith(prefix));
 
     if (relevantOrders.length === 0) return `${prefix}-1`;
 
-    const maxNumber = Math.max(
-      ...relevantOrders.map(o => {
-        const numberPart = o.ot_number.split('-')[1] || '0';
+    const maxNumber = relevantOrders.reduce((max, o) => {
+        const numberPart = o.ot_number.split('-')[1];
         const numericPart = parseInt(numberPart, 10);
-        return isNaN(numericPart) ? 0 : numericPart;
-      })
-    );
+        return !isNaN(numericPart) && numericPart > max ? numericPart : max;
+    }, 0);
 
     return `${prefix}-${maxNumber + 1}`;
-};
+  }, [workOrders]);
 
-const getLastOtNumber = (prefix: string): string | null => {
+const getLastOtNumber = useCallback((prefix: string): string | null => {
     if (!prefix) return null;
-    const relevantOrders = workOrders.filter(o => o.ot_number.startsWith(prefix));
+    const relevantOrders = workOrders.filter(o => o.ot_number && o.ot_number.startsWith(prefix));
     if (relevantOrders.length === 0) return null;
 
     let maxNumber = -1;
     let lastOtNumber: string | null = null;
 
     relevantOrders.forEach(o => {
-        const numberPart = o.ot_number.split('-')[1] || '0';
-        const numericPart = parseInt(numberPart, 10);
-        if (!isNaN(numericPart) && numericPart > maxNumber) {
-            maxNumber = numericPart;
-            lastOtNumber = o.ot_number;
+        const numberPart = o.ot_number.split('-')[1];
+        if (numberPart) {
+            const numericPart = parseInt(numberPart, 10);
+            if (!isNaN(numericPart) && numericPart > maxNumber) {
+                maxNumber = numericPart;
+                lastOtNumber = o.ot_number;
+            }
         }
     });
 
     return lastOtNumber;
-};
+}, [workOrders]);
 
   const addOrder = async (order: Omit<WorkOrder, 'id'>): Promise<WorkOrder> => {
     const docRef = await addDoc(collection(db, "work-orders"), order);
