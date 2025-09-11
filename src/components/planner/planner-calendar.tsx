@@ -87,7 +87,7 @@ export function PlannerCalendar({ workOrders, onDayClick, canSchedule }: Planner
       .filter(order => {
         if (!order.date) return false;
         const startDate = new Date(order.date);
-        const endDate = order.endDate ? new Date(order.endDate) : startDate;
+        const endDate = order.endDate ? new Date(order.endDate) : startDate; // Fallback to startDate if endDate is missing
         return isWithinInterval(day, { start: startDate, end: endDate });
       })
       .sort((a, b) => (a.startTime || '00:00').localeCompare(b.startTime || '00:00'));
