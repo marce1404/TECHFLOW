@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -50,7 +49,7 @@ type ViewType = 'month' | 'week';
 export function PlannerCalendar({ workOrders, onDayClick, canSchedule }: PlannerCalendarProps) {
   const [currentDate, setCurrentDate] = React.useState(new Date());
   const [view, setView] = React.useState<ViewType>('month');
-  const { updateOrder } = useWorkOrders();
+  const { updateOrder, deleteOrder } = useWorkOrders();
 
   const firstDayOfCurrentPeriod = view === 'month' 
     ? startOfMonth(currentDate) 
@@ -84,22 +83,21 @@ export function PlannerCalendar({ workOrders, onDayClick, canSchedule }: Planner
     }
   };
   
-  const getEventsForDay = React.useCallback((day: Date) => {
-    return workOrders
-      .filter(order => {
-        if (!order.date) return false;
-        // The date from firestore might be a string, so we parse it.
-        // Adding replace to handle both '2024-01-01' and '2024/01/01'
-        const startDate = startOfDay(new Date(order.date.replace(/-/g, '/')));
-        // If endDate is missing or empty, use startDate. Ensure end of day for interval checks.
-        const endDate = order.endDate 
-            ? endOfDay(new Date(order.endDate.replace(/-/g, '/')))
-            : endOfDay(startDate);
+    const getEventsForDay = (day: Date) => {
+        return workOrders
+        .filter(order => {
+            if (!order.date) return false;
+            
+            const startDate = startOfDay(new Date(order.date.replace(/-/g, '/')));
+            const endDate = order.endDate && order.endDate.length > 0 
+                ? endOfDay(new Date(order.endDate.replace(/-/g, '/')))
+                : endOfDay(startDate);
 
-        return isWithinInterval(day, { start: startDate, end: endDate });
-      })
-      .sort((a, b) => (a.startTime || '00:00').localeCompare(b.startTime || '00:00'));
-  }, [workOrders]);
+            return isWithinInterval(day, { start: startDate, end: endDate });
+        })
+        .sort((a, b) => (a.startTime || '00:00').localeCompare(b.startTime || '00:00'));
+    };
+
 
   const handlePrevious = () => {
     const newDate = add(currentDate, view === 'month' ? { months: -1 } : { weeks: -1 });
@@ -111,22 +109,19 @@ export function PlannerCalendar({ workOrders, onDayClick, canSchedule }: Planner
     setCurrentDate(newDate);
   };
   
-  const handleUnschedule = async (orderId: string) => {
-    const orderToUpdate = workOrders.find(ot => ot.id === orderId);
-    if (orderToUpdate) {
-      if (orderToUpdate.isActivity) {
-        // This should probably be a delete operation for activities
-      } else {
-         const dataToUpdate: Partial<WorkOrder> = {
-          ...orderToUpdate,
-          date: '',
-          endDate: '',
-          startTime: '',
-          endTime: '',
-          status: 'Por Iniciar'
-        };
-        await updateOrder(orderId, dataToUpdate);
-      }
+  const handleUnschedule = async (order: WorkOrder) => {
+    if (order.isActivity) {
+      await deleteOrder(order.id);
+    } else {
+        const dataToUpdate: Partial<WorkOrder> = {
+        ...order,
+        date: '',
+        endDate: '',
+        startTime: '',
+        endTime: '',
+        status: 'Por Iniciar'
+      };
+      await updateOrder(order.id, dataToUpdate);
     }
   };
 
@@ -195,20 +190,29 @@ export function PlannerCalendar({ workOrders, onDayClick, canSchedule }: Planner
                         {format(day, 'd')}
                     </time>
                     <div className="flex-1 space-y-1 overflow-y-auto">
-                        {getEventsForDay(day).map(order => (
-                            <div key={order.id} className="relative group w-full">
-                                <Link href={`/orders/${order.id}/edit`}>
-                                    <div
-                                        className={cn(
-                                        'text-xs rounded-md p-1 text-white hover:opacity-80 transition-opacity w-full',
-                                        getStatusColorClass(order.status)
-                                        )}
-                                    >
-                                        {order.startTime && <span className="font-bold">{order.startTime}</span>}
-                                        <p className="font-semibold truncate">{order.isActivity ? order.activityName : order.ot_number}</p>
-                                        <p className="truncate text-white/90">{order.client}</p>
-                                    </div>
-                                </Link>
+                        {getEventsForDay(day).map(order => {
+                           const eventContent = (
+                                <div
+                                    className={cn(
+                                    'text-xs rounded-md p-1 text-white w-full',
+                                    !order.isActivity && 'hover:opacity-80 transition-opacity',
+                                    getStatusColorClass(order.status)
+                                    )}
+                                >
+                                    {order.startTime && <span className="font-bold">{order.startTime}</span>}
+                                    <p className="font-semibold truncate">{order.isActivity ? order.activityName : order.ot_number}</p>
+                                    <p className="truncate text-white/90">{order.client}</p>
+                                </div>
+                           );
+
+                           return (
+                             <div key={order.id} className="relative group w-full">
+                                {order.isActivity ? (
+                                    <div>{eventContent}</div>
+                                ) : (
+                                    <Link href={`/orders/${order.id}/edit`}>{eventContent}</Link>
+                                )}
+
                                 {canSchedule && (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
@@ -219,25 +223,31 @@ export function PlannerCalendar({ workOrders, onDayClick, canSchedule }: Planner
                                             onClick={(e) => e.stopPropagation()}
                                         >
                                             <XIcon className="h-3 w-3" />
-                                            <span className="sr-only">Desprogramar</span>
+                                            <span className="sr-only">Quitar</span>
                                         </Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                                         <AlertDialogHeader>
-                                            <AlertDialogTitle>¿Desprogramar esta OT?</AlertDialogTitle>
+                                            <AlertDialogTitle>{order.isActivity ? '¿Eliminar esta actividad?' : '¿Desprogramar esta OT?'}</AlertDialogTitle>
                                             <AlertDialogDescription>
-                                                Esta acción quitará la OT <span className="font-bold">{order.ot_number}</span> del calendario y la marcará como "Por Iniciar". No se eliminará la OT.
+                                                {order.isActivity 
+                                                    ? `Esta acción eliminará permanentemente la actividad "${order.activityName}".`
+                                                    : `Esta acción quitará la OT "${order.ot_number}" del calendario y la marcará como "Por Iniciar". No se eliminará la OT.`
+                                                }
                                             </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleUnschedule(order.id)}>Sí, desprogramar</AlertDialogAction>
+                                            <AlertDialogAction onClick={() => handleUnschedule(order)}>
+                                                {order.isActivity ? 'Sí, eliminar' : 'Sí, desprogramar'}
+                                            </AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
                                 )}
                             </div>
-                        ))}
+                           )
+                        })}
                     </div>
                 </div>
             ))}
