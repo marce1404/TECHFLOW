@@ -3,26 +3,15 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
-import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, query, where, writeBatch, serverTimestamp, orderBy, getDoc, setDoc, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, query, where, writeBatch, serverTimestamp, orderBy, getDoc, setDoc, onSnapshot, Unsubscribe, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { WorkOrder, OTCategory, Service, Collaborator, Vehicle, GanttChart, SuggestedTask, OTStatus, ReportTemplate, SubmittedReport, CompanyInfo, AppUser, SmtpConfig } from '@/lib/types';
-import { Timestamp } from 'firebase/firestore';
 import { useAuth } from './auth-context';
 import { format } from 'date-fns';
 import { CloseWorkOrderDialog } from '@/components/orders/close-work-order-dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { predefinedReportTemplates } from '@/lib/predefined-templates';
-import { normalizeString } from '@/lib/utils';
+import { normalizeString, processFirestoreTimestamp } from '@/lib/utils';
 
 interface WorkOrdersContextType {
   workOrders: WorkOrder[];
@@ -80,6 +69,7 @@ interface WorkOrdersContextType {
   updateSmtpConfig: (config: SmtpConfig) => Promise<void>;
   promptToCloseOrder: (order: WorkOrder) => void;
   auditLog: any[];
+  fetchData: () => Promise<void>;
 }
 
 const WorkOrdersContext = createContext<WorkOrdersContextType | undefined>(undefined);
@@ -105,107 +95,109 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [orderToClose, setOrderToClose] = useState<WorkOrder | null>(null);
   const { toast } = useToast();
 
-
   const checkAndCreatePredefinedTemplates = useCallback(async () => {
     const templatesCollection = collection(db, 'report-templates');
     const existingTemplatesSnapshot = await getDocs(templatesCollection);
     if (existingTemplatesSnapshot.empty) {
         const batch = writeBatch(db);
-        for (const predefinedTemplate of predefinedReportTemplates) {
-            const docRef = doc(templatesCollection);
-            batch.set(docRef, predefinedTemplate);
-        }
+        predefinedReportTemplates.forEach(template => {
+            const docRef = doc(collection(db, 'report-templates'));
+            batch.set(docRef, template);
+        });
         await batch.commit();
-        console.log("Created all predefined templates.");
+        console.log("Created predefined report templates.");
     }
   }, []);
-  
-  useEffect(() => {
-    if (!user || authLoading) {
-      if (!authLoading) setLoading(false);
-      return;
-    }
-    
+
+  const fetchData = useCallback(async () => {
+    if (!user) return;
     setLoading(true);
-    checkAndCreatePredefinedTemplates();
-
-    const collectionsToListen: { name: string; setter: React.Dispatch<React.SetStateAction<any[]>>; orderByField?: string }[] = [
-        { name: 'work-orders', setter: setWorkOrders, orderByField: 'date' },
-        { name: 'ot-categories', setter: setOtCategories },
-        { name: 'ot-statuses', setter: setOtStatuses },
-        { name: 'services', setter: setServices },
-        { name: 'collaborators', setter: setCollaborators },
-        { name: 'vehicles', setter: setVehicles },
-        { name: 'suggested-tasks', setter: setSuggestedTasks },
-        { name: 'report-templates', setter: setReportTemplates },
-        { name: 'submitted-reports', setter: setSubmittedReports, orderByField: 'submittedAt' },
-        { name: 'gantt-charts', setter: setGanttCharts },
-    ];
     
-    const unsubscribes: Unsubscribe[] = [];
+    try {
+        await checkAndCreatePredefinedTemplates();
 
-    collectionsToListen.forEach(({ name, setter, orderByField }) => {
-        const collQuery = orderByField 
-            ? query(collection(db, name), orderBy(orderByField, 'desc'))
-            : query(collection(db, name));
-        
-        const unsubscribe = onSnapshot(collQuery, (snapshot) => {
-            const data = snapshot.docs.map(doc => {
-                 const docData = doc.data();
-                 Object.keys(docData).forEach(key => {
-                    if (docData[key] instanceof Timestamp) {
-                       docData[key] = docData[key].toDate();
-                    }
-                 });
-                 if (docData.tasks) {
-                     docData.tasks = docData.tasks.map((task: any) => ({
-                         ...task,
-                         startDate: task.startDate instanceof Timestamp ? task.startDate.toDate() : new Date(task.startDate),
-                     }))
-                 }
-                return { id: doc.id, ...docData };
-            });
-            setter(data);
-        }, (error) => {
-            console.error(`Error fetching ${name}: `, error);
-            toast({ variant: "destructive", title: "Error de Sincronización", description: `No se pudo conectar con la colección ${name}.` });
-        });
-        unsubscribes.push(unsubscribe);
-    });
+        const collectionsToFetch: { name: string; setter: React.Dispatch<React.SetStateAction<any[]>> }[] = [
+            { name: 'ot-categories', setter: setOtCategories },
+            { name: 'ot-statuses', setter: setOtStatuses },
+            { name: 'services', setter: setServices },
+            { name: 'collaborators', setter: setCollaborators },
+            { name: 'vehicles', setter: setVehicles },
+            { name: 'suggested-tasks', setter: setSuggestedTasks },
+            { name: 'report-templates', setter: setReportTemplates },
+        ];
 
-    // Conditionally listen to audit-log only for Admins
-    if (userProfile?.role === 'Admin') {
-        const auditLogQuery = query(collection(db, 'audit-log'), orderBy('timestamp', 'desc'));
-        const auditLogUnsubscribe = onSnapshot(auditLogQuery, (snapshot) => {
+        const promises = collectionsToFetch.map(async ({ name, setter }) => {
+            const snapshot = await getDocs(query(collection(db, name)));
             const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setAuditLog(data);
-        }, (error) => {
-            console.error("Error fetching audit-log: ", error);
+            setter(data.map(processFirestoreTimestamp));
         });
-        unsubscribes.push(auditLogUnsubscribe);
+
+        const singleDocsToFetch = [
+            { path: 'settings/companyInfo', setter: setCompanyInfo },
+            { path: 'settings/smtpConfig', setter: setSmtpConfig }
+        ];
+
+        singleDocsToFetch.forEach(({ path, setter }) => {
+            promises.push(
+                getDoc(doc(db, path)).then(doc => {
+                    setter(doc.exists() ? doc.data() : null);
+                })
+            );
+        });
+
+        await Promise.all(promises);
+
+    } catch (error) {
+        console.error("Error fetching initial data: ", error);
+        toast({ variant: "destructive", title: "Error de Carga", description: "No se pudieron cargar los datos iniciales." });
+    } finally {
+        setLoading(false);
     }
+}, [user, toast, checkAndCreatePredefinedTemplates]);
 
 
-    const singleDocsToListen = [
-      { path: 'settings/companyInfo', setter: setCompanyInfo },
-      { path: 'settings/smtpConfig', setter: setSmtpConfig }
-    ];
+  useEffect(() => {
+      if (user) {
+          fetchData();
 
-    singleDocsToListen.forEach(({ path, setter }) => {
-        const unsubscribe = onSnapshot(doc(db, path), (doc) => {
-            setter(doc.exists() ? doc.data() : null);
-        }, (error) => {
-            console.error(`Error fetching single doc ${path}:`, error);
-        });
-        unsubscribes.push(unsubscribe);
-    });
-    
-    setLoading(false);
+          const workOrdersQuery = query(collection(db, 'work-orders'), orderBy('date', 'desc'));
+          const ganttQuery = query(collection(db, 'gantt-charts'));
+          const submittedReportsQuery = query(collection(db, 'submitted-reports'), orderBy('submittedAt', 'desc'));
 
-    return () => {
-      unsubscribes.forEach(unsub => unsub());
-    };
-  }, [user, userProfile, authLoading, toast, checkAndCreatePredefinedTemplates]);
+          const unsubWorkOrders = onSnapshot(workOrdersQuery, (snapshot) => {
+              const data = snapshot.docs.map(doc => processFirestoreTimestamp({ id: doc.id, ...doc.data() })) as WorkOrder[];
+              setWorkOrders(data);
+          }, (error) => console.error("Error fetching work-orders:", error));
+
+          const unsubGantt = onSnapshot(ganttQuery, (snapshot) => {
+              const data = snapshot.docs.map(doc => processFirestoreTimestamp({ id: doc.id, ...doc.data() })) as GanttChart[];
+              setGanttCharts(data);
+          }, (error) => console.error("Error fetching gantt-charts:", error));
+
+          const unsubSubmittedReports = onSnapshot(submittedReportsQuery, (snapshot) => {
+              const data = snapshot.docs.map(doc => processFirestoreTimestamp({ id: doc.id, ...doc.data() })) as SubmittedReport[];
+              setSubmittedReports(data);
+          }, (error) => console.error("Error fetching submitted-reports:", error));
+
+          let unsubAuditLog: Unsubscribe | undefined;
+          if (userProfile?.role === 'Admin') {
+              const auditLogQuery = query(collection(db, 'audit-log'), orderBy('timestamp', 'desc'));
+              unsubAuditLog = onSnapshot(auditLogQuery, (snapshot) => {
+                  const data = snapshot.docs.map(doc => processFirestoreTimestamp({ id: doc.id, ...doc.data() }));
+                  setAuditLog(data);
+              }, (error) => console.error("Error fetching audit-log:", error));
+          }
+
+          return () => {
+              unsubWorkOrders();
+              unsubGantt();
+              unsubSubmittedReports();
+              if (unsubAuditLog) unsubAuditLog();
+          };
+      } else if (!authLoading) {
+          setLoading(false);
+      }
+  }, [user, authLoading, userProfile, fetchData]);
 
 
   // Derived state for active/historical orders
@@ -335,6 +327,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory> => {
     const docRef = await addDoc(collection(db, "ot-categories"), category);
     await addLogEntry(`Creó la categoría de OT: ${category.name}`);
+    await fetchData(); // Refetch static data
     return { id: docRef.id, ...category } as OTCategory;
   };
 
@@ -342,11 +335,13 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const docRef = doc(db, "ot-categories", id);
     await updateDoc(docRef, updatedCategory);
     await addLogEntry(`Actualizó la categoría de OT: ${updatedCategory.name}`);
+    await fetchData(); // Refetch static data
   };
 
   const addStatus = async (status: Omit<OTStatus, 'id'>): Promise<OTStatus> => {
     const docRef = await addDoc(collection(db, "ot-statuses"), status);
     await addLogEntry(`Creó el estado de OT: ${status.name}`);
+    await fetchData(); // Refetch static data
     return { id: docRef.id, ...status } as OTStatus;
   };
 
@@ -354,17 +349,20 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const docRef = doc(db, "ot-statuses", id);
     await updateDoc(docRef, updatedStatus);
     await addLogEntry(`Actualizó el estado de OT: ${updatedStatus.name}`);
+    await fetchData(); // Refetch static data
   };
 
   const deleteStatus = async (id: string) => {
     const status = otStatuses.find(s => s.id === id);
     await deleteDoc(doc(db, "ot-statuses", id));
     await addLogEntry(`Eliminó el estado de OT: ${status?.name}`);
+    await fetchData(); // Refetch static data
   };
 
   const addService = async (service: Omit<Service, 'id'>): Promise<Service> => {
     const docRef = await addDoc(collection(db, "services"), service);
     await addLogEntry(`Creó el servicio: ${service.name}`);
+    await fetchData(); // Refetch static data
     return { id: docRef.id, ...service } as Service;
   };
 
@@ -372,17 +370,20 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const docRef = doc(db, "services", id);
     await updateDoc(docRef, updatedService);
     await addLogEntry(`Actualizó el servicio: ${updatedService.name}`);
+    await fetchData(); // Refetch static data
   };
   
   const deleteService = async (id: string) => {
     const service = services.find(s => s.id === id);
     await deleteDoc(doc(db, "services", id));
     await addLogEntry(`Eliminó el servicio: ${service?.name}`);
+    await fetchData(); // Refetch static data
   };
   
   const addCollaborator = async (collaborator: Omit<Collaborator, 'id'>): Promise<Collaborator> => {
     const docRef = await addDoc(collection(db, "collaborators"), collaborator);
     await addLogEntry(`Creó al colaborador: ${collaborator.name}`);
+    await fetchData(); // Refetch static data
     return { ...collaborator, id: docRef.id } as Collaborator;
   };
   
@@ -392,28 +393,23 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
   const updateCollaborator = async (id: string, updatedCollaborator: Partial<Omit<Collaborator, 'id'>>) => {
     const docRef = doc(db, "collaborators", id);
-    const cleanData = { ...updatedCollaborator };
-    
-    Object.keys(cleanData).forEach(key => {
-        if (cleanData[key as keyof typeof cleanData] === undefined) {
-            delete cleanData[key as keyof typeof cleanData];
-        }
-    });
-
-    await updateDoc(docRef, cleanData);
+    await updateDoc(docRef, updatedCollaborator);
     await addLogEntry(`Actualizó al colaborador: ${updatedCollaborator.name}`);
+    await fetchData(); // Refetch static data
   };
 
   const deleteCollaborator = async (id: string) => {
     const collaborator = getCollaborator(id);
     await deleteDoc(doc(db, "collaborators", id));
     await addLogEntry(`Eliminó al colaborador: ${collaborator?.name}`);
+    await fetchData(); // Refetch static data
   };
   
   const addVehicle = async (vehicle: Omit<Vehicle, 'id'>): Promise<Vehicle> => {
     const vehicleData = { ...vehicle, maintenanceLog: vehicle.maintenanceLog || [] };
     const docRef = await addDoc(collection(db, "vehicles"), vehicleData);
     await addLogEntry(`Añadió el vehículo: ${vehicle.model} (${vehicle.plate})`);
+    await fetchData(); // Refetch static data
     return { ...vehicleData, id: docRef.id } as Vehicle;
   };
 
@@ -421,12 +417,14 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const docRef = doc(db, "vehicles", id);
     await updateDoc(docRef, updatedVehicle);
     await addLogEntry(`Actualizó el vehículo: ${updatedVehicle.model} (${updatedVehicle.plate})`);
+    await fetchData(); // Refetch static data
   };
 
   const deleteVehicle = async (id: string) => {
     const vehicle = vehicles.find(v => v.id === id);
     await deleteDoc(doc(db, "vehicles", id));
     await addLogEntry(`Eliminó el vehículo: ${vehicle?.model} (${vehicle?.plate})`);
+    await fetchData(); // Refetch static data
   };
 
   const addGanttChart = async (ganttChart: Omit<GanttChart, 'id'>): Promise<GanttChart> => {
@@ -479,6 +477,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const addSuggestedTask = async (task: Omit<SuggestedTask, 'id'>): Promise<SuggestedTask> => {
     const docRef = await addDoc(collection(db, "suggested-tasks"), task);
     await addLogEntry(`Añadió tarea sugerida: ${task.name}`);
+    await fetchData(); // Refetch static data
     return { id: docRef.id, ...task } as SuggestedTask;
   };
 
@@ -486,12 +485,14 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const docRef = doc(db, "suggested-tasks", id);
     await updateDoc(docRef, updatedTask);
     await addLogEntry(`Actualizó tarea sugerida: ${updatedTask.name}`);
+    await fetchData(); // Refetch static data
   };
 
   const deleteSuggestedTask = async (id: string) => {
     const task = suggestedTasks.find(t => t.id === id);
     await deleteDoc(doc(db, "suggested-tasks", id));
     await addLogEntry(`Eliminó tarea sugerida: ${task?.name}`);
+    await fetchData(); // Refetch static data
   };
   
   const updatePhaseName = async (category: string, oldPhaseName: string, newPhaseName: string) => {
@@ -503,6 +504,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     });
     await batch.commit();
     await addLogEntry(`Renombró la fase '${oldPhaseName}' a '${newPhaseName}' en la categoría '${category}'`);
+    await fetchData(); // Refetch static data
   };
 
   const deletePhase = async (category: string, phaseName: string) => {
@@ -514,11 +516,13 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     });
     await batch.commit();
     await addLogEntry(`Eliminó la fase '${phaseName}' en la categoría '${category}'`);
+    await fetchData(); // Refetch static data
   };
   
   const addReportTemplate = async (template: Omit<ReportTemplate, 'id'>): Promise<ReportTemplate> => {
     const docRef = await addDoc(collection(db, "report-templates"), template);
     await addLogEntry(`Creó la plantilla de informe: ${template.name}`);
+    await fetchData(); // Refetch static data
     return { id: docRef.id, ...template } as ReportTemplate;
   };
 
@@ -526,6 +530,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const docRef = doc(db, "report-templates", id);
     await updateDoc(docRef, updatedTemplate);
     await addLogEntry(`Actualizó la plantilla de informe: ${updatedTemplate.name}`);
+    await fetchData(); // Refetch static data
   };
 
 
@@ -533,6 +538,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const template = reportTemplates.find(t => t.id === id);
     await deleteDoc(doc(db, "report-templates", id));
     await addLogEntry(`Eliminó la plantilla de informe: ${template?.name}`);
+    await fetchData(); // Refetch static data
   };
 
   const addSubmittedReport = async (report: Omit<SubmittedReport, 'id' | 'submittedAt'>): Promise<SubmittedReport> => {
@@ -562,12 +568,14 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const docRef = doc(db, 'settings', 'companyInfo');
     await setDoc(docRef, info, { merge: true });
     await addLogEntry(`Actualizó la información de la empresa.`);
+    await fetchData(); // Refetch settings
   };
 
   const updateSmtpConfig = async (config: SmtpConfig) => {
     const docRef = doc(db, 'settings', 'smtpConfig');
     await setDoc(docRef, config, { merge: true });
     await addLogEntry(`Actualizó la configuración SMTP.`);
+    await fetchData(); // Refetch settings
   };
   
   return (
@@ -627,6 +635,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         updateSmtpConfig,
         promptToCloseOrder,
         auditLog,
+        fetchData,
     }}>
       {children}
       <CloseWorkOrderDialog 
