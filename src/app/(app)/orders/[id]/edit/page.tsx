@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon, ArrowRight, Trash2, PlusCircle, Send } from "lucide-react";
+import { Calendar as CalendarIcon, ArrowRight, Trash2, PlusCircle, Send, Info } from "lucide-react";
 import { cn, normalizeString } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from 'date-fns/locale';
@@ -38,6 +38,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { SendToInvoiceDialog } from "@/components/orders/send-to-invoice-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 
 export default function EditOrderPage() {
@@ -68,6 +74,7 @@ export default function EditOrderPage() {
   
   const watchNetPrice = methods.watch('netPrice');
   const watchedInvoices = methods.watch('invoices');
+  const watchedInvoiceRequests = methods.watch('invoiceRequestDates');
 
   const technicians = collaborators
     .filter(c => c.role === 'Técnico')
@@ -148,6 +155,7 @@ export default function EditOrderPage() {
             comercial: findCaseInsensitive(initialOrder.comercial, vendors),
             manualProgress: initialOrder.manualProgress || 0,
             invoices: initialOrder.invoices || [],
+            invoiceRequestDates: initialOrder.invoiceRequestDates || [],
         };
         methods.reset(defaults);
         setIsFormReady(true);
@@ -227,6 +235,7 @@ export default function EditOrderPage() {
   return (
     <>
     <FormProvider {...methods}>
+    <TooltipProvider>
     <Form {...methods}>
     <form onSubmit={methods.handleSubmit(handleUpdateOrder)} className="space-y-6">
     <div className="flex flex-col gap-8">
@@ -697,7 +706,20 @@ export default function EditOrderPage() {
         {canEdit && (
         <Card>
             <CardHeader>
-                <CardTitle>Añadir Nueva Factura</CardTitle>
+                <div className="flex items-center gap-2">
+                    <CardTitle>Añadir Nueva Factura</CardTitle>
+                    {watchedInvoiceRequests && watchedInvoiceRequests.length > 0 && (
+                        <Tooltip>
+                            <TooltipTrigger>
+                                <Info className="h-4 w-4 text-muted-foreground" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p className="text-sm">Último envío a facturar:</p>
+                                <p className="text-xs font-semibold">{format(new Date(watchedInvoiceRequests[watchedInvoiceRequests.length - 1]), 'dd/MM/yyyy HH:mm', { locale: es })}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
+                </div>
                 <CardDescription>Completa los datos y presiona "Agregar" para añadir una factura a la lista.</CardDescription>
             </CardHeader>
              <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
@@ -845,6 +867,7 @@ export default function EditOrderPage() {
     </div>
     </form>
     </Form>
+    </TooltipProvider>
     </FormProvider>
     <SendToInvoiceDialog
         open={isInvoiceDialogOpen}

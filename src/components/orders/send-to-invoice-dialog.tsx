@@ -31,6 +31,7 @@ import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { MultiSelect } from '../ui/multi-select';
 import { useAuth } from '@/context/auth-context';
+import { format } from 'date-fns';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_FILE_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'];
@@ -52,7 +53,7 @@ interface SendToInvoiceDialogProps {
 
 export function SendToInvoiceDialog({ open, onOpenChange, order }: SendToInvoiceDialogProps) {
   const { toast } = useToast();
-  const { smtpConfig, collaborators } = useWorkOrders();
+  const { smtpConfig, collaborators, updateOrder } = useWorkOrders();
   const { userProfile } = useAuth();
   const [loading, setLoading] = React.useState(false);
   const [attachments, setAttachments] = React.useState<File[]>([]);
@@ -176,6 +177,12 @@ export function SendToInvoiceDialog({ open, onOpenChange, order }: SendToInvoice
         title: 'Correo Enviado',
         description: 'La solicitud de facturación ha sido enviada.',
       });
+      
+      // Add the invoice request date to the work order
+      const newRequestDate = new Date().toISOString();
+      const updatedDates = [...(order.invoiceRequestDates || []), newRequestDate];
+      await updateOrder(order.id, { invoiceRequestDates: updatedDates });
+
       onOpenChange(false);
     } else {
       toast({
@@ -196,6 +203,11 @@ export function SendToInvoiceDialog({ open, onOpenChange, order }: SendToInvoice
           <DialogTitle>Enviar Solicitud de Facturación</DialogTitle>
           <DialogDescription>
             Se enviará un correo con los detalles de la OT <span className="font-bold">{order?.ot_number}</span> para que sea facturada.
+            {order?.invoiceRequestDates && order.invoiceRequestDates.length > 0 && (
+                <div className="text-xs text-muted-foreground pt-2">
+                    Último envío: {format(new Date(order.invoiceRequestDates[order.invoiceRequestDates.length - 1]), 'dd/MM/yyyy HH:mm', { locale: es })}
+                </div>
+            )}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
