@@ -76,9 +76,7 @@ export default function DashboardPage() {
   };
   
   const closedOrdersThisMonth = historicalWorkOrders.filter(order => {
-      if (order.facturado) return true;
-
-      const closingDateStr = order.endDate || order.date;
+      const closingDateStr = order.endDate;
       if (!closingDateStr) return false;
 
       const orderDate = new Date(closingDateStr.replace(/-/g, '/'));
