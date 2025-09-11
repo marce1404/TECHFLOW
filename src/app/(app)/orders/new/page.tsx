@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -34,7 +33,6 @@ export default function NewOrderPage() {
     
     const canCreate = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
 
-    const [otNumber, setOtNumber] = React.useState('');
     const [description, setDescription] = React.useState('');
     const [categoryPrefix, setCategoryPrefix] = React.useState('');
     const [client, setClient] = React.useState('');
@@ -66,15 +64,11 @@ export default function NewOrderPage() {
 
     const lastUsedOt = React.useMemo(() => {
         return getLastOtNumber(categoryPrefix);
-    }, [categoryPrefix, workOrders, getLastOtNumber]);
-
-    React.useEffect(() => {
-        if (categoryPrefix) {
-            setOtNumber(getNextOtNumber(categoryPrefix));
-        } else {
-            setOtNumber('');
-        }
-    }, [categoryPrefix, workOrders, getNextOtNumber]);
+    }, [categoryPrefix, getLastOtNumber]);
+    
+    const otNumber = React.useMemo(() => {
+        return getNextOtNumber(categoryPrefix);
+    }, [categoryPrefix, getNextOtNumber]);
 
 
     const technicians = collaborators
@@ -232,7 +226,8 @@ export default function NewOrderPage() {
                                     id="ot_number" 
                                     placeholder="Seleccione categoría para generar" 
                                     value={otNumber}
-                                    onChange={(e) => setOtNumber(e.target.value)}
+                                    readOnly
+                                    className="bg-muted"
                                 />
                                 {lastUsedOt && (
                                     <p className="text-xs text-muted-foreground mt-1">

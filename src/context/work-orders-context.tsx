@@ -270,23 +270,29 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
 
   const getNextOtNumber = useCallback((prefix: string): string => {
-    if (!prefix) return '';
-    const relevantOrders = workOrders.filter(o => o.ot_number && o.ot_number.startsWith(prefix));
+    if (!prefix || workOrders.length === 0) return `${prefix}-1`;
+    
+    const relevantOrders = workOrders.filter(o => o.ot_number && typeof o.ot_number === 'string' && o.ot_number.startsWith(prefix + '-'));
 
     if (relevantOrders.length === 0) return `${prefix}-1`;
 
     const maxNumber = relevantOrders.reduce((max, o) => {
         const numberPart = o.ot_number.split('-')[1];
-        const numericPart = parseInt(numberPart, 10);
-        return !isNaN(numericPart) && numericPart > max ? numericPart : max;
+        if (numberPart) {
+            const numericPart = parseInt(numberPart, 10);
+            if (!isNaN(numericPart) && numericPart > max) {
+                return numericPart;
+            }
+        }
+        return max;
     }, 0);
 
     return `${prefix}-${maxNumber + 1}`;
   }, [workOrders]);
 
-const getLastOtNumber = useCallback((prefix: string): string | null => {
-    if (!prefix) return null;
-    const relevantOrders = workOrders.filter(o => o.ot_number && o.ot_number.startsWith(prefix));
+  const getLastOtNumber = useCallback((prefix: string): string | null => {
+    if (!prefix || workOrders.length === 0) return null;
+    const relevantOrders = workOrders.filter(o => o.ot_number && typeof o.ot_number === 'string' && o.ot_number.startsWith(prefix + '-'));
     if (relevantOrders.length === 0) return null;
 
     let maxNumber = -1;
@@ -304,7 +310,7 @@ const getLastOtNumber = useCallback((prefix: string): string | null => {
     });
 
     return lastOtNumber;
-}, [workOrders]);
+  }, [workOrders]);
 
   const addOrder = async (order: Omit<WorkOrder, 'id'>): Promise<WorkOrder> => {
     const docRef = await addDoc(collection(db, "work-orders"), order);
