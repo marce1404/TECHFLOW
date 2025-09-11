@@ -236,7 +236,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         if (order) {
             await addLogEntry(`Actualizó la OT: ${order.ot_number}`);
         }
-    }, [workOrders, addLogEntry]);
+    }, [workOrders]);
 
 
     // TEMPORARY PATCH: This useEffect will add the invoice request date for specific OTs
@@ -270,9 +270,13 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
 
   const getNextOtNumber = useCallback((prefix: string): string => {
-    if (!prefix || workOrders.length === 0) return `${prefix}-1`;
-    
-    const relevantOrders = workOrders.filter(o => o.ot_number && typeof o.ot_number === 'string' && o.ot_number.startsWith(prefix + '-'));
+    if (!prefix) return `${prefix}-1`;
+
+    const relevantOrders = workOrders.filter(o => 
+        o.ot_number && 
+        typeof o.ot_number === 'string' && 
+        o.ot_number.startsWith(prefix + '-')
+    );
 
     if (relevantOrders.length === 0) return `${prefix}-1`;
 
@@ -286,13 +290,19 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         }
         return max;
     }, 0);
-
+    
     return `${prefix}-${maxNumber + 1}`;
   }, [workOrders]);
 
   const getLastOtNumber = useCallback((prefix: string): string | null => {
-    if (!prefix || workOrders.length === 0) return null;
-    const relevantOrders = workOrders.filter(o => o.ot_number && typeof o.ot_number === 'string' && o.ot_number.startsWith(prefix + '-'));
+    if (!prefix) return null;
+
+    const relevantOrders = workOrders.filter(o => 
+        o.ot_number && 
+        typeof o.ot_number === 'string' && 
+        o.ot_number.startsWith(prefix + '-')
+    );
+    
     if (relevantOrders.length === 0) return null;
 
     let maxNumber = -1;
