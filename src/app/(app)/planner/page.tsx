@@ -79,6 +79,7 @@ export default function PlannerPage() {
                 vehicles: [],
                 comercial: '',
                 netPrice: 0,
+                createdAt: format(new Date(), 'yyyy-MM-dd'),
             };
             await addOrder(newActivity);
         }
