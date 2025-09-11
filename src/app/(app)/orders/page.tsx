@@ -127,7 +127,7 @@ export default function ActiveOrdersPage() {
                 label: `${cat.name} (${cat.prefix})`,
                 prefix: cat.prefix,
             })),
-        { id: "actividades", value: "actividades", label: "Actividades", prefix: 'actividades' },
+        { id: "actividades", value: "actividades", label: "ACTIVIDADES", prefix: 'actividades' },
     ];
     
     const formatCurrency = (value: number) => {
