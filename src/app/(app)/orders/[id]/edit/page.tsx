@@ -135,6 +135,7 @@ export default function EditOrderPage() {
             ...initialOrder,
             description: initialOrder.description || '',
             ot_number: initialOrder.ot_number || '',
+            createdAt: initialOrder.createdAt || initialOrder.date,
             client: initialOrder.client || '',
             rut: initialOrder.rut || '',
             service: findCaseInsensitive(initialOrder.service, serviceOptions),
@@ -253,8 +254,8 @@ export default function EditOrderPage() {
         <fieldset disabled={!canEdit}>
         <CardContent className="p-6">
           <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-                <div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-2">
                   <Label htmlFor="ot-name">Nombre de OT *</Label>
                   <Controller
                     control={methods.control}
@@ -269,19 +270,51 @@ export default function EditOrderPage() {
                    />
                 </div>
                  <div>
-                  <Label htmlFor="ot_number">Número de OT *</Label>
-                  <Controller
-                      control={methods.control}
-                      name="ot_number"
-                      render={({ field }) => (
-                          <Input
-                            id="ot_number"
-                            {...field}
-                            placeholder="Ej: OT-1234"
-                          />
-                      )}
+                    <Label htmlFor="createdAt">Fecha de Creación (OT)</Label>
+                    <Controller
+                        control={methods.control}
+                        name="createdAt"
+                        render={({ field }) => (
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                        "w-full justify-start text-left font-normal",
+                                        !field.value && "text-muted-foreground"
+                                    )}
+                                    >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {field.value ? format(new Date(field.value.replace(/-/g, '/')), "PPP", { locale: es }) : <span>Elegir fecha</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                    mode="single"
+                                    selected={field.value ? new Date(field.value.replace(/-/g, '/')) : undefined}
+                                    onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+                                    initialFocus
+                                    locale={es}
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        )}
                     />
                 </div>
+            </div>
+             <div>
+                <Label htmlFor="ot_number">Número de OT *</Label>
+                <Controller
+                    control={methods.control}
+                    name="ot_number"
+                    render={({ field }) => (
+                        <Input
+                        id="ot_number"
+                        {...field}
+                        placeholder="Ej: OT1234"
+                        />
+                    )}
+                />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                 
@@ -344,7 +377,7 @@ export default function EditOrderPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label htmlFor="start-date">Fecha Creación (OT)</Label>
+                            <Label htmlFor="start-date">Fecha de Inicio</Label>
                             <Controller
                                 control={methods.control}
                                 name="date"
@@ -885,5 +918,3 @@ export default function EditOrderPage() {
     </>
   );
 }
-
-

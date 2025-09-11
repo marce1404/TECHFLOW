@@ -29,17 +29,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 export default function NewOrderPage() {
     const router = useRouter();
     const { toast } = useToast();
-    const { otCategories, services, addOrder, getNextOtNumber, collaborators, otStatuses, vehicles, getLastOtNumber } = useWorkOrders();
+    const { workOrders, otCategories, services, addOrder, getNextOtNumber, collaborators, otStatuses, vehicles, getLastOtNumber } = useWorkOrders();
     const { userProfile } = useAuth();
     
     const canCreate = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
 
     const [description, setDescription] = React.useState('');
     const [categoryPrefix, setCategoryPrefix] = React.useState('');
+    const [createdAt, setCreatedAt] = React.useState<Date | undefined>(new Date());
     const [client, setClient] = React.useState('');
     const [rut, setRut] = React.useState('');
     const [service, setService] = React.useState('');
-    const [creationDate, setCreationDate] = React.useState<Date | undefined>(new Date());
+    const [startDate, setStartDate] = React.useState<Date>();
     const [endDate, setEndDate] = React.useState<Date>();
     const [startTime, setStartTime] = React.useState('09:00');
     const [endTime, setEndTime] = React.useState('18:00');
@@ -63,8 +64,8 @@ export default function NewOrderPage() {
     const [newInvoiceDate, setNewInvoiceDate] = React.useState<Date | undefined>(new Date());
     const [newInvoiceAmount, setNewInvoiceAmount] = React.useState(0);
 
-    const lastUsedOt = React.useMemo(() => getLastOtNumber(categoryPrefix), [categoryPrefix, getLastOtNumber]);
-    const otNumber = React.useMemo(() => getNextOtNumber(categoryPrefix), [categoryPrefix, getNextOtNumber]);
+    const lastUsedOt = React.useMemo(() => getLastOtNumber(categoryPrefix), [categoryPrefix, getLastOtNumber, workOrders]);
+    const otNumber = React.useMemo(() => getNextOtNumber(categoryPrefix), [categoryPrefix, getNextOtNumber, workOrders]);
 
 
     const technicians = collaborators
@@ -98,10 +99,11 @@ export default function NewOrderPage() {
     const newOrder: Omit<WorkOrder, 'id'> = {
         ot_number: otNumber,
         description,
+        createdAt: createdAt ? format(createdAt, 'yyyy-MM-dd') : '',
         client,
         rut,
         service,
-        date: creationDate ? format(creationDate, 'yyyy-MM-dd') : '',
+        date: startDate ? format(startDate, 'yyyy-MM-dd') : '',
         endDate: endDate ? format(endDate, 'yyyy-MM-dd') : '',
         startTime,
         endTime,
@@ -190,24 +192,50 @@ export default function NewOrderPage() {
       <Card>
         <CardContent className="p-6">
             <div className="space-y-6">
-                <div>
-                    <Label htmlFor="ot-name">Nombre de OT *</Label>
-                    <Input 
-                        id="ot-name" 
-                        placeholder="Escribe el nombre o descripción de la OT..." 
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                    />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-2">
+                        <Label htmlFor="ot-name">Nombre de OT *</Label>
+                        <Input 
+                            id="ot-name" 
+                            placeholder="Escribe el nombre o descripción de la OT..." 
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                        />
+                    </div>
+                     <div>
+                        <Label htmlFor="creation-date">Fecha de Creación (OT)</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                variant={"outline"}
+                                className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !createdAt && "text-muted-foreground"
+                                )}
+                                >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {createdAt ? format(createdAt, "PPP", { locale: es }) : <span>Elegir fecha</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                mode="single"
+                                selected={createdAt}
+                                onSelect={setCreatedAt}
+                                initialFocus
+                                locale={es}
+                                />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                    {/* Left Column */}
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <Label htmlFor="ot-category">Categoría OT *</Label>
-                                <Select onValueChange={setCategoryPrefix} value={categoryPrefix}>
+                 <div>
+                    <Label htmlFor="ot_number">Número de OT *</Label>
+                    <div className="flex items-center gap-4">
+                         <div className="w-48">
+                             <Select onValueChange={setCategoryPrefix} value={categoryPrefix}>
                                 <SelectTrigger id="ot-category">
-                                    <SelectValue placeholder="Seleccionar categoría" />
+                                    <SelectValue placeholder="Categoría" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {otCategories.filter(cat => cat.status === 'Activa').map(cat => (
@@ -215,23 +243,24 @@ export default function NewOrderPage() {
                                     ))}
                                 </SelectContent>
                                 </Select>
-                            </div>
-                             <div>
-                                <Label htmlFor="ot_number">Número de OT *</Label>
-                                <Input 
-                                    id="ot_number" 
-                                    placeholder="Seleccione categoría para generar" 
-                                    value={otNumber}
-                                    readOnly
-                                    className="bg-muted"
-                                />
-                                {lastUsedOt && (
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        Último usado: <span className="font-semibold">{lastUsedOt}</span>
-                                    </p>
-                                )}
-                            </div>
-                        </div>
+                         </div>
+                        <Input 
+                            id="ot_number" 
+                            placeholder="Seleccione categoría para generar" 
+                            value={otNumber}
+                            readOnly
+                            className="bg-muted flex-1"
+                        />
+                    </div>
+                     {lastUsedOt && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Último usado en esta categoría: <span className="font-semibold">{lastUsedOt}</span>
+                        </p>
+                    )}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                    {/* Left Column */}
+                    <div className="space-y-4">
                         
                         <div className="grid grid-cols-2 gap-4">
                             <div>
@@ -270,25 +299,25 @@ export default function NewOrderPage() {
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <Label htmlFor="start-date">Fecha de Creación (OT)</Label>
+                                <Label htmlFor="start-date">Fecha de Inicio</Label>
                                 <Popover>
                                     <PopoverTrigger asChild>
                                         <Button
                                         variant={"outline"}
                                         className={cn(
                                             "w-full justify-start text-left font-normal",
-                                            !creationDate && "text-muted-foreground"
+                                            !startDate && "text-muted-foreground"
                                         )}
                                         >
                                         <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {creationDate ? format(creationDate, "PPP", { locale: es }) : <span>Elegir fecha</span>}
+                                        {startDate ? format(startDate, "PPP", { locale: es }) : <span>Elegir fecha</span>}
                                         </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0">
                                         <Calendar
                                         mode="single"
-                                        selected={creationDate}
-                                        onSelect={setCreationDate}
+                                        selected={startDate}
+                                        onSelect={setStartDate}
                                         initialFocus
                                         locale={es}
                                         />
@@ -610,5 +639,3 @@ export default function NewOrderPage() {
     </div>
   );
 }
-
-

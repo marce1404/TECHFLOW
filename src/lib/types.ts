@@ -28,6 +28,7 @@ export type Invoice = {
 
 export type WorkOrder = {
   id:string;
+  createdAt?: string;
   ot_number: string;
   date: string;
   endDate?: string;
@@ -316,7 +317,7 @@ const invoiceSchema = z.object({
 });
 
 export const CreateWorkOrderInputSchema = z.object({
-  ot_number: z.string().describe("The unique work order number, including prefix. E.g., 'OT-1525'"),
+  ot_number: z.string().describe("The unique work order number, including prefix. E.g., 'OT1525'"),
   description: z.string().describe("The name or description of the work order."),
   client: z.string().describe("The client's name for this work order."),
   rut: z.string().optional().describe("The client's RUT."),
