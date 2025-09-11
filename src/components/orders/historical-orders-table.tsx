@@ -24,6 +24,8 @@ import {
 import { useWorkOrders } from '@/context/work-orders-context';
 import { cn, normalizeString } from '@/lib/utils';
 import { useAuth } from '@/context/auth-context';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface HistoricalOrdersTableProps {
     orders: WorkOrder[];
@@ -205,12 +207,12 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                             <Link href={`/orders/${order.id}/edit`} className="text-primary hover:underline">
                               {order.ot_number}
                             </Link>
-                            <div className="text-xs text-muted-foreground">{order.date}</div>
+                             <div className="text-xs text-muted-foreground">{order.createdAt ? format(parseISO(order.createdAt), 'dd/MM/yy') : order.date}</div>
                           </TableCell>
                           <TableCell>{order.description}</TableCell>
                           <TableCell>{order.client}</TableCell>
                           <TableCell>{order.service}</TableCell>
-                          <TableCell>{Array.isArray(order.assigned) ? order.assigned.join(', ') : ''}</TableCell>
+                          <TableCell>{Array.isArray(order.assigned) ? order.assigned.join(', ') : order.assigned}</TableCell>
                           <TableCell>{order.comercial}</TableCell>
                            <TableCell className="text-right">{formatCurrency(order.netPrice)}</TableCell>
                           <TableCell>
