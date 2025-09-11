@@ -84,7 +84,7 @@ export function PlannerCalendar({ workOrders, onDayClick, canSchedule }: Planner
     }
   };
   
-  const getEventsForDay = (day: Date) => {
+  const getEventsForDay = React.useCallback((day: Date) => {
     return workOrders
       .filter(order => {
         if (!order.date) return false;
@@ -99,7 +99,7 @@ export function PlannerCalendar({ workOrders, onDayClick, canSchedule }: Planner
         return isWithinInterval(day, { start: startDate, end: endDate });
       })
       .sort((a, b) => (a.startTime || '00:00').localeCompare(b.startTime || '00:00'));
-  };
+  }, [workOrders]);
 
   const handlePrevious = () => {
     const newDate = add(currentDate, view === 'month' ? { months: -1 } : { weeks: -1 });
