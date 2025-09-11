@@ -61,9 +61,9 @@ export async function sendTestEmailAction(config: SmtpConfig, to: string): Promi
   const mailOptions = {
     from: `"${fromName}" <${fromEmail}>`,
     to: to,
-    subject: 'Correo de Prueba - TechFlow',
-    text: 'Este es un correo de prueba para verificar tu configuración SMTP en TechFlow.',
-    html: '<h3>Correo de Prueba</h3><p>Este es un correo de prueba para verificar tu configuración SMTP en <strong>TechFlow</strong>.</p><p>Si recibiste esto, ¡la configuración es correcta!</p>',
+    subject: 'Correo de Prueba - OSESA',
+    text: 'Este es un correo de prueba para verificar tu configuración SMTP en OSESA.',
+    html: '<h3>Correo de Prueba</h3><p>Este es un correo de prueba para verificar tu configuración SMTP en <strong>OSESA</strong>.</p><p>Si recibiste esto, ¡la configuración es correcta!</p>',
   };
 
   try {
@@ -208,7 +208,7 @@ export async function sendInvoiceRequestEmailAction(
                 ` : ''}
 
                 <div class="footer">
-                    <p>Este es un correo generado automáticamente por el sistema de gestión TechFlow.</p>
+                    <p>Este es un correo generado automáticamente por el sistema de gestión OSESA.</p>
                 </div>
             </div>
         </body>
@@ -344,8 +344,8 @@ export async function sendInvitationEmailAction(
         : `¡Bienvenido a Control de OT de OSESA! Tus credenciales de acceso`;
 
     const greeting = isPasswordChange
-        ? `Se ha actualizado tu contraseña para la plataforma de gestión de operaciones TechFlow. A continuación encontrarás tus credenciales actualizadas.`
-        : `Has sido invitado a unirte a la plataforma de gestión de operaciones TechFlow, CONTROL DE OT DE OSESA. A continuación encontrarás tus credenciales de acceso.`;
+        ? `Se ha actualizado tu contraseña para la plataforma de gestión de operaciones OSESA. A continuación encontrarás tus credenciales actualizadas.`
+        : `Has sido invitado a unirte a la plataforma de gestión de operaciones OSESA, CONTROL DE OT DE OSESA. A continuación encontrarás tus credenciales de acceso.`;
     
     const htmlBody = `
     <!DOCTYPE html>
@@ -377,7 +377,7 @@ export async function sendInvitationEmailAction(
                     <hr style="border: none; border-top: 1px solid #cbd5e1; margin: 12px 0;">
                     ${roleDetails}
                 </div>
-                <a href="${loginUrl}" class="button">Iniciar Sesión en TechFlow</a>
+                <a href="${loginUrl}" class="button">Iniciar Sesión en OSESA</a>
             </div>
             <div class="footer">
                 <p>Si tienes problemas para acceder, por favor contacta a tu administrador.</p>

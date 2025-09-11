@@ -200,10 +200,10 @@ export function SendReportByEmailDialog({ open, onOpenChange, report, reportMana
                 
                 <br>
                 <p>Saludos cordiales,</p>
-                <p><strong>El Equipo de ${companyInfo?.name || 'TechFlow'}</strong></p>
+                <p><strong>El Equipo de ${companyInfo?.name || 'OSESA'}</strong></p>
             </div>
             <div class="footer">
-                <p>&copy; ${new Date().getFullYear()} ${companyInfo?.name || 'TechFlow'}. Todos los derechos reservados.</p>
+                <p>&copy; ${new Date().getFullYear()} ${companyInfo?.name || 'OSESA'}. Todos los derechos reservados.</p>
                 <p>${companyInfo?.address || ''}</p>
             </div>
         </div>
