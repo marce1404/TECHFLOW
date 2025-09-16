@@ -114,6 +114,7 @@ export type Vehicle = {
   model: string;
   year: number;
   plate: string;
+  company?: string;
   status: 'Disponible' | 'Asignado' | 'En Mantenimiento';
   assignedTo?: string;
   maintenanceLog?: VehicleMaintenance[];
@@ -300,58 +301,31 @@ export const CreateUserInputSchema = UpdateUserInputSchema.extend({
 export type CreateUserInput = z.infer<typeof CreateUserInputSchema>;
 
 
+export const CreateWorkOrderInputSchemaForExcel = z.object({
+  ot_number: z.string().min(1, 'ot_number no puede estar vacío.'),
+  description: z.string().min(1, 'description no puede estar vacío.'),
+  client: z.string().min(1, 'client no puede estar vacío.'),
+  service: z.string().min(1, 'service no puede estar vacío.'),
+  date: z.string().optional(),
+  endDate: z.string().optional(),
+  notes: z.string().optional(),
+  status: z.enum(['Por Iniciar', 'En Progreso', 'Pendiente', 'Atrasada', 'Cerrada']),
+  priority: z.enum(['Baja', 'Media', 'Alta']).optional(),
+  netPrice: z.number().optional().default(0),
+  ocNumber: z.string().optional(),
+  invoiceNumber: z.string().optional(),
+  assigned: z.string().optional(),
+  technicians: z.string().optional(),
+});
+export type CreateWorkOrderInput = z.infer<typeof CreateWorkOrderInputSchemaForExcel>;
+
+
 export const UpdateUserOutputSchema = z.object({
   success: z.boolean(),
   message: z.string(),
 });
 
 export type UpdateUserOutput = z.infer<typeof UpdateUserOutputSchema>;
-
-// Excel Import Types & API Types
-const workOrderStatuses = z.enum(['Por Iniciar', 'En Progreso', 'En Proceso', 'Pendiente', 'Atrasada', 'Cerrada', 'CERRADA', 'Actividad']);
-const invoiceSchema = z.object({
-  id: z.string(),
-  number: z.string().min(1, "El número de factura es requerido"),
-  date: z.string().min(1, "La fecha es requerida"),
-  amount: z.coerce.number().min(0, "El monto debe ser positivo"),
-});
-
-export const CreateWorkOrderInputSchema = z.object({
-  ot_number: z.string().describe("The unique work order number, including prefix. E.g., 'OT1525'"),
-  description: z.string().describe("The name or description of the work order."),
-  client: z.string().describe("The client's name for this work order."),
-  rut: z.string().optional().describe("The client's RUT."),
-  service: z.string().describe("The service category, e.g., 'CCTV', 'CCAA'."),
-  date: z.string().describe("The start date of the work order in 'YYYY-MM-DD' format."),
-  endDate: z.string().optional().describe("The potential end date in 'YYYY-MM-DD' format."),
-  startTime: z.string().optional().describe("The start time, e.g., '09:00'"),
-  endTime: z.string().optional().describe("The end time, e.g., '18:00'"),
-  notes: z.string().optional().describe("Additional notes or a detailed description."),
-  status: workOrderStatuses.describe("The initial status of the work order."),
-  priority: z.enum(['Baja', 'Media', 'Alta']).optional().describe("The priority of the work order."),
-  netPrice: z.number().optional().default(0).describe("The net price of the work order."),
-  invoices: z.array(invoiceSchema).optional().default([]),
-  assigned: z.array(z.string()).optional().default([]).describe("A list of names for assigned supervisors/managers."),
-  technicians: z.array(z.string()).optional().default([]).describe("A list of names for assigned technicians."),
-  vehicles: z.array(z.string()).optional().default([]).describe("A list of assigned vehicles."),
-  comercial: z.string().optional().describe("The name of the salesperson."),
-  saleNumber: z.string().optional().describe("The sale number."),
-  hesEmMigo: z.string().optional().describe("The HES/EM/MIGO number."),
-  rentedVehicle: z.string().optional().describe("Details of a rented vehicle."),
-  manualProgress: z.number().optional().default(0).describe("Manual progress percentage for the work order."),
-});
-export type CreateWorkOrderInput = z.infer<typeof CreateWorkOrderInputSchema>;
-
-export const CreateWorkOrderInputSchemaForExcel = CreateWorkOrderInputSchema.omit({ invoices: true }).extend({
-    invoiceNumber: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
-});
-
-export const CreateWorkOrderOutputSchema = z.object({
-  success: z.boolean(),
-  orderId: z.string().optional(),
-  message: z.string(),
-});
-export type CreateWorkOrderOutput = z.infer<typeof CreateWorkOrderOutputSchema>;
 
 // Attachment type for emails
 export type MailAttachment = {

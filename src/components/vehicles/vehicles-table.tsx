@@ -63,6 +63,7 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
     const headers: { key: keyof Vehicle, label: string }[] = [
         { key: 'plate', label: 'Patente' },
         { key: 'model', label: 'Vehículo' },
+        { key: 'company', label: 'Empresa' },
         { key: 'status', label: 'Estado' },
         { key: 'assignedTo', label: 'Asignado a' },
     ];
@@ -105,6 +106,7 @@ export default function VehiclesTable({ vehicles, requestSort, sortConfig }: Veh
                                     <div>{vehicle.model}</div>
                                     <div className="text-xs text-muted-foreground">{vehicle.year}</div>
                                 </TableCell>
+                                <TableCell>{vehicle.company}</TableCell>
                                 <TableCell>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild disabled={!canEdit}>

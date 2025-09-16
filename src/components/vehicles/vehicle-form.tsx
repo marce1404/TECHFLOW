@@ -39,6 +39,7 @@ const vehicleFormSchema = z.object({
   model: z.string().min(3, { message: 'El modelo debe tener al menos 3 caracteres.' }),
   year: z.coerce.number().min(1990, "El año debe ser válido."),
   plate: z.string().min(6, { message: 'La patente debe tener al menos 6 caracteres.' }),
+  company: z.string().optional(),
   status: z.enum(['Disponible', 'Asignado', 'En Mantenimiento']),
   assignedTo: z.string().optional(),
   maintenanceLog: z.array(maintenanceSchema).optional(),
@@ -61,6 +62,7 @@ export default function VehicleForm({ onSave, vehicle, collaborators, disabled =
       model: '',
       year: new Date().getFullYear(),
       plate: '',
+      company: '',
       status: 'Disponible',
       assignedTo: '',
       maintenanceLog: [],
@@ -87,6 +89,7 @@ export default function VehicleForm({ onSave, vehicle, collaborators, disabled =
         model: vehicle.model || '',
         year: vehicle.year || new Date().getFullYear(),
         plate: vehicle.plate || '',
+        company: vehicle.company || '',
         status: vehicle.status || 'Disponible',
         assignedTo: vehicle.assignedTo || 'none',
         maintenanceLog: vehicle.maintenanceLog || [],
@@ -96,6 +99,7 @@ export default function VehicleForm({ onSave, vehicle, collaborators, disabled =
             model: '',
             year: new Date().getFullYear(),
             plate: '',
+            company: '',
             status: 'Disponible',
             assignedTo: 'none',
             maintenanceLog: [],
@@ -161,6 +165,19 @@ export default function VehicleForm({ onSave, vehicle, collaborators, disabled =
                                     </FormItem>
                                 )}
                             />
+                             <FormField
+                                control={form.control}
+                                name="company"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Empresa (Opcional)</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="Ej: OSESA, Arriendo" {...field} value={field.value ?? ''} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                                />
                             <FormField
                                 control={form.control}
                                 name="assignedTo"

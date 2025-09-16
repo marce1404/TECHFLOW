@@ -59,6 +59,7 @@ export default function VehiclesPage() {
             const matchesSearch = 
                 vehicle.model.toLowerCase().includes(search.toLowerCase()) ||
                 vehicle.plate.toLowerCase().includes(search.toLowerCase()) ||
+                (vehicle.company && vehicle.company.toLowerCase().includes(search.toLowerCase())) ||
                 (vehicle.assignedTo && vehicle.assignedTo.toLowerCase().includes(search.toLowerCase()));
             return matchesStatus && matchesSearch;
         }
@@ -105,7 +106,7 @@ export default function VehiclesPage() {
                             </ScrollArea>
                             <div className="flex w-full sm:w-auto items-center gap-2">
                                 <Input
-                                    placeholder="Buscar por marca, patente, asignado..."
+                                    placeholder="Buscar por marca, patente, empresa..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     className="w-full sm:max-w-sm"
