@@ -117,6 +117,17 @@ export default function VehicleForm({ onSave, vehicle, collaborators, disabled =
   
   const statusIsOverridden = form.getValues('status') === 'En Mantenimiento';
 
+  const activeCollaborators = React.useMemo(() => {
+    const uniqueNames = new Set();
+    return collaborators.filter(c => {
+      if (c.status === 'Activo' && !uniqueNames.has(c.name)) {
+        uniqueNames.add(c.name);
+        return true;
+      }
+      return false;
+    });
+  }, [collaborators]);
+
 
   return (
     <Form {...form}>
@@ -192,7 +203,7 @@ export default function VehicleForm({ onSave, vehicle, collaborators, disabled =
                                         </FormControl>
                                         <SelectContent>
                                             <SelectItem value="none">N/A</SelectItem>
-                                            {collaborators.filter(t => t.status === 'Activo').map(t => (
+                                            {activeCollaborators.map(t => (
                                                 <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>
                                             ))}
                                         </SelectContent>
