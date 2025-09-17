@@ -19,6 +19,7 @@ import type { CreateWorkOrderInput } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { ScrollArea } from '../ui/scroll-area';
 import { useWorkOrders } from '@/context/work-orders-context';
+import { normalizeString } from '@/lib/utils';
 
 interface ImportOrdersDialogProps {
   open: boolean;
@@ -26,9 +27,11 @@ interface ImportOrdersDialogProps {
   onImportSuccess: () => void;
 }
 
+// More flexible status enum to catch common variations
 const workOrderStatuses = ['Por Iniciar', 'En Progreso', 'En Proceso', 'Pendiente', 'Atrasada', 'Cerrada', 'CERRADA'] as const;
 const workOrderPriorities = ['Baja', 'Media', 'Alta'] as const;
 
+// Zod schema for Excel row validation
 const CreateWorkOrderInputSchemaForExcel = z.object({
   ot_number: z.string().min(1, 'ot_number no puede estar vacío.'),
   description: z.string().min(1, 'description no puede estar vacío.'),
@@ -38,21 +41,20 @@ const CreateWorkOrderInputSchemaForExcel = z.object({
   endDate: z.string().optional(),
   notes: z.string().optional(),
   status: z.preprocess((val) => {
-    if (typeof val === 'string') {
-        const lowerVal = val.toLowerCase();
-        const foundStatus = workOrderStatuses.find(s => s.toLowerCase() === lowerVal);
-        return foundStatus || val;
-    }
-    return val;
+    if (typeof val !== 'string') return val;
+    const normalized = normalizeString(val);
+    if (normalized === 'en progreso' || normalized === 'en proceso') return 'En Progreso';
+    if (normalized === 'cerrada') return 'Cerrada';
+    const foundStatus = workOrderStatuses.find(s => normalizeString(s) === normalized);
+    return foundStatus || val;
   }, z.enum(workOrderStatuses)),
   priority: z.preprocess((val) => {
-      if (typeof val === 'string') {
-          const lowerVal = val.toLowerCase();
-          return lowerVal.charAt(0).toUpperCase() + lowerVal.slice(1);
-      }
-      return val;
+      if (typeof val !== 'string') return val;
+      const normalized = normalizeString(val);
+      const foundPriority = workOrderPriorities.find(p => normalizeString(p) === normalized);
+      return foundPriority || val;
   }, z.enum(workOrderPriorities)).optional(),
-  netPrice: z.number().optional().default(0),
+  netPrice: z.coerce.number().optional().default(0),
   ocNumber: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
   invoiceNumber: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
   assigned: z.string().optional(),
@@ -83,15 +85,11 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     }
   };
   
-  const normalizeString = (str: string) => {
-    return str.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  };
-  
-  const findMatchingCollaborator = (name: string, role?: 'Técnico' | 'Supervisor' | 'Comercial' | 'Encargado') => {
+  const findMatchingCollaborator = (name: string, role?: 'Técnico' | 'Supervisor' | 'Comercial' | 'Encargado' | 'Jefe de Proyecto' | 'Coordinador') => {
     const normalizedName = normalizeString(name);
-    const collaboratorPool = role 
-        ? collaborators.filter(c => normalizeString(c.role) === normalizeString(role)) 
-        : collaborators;
+    const rolesToMatch = role ? [normalizeString(role)] : ['técnico', 'supervisor', 'coordinador', 'jefe de proyecto', 'encargado', 'comercial'];
+    
+    const collaboratorPool = collaborators.filter(c => rolesToMatch.includes(normalizeString(c.role)));
         
     const found = collaboratorPool.find(c => normalizeString(c.name) === normalizedName);
     return found?.name; // Return the correct, full name from the DB
@@ -106,42 +104,40 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
   const parseDate = (dateValue: any): string | undefined => {
     if (!dateValue) return undefined;
 
+    // The xlsx library with `cellDates: true` should parse dates as JS Date objects.
+    // Excel dates are often off by one day due to timezone differences.
     if (dateValue instanceof Date) {
-        // Adjust for timezone offset when Excel provides a Date object
-        const adjustedDate = new Date(dateValue.getTime() - (dateValue.getTimezoneOffset() * 60000));
-        return adjustedDate.toISOString().split('T')[0];
+        // Create a new Date object in UTC to avoid local timezone shifts during conversion.
+        const utcDate = new Date(Date.UTC(dateValue.getFullYear(), dateValue.getMonth(), dateValue.getDate()));
+        return utcDate.toISOString().split('T')[0];
     }
     
+    // Fallback for string dates
     if (typeof dateValue === 'string') {
-        const parts = dateValue.split(/[/.-]/); // Handles DD/MM/YYYY, DD-MM-YYYY, etc.
+        const parts = dateValue.split(/[/.-]/);
         if (parts.length === 3) {
             let day, month, year;
-            // Guess format based on part lengths or values
-            if (parts[2].length === 4) { // Likely DD/MM/YYYY
+            if (parts[2].length === 4) { // DD/MM/YYYY
                 day = parseInt(parts[0], 10);
                 month = parseInt(parts[1], 10);
                 year = parseInt(parts[2], 10);
-            } else if (parts[0].length === 4) { // Likely YYYY/MM/DD
+            } else if (parts[0].length === 4) { // YYYY/MM/DD
                 year = parseInt(parts[0], 10);
                 month = parseInt(parts[1], 10);
                 day = parseInt(parts[2], 10);
             }
-             if (day && month && year && year > 1900) {
-                 // Create date in UTC to avoid timezone issues
-                const date = new Date(Date.UTC(year, month - 1, day));
-                if (!isNaN(date.getTime())) {
-                    return date.toISOString().split('T')[0];
-                }
+            if (day && month && year && !isNaN(day) && !isNaN(month) && !isNaN(year)) {
+                 const date = new Date(Date.UTC(year, month - 1, day));
+                 if (!isNaN(date.getTime())) {
+                     return date.toISOString().split('T')[0];
+                 }
             }
         }
-    }
-    
-    // Fallback for other formats like native YYYY-MM-DD or numbers
-    if (typeof dateValue === 'string' || typeof dateValue === 'number') {
-        const d = new Date(dateValue);
-        if (!isNaN(d.getTime())) {
-            const adjustedDate = new Date(d.getTime() - (d.getTimezoneOffset() * 60000));
-            return adjustedDate.toISOString().split('T')[0];
+        // Try parsing directly for YYYY-MM-DD format
+        const directParse = new Date(dateValue);
+        if (!isNaN(directParse.getTime())) {
+             const utcDate = new Date(Date.UTC(directParse.getFullYear(), directParse.getMonth(), directParse.getDate()));
+             return utcDate.toISOString().split('T')[0];
         }
     }
     
@@ -152,10 +148,10 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     const reader = new FileReader();
     reader.onload = (e) => {
       const data = new Uint8Array(e.target?.result as ArrayBuffer);
-      const workbook = xlsx.read(data, { type: 'array', cellDates: true, dateNF: 'yyyy-mm-dd' });
+      const workbook = xlsx.read(data, { type: 'array', cellDates: true });
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
-      const json = xlsx.utils.sheet_to_json(worksheet);
+      const json = xlsx.utils.sheet_to_json(worksheet, {raw: false}); // raw: false helps with dates
       
       const validationErrors: string[] = [];
       const validData: CreateWorkOrderInput[] = [];
@@ -406,3 +402,5 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
+
+    
