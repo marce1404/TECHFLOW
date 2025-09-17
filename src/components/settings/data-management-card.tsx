@@ -107,46 +107,40 @@ export default function DataManagementCard() {
     const handleDownloadTemplate = () => {
         const wb = xlsx.utils.book_new();
 
-        // Main sheet with example data
         const mainSheetData = [{
-            ot_number: "OT-1000",
-            description: "Ejemplo de descripción de la OT",
-            client: "Nombre del Cliente",
-            rut: "12.345.678-9",
-            service: "CCTV",
-            date: "2025-06-16",
-            endDate: "2025-06-20",
-            status: "Por Iniciar",
-            priority: "Media",
-            netPrice: 150000,
-            ocNumber: "OC-12345",
-            assigned: "Juan Pérez",
-            technicians: "Pedro Soto, Ana Torres",
-            vehicles: "PPU-1111, PPU-2222",
-            comercial: "Vendedor Ejemplo",
-            saleNumber: 'VN-001',
-            hesEmMigo: 'HES-9876',
-            rentedVehicle: 'Hertz, PPU-RENT',
-            notes: "Notas adicionales sobre el trabajo.",
+            'Numero OT': "OT-1000",
+            'Descripción': "Ejemplo de descripción de la OT",
+            'Cliente': "Nombre del Cliente",
+            'RUT': "12.345.678-9",
+            'Servicio': "CCTV",
+            'Fecha Inicio': "2025-06-16",
+            'Fecha Termino': "2025-06-20",
+            'Estado': "Por Iniciar",
+            'Prioridad': "Media",
+            'Precio Neto': 150000,
+            'Nº Orden de Compra': "OC-12345",
+            'Encargados (nombres separados por coma)': "Juan Pérez, María García",
+            'Técnicos (nombres separados por coma)': "Pedro Soto, Ana Torres",
+            'Vehículos (patentes separadas por coma)': "PPU-1111, PPU-2222",
+            'Comercial': "Vendedor Ejemplo",
+            'Nº Venta': 'VN-001',
+            'HES/EM/MIGO': 'HES-9876',
+            'Vehículo Arrendado': 'Hertz, PPU-RENT',
+            'Notas': "Notas adicionales sobre el trabajo.",
         }];
         const ws = xlsx.utils.json_to_sheet(mainSheetData, {cellDates: true});
-        ws["!cols"] = Object.keys(mainSheetData[0]).map(() => ({ wch: 25 })); // Set column widths
+        ws["!cols"] = Object.keys(mainSheetData[0]).map(() => ({ wch: 35 })); // Set column widths
         xlsx.utils.book_append_sheet(wb, ws, "Importación");
         
-        // --- Create hidden sheets with validation data ---
-        
-        // Services
         const activeServices = services.filter(s => s.status === 'Activa').map(s => [s.name]);
         if(activeServices.length > 0) {
             const ws_services = xlsx.utils.aoa_to_sheet(activeServices);
             xlsx.utils.book_append_sheet(wb, ws_services, "Data_Servicios");
-            // Add data validation to the 'service' column
             ws['!dataValidation'] = (ws['!dataValidation'] || []).concat([
                 { sqref: `E2:E1000`, validation: { type: "list", allowBlank: false, showErrorMessage: true, formula1: `Data_Servicios!$A$1:$A$${activeServices.length}` } },
             ]);
         }
 
-        // Statuses
         const validStatuses = otStatuses.map(s => [s.name]);
         if (validStatuses.length > 0) {
             const ws_statuses = xlsx.utils.aoa_to_sheet(validStatuses);
@@ -156,7 +150,6 @@ export default function DataManagementCard() {
             ]);
         }
         
-        // Priorities
         const priorities = [["Baja"], ["Media"], ["Alta"]];
         const ws_priorities = xlsx.utils.aoa_to_sheet(priorities);
         xlsx.utils.book_append_sheet(wb, ws_priorities, "Data_Prioridades");
@@ -164,7 +157,6 @@ export default function DataManagementCard() {
             { sqref: `I2:I1000`, validation: { type: "list", allowBlank: true, showErrorMessage: true, formula1: `Data_Prioridades!$A$1:$A$3` } },
         ]);
 
-        // Collaborators
         const activeCollaborators = collaborators.filter(c => c.status === 'Activo').map(c => [c.name]);
         if (activeCollaborators.length > 0) {
             const ws_collaborators = xlsx.utils.aoa_to_sheet(activeCollaborators);
@@ -176,7 +168,6 @@ export default function DataManagementCard() {
             ]);
         }
 
-        // Hide data sheets
         wb.SheetNames.slice(1).forEach(name => {
             if (wb.Sheets[name]) {
                 wb.Props = wb.Props || {};
@@ -315,5 +306,7 @@ export default function DataManagementCard() {
         </>
     );
 }
+
+    
 
     

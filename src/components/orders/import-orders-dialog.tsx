@@ -27,49 +27,46 @@ interface ImportOrdersDialogProps {
   onImportSuccess: () => void;
 }
 
-// More flexible status enum to catch common variations
-const workOrderStatuses = ['Por Iniciar', 'En Progreso', 'En Proceso', 'Pendiente', 'Atrasada', 'Cerrada', 'CERRADA'] as const;
+const workOrderStatuses = ['Por Iniciar', 'En Progreso', 'En Proceso', 'Pendiente', 'Atrasada', 'Cerrada', 'Terminada'] as const;
 const workOrderPriorities = ['Baja', 'Media', 'Alta'] as const;
 
-// Zod schema for Excel row validation
 const CreateWorkOrderInputSchemaForExcel = z.object({
-  ot_number: z.string().min(1, 'ot_number no puede estar vacío.'),
-  description: z.string().min(1, 'description no puede estar vacío.'),
-  client: z.string().min(1, 'client no puede estar vacío.'),
-  service: z.string().min(1, 'service no puede estar vacío.'),
-  date: z.string().optional(),
-  endDate: z.string().optional(),
-  notes: z.string().optional(),
-  status: z.preprocess((val) => {
-    if (typeof val !== 'string') return val;
+  'Numero OT': z.string().min(1, 'La columna "Numero OT" no puede estar vacía.').transform(val => val.replace(/-/g, '')),
+  'Descripción': z.string().min(1, 'La columna "Descripción" no puede estar vacía.'),
+  'Cliente': z.string().min(1, 'La columna "Cliente" no puede estar vacía.'),
+  'Servicio': z.string().min(1, 'La columna "Servicio" no puede estar vacía.'),
+  'Fecha Inicio': z.any().optional(),
+  'Fecha Termino': z.any().optional(),
+  'Notas': z.string().optional(),
+  'Estado': z.string().transform((val) => {
     const normalized = normalizeString(val);
-    if (normalized === 'en progreso' || normalized === 'en proceso') return 'En Progreso';
-    if (normalized === 'cerrada') return 'Cerrada';
+    if (normalized === 'en proceso') return 'En Progreso';
+    if (normalized === 'terminada') return 'Cerrada';
     const foundStatus = workOrderStatuses.find(s => normalizeString(s) === normalized);
     return foundStatus || val;
-  }, z.enum(workOrderStatuses)),
-  priority: z.preprocess((val) => {
-      if (typeof val !== 'string') return val;
+  }),
+  'Prioridad': z.string().optional().transform((val) => {
+      if (!val) return 'Baja';
       const normalized = normalizeString(val);
       const foundPriority = workOrderPriorities.find(p => normalizeString(p) === normalized);
-      return foundPriority || val;
-  }, z.enum(workOrderPriorities)).optional(),
-  netPrice: z.coerce.number().optional().default(0),
-  ocNumber: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
-  invoiceNumber: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
-  assigned: z.string().optional(),
-  technicians: z.string().optional(),
-  comercial: z.string().optional(),
-  rut: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
-  saleNumber: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
-  hesEmMigo: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
-  rentedVehicle: z.string().optional(),
-  vehicles: z.string().optional(),
+      return foundPriority || 'Baja';
+  }),
+  'Precio Neto': z.coerce.number().optional().default(0),
+  'Nº Orden de Compra': z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
+  'Encargados (nombres separados por coma)': z.string().optional(),
+  'Técnicos (nombres separados por coma)': z.string().optional(),
+  'Comercial': z.string().optional(),
+  'RUT': z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
+  'Nº Venta': z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
+  'HES/EM/MIGO': z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
+  'Vehículo Arrendado': z.string().optional(),
+  'Vehículos (patentes separadas por coma)': z.string().optional(),
+  'Facturado': z.string().optional(), // Added for flexible facturado check
 });
 
 
 export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: ImportOrdersDialogProps) {
-  const { collaborators, vehicles: availableVehicles, addOrder } = useWorkOrders();
+  const { collaborators, vehicles: availableVehicles, addOrder, services: availableServices, otStatuses } = useWorkOrders();
   const [file, setFile] = React.useState<File | null>(null);
   const [parsedData, setParsedData] = React.useState<CreateWorkOrderInput[]>([]);
   const [errors, setErrors] = React.useState<string[]>([]);
@@ -85,43 +82,44 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     }
   };
   
-  const findMatchingCollaborator = (name: string, role?: 'Técnico' | 'Supervisor' | 'Comercial' | 'Encargado' | 'Jefe de Proyecto' | 'Coordinador') => {
-    const normalizedName = normalizeString(name);
-    const rolesToMatch = role ? [normalizeString(role)] : ['técnico', 'supervisor', 'coordinador', 'jefe de proyecto', 'encargado', 'comercial'];
-    
-    const collaboratorPool = collaborators.filter(c => rolesToMatch.includes(normalizeString(c.role)));
-        
-    const found = collaboratorPool.find(c => normalizeString(c.name) === normalizedName);
-    return found?.name; // Return the correct, full name from the DB
+  const findMatchingCollaborator = (name: string) => {
+    if (!name?.trim()) return name;
+    const normalizedName = normalizeString(name).replace(/\./g, '');
+    const found = collaborators.find(c => normalizeString(c.name).replace(/\./g, '').includes(normalizedName));
+    return found?.name || name;
   };
+
+  const findMatchingString = (input: string, validList: {name: string}[]) => {
+      if (!input?.trim()) return input;
+      const normalizedInput = normalizeString(input);
+      const found = validList.find(item => normalizeString(item.name) === normalizedInput);
+      return found?.name || input;
+  }
   
   const findMatchingVehicle = (plate: string) => {
+    if (!plate?.trim()) return plate;
     const normalizedPlate = normalizeString(plate);
     const found = availableVehicles.find(v => normalizeString(v.plate) === normalizedPlate);
-    return found?.plate;
+    return found?.plate || plate;
   };
 
   const parseDate = (dateValue: any): string | undefined => {
     if (!dateValue) return undefined;
 
-    // The xlsx library with `cellDates: true` should parse dates as JS Date objects.
-    // Excel dates are often off by one day due to timezone differences.
     if (dateValue instanceof Date) {
-        // Create a new Date object in UTC to avoid local timezone shifts during conversion.
         const utcDate = new Date(Date.UTC(dateValue.getFullYear(), dateValue.getMonth(), dateValue.getDate()));
         return utcDate.toISOString().split('T')[0];
     }
     
-    // Fallback for string dates
     if (typeof dateValue === 'string') {
         const parts = dateValue.split(/[/.-]/);
         if (parts.length === 3) {
             let day, month, year;
-            if (parts[2].length === 4) { // DD/MM/YYYY
+            if (parts[2].length === 4) {
                 day = parseInt(parts[0], 10);
                 month = parseInt(parts[1], 10);
                 year = parseInt(parts[2], 10);
-            } else if (parts[0].length === 4) { // YYYY/MM/DD
+            } else if (parts[0].length === 4) {
                 year = parseInt(parts[0], 10);
                 month = parseInt(parts[1], 10);
                 day = parseInt(parts[2], 10);
@@ -133,7 +131,6 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                  }
             }
         }
-        // Try parsing directly for YYYY-MM-DD format
         const directParse = new Date(dateValue);
         if (!isNaN(directParse.getTime())) {
              const utcDate = new Date(Date.UTC(directParse.getFullYear(), directParse.getMonth(), directParse.getDate()));
@@ -151,7 +148,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
       const workbook = xlsx.read(data, { type: 'array', cellDates: true });
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
-      const json = xlsx.utils.sheet_to_json(worksheet, {raw: false}); // raw: false helps with dates
+      const json = xlsx.utils.sheet_to_json(worksheet, {raw: false});
       
       const validationErrors: string[] = [];
       const validData: CreateWorkOrderInput[] = [];
@@ -159,44 +156,79 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
       json.forEach((row: any, index: number) => {
         const rowData = { ...row };
         
-        rowData.date = parseDate(rowData.date);
-        rowData.endDate = parseDate(rowData.endDate);
+        rowData['Fecha Inicio'] = parseDate(rowData['Fecha Inicio']);
+        rowData['Fecha Termino'] = parseDate(rowData['Fecha Termino']);
 
-        if (!rowData.date) {
-            validationErrors.push(`Fila ${index + 2}: La columna 'date' es requerida o tiene un formato inválido.`);
+        if (!rowData['Fecha Inicio']) {
+            validationErrors.push(`Fila ${index + 2}: La columna 'Fecha Inicio' es requerida o tiene un formato inválido.`);
         }
 
         const result = CreateWorkOrderInputSchemaForExcel.safeParse(rowData);
 
         if (result.success) {
-          const { assigned, technicians, vehicles, comercial, ...rest } = result.data;
+          const { 
+              'Numero OT': ot_number,
+              'Descripción': description,
+              'Cliente': client,
+              'RUT': rut,
+              'Servicio': service,
+              'Fecha Inicio': date,
+              'Fecha Termino': endDate,
+              'Estado': status,
+              'Prioridad': priority,
+              'Precio Neto': netPrice,
+              'Nº Orden de Compra': ocNumber,
+              'Encargados (nombres separados por coma)': assigned,
+              'Técnicos (nombres separados por coma)': technicians,
+              'Vehículos (patentes separadas por coma)': vehicles,
+              'Comercial': comercial,
+              'Nº Venta': saleNumber,
+              'HES/EM/MIGO': hesEmMigo,
+              'Vehículo Arrendado': rentedVehicle,
+              'Notas': notes,
+              'Facturado': facturado,
+          } = result.data;
           
           const mappedAssigned = assigned 
-            ? assigned.split(',').map(name => findMatchingCollaborator(name.trim()) || name.trim())
+            ? assigned.split(',').map(name => findMatchingCollaborator(name.trim()))
             : [];
 
           const mappedTechnicians = technicians 
-            ? technicians.split(',').map(name => findMatchingCollaborator(name.trim(), 'Técnico') || name.trim())
+            ? technicians.split(',').map(name => findMatchingCollaborator(name.trim()))
             : [];
             
           const mappedVehicles = vehicles
-            ? vehicles.split(',').map(plate => findMatchingVehicle(plate.trim()) || plate.trim())
+            ? vehicles.split(',').map(plate => findMatchingVehicle(plate.trim()))
             : [];
 
           const mappedComercial = comercial
-            ? findMatchingCollaborator(comercial.trim(), 'Comercial') || comercial.trim()
+            ? findMatchingCollaborator(comercial.trim())
             : '';
 
           validData.push({
-            ...rest,
-            priority: rest.priority || 'Baja',
+            ot_number,
+            description,
+            client,
+            rut,
+            service: findMatchingString(service, availableServices),
+            date: date,
+            endDate: endDate,
+            notes: notes,
+            status: findMatchingString(status, otStatuses) as CreateWorkOrderInput['status'],
+            priority: priority,
+            netPrice: netPrice,
+            ocNumber: ocNumber,
             assigned: mappedAssigned,
             technicians: mappedTechnicians,
             vehicles: mappedVehicles,
             comercial: mappedComercial,
+            saleNumber: saleNumber,
+            hesEmMigo: hesEmMigo,
+            rentedVehicle: rentedVehicle,
+            facturado: normalizeString(facturado || '') === 'si',
           });
         } else {
-          const formattedErrors = result.error.issues.map(issue => `Fila ${index + 2}: ${issue.path.join('.')} - ${issue.message}`).join('; ');
+          const formattedErrors = result.error.issues.map(issue => `Fila ${index + 2}: Columna '${issue.path.join('.')}' - ${issue.message}`).join('; ');
           validationErrors.push(formattedErrors);
         }
       });
@@ -242,35 +274,6 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     setLoading(false);
     onOpenChange(false);
   }
-
-  const handleDownloadTemplate = () => {
-    const templateData = [{
-        ot_number: "OT-1000",
-        description: "Ejemplo de descripción de la OT",
-        client: "Nombre del Cliente",
-        rut: "12.345.678-9",
-        service: "CCTV",
-        date: "16/06/2025",
-        endDate: "20/06/2025",
-        status: "Por Iniciar",
-        priority: "Media",
-        netPrice: 150000,
-        ocNumber: "OC-12345",
-        invoiceNumber: "F-6789",
-        assigned: "Juan Pérez, María García",
-        technicians: "Pedro Soto, Ana Torres",
-        vehicles: "PPU-1111, PPU-2222",
-        comercial: "Vendedor Ejemplo",
-        saleNumber: 'VN-001',
-        hesEmMigo: 'HES-9876',
-        rentedVehicle: 'Hertz, PPU-RENT',
-        notes: "Notas adicionales sobre el trabajo. Esto es un texto largo.",
-    }];
-    const worksheet = xlsx.utils.json_to_sheet(templateData);
-    const workbook = xlsx.utils.book_new();
-    xlsx.utils.book_append_sheet(workbook, worksheet, "Plantilla");
-    xlsx.writeFile(workbook, "Plantilla_Importacion_OT.xlsx");
-  };
 
   const renderContent = () => {
     if (importResult) {
@@ -349,9 +352,16 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
     return (
         <div className="space-y-4">
-            <Button variant="outline" className="w-full" onClick={handleDownloadTemplate}>
+            <Button variant="outline" className="w-full" onClick={() => {
+                const link = document.createElement('a');
+                link.href = '/Plantilla_Importacion_Inteligente.xlsx';
+                link.download = 'Plantilla_Importacion_Inteligente.xlsx';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }}>
                 <Download className="mr-2 h-4 w-4" />
-                Descargar Plantilla de Ejemplo
+                Descargar Plantilla Inteligente
             </Button>
             <div className="relative">
                 <input
@@ -373,7 +383,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Importar Órdenes de Trabajo</DialogTitle>
           <DialogDescription>
@@ -402,5 +412,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
+
+    
 
     
