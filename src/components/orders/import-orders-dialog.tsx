@@ -61,7 +61,7 @@ const CreateWorkOrderInputSchemaForExcel = z.object({
   'HES/EM/MIGO': z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
   'Vehículo Arrendado': z.string().optional(),
   'Vehículos (patentes separadas por coma)': z.string().optional(),
-  'Facturado': z.string().optional(), // Added for flexible facturado check
+  'Facturado': z.string().optional(),
 });
 
 
@@ -115,11 +115,11 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         const parts = dateValue.split(/[/.-]/);
         if (parts.length === 3) {
             let day, month, year;
-            if (parts[2].length === 4) {
+            if (parts[2].length === 4) { // DD/MM/YYYY
                 day = parseInt(parts[0], 10);
                 month = parseInt(parts[1], 10);
                 year = parseInt(parts[2], 10);
-            } else if (parts[0].length === 4) {
+            } else if (parts[0].length === 4) { // YYYY/MM/DD
                 year = parseInt(parts[0], 10);
                 month = parseInt(parts[1], 10);
                 day = parseInt(parts[2], 10);
@@ -161,6 +161,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
         if (!rowData['Fecha Inicio']) {
             validationErrors.push(`Fila ${index + 2}: La columna 'Fecha Inicio' es requerida o tiene un formato inválido.`);
+            return;
         }
 
         const result = CreateWorkOrderInputSchemaForExcel.safeParse(rowData);
@@ -352,16 +353,11 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
     return (
         <div className="space-y-4">
-            <Button variant="outline" className="w-full" onClick={() => {
-                const link = document.createElement('a');
-                link.href = '/Plantilla_Importacion_Inteligente.xlsx';
-                link.download = 'Plantilla_Importacion_Inteligente.xlsx';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }}>
-                <Download className="mr-2 h-4 w-4" />
-                Descargar Plantilla Inteligente
+            <Button variant="outline" className="w-full" asChild>
+                <a href="/Plantilla_Importacion_Inteligente.xlsx" download="Plantilla_Importacion_Inteligente.xlsx">
+                    <Download className="mr-2 h-4 w-4" />
+                    Descargar Plantilla
+                </a>
             </Button>
             <div className="relative">
                 <input
@@ -412,7 +408,3 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
-
-    
-
-    

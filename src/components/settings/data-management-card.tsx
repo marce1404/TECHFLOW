@@ -19,7 +19,7 @@ import { Separator } from '../ui/separator';
 import * as xlsx from 'xlsx';
 
 export default function DataManagementCard() {
-    const { workOrders, otStatuses, collaborators, vehicles, ganttCharts, otCategories, services, suggestedTasks, reportTemplates, submittedReports, fetchData } = useWorkOrders();
+    const { workOrders, otStatuses, collaborators, vehicles, ganttCharts, otCategories, services, submittedReports, fetchData } = useWorkOrders();
     const [date, setDate] = React.useState<DateRange | undefined>();
     const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>([]);
     const [isExporting, setIsExporting] = React.useState(false);
@@ -108,66 +108,80 @@ export default function DataManagementCard() {
         const wb = xlsx.utils.book_new();
 
         const mainSheetData = [{
-            'Numero OT': "OT-1000",
-            'Descripción': "Ejemplo de descripción de la OT",
-            'Cliente': "Nombre del Cliente",
-            'RUT': "12.345.678-9",
+            'Numero OT': "OT-1001",
+            'Descripción': "Instalación de sistema CCTV en bodega",
+            'Cliente': "Cliente Ejemplo S.A.",
+            'RUT': "76.123.456-7",
             'Servicio': "CCTV",
-            'Fecha Inicio': "2025-06-16",
-            'Fecha Termino': "2025-06-20",
+            'Fecha Inicio': "2025-07-20",
+            'Fecha Termino': "2025-07-25",
             'Estado': "Por Iniciar",
-            'Prioridad': "Media",
-            'Precio Neto': 150000,
-            'Nº Orden de Compra': "OC-12345",
-            'Encargados (nombres separados por coma)': "Juan Pérez, María García",
-            'Técnicos (nombres separados por coma)': "Pedro Soto, Ana Torres",
+            'Prioridad': "Alta",
+            'Precio Neto': 2500000,
+            'Nº Orden de Compra': "OC-2025-987",
+            'Encargados (nombres separados por coma)': "Juan Pérez, Ana García",
+            'Técnicos (nombres separados por coma)': "Carlos Soto, Luis Torres",
             'Vehículos (patentes separadas por coma)': "PPU-1111, PPU-2222",
             'Comercial': "Vendedor Ejemplo",
-            'Nº Venta': 'VN-001',
-            'HES/EM/MIGO': 'HES-9876',
-            'Vehículo Arrendado': 'Hertz, PPU-RENT',
-            'Notas': "Notas adicionales sobre el trabajo.",
+            'Nº Venta': "NV-554",
+            'HES/EM/MIGO': "HES-12345",
+            'Vehículo Arrendado': "",
+            'Notas': "Instalación de 4 cámaras domo y 2 bullet. NVR de 8 canales. El cliente solicita canalización embutida.",
+            'Facturado': "No",
         }];
+        
         const ws = xlsx.utils.json_to_sheet(mainSheetData, {cellDates: true});
-        ws["!cols"] = Object.keys(mainSheetData[0]).map(() => ({ wch: 35 })); // Set column widths
+        const headers = Object.keys(mainSheetData[0]);
+        ws["!cols"] = headers.map(() => ({ wch: 35 }));
+        
+        const headerStyle = { font: { bold: true }, alignment: { wrapText: true, vertical: "top" } };
+        headers.forEach((h, i) => {
+            const cellRef = xlsx.utils.encode_cell({c:i, r:0});
+            if(ws[cellRef]) ws[cellRef].s = headerStyle;
+        });
+
         xlsx.utils.book_append_sheet(wb, ws, "Importación");
         
         const activeServices = services.filter(s => s.status === 'Activa').map(s => [s.name]);
         if(activeServices.length > 0) {
-            const ws_services = xlsx.utils.aoa_to_sheet(activeServices);
+            const ws_services = xlsx.utils.aoa_to_sheet([["Servicios Válidos"], ...activeServices]);
             xlsx.utils.book_append_sheet(wb, ws_services, "Data_Servicios");
-            ws['!dataValidation'] = (ws['!dataValidation'] || []).concat([
-                { sqref: `E2:E1000`, validation: { type: "list", allowBlank: false, showErrorMessage: true, formula1: `Data_Servicios!$A$1:$A$${activeServices.length}` } },
-            ]);
+            if(ws['!dataValidation']) {
+                ws['!dataValidation'].push({ sqref: `E2:E1000`, validation: { type: "list", allowBlank: false, showErrorMessage: true, formula1: `Data_Servicios!$A$2:$A$${activeServices.length + 1}` } });
+            } else {
+                ws['!dataValidation'] = [{ sqref: `E2:E1000`, validation: { type: "list", allowBlank: false, showErrorMessage: true, formula1: `Data_Servicios!$A$2:$A$${activeServices.length + 1}` } }];
+            }
         }
 
         const validStatuses = otStatuses.map(s => [s.name]);
         if (validStatuses.length > 0) {
-            const ws_statuses = xlsx.utils.aoa_to_sheet(validStatuses);
+            const ws_statuses = xlsx.utils.aoa_to_sheet([["Estados Válidos"], ...validStatuses]);
             xlsx.utils.book_append_sheet(wb, ws_statuses, "Data_Estados");
             ws['!dataValidation'] = (ws['!dataValidation'] || []).concat([
-                { sqref: `H2:H1000`, validation: { type: "list", allowBlank: false, showErrorMessage: true, formula1: `Data_Estados!$A$1:$A$${validStatuses.length}` } },
+                { sqref: `H2:H1000`, validation: { type: "list", allowBlank: false, showErrorMessage: true, formula1: `Data_Estados!$A$2:$A$${validStatuses.length + 1}` } },
             ]);
         }
         
-        const priorities = [["Baja"], ["Media"], ["Alta"]];
+        const priorities = [["Prioridades Válidas"], ["Baja"], ["Media"], ["Alta"]];
         const ws_priorities = xlsx.utils.aoa_to_sheet(priorities);
         xlsx.utils.book_append_sheet(wb, ws_priorities, "Data_Prioridades");
         ws['!dataValidation'] = (ws['!dataValidation'] || []).concat([
-            { sqref: `I2:I1000`, validation: { type: "list", allowBlank: true, showErrorMessage: true, formula1: `Data_Prioridades!$A$1:$A$3` } },
+            { sqref: `I2:I1000`, validation: { type: "list", allowBlank: true, showErrorMessage: true, formula1: `Data_Prioridades!$A$2:$A$4` } },
         ]);
 
         const activeCollaborators = collaborators.filter(c => c.status === 'Activo').map(c => [c.name]);
         if (activeCollaborators.length > 0) {
-            const ws_collaborators = xlsx.utils.aoa_to_sheet(activeCollaborators);
+            const ws_collaborators = xlsx.utils.aoa_to_sheet([["Colaboradores Válidos"],...activeCollaborators]);
             xlsx.utils.book_append_sheet(wb, ws_collaborators, "Data_Colaboradores");
-            ws['!dataValidation'] = (ws['!dataValidation'] || []).concat([
-                { sqref: `L2:L1000`, validation: { type: "list", allowBlank: true, showErrorMessage: true, formula1: `Data_Colaboradores!$A$1:$A$${activeCollaborators.length}` } }, // assigned
-                { sqref: `M2:M1000`, validation: { type: "list", allowBlank: true, showErrorMessage: true, formula1: `Data_Colaboradores!$A$1:$A$${activeCollaborators.length}` } }, // technicians
-                { sqref: `O2:O1000`, validation: { type: "list", allowBlank: true, showErrorMessage: true, formula1: `Data_Colaboradores!$A$1:$A$${activeCollaborators.length}` } }, // comercial
-            ]);
         }
 
+        const activeVehicles = vehicles.filter(v => v.status !== 'En Mantenimiento').map(v => [v.plate]);
+        if(activeVehicles.length > 0) {
+            const ws_vehicles = xlsx.utils.aoa_to_sheet([["Vehículos Válidos"],...activeVehicles]);
+            xlsx.utils.book_append_sheet(wb, ws_vehicles, "Data_Vehiculos");
+        }
+
+        // Hide data sheets
         wb.SheetNames.slice(1).forEach(name => {
             if (wb.Sheets[name]) {
                 wb.Props = wb.Props || {};
@@ -179,7 +193,7 @@ export default function DataManagementCard() {
         });
 
         xlsx.writeFile(wb, "Plantilla_Importacion_Inteligente.xlsx");
-        toast({ title: "Plantilla Generada", description: "Se ha descargado la plantilla inteligente con menús desplegables." });
+        toast({ title: "Plantilla Generada", description: "Se ha descargado la plantilla con ejemplos y datos de referencia." });
     };
     
     const backupSections = [
@@ -192,7 +206,6 @@ export default function DataManagementCard() {
         { title: 'Categorías OT', data: otCategories, fileName: 'categorias_ot' },
         { title: 'Estados OT', data: otStatuses, fileName: 'estados_ot' },
         { title: 'Servicios', data: services, fileName: 'servicios' },
-        { title: 'Tareas Sugeridas', data: suggestedTasks, fileName: 'tareas_sugeridas' },
     ];
 
 
@@ -306,7 +319,3 @@ export default function DataManagementCard() {
         </>
     );
 }
-
-    
-
-    
