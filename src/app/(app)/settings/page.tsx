@@ -1,7 +1,6 @@
-
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ChevronRight, Building, Users, Settings, BarChart2, Tag, ListChecks, ClipboardPenLine, GitBranch, Mail, ArrowRightLeft } from 'lucide-react';
+import { ChevronRight, Building, Users, Settings, BarChart2, Tag, ListChecks, ClipboardPenLine, GitBranch, Mail, ArrowRightLeft, Sparkles, BookOpen } from 'lucide-react';
 import packageJson from '@/../package.json';
 
 interface SettingsGroupProps {
@@ -109,9 +108,21 @@ export default function SettingsPage() {
                     title="Plantillas de Informes"
                     description="Crea y gestiona los formatos para informes y guías de servicio."
                 />
+                 <SettingsLink 
+                    href="/ai-tools"
+                    icon={Sparkles}
+                    title="Asistente IA"
+                    description="Usa la inteligencia artificial para sugerir recursos y tareas."
+                />
             </SettingsGroup>
-
-            <SettingsGroup title="Sistema">
+            
+            <SettingsGroup title="Ayuda y Sistema">
+                 <SettingsLink 
+                    href="/manual"
+                    icon={BookOpen}
+                    title="Manual de Usuario"
+                    description="Consulta la guía completa de uso de la aplicación."
+                />
                 <Card>
                     <CardHeader className="flex flex-row items-center gap-4">
                         <div className="p-3 bg-primary/10 rounded-lg">

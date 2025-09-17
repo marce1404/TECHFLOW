@@ -129,21 +129,8 @@ export default function AppSidebar() {
       icon: Truck,
       exact: true,
     },
-    {
-      href: '/ai-tools',
-      label: 'Asistente IA',
-      icon: Sparkles,
-      exact: false,
-    },
   ];
   
-  const docsMenuItem = {
-    href: '/manual',
-    label: 'Manual de Usuario',
-    icon: BookOpen,
-    exact: true
-  };
-
   const settingsMenuItem = {
     href: '/settings',
     label: 'Configuración',
@@ -206,19 +193,6 @@ export default function AppSidebar() {
             </SidebarContent>
             <SidebarFooter>
                  <SidebarMenu>
-                <SidebarMenuItem>
-                    <SidebarMenuButton 
-                        asChild 
-                        tooltip={docsMenuItem.label} 
-                        variant={isActive(docsMenuItem.href, docsMenuItem.exact) ? 'default' : 'ghost'}
-                        className="h-10 w-10"
-                        isActive={isActive(docsMenuItem.href, docsMenuItem.exact)}
-                    >
-                        <Link href={docsMenuItem.href}>
-                            <BookOpen className="h-5 w-5" />
-                        </Link>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
                 <SidebarMenuItem>
                     <SidebarMenuButton 
                         asChild 
@@ -295,18 +269,6 @@ export default function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
-           <SidebarMenuItem>
-            <SidebarMenuButton 
-                asChild 
-                isActive={isActive(docsMenuItem.href, docsMenuItem.exact)}
-                variant={isActive(docsMenuItem.href, docsMenuItem.exact) ? 'default' : 'ghost'}
-            >
-              <Link href={docsMenuItem.href}>
-                <BookOpen className="h-5 w-5" />
-                <span>{docsMenuItem.label}</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton 
                 asChild 
