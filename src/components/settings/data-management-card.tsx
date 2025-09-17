@@ -19,7 +19,7 @@ import { Separator } from '../ui/separator';
 import * as xlsx from 'xlsx';
 
 export default function DataManagementCard() {
-    const { workOrders, otStatuses, collaborators, vehicles, ganttCharts, otCategories, services, submittedReports, fetchData, reportTemplates } = useWorkOrders();
+    const { workOrders, otStatuses, collaborators, vehicles, ganttCharts, otCategories, services, submittedReports, reportTemplates, fetchData } = useWorkOrders();
     const [date, setDate] = React.useState<DateRange | undefined>();
     const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>([]);
     const [isExporting, setIsExporting] = React.useState(false);
@@ -192,7 +192,17 @@ export default function DataManagementCard() {
             }
         });
 
-        xlsx.writeFile(wb, "Plantilla_Importacion_Inteligente.xlsx");
+        const wbout = xlsx.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([wbout], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = "Plantilla_Importacion_Inteligente.xlsx";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
         toast({ title: "Plantilla Generada", description: "Se ha descargado la plantilla con ejemplos y datos de referencia." });
     };
     
@@ -319,3 +329,5 @@ export default function DataManagementCard() {
         </>
     );
 }
+
+    
