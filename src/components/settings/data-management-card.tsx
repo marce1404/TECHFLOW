@@ -19,7 +19,7 @@ import { Separator } from '../ui/separator';
 import * as xlsx from 'xlsx';
 
 export default function DataManagementCard() {
-    const { workOrders, otStatuses, collaborators, vehicles, ganttCharts, otCategories, services, submittedReports, fetchData } = useWorkOrders();
+    const { workOrders, otStatuses, collaborators, vehicles, ganttCharts, otCategories, services, reportTemplates, submittedReports, fetchData } = useWorkOrders();
     const [date, setDate] = React.useState<DateRange | undefined>();
     const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>([]);
     const [isExporting, setIsExporting] = React.useState(false);
