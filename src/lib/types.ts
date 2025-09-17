@@ -112,6 +112,7 @@ export type VehicleMaintenance = {
 export type Vehicle = {
   id: string;
   model: string;
+  company?: string;
   year: number;
   plate: string;
   status: 'Disponible' | 'Asignado' | 'En Mantenimiento';

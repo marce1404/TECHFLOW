@@ -37,6 +37,7 @@ const maintenanceSchema = z.object({
 
 const vehicleFormSchema = z.object({
   model: z.string().min(3, { message: 'El modelo debe tener al menos 3 caracteres.' }),
+  company: z.string().optional(),
   year: z.coerce.number().min(1990, "El año debe ser válido."),
   plate: z.string().min(6, { message: 'La patente debe tener al menos 6 caracteres.' }),
   status: z.enum(['Disponible', 'Asignado', 'En Mantenimiento']),
@@ -59,6 +60,7 @@ export default function VehicleForm({ onSave, vehicle, collaborators, disabled =
     resolver: zodResolver(vehicleFormSchema),
     defaultValues: {
       model: '',
+      company: '',
       year: new Date().getFullYear(),
       plate: '',
       status: 'Disponible',
@@ -85,6 +87,7 @@ export default function VehicleForm({ onSave, vehicle, collaborators, disabled =
     if (vehicle) {
       form.reset({
         model: vehicle.model || '',
+        company: vehicle.company || '',
         year: vehicle.year || new Date().getFullYear(),
         plate: vehicle.plate || '',
         status: vehicle.status || 'Disponible',
@@ -94,6 +97,7 @@ export default function VehicleForm({ onSave, vehicle, collaborators, disabled =
     } else {
         form.reset({
             model: '',
+            company: '',
             year: new Date().getFullYear(),
             plate: '',
             status: 'Disponible',
@@ -130,6 +134,19 @@ export default function VehicleForm({ onSave, vehicle, collaborators, disabled =
                                     <FormLabel>Marca y Modelo</FormLabel>
                                     <FormControl>
                                         <Input placeholder="Ej: Chevrolet N400 Max" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                                />
+                             <FormField
+                                control={form.control}
+                                name="company"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Empresa (Opcional)</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="Ej: OSESA, Arriendo..." {...field} />
                                     </FormControl>
                                     <FormMessage />
                                     </FormItem>
