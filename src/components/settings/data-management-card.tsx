@@ -16,6 +16,7 @@ import { exportOrdersToExcel } from '@/app/actions';
 import { ImportOrdersDialog } from '@/components/orders/import-orders-dialog';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { Separator } from '../ui/separator';
+import * as xlsx from 'xlsx';
 
 export default function DataManagementCard() {
     const { workOrders, otStatuses, collaborators, vehicles, ganttCharts, otCategories, services, suggestedTasks, reportTemplates, submittedReports, fetchData } = useWorkOrders();
@@ -79,7 +80,6 @@ export default function DataManagementCard() {
     
     const handleDownloadJson = (data: any[], fileName: string) => {
         try {
-            // Firestore Timestamps need to be converted for JSON serialization
             const replacer = (key: string, value: any) => {
                 if (value && typeof value === 'object' && value.hasOwnProperty('seconds') && value.hasOwnProperty('nanoseconds')) {
                     return new Date(value.seconds * 1000 + value.nanoseconds / 1000000).toISOString();
@@ -103,6 +103,93 @@ export default function DataManagementCard() {
              toast({ variant: "destructive", title: "Error de Descarga", description: `No se pudo generar el archivo para ${fileName}.` });
         }
     }
+
+    const handleDownloadTemplate = () => {
+        const wb = xlsx.utils.book_new();
+
+        // Main sheet with example data
+        const mainSheetData = [{
+            ot_number: "OT-1000",
+            description: "Ejemplo de descripción de la OT",
+            client: "Nombre del Cliente",
+            rut: "12.345.678-9",
+            service: "CCTV",
+            date: "2025-06-16",
+            endDate: "2025-06-20",
+            status: "Por Iniciar",
+            priority: "Media",
+            netPrice: 150000,
+            ocNumber: "OC-12345",
+            assigned: "Juan Pérez",
+            technicians: "Pedro Soto, Ana Torres",
+            vehicles: "PPU-1111, PPU-2222",
+            comercial: "Vendedor Ejemplo",
+            saleNumber: 'VN-001',
+            hesEmMigo: 'HES-9876',
+            rentedVehicle: 'Hertz, PPU-RENT',
+            notes: "Notas adicionales sobre el trabajo.",
+        }];
+        const ws = xlsx.utils.json_to_sheet(mainSheetData, {cellDates: true});
+        ws["!cols"] = Object.keys(mainSheetData[0]).map(() => ({ wch: 25 })); // Set column widths
+        xlsx.utils.book_append_sheet(wb, ws, "Importación");
+        
+        // --- Create hidden sheets with validation data ---
+        
+        // Services
+        const activeServices = services.filter(s => s.status === 'Activa').map(s => [s.name]);
+        if(activeServices.length > 0) {
+            const ws_services = xlsx.utils.aoa_to_sheet(activeServices);
+            xlsx.utils.book_append_sheet(wb, ws_services, "Data_Servicios");
+            // Add data validation to the 'service' column
+            ws['!dataValidation'] = (ws['!dataValidation'] || []).concat([
+                { sqref: `E2:E1000`, validation: { type: "list", allowBlank: false, showErrorMessage: true, formula1: `Data_Servicios!$A$1:$A$${activeServices.length}` } },
+            ]);
+        }
+
+        // Statuses
+        const validStatuses = otStatuses.map(s => [s.name]);
+        if (validStatuses.length > 0) {
+            const ws_statuses = xlsx.utils.aoa_to_sheet(validStatuses);
+            xlsx.utils.book_append_sheet(wb, ws_statuses, "Data_Estados");
+            ws['!dataValidation'] = (ws['!dataValidation'] || []).concat([
+                { sqref: `H2:H1000`, validation: { type: "list", allowBlank: false, showErrorMessage: true, formula1: `Data_Estados!$A$1:$A$${validStatuses.length}` } },
+            ]);
+        }
+        
+        // Priorities
+        const priorities = [["Baja"], ["Media"], ["Alta"]];
+        const ws_priorities = xlsx.utils.aoa_to_sheet(priorities);
+        xlsx.utils.book_append_sheet(wb, ws_priorities, "Data_Prioridades");
+        ws['!dataValidation'] = (ws['!dataValidation'] || []).concat([
+            { sqref: `I2:I1000`, validation: { type: "list", allowBlank: true, showErrorMessage: true, formula1: `Data_Prioridades!$A$1:$A$3` } },
+        ]);
+
+        // Collaborators
+        const activeCollaborators = collaborators.filter(c => c.status === 'Activo').map(c => [c.name]);
+        if (activeCollaborators.length > 0) {
+            const ws_collaborators = xlsx.utils.aoa_to_sheet(activeCollaborators);
+            xlsx.utils.book_append_sheet(wb, ws_collaborators, "Data_Colaboradores");
+            ws['!dataValidation'] = (ws['!dataValidation'] || []).concat([
+                { sqref: `L2:L1000`, validation: { type: "list", allowBlank: true, showErrorMessage: true, formula1: `Data_Colaboradores!$A$1:$A$${activeCollaborators.length}` } }, // assigned
+                { sqref: `M2:M1000`, validation: { type: "list", allowBlank: true, showErrorMessage: true, formula1: `Data_Colaboradores!$A$1:$A$${activeCollaborators.length}` } }, // technicians
+                { sqref: `O2:O1000`, validation: { type: "list", allowBlank: true, showErrorMessage: true, formula1: `Data_Colaboradores!$A$1:$A$${activeCollaborators.length}` } }, // comercial
+            ]);
+        }
+
+        // Hide data sheets
+        wb.SheetNames.slice(1).forEach(name => {
+            if (wb.Sheets[name]) {
+                wb.Props = wb.Props || {};
+                wb.Props.SheetNames = wb.Props.SheetNames || [];
+                const sheetIndex = wb.SheetNames.indexOf(name);
+                if (!wb.Props.Sheet) wb.Props.Sheet = [];
+                wb.Props.Sheet[sheetIndex] = { Hidden: 1 };
+            }
+        });
+
+        xlsx.writeFile(wb, "Plantilla_Importacion_Inteligente.xlsx");
+        toast({ title: "Plantilla Generada", description: "Se ha descargado la plantilla inteligente con menús desplegables." });
+    };
     
     const backupSections = [
         { title: 'Órdenes de Trabajo', data: workOrders, fileName: 'ordenes_de_trabajo' },
@@ -122,13 +209,29 @@ export default function DataManagementCard() {
         <>
             <Card>
                 <CardHeader>
-                    <CardTitle>Importar y Exportar a Excel</CardTitle>
+                    <CardTitle>Importar y Exportar Órdenes de Trabajo</CardTitle>
                     <CardDescription>
-                        Gestiona tus órdenes de trabajo masivamente. Puedes aplicar filtros antes de exportar.
+                        Descarga una plantilla inteligente para añadir OTs masivamente o exporta los datos existentes con filtros.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
+                    <div className="flex flex-col justify-between space-y-4">
+                        <div>
+                             <h4 className="font-semibold text-foreground">Importar desde Excel</h4>
+                             <p className="text-sm text-muted-foreground">Utiliza la plantilla inteligente para asegurar la consistencia de los datos.</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                             <Button variant="outline" onClick={handleDownloadTemplate}>
+                                <FileDown className="mr-2 h-4 w-4" />
+                                Descargar Plantilla
+                            </Button>
+                             <Button onClick={() => setIsImporting(true)}>
+                                <FileUp className="mr-2 h-4 w-4" />
+                                Importar Archivo
+                            </Button>
+                        </div>
+                    </div>
+                     <div className="space-y-2">
                         <h4 className="font-semibold text-foreground">Filtros de Exportación (Opcional)</h4>
                         <Popover>
                             <PopoverTrigger asChild>
@@ -173,16 +276,12 @@ export default function DataManagementCard() {
                             onChange={setSelectedStatuses}
                             placeholder="Filtrar por estado..."
                         />
-                    </div>
-                    <div className="flex items-end justify-end gap-2">
-                         <Button variant="outline" onClick={() => setIsImporting(true)} className="h-10">
-                            <FileDown className="mr-2 h-4 w-4" />
-                            Importar
-                        </Button>
-                        <Button onClick={handleExport} disabled={isExporting} className="h-10">
-                            {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileUp className="mr-2 h-4 w-4" />}
-                            Exportar a Excel
-                        </Button>
+                         <div className="flex justify-end pt-2">
+                            <Button onClick={handleExport} disabled={isExporting}>
+                                {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileUp className="mr-2 h-4 w-4" />}
+                                Exportar a Excel
+                            </Button>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
@@ -216,3 +315,5 @@ export default function DataManagementCard() {
         </>
     );
 }
+
+    
