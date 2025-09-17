@@ -19,7 +19,7 @@ import { Separator } from '../ui/separator';
 import * as xlsx from 'xlsx';
 
 export default function DataManagementCard() {
-    const { workOrders, otStatuses, collaborators, vehicles, ganttCharts, otCategories, services, reportTemplates, submittedReports, fetchData } = useWorkOrders();
+    const { workOrders, otStatuses, collaborators, vehicles, ganttCharts, otCategories, services, submittedReports, fetchData, reportTemplates } = useWorkOrders();
     const [date, setDate] = React.useState<DateRange | undefined>();
     const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>([]);
     const [isExporting, setIsExporting] = React.useState(false);
@@ -184,8 +184,8 @@ export default function DataManagementCard() {
         // Hide data sheets
         wb.SheetNames.slice(1).forEach(name => {
             if (wb.Sheets[name]) {
-                wb.Props = wb.Props || {};
-                wb.Props.SheetNames = wb.Props.SheetNames || [];
+                if (!wb.Props) wb.Props = {};
+                if (!wb.Props.SheetNames) wb.Props.SheetNames = [];
                 const sheetIndex = wb.SheetNames.indexOf(name);
                 if (!wb.Props.Sheet) wb.Props.Sheet = [];
                 wb.Props.Sheet[sheetIndex] = { Hidden: 1 };
