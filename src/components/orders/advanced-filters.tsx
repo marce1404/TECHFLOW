@@ -8,7 +8,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from '@radix-ui/react-icons';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { DateRange } from 'react-day-picker';
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { X, Plus } from 'lucide-react';
@@ -45,6 +45,7 @@ interface AdvancedFiltersProps {
 
 export default function AdvancedFilters({ dateRange, onDateRangeChange, activeFilters, onActiveFiltersChange }: AdvancedFiltersProps) {
   const { services, collaborators, workOrders, otStatuses } = useWorkOrders();
+  const [month, setMonth] = React.useState<Date | undefined>();
 
   const clientOptions = React.useMemo(() => Array.from(new Set(workOrders.map(o => o.client).filter(Boolean))).sort().map(c => ({ value: c, label: c })), [workOrders]);
   const serviceOptions = React.useMemo(() => services.map(s => ({ value: s.name, label: s.name })), [services]);
@@ -86,11 +87,23 @@ export default function AdvancedFilters({ dateRange, onDateRangeChange, activeFi
   const updateFilterValues = (type: FilterType, newValues: string[]) => {
     onActiveFiltersChange(activeFilters.map(f => f.type === type ? { ...f, values: newValues } : f));
   };
+  
+  const handleMonthSelect = (selectedMonth: Date | undefined) => {
+    setMonth(selectedMonth);
+    if (selectedMonth) {
+      const start = startOfMonth(selectedMonth);
+      const end = endOfMonth(selectedMonth);
+      onDateRangeChange({ from: start, to: end });
+    } else {
+      onDateRangeChange(undefined);
+    }
+  };
+
 
   const availableFilterOptions = filterOptions.filter(opt => !activeFilters.some(f => f.type === opt.value));
 
   const clearAll = () => {
-    onDateRangeChange(undefined);
+    handleMonthSelect(undefined);
     onActiveFiltersChange([]);
   };
 
@@ -98,37 +111,31 @@ export default function AdvancedFilters({ dateRange, onDateRangeChange, activeFi
     <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              <div className="space-y-2">
-                <Label>Rango de Fechas</Label>
+                <Label>Filtrar por Mes</Label>
                 <Popover>
                     <PopoverTrigger asChild>
                         <Button
                             id="date"
                             variant={"outline"}
-                            className={cn("w-full justify-start text-left font-normal", !dateRange && "text-muted-foreground")}
+                            className={cn("w-full justify-start text-left font-normal", !month && "text-muted-foreground")}
                         >
                             <CalendarIcon className="mr-2 h-4 w-4" />
-                            {dateRange?.from ? (
-                                dateRange.to ? (
-                                <>
-                                    {format(dateRange.from, "dd/MM/yy", {locale: es})} - {format(dateRange.to, "dd/MM/yy", {locale: es})}
-                                </>
-                                ) : (
-                                format(dateRange.from, "dd/MM/yy", {locale: es})
-                                )
+                            {month ? (
+                                <span className="capitalize">{format(month, "MMMM yyyy", {locale: es})}</span>
                             ) : (
-                                <span>Filtrar por fecha...</span>
+                                <span>Seleccionar mes...</span>
                             )}
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
                             initialFocus
-                            mode="range"
-                            defaultMonth={dateRange?.from}
-                            selected={dateRange}
-                            onSelect={onDateRangeChange}
-                            numberOfMonths={2}
-                            locale={es}
+                            mode="single"
+                            month={month}
+                            onMonthChange={handleMonthSelect}
+                            captionLayout="dropdown-buttons"
+                            fromYear={2020}
+                            toYear={new Date().getFullYear() + 2}
                         />
                     </PopoverContent>
                 </Popover>

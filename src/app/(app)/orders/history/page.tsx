@@ -100,6 +100,11 @@ export default function HistoryPage() {
                     break;
             }
         });
+        
+        // Final filter: If no other filters are active, ensure we only show closed orders on this page.
+        if (!isFiltering) {
+             return ordersToFilter.filter(o => normalizeString(o.status) === 'cerrada');
+        }
 
         return ordersToFilter;
 
