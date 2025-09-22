@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -83,7 +84,7 @@ export default function AppSidebar() {
     },
      {
       href: '/orders/history',
-      label: 'Historial OTs',
+      label: 'OTs Cerradas',
       icon: History,
       exact: true,
     },
