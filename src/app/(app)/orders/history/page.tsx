@@ -31,10 +31,8 @@ export default function HistoryPage() {
         let baseItems: WorkOrder[];
 
         if (isFiltering) {
-            // If any filter is active, search through all work orders
             baseItems = workOrders;
         } else {
-            // Otherwise, show items based on the active tab (only closed ones)
             if (activeTab === 'actividades') {
                 baseItems = workOrders.filter(o => normalizeString(o.status) === 'cerrada' && o.isActivity);
             } else if (activeTab === 'todos') {
@@ -58,6 +56,7 @@ export default function HistoryPage() {
         if (dateRange?.from) {
             const filterTo = dateRange.to || dateRange.from; // Use 'to' or same as 'from' if 'to' is not set
             ordersToFilter = ordersToFilter.filter(order => {
+                if (!order.date) return false;
                 const orderStart = new Date(order.date.replace(/-/g, '/'));
                 const orderEnd = order.endDate ? new Date(order.endDate.replace(/-/g, '/')) : orderStart;
                 
@@ -85,7 +84,7 @@ export default function HistoryPage() {
                      ordersToFilter = ordersToFilter.filter(order => (order.assigned || []).some(s => filter.values.includes(s)));
                     break;
                  case 'comercial':
-                    ordersToFilter = ordersToFilter.filter(order => filter.values.includes(order.comercial));
+                    ordersToFilter = ordersToFilter.filter(order => order.comercial ? filter.values.includes(order.comercial) : false);
                     break;
                 case 'priorities':
                     ordersToFilter = ordersToFilter.filter(order => filter.values.includes(order.priority));
@@ -142,10 +141,7 @@ export default function HistoryPage() {
     }
     
     const { totalPorFacturar, totalFacturado } = React.useMemo(() => {
-        // Use filteredOrders for calculation if any filter is active, otherwise use the default historical items.
-        const itemsToCalculate = isFiltering ? filteredOrders : workOrders.filter(o => normalizeString(o.status) === 'cerrada');
-        
-        return itemsToCalculate.filter(item => !item.isActivity).reduce((acc, order) => {
+        return filteredOrders.filter(item => !item.isActivity).reduce((acc, order) => {
             const netPrice = order.netPrice || 0;
             const invoicedAmount = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
             
@@ -163,7 +159,7 @@ export default function HistoryPage() {
             
             return acc;
         }, { totalPorFacturar: 0, totalFacturado: 0 });
-    }, [filteredOrders, workOrders, isFiltering]);
+    }, [filteredOrders]);
 
     return (
         <div className="flex flex-col gap-4">
