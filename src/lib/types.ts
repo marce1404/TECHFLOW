@@ -213,18 +213,6 @@ export type SmtpConfig = {
     fromName: string;
 };
 
-export type Filters = {
-  search: string;
-  clients: string[];
-  services: string[];
-  technicians: string[];
-  supervisors: string[];
-  priorities: string[];
-  statuses: string[];
-  dateRange: import("react-day-picker").DateRange;
-  invoicedStatus: 'all' | 'invoiced' | 'not_invoiced';
-};
-
 
 // AI Resource Assignment Types
 export const SuggestOptimalResourceAssignmentInputSchema = z.object({
@@ -359,4 +347,3 @@ export type MailAttachment = {
   filename: string;
   content: string; // base64 encoded
 };
-

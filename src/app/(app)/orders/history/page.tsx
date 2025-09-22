@@ -7,115 +7,96 @@ import * as React from "react";
 import type { WorkOrder } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import AdvancedFilters, { type Filters } from '@/components/orders/advanced-filters';
+import AdvancedFilters, { type ActiveFilter } from '@/components/orders/advanced-filters';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { ChevronsUpDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { normalizeString } from "@/lib/utils";
+import { DateRange } from "react-day-picker";
 
 
 export default function HistoryPage() {
     const { workOrders, otCategories } = useWorkOrders();
     const [activeTab, setActiveTab] = React.useState('todos');
-    const [filters, setFilters] = React.useState<Filters>({
-      search: '',
-      clients: [],
-      services: [],
-      technicians: [],
-      supervisors: [],
-      priorities: [],
-      statuses: [],
-      dateRange: { from: undefined, to: undefined },
-      invoicedStatus: 'all',
-    });
+    const [search, setSearch] = React.useState('');
+    const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
+    const [activeFilters, setActiveFilters] = React.useState<ActiveFilter[]>([]);
+
     const [isFilterOpen, setIsFilterOpen] = React.useState(false);
 
-    const handleAdvancedFilterChange = React.useCallback((newAdvancedFilters: Omit<Filters, 'search'>) => {
-        setFilters(prev => ({
-            ...prev,
-            ...newAdvancedFilters
-        }));
-    }, []);
-
-
-    const filterOrders = (categoryPrefix: string | null) => {
-        setActiveTab(categoryPrefix || 'todos');
-    }
-    
-    const historicalItems = React.useMemo(() => {
-        return workOrders.filter(o => normalizeString(o.status) === 'cerrada');
-    }, [workOrders]);
-
-    const historicalWorkOrders = React.useMemo(() => historicalItems.filter(item => !item.isActivity), [historicalItems]);
-    const historicalActivities = React.useMemo(() => historicalItems.filter(item => item.isActivity), [historicalItems]);
 
     const filteredOrders = React.useMemo(() => {
         let baseItems: WorkOrder[];
         
         if (activeTab === 'actividades') {
-            baseItems = historicalActivities;
+            baseItems = workOrders.filter(o => normalizeString(o.status) === 'cerrada' && o.isActivity);
         } else if (activeTab === 'todos') {
-            baseItems = historicalWorkOrders;
+            baseItems = workOrders.filter(o => normalizeString(o.status) === 'cerrada' && !o.isActivity);
         } else {
-            baseItems = historicalWorkOrders.filter(order => order.ot_number.startsWith(activeTab));
+            baseItems = workOrders.filter(o => normalizeString(o.status) === 'cerrada' && !o.isActivity && o.ot_number.startsWith(activeTab));
         }
 
         // Apply simple search
         let ordersToFilter = baseItems;
-        if (filters.search) {
+        if (search) {
              ordersToFilter = baseItems.filter(order =>
-                order.ot_number.toLowerCase().includes(filters.search.toLowerCase()) ||
-                (order.description && order.description.toLowerCase().includes(filters.search.toLowerCase())) ||
-                (order.client && order.client.toLowerCase().includes(filters.search.toLowerCase()))
+                order.ot_number.toLowerCase().includes(search.toLowerCase()) ||
+                (order.description && order.description.toLowerCase().includes(search.toLowerCase())) ||
+                (order.client && order.client.toLowerCase().includes(search.toLowerCase()))
             );
         }
-        
-        // Apply advanced filters
-        if (filters.clients.length > 0) {
-            ordersToFilter = ordersToFilter.filter(order => filters.clients.includes(order.client));
+
+        // Apply date range
+        if (dateRange?.from) {
+            ordersToFilter = ordersToFilter.filter(order => new Date(order.date.replace(/-/g, '/')) >= dateRange.from!);
         }
-        if (filters.services.length > 0) {
-            ordersToFilter = ordersToFilter.filter(order => filters.services.includes(order.service));
-        }
-        if (filters.technicians.length > 0) {
-            ordersToFilter = ordersToFilter.filter(order => (order.technicians || []).some(t => filters.technicians.includes(t)));
-        }
-        if (filters.supervisors.length > 0) {
-            ordersToFilter = ordersToFilter.filter(order => (order.assigned || []).some(s => filters.supervisors.includes(s)));
-        }
-        if (filters.priorities.length > 0) {
-            ordersToFilter = ordersToFilter.filter(order => filters.priorities.includes(order.priority));
-        }
-        if (filters.statuses.length > 0) {
-            ordersToFilter = ordersToFilter.filter(order => filters.statuses.includes(order.status));
-        }
-        if (filters.dateRange.from) {
-            ordersToFilter = ordersToFilter.filter(order => new Date(order.date.replace(/-/g, '/')) >= filters.dateRange.from!);
-        }
-        if (filters.dateRange.to) {
-            ordersToFilter = ordersToFilter.filter(order => new Date(order.date.replace(/-/g, '/')) <= filters.dateRange.to!);
-        }
-        if (filters.invoicedStatus !== 'all') {
-            ordersToFilter = ordersToFilter.filter(order => {
-                const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
-                const netPrice = order.netPrice || 0;
-                
-                if (filters.invoicedStatus === 'invoiced') {
-                    // Fully invoiced: old `facturado` flag OR total invoiced amount is >= net price
-                    return order.facturado === true || (netPrice > 0 && totalInvoiced >= netPrice);
-                }
-                if (filters.invoicedStatus === 'not_invoiced') {
-                     // Not fully invoiced: total invoiced is < net price AND it's not marked with old facturado flag
-                     return !order.facturado && totalInvoiced < netPrice;
-                }
-                return true;
-            });
+        if (dateRange?.to) {
+            ordersToFilter = ordersToFilter.filter(order => new Date(order.date.replace(/-/g, '/')) <= dateRange.to!);
         }
 
+        // Apply advanced filters
+        activeFilters.forEach(filter => {
+            switch (filter.type) {
+                case 'clients':
+                    ordersToFilter = ordersToFilter.filter(order => filter.values.includes(order.client));
+                    break;
+                case 'services':
+                    ordersToFilter = ordersToFilter.filter(order => filter.values.includes(order.service));
+                    break;
+                case 'technicians':
+                     ordersToFilter = ordersToFilter.filter(order => (order.technicians || []).some(t => filter.values.includes(t)));
+                    break;
+                case 'supervisors':
+                     ordersToFilter = ordersToFilter.filter(order => (order.assigned || []).some(s => filter.values.includes(s)));
+                    break;
+                case 'priorities':
+                    ordersToFilter = ordersToFilter.filter(order => filter.values.includes(order.priority));
+                    break;
+                case 'statuses':
+                    ordersToFilter = ordersToFilter.filter(order => filter.values.includes(order.status));
+                    break;
+                case 'invoicedStatus':
+                    ordersToFilter = ordersToFilter.filter(order => {
+                        const totalInvoiced = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
+                        const netPrice = order.netPrice || 0;
+                        const status = filter.values[0];
+
+                        if (status === 'invoiced') {
+                            return order.facturado === true || (netPrice > 0 && totalInvoiced >= netPrice);
+                        }
+                         if (status === 'not_invoiced') {
+                             return !order.facturado && totalInvoiced < netPrice;
+                        }
+                        return true;
+                    });
+                    break;
+            }
+        });
 
         return ordersToFilter;
-    }, [historicalWorkOrders, historicalActivities, activeTab, filters]);
+
+    }, [workOrders, activeTab, search, dateRange, activeFilters]);
 
 
     const categories = [
@@ -139,20 +120,17 @@ export default function HistoryPage() {
     }
     
     const { totalPorFacturar, totalFacturado } = React.useMemo(() => {
-        // Calculate totals based on ALL historical orders, regardless of table filters.
+        const historicalWorkOrders = workOrders.filter(o => normalizeString(o.status) === 'cerrada' && !o.isActivity);
         return historicalWorkOrders.reduce((acc, order) => {
             const netPrice = order.netPrice || 0;
             const invoicedAmount = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
             
-            // Legacy support for 'facturado' flag
             const isFullyInvoiced = order.facturado === true || (netPrice > 0 && invoicedAmount >= netPrice);
 
             if (isFullyInvoiced) {
                 acc.totalFacturado += netPrice;
             } else {
-                // If not fully invoiced, add what was actually invoiced to the total
                 acc.totalFacturado += invoicedAmount;
-                // The pending amount is the difference
                 const pendingAmount = netPrice - invoicedAmount;
                 if (pendingAmount > 0) {
                     acc.totalPorFacturar += pendingAmount;
@@ -161,7 +139,7 @@ export default function HistoryPage() {
             
             return acc;
         }, { totalPorFacturar: 0, totalFacturado: 0 });
-    }, [historicalWorkOrders]);
+    }, [workOrders]);
 
     return (
         <div className="flex flex-col gap-4">
@@ -180,7 +158,12 @@ export default function HistoryPage() {
                             <CardTitle>Filtros Avanzados</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <AdvancedFilters onFilterChange={handleAdvancedFilterChange} filters={filters} />
+                           <AdvancedFilters 
+                                dateRange={dateRange}
+                                onDateRangeChange={setDateRange}
+                                activeFilters={activeFilters}
+                                onActiveFiltersChange={setActiveFilters}
+                           />
                         </CardContent>
                     </Card>
                 </CollapsibleContent>
@@ -188,7 +171,7 @@ export default function HistoryPage() {
 
             <Card>
                 <CardHeader>
-                    <Tabs value={activeTab} onValueChange={filterOrders}>
+                    <Tabs value={activeTab} onValueChange={setActiveTab}>
                             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
                                 <ScrollArea className="w-full sm:w-auto">
                                     <TabsList className="w-max">
@@ -201,8 +184,8 @@ export default function HistoryPage() {
                                 <div className="w-full sm:w-auto sm:max-w-sm">
                                     <Input
                                         placeholder="Buscar por OT, cliente, descripción..."
-                                        value={filters.search}
-                                        onChange={(e) => setFilters(prev => ({...prev, search: e.target.value}))}
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
                                     />
                                 </div>
                             </div>

@@ -11,58 +11,40 @@ import { DateRange } from 'react-day-picker';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { X } from 'lucide-react';
+import { X, Plus } from 'lucide-react';
 import type { WorkOrder } from '@/lib/types';
 import { MultiSelect } from '../ui/multi-select';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Label } from '../ui/label';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 
-export type Filters = {
-  search: string;
-  clients: string[];
-  services: string[];
-  technicians: string[];
-  supervisors: string[];
-  priorities: string[];
-  statuses: string[];
-  dateRange: DateRange;
-  invoicedStatus: 'all' | 'invoiced' | 'not_invoiced';
-};
+type FilterType = 'clients' | 'services' | 'technicians' | 'supervisors' | 'priorities' | 'statuses' | 'invoicedStatus';
 
-interface AdvancedFiltersProps {
-  filters: Omit<Filters, 'search'>;
-  onFilterChange: (filters: Omit<Filters, 'search'>) => void;
-  isHistory?: boolean;
+export interface ActiveFilter {
+  type: FilterType;
+  values: string[];
 }
 
-export default function AdvancedFilters({ filters, onFilterChange, isHistory = false }: AdvancedFiltersProps) {
+const filterOptions: { value: FilterType, label: string }[] = [
+    { value: 'clients', label: 'Cliente' },
+    { value: 'services', label: 'Servicio' },
+    { value: 'technicians', label: 'Técnico' },
+    { value: 'supervisors', label: 'Encargado' },
+    { value: 'priorities', label: 'Prioridad' },
+    { value: 'statuses', label: 'Estado' },
+    { value: 'invoicedStatus', label: 'Estado de Factura' },
+];
+
+interface AdvancedFiltersProps {
+    dateRange: DateRange | undefined;
+    onDateRangeChange: (date: DateRange | undefined) => void;
+    activeFilters: ActiveFilter[];
+    onActiveFiltersChange: (filters: ActiveFilter[]) => void;
+}
+
+
+export default function AdvancedFilters({ dateRange, onDateRangeChange, activeFilters, onActiveFiltersChange }: AdvancedFiltersProps) {
   const { services, collaborators, workOrders, otStatuses } = useWorkOrders();
-
-  const handleMultiSelectChange = (key: keyof Omit<Filters, 'search' | 'dateRange' | 'invoicedStatus'>, value: string[]) => {
-    onFilterChange({ ...filters, [key]: value });
-  };
-
-  const handleDateChange = (value: DateRange | undefined) => {
-    onFilterChange({ ...filters, dateRange: value || { from: undefined, to: undefined } });
-  };
-  
-  const handleInvoicedStatusChange = (value: Filters['invoicedStatus']) => {
-    onFilterChange({ ...filters, invoicedStatus: value });
-  };
-
-
-  const clearFilters = () => {
-    onFilterChange({
-      clients: [],
-      services: [],
-      technicians: [],
-      supervisors: [],
-      priorities: [],
-      statuses: [],
-      dateRange: { from: undefined, to: undefined },
-      invoicedStatus: 'all',
-    });
-  };
 
   const clientOptions = React.useMemo(() => Array.from(new Set(workOrders.map(o => o.client).filter(Boolean))).sort().map(c => ({ value: c, label: c })), [workOrders]);
   const serviceOptions = React.useMemo(() => services.map(s => ({ value: s.name, label: s.name })), [services]);
@@ -70,100 +52,144 @@ export default function AdvancedFilters({ filters, onFilterChange, isHistory = f
   const supervisorOptions = React.useMemo(() => collaborators.filter(c => ['Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado'].includes(c.role)).map(s => ({ value: s.name, label: s.name })), [collaborators]);
   const priorityOptions: { value: WorkOrder['priority'], label: string }[] = [{value: 'Baja', label: 'Baja'}, {value: 'Media', label: 'Media'}, {value: 'Alta', label: 'Alta'}];
   const statusOptions = React.useMemo(() => otStatuses.map(s => ({ value: s.name, label: s.name })), [otStatuses]);
+  const invoicedStatusOptions = [
+    { value: 'invoiced', label: 'Facturadas' },
+    { value: 'not_invoiced', label: 'Por Facturar' },
+  ];
 
+  const getOptionsForType = (type: FilterType) => {
+    switch (type) {
+        case 'clients': return clientOptions;
+        case 'services': return serviceOptions;
+        case 'technicians': return technicianOptions;
+        case 'supervisors': return supervisorOptions;
+        case 'priorities': return priorityOptions;
+        case 'statuses': return statusOptions;
+        case 'invoicedStatus': return invoicedStatusOptions;
+    }
+  }
+
+  const getLabelForType = (type: FilterType) => {
+    return filterOptions.find(f => f.value === type)?.label || 'Filtro';
+  };
+  
+  const addFilter = (type: FilterType) => {
+    if (!activeFilters.some(f => f.type === type)) {
+        onActiveFiltersChange([...activeFilters, { type, values: [] }]);
+    }
+  };
+
+  const removeFilter = (type: FilterType) => {
+    onActiveFiltersChange(activeFilters.filter(f => f.type !== type));
+  };
+  
+  const updateFilterValues = (type: FilterType, newValues: string[]) => {
+    onActiveFiltersChange(activeFilters.map(f => f.type === type ? { ...f, values: newValues } : f));
+  };
+
+  const availableFilterOptions = filterOptions.filter(opt => !activeFilters.some(f => f.type === opt.value));
+
+  const clearAll = () => {
+    onDateRangeChange(undefined);
+    onActiveFiltersChange([]);
+  };
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Popover>
-            <PopoverTrigger asChild>
-                <Button
-                    id="date"
-                    variant={"outline"}
-                    className={cn("w-full justify-start text-left font-normal", !filters.dateRange.from && "text-muted-foreground")}
-                >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {filters.dateRange.from ? (
-                        filters.dateRange.to ? (
-                        <>
-                            {format(filters.dateRange.from, "dd/MM/yy", {locale: es})} - {format(filters.dateRange.to, "dd/MM/yy", {locale: es})}
-                        </>
-                        ) : (
-                        format(filters.dateRange.from, "dd/MM/yy", {locale: es})
-                        )
-                    ) : (
-                        <span>Filtrar por fecha...</span>
-                    )}
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                    initialFocus
-                    mode="range"
-                    defaultMonth={filters.dateRange.from}
-                    selected={filters.dateRange}
-                    onSelect={handleDateChange}
-                    numberOfMonths={2}
-                    locale={es}
-                />
-            </PopoverContent>
-        </Popover>
-         <MultiSelect
-          options={clientOptions}
-          selected={filters.clients}
-          onChange={(value) => handleMultiSelectChange('clients', value)}
-          placeholder="Filtrar por cliente..."
-        />
-        <MultiSelect
-          options={serviceOptions}
-          selected={filters.services}
-          onChange={(value) => handleMultiSelectChange('services', value)}
-          placeholder="Filtrar por servicio..."
-        />
-        <MultiSelect
-          options={technicianOptions}
-          selected={filters.technicians}
-          onChange={(value) => handleMultiSelectChange('technicians', value)}
-          placeholder="Filtrar por técnico..."
-        />
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MultiSelect
-          options={supervisorOptions}
-          selected={filters.supervisors}
-          onChange={(value) => handleMultiSelectChange('supervisors', value)}
-          placeholder="Filtrar por encargado..."
-        />
-         <MultiSelect
-          options={priorityOptions}
-          selected={filters.priorities}
-          onChange={(value) => handleMultiSelectChange('priorities', value)}
-          placeholder="Filtrar por prioridad..."
-        />
-        <MultiSelect
-          options={statusOptions}
-          selected={filters.statuses}
-          onChange={(value) => handleMultiSelectChange('statuses', value)}
-          placeholder="Filtrar por estado..."
-        />
-        <div className="space-y-2">
-            <Label>Estado de Facturación</Label>
-            <Select onValueChange={handleInvoicedStatusChange} value={filters.invoicedStatus}>
-                <SelectTrigger>
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">Todas</SelectItem>
-                    <SelectItem value="invoiced">Facturadas</SelectItem>
-                    <SelectItem value="not_invoiced">Por Facturar</SelectItem>
-                </SelectContent>
-            </Select>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div className="space-y-2">
+                <Label>Rango de Fechas</Label>
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button
+                            id="date"
+                            variant={"outline"}
+                            className={cn("w-full justify-start text-left font-normal", !dateRange && "text-muted-foreground")}
+                        >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {dateRange?.from ? (
+                                dateRange.to ? (
+                                <>
+                                    {format(dateRange.from, "dd/MM/yy", {locale: es})} - {format(dateRange.to, "dd/MM/yy", {locale: es})}
+                                </>
+                                ) : (
+                                format(dateRange.from, "dd/MM/yy", {locale: es})
+                                )
+                            ) : (
+                                <span>Filtrar por fecha...</span>
+                            )}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                            initialFocus
+                            mode="range"
+                            defaultMonth={dateRange?.from}
+                            selected={dateRange}
+                            onSelect={onDateRangeChange}
+                            numberOfMonths={2}
+                            locale={es}
+                        />
+                    </PopoverContent>
+                </Popover>
+            </div>
         </div>
-      </div>
-      <div className="flex justify-end pt-2">
-        <Button variant="ghost" onClick={clearFilters} className="justify-self-end">
+
+        <div className="space-y-3">
+             {activeFilters.map((filter) => (
+                <div key={filter.type} className="flex items-end gap-2">
+                    <div className="flex-1 space-y-2">
+                         <Label>{getLabelForType(filter.type)}</Label>
+                         {filter.type === 'invoicedStatus' ? (
+                            <Select
+                                value={filter.values[0] || ''}
+                                onValueChange={(value) => updateFilterValues(filter.type, value ? [value] : [])}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Seleccionar estado..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {getOptionsForType(filter.type).map(opt => (
+                                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                         ) : (
+                            <MultiSelect
+                                options={getOptionsForType(filter.type)}
+                                selected={filter.values}
+                                onChange={(newValues) => updateFilterValues(filter.type, newValues)}
+                                placeholder={`Seleccionar ${getLabelForType(filter.type).toLowerCase()}...`}
+                            />
+                         )}
+                    </div>
+                     <Button variant="ghost" size="icon" onClick={() => removeFilter(filter.type)} className="mb-1">
+                        <X className="h-4 w-4 text-destructive" />
+                    </Button>
+                </div>
+            ))}
+        </div>
+      
+      <div className="flex justify-between items-center pt-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" disabled={availableFilterOptions.length === 0}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Añadir Filtro
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+                {availableFilterOptions.map(opt => (
+                    <DropdownMenuItem key={opt.value} onSelect={() => addFilter(opt.value)}>
+                        {opt.label}
+                    </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button variant="ghost" onClick={clearAll} size="sm">
             <X className="mr-2 h-4 w-4" />
-            Limpiar Filtros Avanzados
+            Limpiar Todos los Filtros
           </Button>
       </div>
     </div>
