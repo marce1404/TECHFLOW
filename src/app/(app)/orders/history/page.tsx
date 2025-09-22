@@ -54,13 +54,20 @@ export default function HistoryPage() {
             );
         }
 
-        // Apply date range
+        // Apply date range filter for overlap
         if (dateRange?.from) {
-            ordersToFilter = ordersToFilter.filter(order => new Date(order.date.replace(/-/g, '/')) >= dateRange.from!);
+            const filterTo = dateRange.to || dateRange.from; // Use 'to' or same as 'from' if 'to' is not set
+            ordersToFilter = ordersToFilter.filter(order => {
+                const orderStart = new Date(order.date.replace(/-/g, '/'));
+                const orderEnd = order.endDate ? new Date(order.endDate.replace(/-/g, '/')) : orderStart;
+                
+                const filterStart = dateRange.from!;
+                
+                // Check for interval overlap: (StartA <= EndB) and (StartB <= EndA)
+                return orderStart <= filterTo && filterStart <= orderEnd;
+            });
         }
-        if (dateRange?.to) {
-            ordersToFilter = ordersToFilter.filter(order => new Date(order.date.replace(/-/g, '/')) <= dateRange.to!);
-        }
+
 
         // Apply advanced filters
         activeFilters.forEach(filter => {
