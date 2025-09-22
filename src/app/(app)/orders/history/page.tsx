@@ -1,4 +1,3 @@
-
 'use client';
 import HistoricalOrdersTable from "@/components/orders/historical-orders-table";
 import { useWorkOrders } from "@/context/work-orders-context";
@@ -72,10 +71,10 @@ export default function HistoryPage() {
         activeFilters.forEach(filter => {
             switch (filter.type) {
                 case 'clients':
-                    ordersToFilter = ordersToFilter.filter(order => filter.values.includes(order.client));
+                    ordersToFilter = ordersToFilter.filter(order => order.client ? filter.values.includes(order.client) : false);
                     break;
                 case 'services':
-                    ordersToFilter = ordersToFilter.filter(order => filter.values.includes(order.service));
+                    ordersToFilter = ordersToFilter.filter(order => order.service ? filter.values.includes(order.service) : false);
                     break;
                 case 'technicians':
                      ordersToFilter = ordersToFilter.filter(order => (order.technicians || []).some(t => filter.values.includes(t)));
@@ -87,7 +86,7 @@ export default function HistoryPage() {
                     ordersToFilter = ordersToFilter.filter(order => order.comercial ? filter.values.includes(order.comercial) : false);
                     break;
                 case 'priorities':
-                    ordersToFilter = ordersToFilter.filter(order => filter.values.includes(order.priority));
+                    ordersToFilter = ordersToFilter.filter(order => order.priority ? filter.values.includes(order.priority) : false);
                     break;
                 case 'statuses':
                     ordersToFilter = ordersToFilter.filter(order => filter.values.includes(order.status));
@@ -168,7 +167,7 @@ export default function HistoryPage() {
                     <CollapsibleTrigger asChild>
                         <Button variant="ghost" size="sm">
                             <ChevronsUpDown className="h-4 w-4 mr-2" />
-                            Filtros Avanzados
+                             {isFiltering ? `Filtros Avanzados (${activeFilters.length + (dateRange ? 1 : 0) + (search ? 1 : 0)})` : 'Filtros Avanzados'}
                         </Button>
                     </CollapsibleTrigger>
                 </div>
@@ -210,6 +209,7 @@ export default function HistoryPage() {
                                 </div>
                             </div>
                         <TabsContent value={activeTab} className="mt-4">
+                            <CardTitle className="text-lg mb-4">{isFiltering ? `Resultados de Búsqueda (${filteredOrders.length})` : `OTs Cerradas (${filteredOrders.length})`}</CardTitle>
                             <HistoricalOrdersTable orders={filteredOrders} />
                         </TabsContent>
                     </Tabs>

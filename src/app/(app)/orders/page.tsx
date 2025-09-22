@@ -1,4 +1,3 @@
-
 'use client';
 import { Button } from "@/components/ui/button";
 import { PlusCircle, ChevronsUpDown } from "lucide-react";
@@ -75,10 +74,10 @@ export default function ActiveOrdersPage() {
         activeFilters.forEach(filter => {
             switch (filter.type) {
                 case 'clients':
-                    ordersToFilter = ordersToFilter.filter(order => filter.values.includes(order.client));
+                    ordersToFilter = ordersToFilter.filter(order => order.client ? filter.values.includes(order.client) : false);
                     break;
                 case 'services':
-                    ordersToFilter = ordersToFilter.filter(order => filter.values.includes(order.service));
+                    ordersToFilter = ordersToFilter.filter(order => order.service ? filter.values.includes(order.service) : false);
                     break;
                 case 'technicians':
                     ordersToFilter = ordersToFilter.filter(order => (order.technicians || []).some(t => filter.values.includes(t)));
@@ -87,10 +86,10 @@ export default function ActiveOrdersPage() {
                     ordersToFilter = ordersToFilter.filter(order => (order.assigned || []).some(s => filter.values.includes(s)));
                     break;
                 case 'comercial':
-                    ordersToFilter = ordersToFilter.filter(order => filter.values.includes(order.comercial));
+                    ordersToFilter = ordersToFilter.filter(order => order.comercial ? filter.values.includes(order.comercial) : false);
                     break;
                 case 'priorities':
-                    ordersToFilter = ordersToFilter.filter(order => filter.values.includes(order.priority));
+                    ordersToFilter = ordersToFilter.filter(order => order.priority ? filter.values.includes(order.priority) : false);
                     break;
                 case 'statuses':
                     ordersToFilter = ordersToFilter.filter(order => filter.values.includes(order.status));
@@ -144,8 +143,7 @@ export default function ActiveOrdersPage() {
     }
     
     const { totalPorFacturar, totalFacturado } = React.useMemo(() => {
-        // Use filteredOrders for calculation if any filter is active, otherwise use the default active items.
-        const itemsToCalculate = isFiltering ? filteredOrders : workOrders.filter(o => normalizeString(o.status) !== 'cerrada');
+        const itemsToCalculate = filteredOrders;
         
         return itemsToCalculate.filter(item => !item.isActivity).reduce((acc, order) => {
             const invoicedAmount = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
@@ -160,7 +158,7 @@ export default function ActiveOrdersPage() {
 
             return acc;
         }, { totalPorFacturar: 0, totalFacturado: 0 });
-    }, [filteredOrders, workOrders, isFiltering]);
+    }, [filteredOrders]);
 
 
     return (
@@ -170,7 +168,7 @@ export default function ActiveOrdersPage() {
                     <CollapsibleTrigger asChild>
                         <Button variant="ghost" size="sm">
                             <ChevronsUpDown className="mr-2 h-4 w-4" />
-                            Filtros Avanzados
+                            {isFiltering ? `Filtros Avanzados (${activeFilters.length + (dateRange ? 1 : 0) + (search ? 1 : 0)})` : 'Filtros Avanzados'}
                         </Button>
                     </CollapsibleTrigger>
                      {canCreate && (
@@ -220,6 +218,7 @@ export default function ActiveOrdersPage() {
                             </div>
                         </div>
                         <TabsContent value={activeTab} className="mt-4">
+                             <CardTitle className="text-lg mb-4">{isFiltering ? `Resultados de Búsqueda (${filteredOrders.length})` : `OTs Activas (${filteredOrders.length})`}</CardTitle>
                             <OrdersTable orders={filteredOrders} isActivityTab={activeTab === 'actividades'} />
                         </TabsContent>
                     </Tabs>
