@@ -12,20 +12,23 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Download, FileUp, Loader2, UploadCloud, CheckCircle, AlertCircle } from 'lucide-react';
+import { Download, FileUp, Loader2, UploadCloud, CheckCircle, AlertCircle, FileWarning } from 'lucide-react';
 import * as xlsx from 'xlsx';
 import { z } from 'zod';
-import type { CreateWorkOrderInput } from '@/lib/types';
+import type { CreateWorkOrderInput, WorkOrder } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { ScrollArea } from '../ui/scroll-area';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { normalizeString } from '@/lib/utils';
+import { Separator } from '../ui/separator';
 
 interface ImportOrdersDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onImportSuccess: () => void;
 }
+
+type ImportStep = 'selectFile' | 'confirmDuplicates' | 'showResult';
 
 const workOrderStatuses = ['Por Iniciar', 'En Progreso', 'En Proceso', 'Pendiente', 'Atrasada', 'Cerrada', 'Terminada'] as const;
 const workOrderPriorities = ['Baja', 'Media', 'Alta'] as const;
@@ -66,12 +69,14 @@ const CreateWorkOrderInputSchemaForExcel = z.object({
 
 
 export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: ImportOrdersDialogProps) {
-  const { collaborators, vehicles: availableVehicles, addOrder, services: availableServices, otStatuses } = useWorkOrders();
+  const { collaborators, vehicles: availableVehicles, addOrder, services: availableServices, otStatuses, workOrders, updateOrder } = useWorkOrders();
   const [file, setFile] = React.useState<File | null>(null);
-  const [parsedData, setParsedData] = React.useState<CreateWorkOrderInput[]>([]);
+  const [newOrders, setNewOrders] = React.useState<CreateWorkOrderInput[]>([]);
+  const [duplicateOrders, setDuplicateOrders] = React.useState<CreateWorkOrderInput[]>([]);
   const [errors, setErrors] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [importResult, setImportResult] = React.useState<{ successCount: number; errorCount: number; errors: string[] } | null>(null);
+  const [step, setStep] = React.useState<ImportStep>('selectFile');
   const { toast } = useToast();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -151,7 +156,10 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
       const json = xlsx.utils.sheet_to_json(worksheet, {raw: false});
       
       const validationErrors: string[] = [];
-      const validData: CreateWorkOrderInput[] = [];
+      const tempNewOrders: CreateWorkOrderInput[] = [];
+      const tempDuplicateOrders: CreateWorkOrderInput[] = [];
+
+      const existingOtNumbers = new Set(workOrders.map(wo => wo.ot_number));
 
       json.forEach((row: any, index: number) => {
         const rowData = { ...row };
@@ -205,29 +213,25 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
           const mappedComercial = comercial
             ? findMatchingCollaborator(comercial.trim())
             : '';
-
-          validData.push({
-            ot_number,
-            description,
-            client,
-            rut,
+            
+          const orderData: CreateWorkOrderInput = {
+            ot_number, description, client, rut,
             service: findMatchingString(service, availableServices),
-            date: date,
-            endDate: endDate,
-            notes: notes,
+            date: date, endDate: endDate, notes: notes,
             status: findMatchingString(status, otStatuses) as CreateWorkOrderInput['status'],
-            priority: priority,
-            netPrice: netPrice,
-            ocNumber: ocNumber,
-            assigned: mappedAssigned,
-            technicians: mappedTechnicians,
-            vehicles: mappedVehicles,
-            comercial: mappedComercial,
-            saleNumber: saleNumber,
-            hesEmMigo: hesEmMigo,
+            priority: priority, netPrice: netPrice, ocNumber: ocNumber,
+            assigned: mappedAssigned, technicians: mappedTechnicians, vehicles: mappedVehicles,
+            comercial: mappedComercial, saleNumber: saleNumber, hesEmMigo: hesEmMigo,
             rentedVehicle: rentedVehicle,
             facturado: normalizeString(facturado || '') === 'si',
-          });
+          };
+
+          if (existingOtNumbers.has(ot_number)) {
+              tempDuplicateOrders.push(orderData);
+          } else {
+              tempNewOrders.push(orderData);
+          }
+
         } else {
           const formattedErrors = result.error.issues.map(issue => `Fila ${index + 2}: Columna '${issue.path.join('.')}' - ${issue.message}`).join('; ');
           validationErrors.push(formattedErrors);
@@ -235,16 +239,38 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
       });
 
       setErrors(validationErrors);
-      setParsedData(validData);
+      setNewOrders(tempNewOrders);
+      setDuplicateOrders(tempDuplicateOrders);
+      
+      if(validationErrors.length > 0) {
+        setStep('selectFile'); // Stay on file selection to show errors
+      } else if (tempDuplicateOrders.length > 0) {
+        setStep('confirmDuplicates');
+      } else {
+        setStep('selectFile'); // Show preview even if no duplicates
+      }
     };
     reader.readAsArrayBuffer(fileToParse);
   };
   
-  const handleImport = async () => {
-    if (parsedData.length === 0) {
-      toast({ variant: "destructive", title: "No hay datos para importar", description: "El archivo está vacío o no contiene filas válidas." });
+  const handleImport = async (strategy: 'omit' | 'replace') => {
+    const ordersToCreate = [...newOrders];
+    let ordersToUpdate: {id: string, data: Partial<WorkOrder>}[] = [];
+
+    if (strategy === 'replace') {
+        duplicateOrders.forEach(dupOrder => {
+            const existingOrder = workOrders.find(wo => wo.ot_number === dupOrder.ot_number);
+            if (existingOrder) {
+                ordersToUpdate.push({ id: existingOrder.id, data: dupOrder });
+            }
+        });
+    }
+
+    if (ordersToCreate.length === 0 && ordersToUpdate.length === 0) {
+      toast({ variant: "destructive", title: "No hay datos para importar", description: "No se encontraron órdenes nuevas o para actualizar." });
       return;
     }
+
     setLoading(true);
     setImportResult(null);
     
@@ -252,129 +278,176 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     let errorCount = 0;
     const batchErrors: string[] = [];
 
-    for (const orderData of parsedData) {
+    // Process creations
+    for (const orderData of ordersToCreate) {
         try {
             await addOrder(orderData);
             successCount++;
         } catch (error: any) {
             errorCount++;
-            batchErrors.push(`OT ${orderData.ot_number}: ${error.message}`);
+            batchErrors.push(`Creación OT ${orderData.ot_number}: ${error.message}`);
+        }
+    }
+
+    // Process updates
+    for (const { id, data } of ordersToUpdate) {
+        try {
+            await updateOrder(id, data);
+            successCount++;
+        } catch (error: any) {
+            errorCount++;
+            batchErrors.push(`Actualización OT ${data.ot_number}: ${error.message}`);
         }
     }
     
     onImportSuccess();
     setImportResult({ successCount, errorCount, errors: batchErrors });
     setLoading(false);
+    setStep('showResult');
   };
 
   const handleClose = () => {
     setFile(null);
-    setParsedData([]);
+    setNewOrders([]);
+    setDuplicateOrders([]);
     setErrors([]);
     setImportResult(null);
     setLoading(false);
+    setStep('selectFile');
     onOpenChange(false);
   }
 
-  const renderContent = () => {
-    if (importResult) {
-        return (
-            <div className="space-y-4">
-                <div className="text-center">
-                    <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
-                    <h3 className="text-xl font-semibold">Importación Completada</h3>
-                </div>
-                <p>Órdenes creadas exitosamente: <span className="font-bold text-green-500">{importResult.successCount}</span></p>
-                <p>Órdenes con errores: <span className="font-bold text-destructive">{importResult.errorCount}</span></p>
-                {importResult.errors.length > 0 && (
-                    <div className="space-y-2">
-                        <h4 className="font-semibold">Detalles de errores:</h4>
-                        <ScrollArea className="h-32 rounded-md border p-2">
-                            <ul className="text-xs text-destructive list-disc list-inside">
-                                {importResult.errors.map((err, i) => <li key={i}>{err}</li>)}
-                            </ul>
-                        </ScrollArea>
-                    </div>
-                )}
-            </div>
-        )
-    }
-    
-    if (file) {
-        return (
-             <div className="space-y-4">
-                <p>Archivo seleccionado: <span className="font-semibold">{file.name}</span></p>
-                {errors.length > 0 ? (
-                    <div className="p-4 rounded-md bg-destructive/10 text-destructive text-sm">
-                        <div className="flex items-center gap-2 mb-2">
-                            <AlertCircle className="h-5 w-5"/>
-                            <h4 className="font-bold">Se encontraron errores de validación.</h4>
-                        </div>
-                        <ScrollArea className="h-24">
-                           <ul className="list-disc pl-5">
-                            {errors.map((err, i) => <li key={i}>{err}</li>)}
-                           </ul>
-                        </ScrollArea>
-                    </div>
-                ) : (
-                    <div className="p-4 rounded-md bg-green-500/10 text-green-700 text-sm">
-                        <div className="flex items-center gap-2">
-                             <CheckCircle className="h-5 w-5"/>
-                             <h4 className="font-bold">El archivo parece correcto.</h4>
-                        </div>
-                    </div>
-                )}
-                <p>{parsedData.length} filas válidas listas para importar.</p>
-                
-                 <ScrollArea className="h-48 border rounded-md">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Nº OT</TableHead>
-                                <TableHead>Descripción</TableHead>
-                                <TableHead>Cliente</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {parsedData.slice(0, 10).map((row, i) => (
-                                <TableRow key={i}>
-                                    <TableCell>{row.ot_number}</TableCell>
-                                    <TableCell>{row.description}</TableCell>
-                                    <TableCell>{row.client}</TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </ScrollArea>
-                <p className="text-xs text-muted-foreground">Mostrando hasta 10 filas de previsualización.</p>
-            </div>
-        )
-    }
+  const renderFileSelection = () => (
+     <div className="space-y-4">
+        <Button variant="outline" className="w-full" asChild>
+            <a href="/Plantilla_Importacion_Inteligente.xlsx" download="Plantilla_Importacion_Inteligente.xlsx">
+                <Download className="mr-2 h-4 w-4" />
+                Descargar Plantilla
+            </a>
+        </Button>
+        <div className="relative">
+            <input
+                id="file-upload"
+                type="file"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                onChange={handleFileChange}
+                accept=".xlsx, .xls, .csv"
+            />
+            <label htmlFor="file-upload" className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted">
+                <UploadCloud className="h-12 w-12 text-muted-foreground mb-2"/>
+                <p className="font-semibold text-primary">Haz clic para subir un archivo</p>
+                <p className="text-sm text-muted-foreground">o arrástralo y suéltalo aquí</p>
+            </label>
+        </div>
+        {file && errors.length === 0 && newOrders.length === 0 && duplicateOrders.length === 0 && <p>Archivo procesado. No se encontraron datos para importar.</p>}
+        {file && newOrders.length > 0 && duplicateOrders.length === 0 && errors.length === 0 && (
+          <div className="pt-4">
+            <h3 className="font-semibold">Previsualización de Importación</h3>
+            <p className="text-sm text-muted-foreground">{newOrders.length} nuevas órdenes de trabajo listas para importar.</p>
+          </div>
+        )}
+    </div>
+  );
 
-    return (
-        <div className="space-y-4">
-            <Button variant="outline" className="w-full" asChild>
-                <a href="/Plantilla_Importacion_Inteligente.xlsx" download="Plantilla_Importacion_Inteligente.xlsx">
-                    <Download className="mr-2 h-4 w-4" />
-                    Descargar Plantilla
-                </a>
-            </Button>
-            <div className="relative">
-                <input
-                    id="file-upload"
-                    type="file"
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    onChange={handleFileChange}
-                    accept=".xlsx, .xls, .csv"
-                />
-                <label htmlFor="file-upload" className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted">
-                    <UploadCloud className="h-12 w-12 text-muted-foreground mb-2"/>
-                    <p className="font-semibold text-primary">Haz clic para subir un archivo</p>
-                    <p className="text-sm text-muted-foreground">o arrástralo y suéltalo aquí</p>
-                </label>
+  const renderConfirmDuplicates = () => (
+    <div className="space-y-4">
+        <div className="p-4 rounded-md bg-yellow-500/10 text-yellow-700">
+            <div className="flex items-center gap-2 font-bold">
+                <FileWarning className="h-5 w-5"/>
+                <h3>Confirmación de Duplicados</h3>
+            </div>
+            <p className="text-sm mt-2">Se encontraron OTs con números que ya existen en el sistema.</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 text-center">
+            <div className="p-3 border rounded-md">
+                <p className="text-2xl font-bold">{newOrders.length}</p>
+                <p className="text-sm text-muted-foreground">Órdenes Nuevas</p>
+            </div>
+            <div className="p-3 border rounded-md">
+                <p className="text-2xl font-bold">{duplicateOrders.length}</p>
+                <p className="text-sm text-muted-foreground">Órdenes Duplicadas</p>
             </div>
         </div>
-    )
+        
+        <p className="text-sm">Por favor, elige cómo manejar las órdenes duplicadas:</p>
+        
+        <div className="p-4 border rounded-md">
+            <h4 className="font-semibold">Órdenes Duplicadas Encontradas:</h4>
+             <ScrollArea className="h-24 mt-2">
+                <ul className="text-xs list-disc pl-5">
+                    {duplicateOrders.map(d => <li key={d.ot_number}>{d.ot_number} - {d.description}</li>)}
+                </ul>
+            </ScrollArea>
+        </div>
+    </div>
+  );
+
+  const renderResult = () => (
+     <div className="space-y-4">
+        <div className="text-center">
+            <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
+            <h3 className="text-xl font-semibold">Importación Completada</h3>
+        </div>
+        <p>Órdenes procesadas exitosamente: <span className="font-bold text-green-500">{importResult?.successCount}</span></p>
+        <p>Órdenes con errores: <span className="font-bold text-destructive">{importResult?.errorCount}</span></p>
+        {importResult && importResult.errors.length > 0 && (
+            <div className="space-y-2">
+                <h4 className="font-semibold">Detalles de errores:</h4>
+                <ScrollArea className="h-32 rounded-md border p-2">
+                    <ul className="text-xs text-destructive list-disc list-inside">
+                        {importResult.errors.map((err, i) => <li key={i}>{err}</li>)}
+                    </ul>
+                </ScrollArea>
+            </div>
+        )}
+    </div>
+  );
+  
+  const renderContent = () => {
+    switch (step) {
+      case 'selectFile':
+        return renderFileSelection();
+      case 'confirmDuplicates':
+        return renderConfirmDuplicates();
+      case 'showResult':
+        return renderResult();
+      default:
+        return null;
+    }
+  }
+  
+  const renderFooter = () => {
+    switch (step) {
+      case 'selectFile':
+        return (
+          <>
+            <Button variant="ghost" onClick={handleClose}>Cancelar</Button>
+            <Button onClick={() => handleImport('omit')} disabled={loading || !file || errors.length > 0 || (newOrders.length === 0 && duplicateOrders.length === 0)}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                Importar {newOrders.length > 0 ? `${newOrders.length} Órdenes` : ''}
+            </Button>
+          </>
+        )
+      case 'confirmDuplicates':
+        return (
+          <>
+            <Button variant="ghost" onClick={handleClose}>Cancelar</Button>
+            <Button variant="outline" onClick={() => handleImport('omit')} disabled={loading}>
+                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                Importar solo nuevas ({newOrders.length})
+            </Button>
+             <Button onClick={() => handleImport('replace')} disabled={loading}>
+                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                Reemplazar duplicados ({duplicateOrders.length})
+            </Button>
+          </>
+        )
+      case 'showResult':
+        return <Button onClick={handleClose}>Cerrar</Button>
+      default:
+        return <Button variant="ghost" onClick={handleClose}>Cancelar</Button>;
+    }
   }
 
   return (
@@ -383,7 +456,9 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         <DialogHeader>
           <DialogTitle>Importar Órdenes de Trabajo</DialogTitle>
           <DialogDescription>
-            {importResult ? "Resultados de la importación." : "Sube un archivo Excel para crear nuevas OTs masivamente."}
+            {step === 'selectFile' && "Sube un archivo Excel para crear nuevas OTs masivamente."}
+            {step === 'confirmDuplicates' && "Confirma cómo proceder con los datos duplicados."}
+            {step === 'showResult' && "Resultados de la importación."}
           </DialogDescription>
         </DialogHeader>
         
@@ -392,19 +467,10 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         </div>
 
         <DialogFooter>
-            {importResult ? (
-                <Button onClick={handleClose}>Cerrar</Button>
-            ) : (
-                <>
-                    <Button variant="ghost" onClick={handleClose}>Cancelar</Button>
-                    <Button onClick={handleImport} disabled={loading || !file || errors.length > 0}>
-                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                        Importar {parsedData.length > 0 ? `${parsedData.length} Órdenes` : ''}
-                    </Button>
-                </>
-            )}
+            {renderFooter()}
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+

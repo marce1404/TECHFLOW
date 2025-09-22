@@ -1,5 +1,4 @@
 
-
 import { z } from 'zod';
 import type { ChartConfig } from "@/components/ui/chart"
 import { Timestamp } from 'firebase/firestore';
@@ -47,7 +46,6 @@ export type WorkOrder = {
   netPrice: number;
   invoices?: Invoice[];
   invoiceRequestDates?: string[];
-  invoiceNumber?: string; // For data migration from old structure
   ocNumber?: string;
   rut?: string;
   saleNumber?: string;
@@ -309,7 +307,7 @@ export const UpdateUserOutputSchema = z.object({
 export type UpdateUserOutput = z.infer<typeof UpdateUserOutputSchema>;
 
 // Excel Import Types & API Types
-const workOrderStatuses = z.enum(['Por Iniciar', 'En Progreso', 'En Proceso', 'Pendiente', 'Atrasada', 'Cerrada', 'CERRADA', 'Actividad']);
+const workOrderStatuses = z.enum(['Por Iniciar', 'En Progreso', 'En Proceso', 'Pendiente', 'Atrasada', 'Cerrada', 'CERRADA', 'Actividad', 'Terminada']);
 const invoiceSchema = z.object({
   id: z.string(),
   number: z.string().min(1, "El número de factura es requerido"),
@@ -336,10 +334,12 @@ export const CreateWorkOrderInputSchema = z.object({
   technicians: z.array(z.string()).optional().default([]).describe("A list of names for assigned technicians."),
   vehicles: z.array(z.string()).optional().default([]).describe("A list of assigned vehicles."),
   comercial: z.string().optional().describe("The name of the salesperson."),
+  ocNumber: z.string().optional().describe("The OC Number."),
   saleNumber: z.string().optional().describe("The sale number."),
   hesEmMigo: z.string().optional().describe("The HES/EM/MIGO number."),
   rentedVehicle: z.string().optional().describe("Details of a rented vehicle."),
   manualProgress: z.number().optional().default(0).describe("Manual progress percentage for the work order."),
+  facturado: z.boolean().optional().describe("Legacy field to mark if invoiced."),
 });
 export type CreateWorkOrderInput = z.infer<typeof CreateWorkOrderInputSchema>;
 
@@ -359,3 +359,4 @@ export type MailAttachment = {
   filename: string;
   content: string; // base64 encoded
 };
+
