@@ -136,6 +136,7 @@ export default function AdvancedFilters({ dateRange, onDateRangeChange, activeFi
                             captionLayout="dropdown-buttons"
                             fromYear={2020}
                             toYear={new Date().getFullYear() + 2}
+                            locale={es}
                         />
                     </PopoverContent>
                 </Popover>
