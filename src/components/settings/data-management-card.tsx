@@ -19,7 +19,7 @@ import { Separator } from '../ui/separator';
 import * as xlsx from 'xlsx';
 
 export default function DataManagementCard() {
-    const { workOrders, otStatuses, collaborators, vehicles, ganttCharts, otCategories, services, submittedReports, reportTemplates, fetchData } = useWorkOrders();
+    const { workOrders, otStatuses, collaborators, vehicles, ganttCharts, reportTemplates, services, submittedReports, otCategories, fetchData } = useWorkOrders();
     const [date, setDate] = React.useState<DateRange | undefined>();
     const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>([]);
     const [isExporting, setIsExporting] = React.useState(false);
@@ -108,7 +108,7 @@ export default function DataManagementCard() {
         const wb = xlsx.utils.book_new();
 
         const mainSheetData = [{
-            'Numero OT': "OT-1001",
+            'Numero OT': "OT1001",
             'Descripción': "Instalación de sistema CCTV en bodega",
             'Cliente': "Cliente Ejemplo S.A.",
             'RUT': "76.123.456-7",
@@ -121,7 +121,7 @@ export default function DataManagementCard() {
             'Nº Orden de Compra': "OC-2025-987",
             'Encargados (nombres separados por coma)': "Juan Pérez, Ana García",
             'Técnicos (nombres separados por coma)': "Carlos Soto, Luis Torres",
-            'Vehículos (patentes separadas por coma)': "PPU-1111, PPU-2222",
+            'Vehículos (patentes separadas por coma)': "PPU1111, PPU2222",
             'Comercial': "Vendedor Ejemplo",
             'Nº Venta': "NV-554",
             'HES/EM/MIGO': "HES-12345",
@@ -329,5 +329,7 @@ export default function DataManagementCard() {
         </>
     );
 }
+
+    
 
     
