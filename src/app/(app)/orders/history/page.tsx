@@ -84,6 +84,9 @@ export default function HistoryPage() {
                 case 'supervisors':
                      ordersToFilter = ordersToFilter.filter(order => (order.assigned || []).some(s => filter.values.includes(s)));
                     break;
+                 case 'comercial':
+                    ordersToFilter = ordersToFilter.filter(order => filter.values.includes(order.comercial));
+                    break;
                 case 'priorities':
                     ordersToFilter = ordersToFilter.filter(order => filter.values.includes(order.priority));
                     break;

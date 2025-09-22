@@ -5,7 +5,7 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon } from '@radix-ui/react-icons';
+import { Calendar as CalendarIcon } from 'lucide-react';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { DateRange } from 'react-day-picker';
 import { format } from 'date-fns';
@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Label } from '../ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 
-type FilterType = 'clients' | 'services' | 'technicians' | 'supervisors' | 'priorities' | 'statuses' | 'invoicedStatus';
+type FilterType = 'clients' | 'services' | 'technicians' | 'supervisors' | 'priorities' | 'statuses' | 'invoicedStatus' | 'comercial';
 
 export interface ActiveFilter {
   type: FilterType;
@@ -30,6 +30,7 @@ const filterOptions: { value: FilterType, label: string }[] = [
     { value: 'services', label: 'Servicio' },
     { value: 'technicians', label: 'Técnico' },
     { value: 'supervisors', label: 'Encargado' },
+    { value: 'comercial', label: 'Comercial' },
     { value: 'priorities', label: 'Prioridad' },
     { value: 'statuses', label: 'Estado' },
     { value: 'invoicedStatus', label: 'Estado de Factura' },
@@ -50,6 +51,7 @@ export default function AdvancedFilters({ dateRange, onDateRangeChange, activeFi
   const serviceOptions = React.useMemo(() => services.map(s => ({ value: s.name, label: s.name })), [services]);
   const technicianOptions = React.useMemo(() => collaborators.filter(c => c.role === 'Técnico').map(t => ({ value: t.name, label: t.name })), [collaborators]);
   const supervisorOptions = React.useMemo(() => collaborators.filter(c => ['Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado'].includes(c.role)).map(s => ({ value: s.name, label: s.name })), [collaborators]);
+  const vendorOptions = React.useMemo(() => collaborators.filter(c => c.role === 'Comercial').map(v => ({ value: v.name, label: v.name })), [collaborators]);
   const priorityOptions: { value: WorkOrder['priority'], label: string }[] = [{value: 'Baja', label: 'Baja'}, {value: 'Media', label: 'Media'}, {value: 'Alta', label: 'Alta'}];
   const statusOptions = React.useMemo(() => otStatuses.map(s => ({ value: s.name, label: s.name })), [otStatuses]);
   const invoicedStatusOptions = [
@@ -63,6 +65,7 @@ export default function AdvancedFilters({ dateRange, onDateRangeChange, activeFi
         case 'services': return serviceOptions;
         case 'technicians': return technicianOptions;
         case 'supervisors': return supervisorOptions;
+        case 'comercial': return vendorOptions;
         case 'priorities': return priorityOptions;
         case 'statuses': return statusOptions;
         case 'invoicedStatus': return invoicedStatusOptions;
@@ -130,6 +133,9 @@ export default function AdvancedFilters({ dateRange, onDateRangeChange, activeFi
                             onSelect={onDateRangeChange}
                             numberOfMonths={2}
                             locale={es}
+                            captionLayout="dropdown-buttons"
+                            fromYear={2020}
+                            toYear={new Date().getFullYear() + 5}
                         />
                     </PopoverContent>
                 </Popover>
