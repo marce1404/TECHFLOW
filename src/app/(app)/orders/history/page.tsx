@@ -25,9 +25,9 @@ export default function HistoryPage() {
 
     const [isFilterOpen, setIsFilterOpen] = React.useState(false);
 
+    const isFiltering = search || dateRange || activeFilters.length > 0;
 
     const filteredOrders = React.useMemo(() => {
-        const isFiltering = search || dateRange || activeFilters.length > 0;
         let baseItems: WorkOrder[];
 
         if (isFiltering) {
@@ -118,7 +118,7 @@ export default function HistoryPage() {
 
         return ordersToFilter;
 
-    }, [workOrders, activeTab, search, dateRange, activeFilters]);
+    }, [workOrders, activeTab, search, dateRange, activeFilters, isFiltering]);
 
 
     const categories = [
@@ -142,8 +142,10 @@ export default function HistoryPage() {
     }
     
     const { totalPorFacturar, totalFacturado } = React.useMemo(() => {
-        const historicalWorkOrders = workOrders.filter(o => normalizeString(o.status) === 'cerrada' && !o.isActivity);
-        return historicalWorkOrders.reduce((acc, order) => {
+        // Use filteredOrders for calculation if any filter is active, otherwise use the default historical items.
+        const itemsToCalculate = isFiltering ? filteredOrders : workOrders.filter(o => normalizeString(o.status) === 'cerrada');
+        
+        return itemsToCalculate.filter(item => !item.isActivity).reduce((acc, order) => {
             const netPrice = order.netPrice || 0;
             const invoicedAmount = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
             
@@ -161,7 +163,7 @@ export default function HistoryPage() {
             
             return acc;
         }, { totalPorFacturar: 0, totalFacturado: 0 });
-    }, [workOrders]);
+    }, [filteredOrders, workOrders, isFiltering]);
 
     return (
         <div className="flex flex-col gap-4">

@@ -27,21 +27,17 @@ export default function ActiveOrdersPage() {
     const [activeFilters, setActiveFilters] = React.useState<ActiveFilter[]>([]);
     
     const canCreate = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
-
-    const activeItems = React.useMemo(() => {
-        return workOrders.filter(o => normalizeString(o.status) !== 'cerrada');
-    }, [workOrders]);
     
+    const isFiltering = search || dateRange || activeFilters.length > 0;
+
     const filteredOrders = React.useMemo(() => {
-        const isFiltering = search || dateRange || activeFilters.length > 0;
-        
         let baseItems: WorkOrder[];
 
         if (isFiltering) {
             // If any filter is active, search through all work orders
             baseItems = workOrders;
         } else {
-            // Otherwise, show items based on the active tab
+            // Otherwise, show items based on the active tab (only active ones)
             if (activeTab === 'actividades') {
                 baseItems = workOrders.filter(item => item.isActivity && normalizeString(item.status) !== 'cerrada');
             } else if (activeTab === 'todos') {
@@ -124,7 +120,7 @@ export default function ActiveOrdersPage() {
 
         return ordersToFilter;
 
-    }, [workOrders, activeTab, search, dateRange, activeFilters]);
+    }, [workOrders, activeTab, search, dateRange, activeFilters, isFiltering]);
 
     const categories = [
         { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
@@ -148,7 +144,10 @@ export default function ActiveOrdersPage() {
     }
     
     const { totalPorFacturar, totalFacturado } = React.useMemo(() => {
-        return activeItems.filter(item => !item.isActivity).reduce((acc, order) => {
+        // Use filteredOrders for calculation if any filter is active, otherwise use the default active items.
+        const itemsToCalculate = isFiltering ? filteredOrders : workOrders.filter(o => normalizeString(o.status) !== 'cerrada');
+        
+        return itemsToCalculate.filter(item => !item.isActivity).reduce((acc, order) => {
             const invoicedAmount = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
             const netPrice = order.netPrice || 0;
             const pendingAmount = netPrice - invoicedAmount;
@@ -161,7 +160,7 @@ export default function ActiveOrdersPage() {
 
             return acc;
         }, { totalPorFacturar: 0, totalFacturado: 0 });
-    }, [activeItems]);
+    }, [filteredOrders, workOrders, isFiltering]);
 
 
     return (
