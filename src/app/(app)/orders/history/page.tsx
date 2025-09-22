@@ -27,14 +27,21 @@ export default function HistoryPage() {
 
 
     const filteredOrders = React.useMemo(() => {
+        const isFiltering = search || dateRange || activeFilters.length > 0;
         let baseItems: WorkOrder[];
-        
-        if (activeTab === 'actividades') {
-            baseItems = workOrders.filter(o => normalizeString(o.status) === 'cerrada' && o.isActivity);
-        } else if (activeTab === 'todos') {
-            baseItems = workOrders.filter(o => normalizeString(o.status) === 'cerrada' && !o.isActivity);
+
+        if (isFiltering) {
+            // If any filter is active, search through all work orders
+            baseItems = workOrders;
         } else {
-            baseItems = workOrders.filter(o => normalizeString(o.status) === 'cerrada' && !o.isActivity && o.ot_number.startsWith(activeTab));
+            // Otherwise, show items based on the active tab (only closed ones)
+            if (activeTab === 'actividades') {
+                baseItems = workOrders.filter(o => normalizeString(o.status) === 'cerrada' && o.isActivity);
+            } else if (activeTab === 'todos') {
+                baseItems = workOrders.filter(o => normalizeString(o.status) === 'cerrada' && !o.isActivity);
+            } else {
+                baseItems = workOrders.filter(o => normalizeString(o.status) === 'cerrada' && !o.isActivity && o.ot_number.startsWith(activeTab));
+            }
         }
 
         // Apply simple search

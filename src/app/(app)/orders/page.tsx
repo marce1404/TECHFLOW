@@ -31,24 +31,30 @@ export default function ActiveOrdersPage() {
     const activeItems = React.useMemo(() => {
         return workOrders.filter(o => normalizeString(o.status) !== 'cerrada');
     }, [workOrders]);
-
-    const activeWorkOrders = React.useMemo(() => activeItems.filter(item => !item.isActivity), [activeItems]);
-    const activeActivities = React.useMemo(() => activeItems.filter(item => item.isActivity), [activeItems]);
     
     const filteredOrders = React.useMemo(() => {
+        const isFiltering = search || dateRange || activeFilters.length > 0;
+        
         let baseItems: WorkOrder[];
 
-        if (activeTab === 'actividades') {
-            baseItems = activeActivities;
-        } else if (activeTab === 'todos') {
-            baseItems = activeWorkOrders;
+        if (isFiltering) {
+            // If any filter is active, search through all work orders
+            baseItems = workOrders;
         } else {
-            baseItems = activeWorkOrders.filter(order => order.ot_number.startsWith(activeTab));
+            // Otherwise, show items based on the active tab
+            if (activeTab === 'actividades') {
+                baseItems = workOrders.filter(item => item.isActivity && normalizeString(item.status) !== 'cerrada');
+            } else if (activeTab === 'todos') {
+                baseItems = workOrders.filter(item => !item.isActivity && normalizeString(item.status) !== 'cerrada');
+            } else {
+                baseItems = workOrders.filter(order => order.ot_number.startsWith(activeTab) && normalizeString(order.status) !== 'cerrada');
+            }
         }
-
+        
         let ordersToFilter = baseItems;
+
         if (search) {
-             ordersToFilter = baseItems.filter(order =>
+             ordersToFilter = ordersToFilter.filter(order =>
                 order.ot_number.toLowerCase().includes(search.toLowerCase()) ||
                 (order.description && order.description.toLowerCase().includes(search.toLowerCase())) ||
                 (order.client && order.client.toLowerCase().includes(search.toLowerCase()))
@@ -104,7 +110,7 @@ export default function ActiveOrdersPage() {
 
         return ordersToFilter;
 
-    }, [activeWorkOrders, activeActivities, activeTab, search, dateRange, activeFilters]);
+    }, [workOrders, activeTab, search, dateRange, activeFilters]);
 
     const categories = [
         { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
@@ -128,7 +134,7 @@ export default function ActiveOrdersPage() {
     }
     
     const { totalPorFacturar, totalFacturado } = React.useMemo(() => {
-        return activeWorkOrders.reduce((acc, order) => {
+        return activeItems.filter(item => !item.isActivity).reduce((acc, order) => {
             const invoicedAmount = (order.invoices || []).reduce((sum, inv) => sum + inv.amount, 0);
             const netPrice = order.netPrice || 0;
             const pendingAmount = netPrice - invoicedAmount;
@@ -141,7 +147,7 @@ export default function ActiveOrdersPage() {
 
             return acc;
         }, { totalPorFacturar: 0, totalFacturado: 0 });
-    }, [activeWorkOrders]);
+    }, [activeItems]);
 
 
     return (
