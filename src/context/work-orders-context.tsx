@@ -568,15 +568,15 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const updateCompanyInfo = async (info: CompanyInfo) => {
     const docRef = doc(db, 'settings', 'companyInfo');
     await setDoc(docRef, info, { merge: true });
+    setCompanyInfo(prev => ({ ...prev, ...info }));
     await addLogEntry(`Actualizó la información de la empresa.`);
-    await fetchData(); // Refetch settings
   };
 
   const updateSmtpConfig = async (config: SmtpConfig) => {
     const docRef = doc(db, 'settings', 'smtpConfig');
     await setDoc(docRef, config, { merge: true });
+    setSmtpConfig(prev => ({ ...prev, ...config }));
     await addLogEntry(`Actualizó la configuración SMTP.`);
-    await fetchData(); // Refetch settings
   };
   
   const convertActivityToWorkOrder = async (activityId: string, newPrefix: string) => {
