@@ -19,6 +19,7 @@ import type { UserRecord } from 'firebase-admin/auth';
 import { suggestGanttTasks } from '@/ai/flows/suggest-gantt-tasks';
 import type { auth as adminAuth } from 'firebase-admin';
 import type { firestore as admin } from 'firebase-admin';
+import { v2 as cloudinary } from 'cloudinary';
 
 // --- Server Actions ---
 
@@ -33,6 +34,36 @@ export async function getResourceSuggestions(
     return { error: 'An unexpected error occurred. Please try again.' };
   }
 }
+
+export async function uploadToCloudinaryAction(fileAsDataURL: string): Promise<{ success: boolean; url?: string; message: string }> {
+    'use server';
+
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+    if (!cloudName || !apiKey || !apiSecret) {
+        return { success: false, message: 'Las credenciales de Cloudinary no están configuradas en el servidor.' };
+    }
+
+    cloudinary.config({
+        cloud_name: cloudName,
+        api_key: apiKey,
+        api_secret: apiSecret,
+    });
+
+    try {
+        const result = await cloudinary.uploader.upload(fileAsDataURL, {
+            folder: 'techflow_logos',
+            resource_type: 'image',
+        });
+        return { success: true, url: result.secure_url, message: 'Imagen subida con éxito.' };
+    } catch (error: any) {
+        console.error('Error uploading to Cloudinary:', error);
+        return { success: false, message: `Error al subir la imagen: ${error.message}` };
+    }
+}
+
 
 export async function sendTestEmailAction(config: SmtpConfig, to: string): Promise<{ success: boolean; message: string }> {
   const { host, port, secure, user, pass, fromName, fromEmail } = config;

@@ -14,8 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { CompanyInfo } from '@/lib/types';
 import { Loader2, UploadCloud } from 'lucide-react';
-import { storage } from '@/lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { uploadToCloudinaryAction } from '@/app/actions';
 import Image from 'next/image';
 
 const companyFormSchema = z.object({
@@ -56,11 +55,11 @@ export default function CompanyDetailsPage() {
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 1 * 1024 * 1024) { // 1MB limit
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
         toast({
           variant: "destructive",
           title: "Archivo demasiado grande",
-          description: "Por favor, selecciona un logo de menos de 1MB.",
+          description: "Por favor, selecciona un logo de menos de 2MB.",
         });
         return;
       }
@@ -69,55 +68,47 @@ export default function CompanyDetailsPage() {
     }
   };
 
+  const fileToDataURL = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+      reader.readAsDataURL(file);
+    });
+  }
+
   const onSubmit = async (data: CompanyFormValues) => {
     setIsSubmitting(true);
-    
-    const processUpdate = (finalData: CompanyFormValues) => {
-        updateCompanyInfo(finalData)
-        .then(() => {
-            toast({
-                title: 'Datos de la Empresa Actualizados',
-                description: 'La información de tu empresa ha sido guardada exitosamente.',
-                duration: 2000,
-            });
-        })
-        .catch((error) => {
-            // This catch is for updateCompanyInfo, which now re-throws errors
-            toast({
-                variant: "destructive",
-                title: "Error al Guardar en Base de Datos",
-                description: error.message || "No se pudo actualizar la información de la empresa.",
-            });
-        })
-        .finally(() => {
-            setIsSubmitting(false);
-        });
-    };
+    let finalData = { ...data };
 
-    if (logoFile) {
-        const storageRef = ref(storage, `company_logos/${Date.now()}_${logoFile.name}`);
-        uploadBytes(storageRef, logoFile)
-            .then(snapshot => getDownloadURL(snapshot.ref))
-            .then(downloadURL => {
-                const finalData = { ...data, logoUrl: downloadURL };
-                processUpdate(finalData);
-            })
-            .catch(error => {
-                console.error("Error uploading file: ", error);
-                let description = "Ocurrió un error al subir la imagen.";
-                if (error.code === 'storage/unauthorized') {
-                    description = "Error de permisos. Revisa las reglas de seguridad de Firebase Storage.";
-                }
-                toast({
-                    variant: "destructive",
-                    title: "Error al Subir Imagen",
-                    description: description,
-                });
-                setIsSubmitting(false);
-            });
-    } else {
-        // If no new file, just update the info
-        processUpdate(data);
+    try {
+      if (logoFile) {
+        const fileDataUrl = await fileToDataURL(logoFile);
+        const result = await uploadToCloudinaryAction(fileDataUrl);
+
+        if (result.success && result.url) {
+          finalData.logoUrl = result.url;
+        } else {
+          throw new Error(result.message || 'Error al subir la imagen a Cloudinary.');
+        }
+      }
+
+      await updateCompanyInfo(finalData);
+      
+      toast({
+        title: 'Datos de la Empresa Actualizados',
+        description: 'La información de tu empresa ha sido guardada exitosamente.',
+        duration: 2000,
+      });
+
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error al Guardar",
+        description: error.message || "No se pudo actualizar la información.",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -185,12 +176,12 @@ export default function CompanyDetailsPage() {
                             onChange={handleLogoChange}
                         />
                         {logoPreview ? (
-                            <Image src={logoPreview} alt="Vista previa del logo" fill objectFit="contain" className="rounded-md" />
+                            <Image src={logoPreview} alt="Vista previa del logo" fill style={{objectFit:"contain"}} className="rounded-md" />
                         ) : (
                             <div className="text-center text-muted-foreground">
                                 <UploadCloud className="mx-auto h-10 w-10 mb-2"/>
                                 <p className="text-sm">Arrastra o haz clic para subir</p>
-                                <p className="text-xs">PNG, JPG, SVG (Máx 1MB)</p>
+                                <p className="text-xs">PNG, JPG, SVG (Máx 2MB)</p>
                             </div>
                         )}
                     </div>

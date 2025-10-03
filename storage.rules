@@ -1,17 +1,14 @@
 
 rules_version = '2';
 
+// Service Rules
 service firebase.storage {
+  // Cloud Storage Bucket
   match /b/{bucket}/o {
-    // Permite la lectura de cualquier archivo a cualquier usuario.
-    match /{allPaths=**} {
-      allow read;
-    }
-    
-    // Permite la escritura (subida de archivos) en la carpeta 'company_logos'
-    // únicamente a usuarios que estén autenticados.
+    // Allow public read access to company logos
     match /company_logos/{allPaths=**} {
-      allow write: if request.auth != null;
+      allow read;
+      allow write: if request.auth != null; // Allow write only for authenticated users
     }
   }
 }
