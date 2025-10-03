@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -29,7 +30,7 @@ type CompanyFormValues = z.infer<typeof companyFormSchema>;
 
 export default function CompanyDetailsPage() {
   const { toast } = useToast();
-  const { companyInfo, updateCompanyInfo } = useWorkOrders();
+  const { companyInfo, updateCompanyInfo, loading: contextLoading } = useWorkOrders();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [logoFile, setLogoFile] = React.useState<File | null>(null);
   const [logoPreview, setLogoPreview] = React.useState<string | null>(null);
@@ -88,12 +89,11 @@ export default function CompanyDetailsPage() {
           description: 'La información de tu empresa ha sido guardada exitosamente.',
           duration: 2000,
       });
-    } catch (error) {
-        console.error("Error updating company info:", error);
+    } catch (error: any) {
         toast({
             variant: "destructive",
             title: "Error al Guardar",
-            description: "No se pudo actualizar la información de la empresa.",
+            description: error.message || "No se pudo actualizar la información de la empresa.",
         });
     } finally {
         setIsSubmitting(false);
@@ -177,8 +177,8 @@ export default function CompanyDetailsPage() {
               </div>
 
               <div className="flex justify-end">
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" disabled={isSubmitting || contextLoading}>
+                  {(isSubmitting || contextLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Guardar Cambios
                 </Button>
               </div>

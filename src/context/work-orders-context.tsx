@@ -220,31 +220,27 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
   const addLogEntry = async (action: string) => {
     if (!userProfile) return;
-    try {
-        await addDoc(collection(db, 'audit-log'), {
-            user: userProfile.displayName,
-            email: userProfile.email,
-            action,
-            timestamp: serverTimestamp()
-        });
-    } catch (e) {
-        console.error("Error adding log entry: ", e);
-    }
+    addDoc(collection(db, 'audit-log'), {
+        user: userProfile.displayName,
+        email: userProfile.email,
+        action,
+        timestamp: serverTimestamp()
+    }).catch(e => console.error("Error adding log entry: ", e));
   };
   
   const updateOrder = useCallback(async (id: string, updatedData: Partial<WorkOrder>) => {
       const orderRef = doc(db, 'work-orders', id);
-      try {
-        await updateDoc(orderRef, updatedData);
-        const order = workOrders.find(o => o.id === id);
+      const order = workOrders.find(o => o.id === id);
+      updateDoc(orderRef, updatedData).then(() => {
         if (order) {
-            await addLogEntry(`Actualizó la OT: ${order.ot_number}`);
+            addLogEntry(`Actualizó la OT: ${order.ot_number}`);
         }
-      } catch (e) {
+      }).catch(e => {
         console.error(`Error updating order ${id}:`, e);
+        toast({ variant: 'destructive', title: 'Error al actualizar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
-      }
-  }, [workOrders]);
+      });
+  }, [workOrders, toast]);
 
   const getNextOtNumber = useCallback((prefix: string): string => {
     if (!prefix) return '';
@@ -316,8 +312,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
       const docRef = await addDoc(collection(db, "work-orders"), order);
       await addLogEntry(`Creó la OT: ${order.ot_number} - ${order.description}`);
       return { id: docRef.id, ...order } as WorkOrder;
-    } catch(e) {
+    } catch(e: any) {
         console.error("Error creating order:", e);
+        toast({ variant: 'destructive', title: 'Error al crear', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
     }
   };
@@ -328,13 +325,13 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
   const deleteOrder = async (id: string) => {
     const order = getOrder(id);
-    try {
-        await deleteDoc(doc(db, 'work-orders', id));
-        if (order) await addLogEntry(`Eliminó la OT: ${order.ot_number}`);
-    } catch(e) {
+    deleteDoc(doc(db, 'work-orders', id)).then(() => {
+        if (order) addLogEntry(`Eliminó la OT: ${order.ot_number}`);
+    }).catch(e => {
         console.error("Error deleting order:", e);
+        toast({ variant: 'destructive', title: 'Error al eliminar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
-    }
+    });
   };
   
   const promptToCloseOrder = (order: WorkOrder) => {
@@ -342,17 +339,16 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const handleConfirmClose = async (order: WorkOrder, closingDate: Date) => {
-    try {
-        const dataToUpdate = {
-            status: 'Cerrada' as WorkOrder['status'],
-            endDate: format(closingDate, 'yyyy-MM-dd'),
-        };
-        await updateOrder(order.id, dataToUpdate);
-        await addLogEntry(`Cerró la OT: ${order.ot_number}`);
+    const dataToUpdate = {
+        status: 'Cerrada' as WorkOrder['status'],
+        endDate: format(closingDate, 'yyyy-MM-dd'),
+    };
+    updateOrder(order.id, dataToUpdate).then(() => {
+        addLogEntry(`Cerró la OT: ${order.ot_number}`);
         setOrderToClose(null);
-    } catch(e) {
+    }).catch(() => {
         toast({ variant: 'destructive', title: 'Error', description: 'No se pudo cerrar la OT.' });
-    }
+    });
   };
   
   const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory> => {
@@ -360,21 +356,21 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         const docRef = await addDoc(collection(db, "ot-categories"), category);
         await addLogEntry(`Creó la categoría de OT: ${category.name}`);
         return { id: docRef.id, ...category } as OTCategory;
-    } catch(e) {
+    } catch(e: any) {
         console.error("Error creating category:", e);
+        toast({ variant: 'destructive', title: 'Error al crear', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
     }
   };
 
   const updateCategory = async (id: string, updatedCategory: Partial<OTCategory>) => {
-    try {
-        const docRef = doc(db, "ot-categories", id);
-        await updateDoc(docRef, updatedCategory);
-        await addLogEntry(`Actualizó la categoría de OT: ${updatedCategory.name}`);
-    } catch(e) {
+    updateDoc(doc(db, "ot-categories", id), updatedCategory).then(() => {
+        addLogEntry(`Actualizó la categoría de OT: ${updatedCategory.name}`);
+    }).catch(e => {
         console.error("Error updating category:", e);
+        toast({ variant: 'destructive', title: 'Error al actualizar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
-    }
+    });
   };
 
   const addStatus = async (status: Omit<OTStatus, 'id'>): Promise<OTStatus> => {
@@ -382,32 +378,32 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         const docRef = await addDoc(collection(db, "ot-statuses"), status);
         await addLogEntry(`Creó el estado de OT: ${status.name}`);
         return { id: docRef.id, ...status } as OTStatus;
-    } catch(e) {
+    } catch(e: any) {
         console.error("Error creating status:", e);
+        toast({ variant: 'destructive', title: 'Error al crear', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
     }
   };
 
   const updateStatus = async (id: string, updatedStatus: Partial<OTStatus>) => {
-    try {
-        const docRef = doc(db, "ot-statuses", id);
-        await updateDoc(docRef, updatedStatus);
-        await addLogEntry(`Actualizó el estado de OT: ${updatedStatus.name}`);
-    } catch(e) {
+    updateDoc(doc(db, "ot-statuses", id), updatedStatus).then(() => {
+        addLogEntry(`Actualizó el estado de OT: ${updatedStatus.name}`);
+    }).catch(e => {
         console.error("Error updating status:", e);
+        toast({ variant: 'destructive', title: 'Error al actualizar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
-    }
+    });
   };
 
   const deleteStatus = async (id: string) => {
     const status = otStatuses.find(s => s.id === id);
-    try {
-        await deleteDoc(doc(db, "ot-statuses", id));
-        if (status) await addLogEntry(`Eliminó el estado de OT: ${status.name}`);
-    } catch(e) {
+    deleteDoc(doc(db, "ot-statuses", id)).then(() => {
+        if (status) addLogEntry(`Eliminó el estado de OT: ${status.name}`);
+    }).catch(e => {
         console.error("Error deleting status:", e);
+        toast({ variant: 'destructive', title: 'Error al eliminar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
-    }
+    });
   };
 
   const addService = async (service: Omit<Service, 'id'>): Promise<Service> => {
@@ -415,32 +411,32 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         const docRef = await addDoc(collection(db, "services"), service);
         await addLogEntry(`Creó el servicio: ${service.name}`);
         return { id: docRef.id, ...service } as Service;
-    } catch(e) {
+    } catch(e: any) {
         console.error("Error creating service:", e);
+        toast({ variant: 'destructive', title: 'Error al crear', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
     }
   };
 
   const updateService = async (id: string, updatedService: Partial<Service>) => {
-    try {
-        const docRef = doc(db, "services", id);
-        await updateDoc(docRef, updatedService);
-        await addLogEntry(`Actualizó el servicio: ${updatedService.name}`);
-    } catch(e) {
+    updateDoc(doc(db, "services", id), updatedService).then(() => {
+        addLogEntry(`Actualizó el servicio: ${updatedService.name}`);
+    }).catch(e => {
         console.error("Error updating service:", e);
+        toast({ variant: 'destructive', title: 'Error al actualizar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
-    }
+    });
   };
   
   const deleteService = async (id: string) => {
     const service = services.find(s => s.id === id);
-    try {
-        await deleteDoc(doc(db, "services", id));
-        if (service) await addLogEntry(`Eliminó el servicio: ${service.name}`);
-    } catch(e) {
+    deleteDoc(doc(db, "services", id)).then(() => {
+        if (service) addLogEntry(`Eliminó el servicio: ${service.name}`);
+    }).catch(e => {
         console.error("Error deleting service:", e);
+        toast({ variant: 'destructive', title: 'Error al eliminar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
-    }
+    });
   };
   
   const addCollaborator = async (collaborator: Omit<Collaborator, 'id'>): Promise<Collaborator> => {
@@ -448,8 +444,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         const docRef = await addDoc(collection(db, "collaborators"), collaborator);
         await addLogEntry(`Creó al colaborador: ${collaborator.name}`);
         return { ...collaborator, id: docRef.id } as Collaborator;
-    } catch(e) {
+    } catch(e: any) {
         console.error("Error creating collaborator:", e);
+        toast({ variant: 'destructive', title: 'Error al crear', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
     }
   };
@@ -459,25 +456,24 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateCollaborator = async (id: string, updatedCollaborator: Partial<Omit<Collaborator, 'id'>>) => {
-    try {
-        const docRef = doc(db, "collaborators", id);
-        await updateDoc(docRef, updatedCollaborator);
-        await addLogEntry(`Actualizó al colaborador: ${updatedCollaborator.name}`);
-    } catch(e) {
+    updateDoc(doc(db, "collaborators", id), updatedCollaborator).then(() => {
+        addLogEntry(`Actualizó al colaborador: ${updatedCollaborator.name}`);
+    }).catch(e => {
         console.error("Error updating collaborator:", e);
+        toast({ variant: 'destructive', title: 'Error al actualizar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
-    }
+    });
   };
 
   const deleteCollaborator = async (id: string) => {
     const collaborator = getCollaborator(id);
-    try {
-        await deleteDoc(doc(db, "collaborators", id));
-        if (collaborator) await addLogEntry(`Eliminó al colaborador: ${collaborator.name}`);
-    } catch(e) {
+    deleteDoc(doc(db, "collaborators", id)).then(() => {
+        if (collaborator) addLogEntry(`Eliminó al colaborador: ${collaborator.name}`);
+    }).catch(e => {
         console.error("Error deleting collaborator:", e);
+        toast({ variant: 'destructive', title: 'Error al eliminar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
-    }
+    });
   };
   
   const addVehicle = async (vehicle: Omit<Vehicle, 'id'>): Promise<Vehicle> => {
@@ -486,32 +482,32 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         const docRef = await addDoc(collection(db, "vehicles"), vehicleData);
         await addLogEntry(`Añadió el vehículo: ${vehicle.model} (${vehicle.plate})`);
         return { ...vehicleData, id: docRef.id } as Vehicle;
-    } catch(e) {
+    } catch(e: any) {
         console.error("Error creating vehicle:", e);
+        toast({ variant: 'destructive', title: 'Error al crear', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
     }
   };
 
   const updateVehicle = async (id: string, updatedVehicle: Partial<Omit<Vehicle, 'id'>>) => {
-    try {
-        const docRef = doc(db, "vehicles", id);
-        await updateDoc(docRef, updatedVehicle);
-        await addLogEntry(`Actualizó el vehículo: ${updatedVehicle.model} (${updatedVehicle.plate})`);
-    } catch(e) {
+    updateDoc(doc(db, "vehicles", id), updatedVehicle).then(() => {
+        addLogEntry(`Actualizó el vehículo: ${updatedVehicle.model} (${updatedVehicle.plate})`);
+    }).catch(e => {
         console.error("Error updating vehicle:", e);
+        toast({ variant: 'destructive', title: 'Error al actualizar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
-    }
+    });
   };
 
   const deleteVehicle = async (id: string) => {
     const vehicle = vehicles.find(v => v.id === id);
-    try {
-        await deleteDoc(doc(db, "vehicles", id));
-        if (vehicle) await addLogEntry(`Eliminó el vehículo: ${vehicle.model} (${vehicle.plate})`);
-    } catch(e) {
+    deleteDoc(doc(db, "vehicles", id)).then(() => {
+        if (vehicle) addLogEntry(`Eliminó el vehículo: ${vehicle.model} (${vehicle.plate})`);
+    }).catch(e => {
         console.error("Error deleting vehicle:", e);
+        toast({ variant: 'destructive', title: 'Error al eliminar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
-    }
+    });
   };
 
   const addGanttChart = async (ganttChart: Omit<GanttChart, 'id'>): Promise<GanttChart> => {
@@ -527,8 +523,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         const docRef = await addDoc(collection(db, "gantt-charts"), dataToSave);
         await addLogEntry(`Creó la Carta Gantt: ${ganttChart.name}`);
         return { ...ganttChart, id: docRef.id };
-      } catch(e) {
+      } catch(e: any) {
         console.error("Error creating Gantt chart:", e);
+        toast({ variant: 'destructive', title: 'Error al crear', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
       }
   };
@@ -555,24 +552,24 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
       if (ganttChartData.assignedOT === 'none') {
           dataToSave.assignedOT = '';
       }
-      try {
-        await updateDoc(docRef, dataToSave);
-        await addLogEntry(`Actualizó la Carta Gantt: ${ganttChartData.name}`);
-      } catch(e) {
+      updateDoc(docRef, dataToSave).then(() => {
+        addLogEntry(`Actualizó la Carta Gantt: ${ganttChartData.name}`);
+      }).catch(e => {
         console.error("Error updating Gantt chart:", e);
+        toast({ variant: 'destructive', title: 'Error al actualizar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
-      }
+      });
   };
 
   const deleteGanttChart = async (id: string) => {
     const chart = getGanttChart(id);
-    try {
-        await deleteDoc(doc(db, "gantt-charts", id));
-        if (chart) await addLogEntry(`Eliminó la Carta Gantt: ${chart.name}`);
-    } catch(e) {
+    deleteDoc(doc(db, "gantt-charts", id)).then(() => {
+        if (chart) addLogEntry(`Eliminó la Carta Gantt: ${chart.name}`);
+    }).catch(e => {
         console.error("Error deleting Gantt chart:", e);
+        toast({ variant: 'destructive', title: 'Error al eliminar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
-    }
+    });
   };
   
   const addSuggestedTask = async (task: Omit<SuggestedTask, 'id'>): Promise<SuggestedTask> => {
@@ -580,32 +577,32 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         const docRef = await addDoc(collection(db, "suggested-tasks"), task);
         await addLogEntry(`Añadió tarea sugerida: ${task.name}`);
         return { id: docRef.id, ...task } as SuggestedTask;
-    } catch(e) {
+    } catch(e: any) {
         console.error("Error creating suggested task:", e);
+        toast({ variant: 'destructive', title: 'Error al crear', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
     }
   };
 
   const updateSuggestedTask = async (id: string, updatedTask: Partial<SuggestedTask>) => {
-    try {
-        const docRef = doc(db, "suggested-tasks", id);
-        await updateDoc(docRef, updatedTask);
-        await addLogEntry(`Actualizó tarea sugerida: ${updatedTask.name}`);
-    } catch(e) {
+    updateDoc(doc(db, "suggested-tasks", id), updatedTask).then(() => {
+        addLogEntry(`Actualizó tarea sugerida: ${updatedTask.name}`);
+    }).catch(e => {
         console.error("Error updating suggested task:", e);
+        toast({ variant: 'destructive', title: 'Error al actualizar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
-    }
+    });
   };
 
   const deleteSuggestedTask = async (id: string) => {
     const task = suggestedTasks.find(t => t.id === id);
-    try {
-        await deleteDoc(doc(db, "suggested-tasks", id));
-        if (task) await addLogEntry(`Eliminó tarea sugerida: ${task.name}`);
-    } catch(e) {
+    deleteDoc(doc(db, "suggested-tasks", id)).then(() => {
+        if (task) addLogEntry(`Eliminó tarea sugerida: ${task.name}`);
+    }).catch(e => {
         console.error("Error deleting suggested task:", e);
+        toast({ variant: 'destructive', title: 'Error al eliminar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
-    }
+    });
   };
   
   const updatePhaseName = async (category: string, oldPhaseName: string, newPhaseName: string) => {
@@ -618,8 +615,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         await batch.commit();
         await addLogEntry(`Renombró la fase '${oldPhaseName}' a '${newPhaseName}' en la categoría '${category}'`);
-    } catch(e) {
+    } catch(e: any) {
         console.error("Error updating phase name:", e);
+        toast({ variant: 'destructive', title: 'Error al renombrar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
     }
   };
@@ -634,8 +632,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         await batch.commit();
         await addLogEntry(`Eliminó la fase '${phaseName}' en la categoría '${category}'`);
-    } catch(e) {
+    } catch(e: any) {
         console.error("Error deleting phase:", e);
+        toast({ variant: 'destructive', title: 'Error al eliminar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
     }
   };
@@ -645,33 +644,33 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         const docRef = await addDoc(collection(db, "report-templates"), template);
         await addLogEntry(`Creó la plantilla de informe: ${template.name}`);
         return { id: docRef.id, ...template } as ReportTemplate;
-    } catch(e) {
+    } catch(e: any) {
         console.error("Error creating report template:", e);
+        toast({ variant: 'destructive', title: 'Error al crear', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
     }
   };
 
   const updateReportTemplate = async (id: string, updatedTemplate: Partial<ReportTemplate>) => {
-    try {
-        const docRef = doc(db, "report-templates", id);
-        await updateDoc(docRef, updatedTemplate);
-        await addLogEntry(`Actualizó la plantilla de informe: ${updatedTemplate.name}`);
-    } catch(e) {
+    updateDoc(doc(db, "report-templates", id), updatedTemplate).then(() => {
+        addLogEntry(`Actualizó la plantilla de informe: ${updatedTemplate.name}`);
+    }).catch(e => {
         console.error("Error updating report template:", e);
+        toast({ variant: 'destructive', title: 'Error al actualizar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
-    }
+    });
   };
 
 
   const deleteReportTemplate = async (id: string) => {
     const template = reportTemplates.find(t => t.id === id);
-    try {
-        await deleteDoc(doc(db, "report-templates", id));
-        if (template) await addLogEntry(`Eliminó la plantilla de informe: ${template.name}`);
-    } catch(e) {
+    deleteDoc(doc(db, "report-templates", id)).then(() => {
+        if (template) addLogEntry(`Eliminó la plantilla de informe: ${template.name}`);
+    }).catch(e => {
         console.error("Error deleting report template:", e);
+        toast({ variant: 'destructive', title: 'Error al eliminar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
-    }
+    });
   };
 
   const addSubmittedReport = async (report: Omit<SubmittedReport, 'id' | 'submittedAt'>): Promise<SubmittedReport> => {
@@ -683,56 +682,56 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         const docRef = await addDoc(collection(db, "submitted-reports"), reportData);
         await addLogEntry(`Envió el informe '${report.templateName}' para la OT ${report.otDetails.ot_number}`);
         return { ...report, id: docRef.id, submittedAt: Timestamp.now() } as SubmittedReport; 
-    } catch(e) {
+    } catch(e: any) {
         console.error("Error adding submitted report:", e);
+        toast({ variant: 'destructive', title: 'Error al enviar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
     }
   };
 
   const updateSubmittedReport = async (id: string, report: Partial<SubmittedReport>) => {
-    const docRef = doc(db, "submitted-reports", id);
-    try {
-        await updateDoc(docRef, report);
-        const originalReport = submittedReports.find(r => r.id === id);
-        if(originalReport) await addLogEntry(`Actualizó el informe para la OT ${originalReport.otDetails.ot_number}`);
-    } catch(e) {
+    const originalReport = submittedReports.find(r => r.id === id);
+    updateDoc(doc(db, "submitted-reports", id), report).then(() => {
+        if(originalReport) addLogEntry(`Actualizó el informe para la OT ${originalReport.otDetails.ot_number}`);
+    }).catch(e => {
         console.error("Error updating submitted report:", e);
+        toast({ variant: 'destructive', title: 'Error al actualizar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
-    }
+    });
   };
 
   const deleteSubmittedReport = async (id: string) => {
     const report = submittedReports.find(r => r.id === id);
-    try {
-        await deleteDoc(doc(db, "submitted-reports", id));
-        if(report) await addLogEntry(`Eliminó el informe para la OT ${report.otDetails.ot_number}`);
-    } catch(e) {
+    deleteDoc(doc(db, "submitted-reports", id)).then(() => {
+        if(report) addLogEntry(`Eliminó el informe para la OT ${report.otDetails.ot_number}`);
+    }).catch(e => {
         console.error("Error deleting submitted report:", e);
+        toast({ variant: 'destructive', title: 'Error al eliminar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
-    }
+    });
   };
 
   const updateCompanyInfo = async (info: CompanyInfo) => {
     const docRef = doc(db, 'settings', 'companyInfo');
-    try {
-        await setDoc(docRef, info, { merge: true });
-        await addLogEntry(`Actualizó la información de la empresa.`);
-        await fetchData(); // Re-fetch all data to reflect changes
-    } catch (e) {
+    setDoc(docRef, info, { merge: true }).then(() => {
+        addLogEntry(`Actualizó la información de la empresa.`);
+        fetchData(); // Re-fetch all data to reflect changes
+    }).catch(e => {
         console.error("Error updating company info:", e);
+        toast({ variant: 'destructive', title: 'Error al guardar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
-    }
+    });
   };
 
   const updateSmtpConfig = async (config: SmtpConfig) => {
     const docRef = doc(db, 'settings', 'smtpConfig');
-    try {
-        await setDoc(docRef, config, { merge: true });
-        await addLogEntry(`Actualizó la configuración SMTP.`);
-    } catch (e) {
+    setDoc(docRef, config, { merge: true }).then(() => {
+        addLogEntry(`Actualizó la configuración SMTP.`);
+    }).catch(e => {
         console.error("Error updating SMTP config:", e);
+        toast({ variant: 'destructive', title: 'Error al guardar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
         throw e;
-    }
+    });
   };
   
   const convertActivityToWorkOrder = async (activityId: string, newPrefix: string) => {
@@ -836,6 +835,3 @@ export const useWorkOrders = () => {
   }
   return context;
 };
-
-
-    
