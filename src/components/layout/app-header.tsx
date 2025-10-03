@@ -19,6 +19,7 @@ import { useSidebar } from './sidebar';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
 export default function AppHeader() {
   const pathname = usePathname();
@@ -82,7 +83,7 @@ export default function AppHeader() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                 <Avatar className="h-9 w-9">
-                  {userProfile?.photoURL ? <AvatarImage src={userProfile.photoURL} alt={userProfile.displayName} /> : <AvatarFallback>{getInitials(userProfile?.displayName)}</AvatarFallback>}
+                  {userProfile?.photoURL ? <AvatarImage src={userProfile.photoURL} alt={userProfile.displayName || ''} /> : <AvatarFallback>{getInitials(userProfile?.displayName)}</AvatarFallback>}
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>

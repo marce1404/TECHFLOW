@@ -36,6 +36,7 @@ import { useWorkOrders } from '@/context/work-orders-context';
 import { useAuth } from '@/context/auth-context';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Separator } from '../ui/separator';
+import Image from 'next/image';
 
 export default function AppSidebar() {
   const pathname = usePathname();
@@ -228,7 +229,7 @@ export default function AppSidebar() {
       <SidebarHeader>
         <div className="flex items-center gap-2 p-2">
             {companyInfo?.logoUrl ? (
-                <img src={companyInfo.logoUrl} alt="Logo" className="h-10 w-10 object-contain" />
+                <Image src={companyInfo.logoUrl} alt="Logo" width={40} height={40} className="object-contain" />
             ) : (
                 <div className="bg-primary p-2 rounded-lg">
                     <svg
@@ -289,7 +290,7 @@ export default function AppSidebar() {
           <Separator className="my-1 bg-sidebar-border" />
           <div className="flex items-center gap-3 p-2">
             <Avatar className="h-9 w-9">
-               {userProfile?.photoURL ? <AvatarImage src={userProfile.photoURL} alt={userProfile.displayName} /> : <AvatarFallback>{getInitials(userProfile?.displayName)}</AvatarFallback>}
+               {userProfile?.photoURL ? <AvatarImage src={userProfile.photoURL} alt={userProfile.displayName || ''} /> : <AvatarFallback>{getInitials(userProfile?.displayName)}</AvatarFallback>}
             </Avatar>
             <div className="flex flex-col flex-1 min-w-0">
                 <span className="font-semibold text-sm leading-tight truncate">{userProfile?.displayName}</span>
