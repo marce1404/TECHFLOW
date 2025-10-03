@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -72,31 +71,53 @@ export default function CompanyDetailsPage() {
 
   const onSubmit = async (data: CompanyFormValues) => {
     setIsSubmitting(true);
-    let finalData = { ...data };
-
-    try {
-      if (logoFile) {
-        const storageRef = ref(storage, `company_logos/${Date.now()}_${logoFile.name}`);
-        const snapshot = await uploadBytes(storageRef, logoFile);
-        const downloadURL = await getDownloadURL(snapshot.ref);
-        finalData.logoUrl = downloadURL;
-      }
-
-      await updateCompanyInfo(finalData);
-
-      toast({
-          title: 'Datos de la Empresa Actualizados',
-          description: 'La información de tu empresa ha sido guardada exitosamente.',
-          duration: 2000,
-      });
-    } catch (error: any) {
-        toast({
-            variant: "destructive",
-            title: "Error al Guardar",
-            description: error.message || "No se pudo actualizar la información de la empresa.",
+    
+    const processUpdate = (finalData: CompanyFormValues) => {
+        updateCompanyInfo(finalData)
+        .then(() => {
+            toast({
+                title: 'Datos de la Empresa Actualizados',
+                description: 'La información de tu empresa ha sido guardada exitosamente.',
+                duration: 2000,
+            });
+        })
+        .catch((error) => {
+            // This catch is for updateCompanyInfo, which now re-throws errors
+            toast({
+                variant: "destructive",
+                title: "Error al Guardar en Base de Datos",
+                description: error.message || "No se pudo actualizar la información de la empresa.",
+            });
+        })
+        .finally(() => {
+            setIsSubmitting(false);
         });
-    } finally {
-        setIsSubmitting(false);
+    };
+
+    if (logoFile) {
+        const storageRef = ref(storage, `company_logos/${Date.now()}_${logoFile.name}`);
+        uploadBytes(storageRef, logoFile)
+            .then(snapshot => getDownloadURL(snapshot.ref))
+            .then(downloadURL => {
+                const finalData = { ...data, logoUrl: downloadURL };
+                processUpdate(finalData);
+            })
+            .catch(error => {
+                console.error("Error uploading file: ", error);
+                let description = "Ocurrió un error al subir la imagen.";
+                if (error.code === 'storage/unauthorized') {
+                    description = "Error de permisos. Revisa las reglas de seguridad de Firebase Storage.";
+                }
+                toast({
+                    variant: "destructive",
+                    title: "Error al Subir Imagen",
+                    description: description,
+                });
+                setIsSubmitting(false);
+            });
+    } else {
+        // If no new file, just update the info
+        processUpdate(data);
     }
   };
 
