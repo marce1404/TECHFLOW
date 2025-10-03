@@ -312,9 +312,14 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   }, [workOrders]);
 
   const addOrder = async (order: Omit<WorkOrder, 'id'>): Promise<WorkOrder> => {
-    const docRef = await addDoc(collection(db, "work-orders"), order);
-    await addLogEntry(`Creó la OT: ${order.ot_number} - ${order.description}`);
-    return { id: docRef.id, ...order } as WorkOrder;
+    try {
+      const docRef = await addDoc(collection(db, "work-orders"), order);
+      await addLogEntry(`Creó la OT: ${order.ot_number} - ${order.description}`);
+      return { id: docRef.id, ...order } as WorkOrder;
+    } catch(e) {
+        console.error("Error creating order:", e);
+        throw e;
+    }
   };
   
   const getOrder = (id: string) => {
@@ -323,8 +328,13 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
   const deleteOrder = async (id: string) => {
     const order = getOrder(id);
-    await deleteDoc(doc(db, 'work-orders', id));
-    if (order) await addLogEntry(`Eliminó la OT: ${order.ot_number}`);
+    try {
+        await deleteDoc(doc(db, 'work-orders', id));
+        if (order) await addLogEntry(`Eliminó la OT: ${order.ot_number}`);
+    } catch(e) {
+        console.error("Error deleting order:", e);
+        throw e;
+    }
   };
   
   const promptToCloseOrder = (order: WorkOrder) => {
@@ -332,67 +342,116 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const handleConfirmClose = async (order: WorkOrder, closingDate: Date) => {
-    const dataToUpdate = {
-        status: 'Cerrada' as WorkOrder['status'],
-        endDate: format(closingDate, 'yyyy-MM-dd'),
-    };
-    await updateOrder(order.id, dataToUpdate);
-    await addLogEntry(`Cerró la OT: ${order.ot_number}`);
-    setOrderToClose(null);
+    try {
+        const dataToUpdate = {
+            status: 'Cerrada' as WorkOrder['status'],
+            endDate: format(closingDate, 'yyyy-MM-dd'),
+        };
+        await updateOrder(order.id, dataToUpdate);
+        await addLogEntry(`Cerró la OT: ${order.ot_number}`);
+        setOrderToClose(null);
+    } catch(e) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo cerrar la OT.' });
+    }
   };
   
   const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory> => {
-    const docRef = await addDoc(collection(db, "ot-categories"), category);
-    await addLogEntry(`Creó la categoría de OT: ${category.name}`);
-    return { id: docRef.id, ...category } as OTCategory;
+    try {
+        const docRef = await addDoc(collection(db, "ot-categories"), category);
+        await addLogEntry(`Creó la categoría de OT: ${category.name}`);
+        return { id: docRef.id, ...category } as OTCategory;
+    } catch(e) {
+        console.error("Error creating category:", e);
+        throw e;
+    }
   };
 
   const updateCategory = async (id: string, updatedCategory: Partial<OTCategory>) => {
-    const docRef = doc(db, "ot-categories", id);
-    await updateDoc(docRef, updatedCategory);
-    await addLogEntry(`Actualizó la categoría de OT: ${updatedCategory.name}`);
+    try {
+        const docRef = doc(db, "ot-categories", id);
+        await updateDoc(docRef, updatedCategory);
+        await addLogEntry(`Actualizó la categoría de OT: ${updatedCategory.name}`);
+    } catch(e) {
+        console.error("Error updating category:", e);
+        throw e;
+    }
   };
 
   const addStatus = async (status: Omit<OTStatus, 'id'>): Promise<OTStatus> => {
-    const docRef = await addDoc(collection(db, "ot-statuses"), status);
-    await addLogEntry(`Creó el estado de OT: ${status.name}`);
-    return { id: docRef.id, ...status } as OTStatus;
+    try {
+        const docRef = await addDoc(collection(db, "ot-statuses"), status);
+        await addLogEntry(`Creó el estado de OT: ${status.name}`);
+        return { id: docRef.id, ...status } as OTStatus;
+    } catch(e) {
+        console.error("Error creating status:", e);
+        throw e;
+    }
   };
 
   const updateStatus = async (id: string, updatedStatus: Partial<OTStatus>) => {
-    const docRef = doc(db, "ot-statuses", id);
-    await updateDoc(docRef, updatedStatus);
-    await addLogEntry(`Actualizó el estado de OT: ${updatedStatus.name}`);
+    try {
+        const docRef = doc(db, "ot-statuses", id);
+        await updateDoc(docRef, updatedStatus);
+        await addLogEntry(`Actualizó el estado de OT: ${updatedStatus.name}`);
+    } catch(e) {
+        console.error("Error updating status:", e);
+        throw e;
+    }
   };
 
   const deleteStatus = async (id: string) => {
     const status = otStatuses.find(s => s.id === id);
-    await deleteDoc(doc(db, "ot-statuses", id));
-    if (status) await addLogEntry(`Eliminó el estado de OT: ${status.name}`);
+    try {
+        await deleteDoc(doc(db, "ot-statuses", id));
+        if (status) await addLogEntry(`Eliminó el estado de OT: ${status.name}`);
+    } catch(e) {
+        console.error("Error deleting status:", e);
+        throw e;
+    }
   };
 
   const addService = async (service: Omit<Service, 'id'>): Promise<Service> => {
-    const docRef = await addDoc(collection(db, "services"), service);
-    await addLogEntry(`Creó el servicio: ${service.name}`);
-    return { id: docRef.id, ...service } as Service;
+    try {
+        const docRef = await addDoc(collection(db, "services"), service);
+        await addLogEntry(`Creó el servicio: ${service.name}`);
+        return { id: docRef.id, ...service } as Service;
+    } catch(e) {
+        console.error("Error creating service:", e);
+        throw e;
+    }
   };
 
   const updateService = async (id: string, updatedService: Partial<Service>) => {
-    const docRef = doc(db, "services", id);
-    await updateDoc(docRef, updatedService);
-    await addLogEntry(`Actualizó el servicio: ${updatedService.name}`);
+    try {
+        const docRef = doc(db, "services", id);
+        await updateDoc(docRef, updatedService);
+        await addLogEntry(`Actualizó el servicio: ${updatedService.name}`);
+    } catch(e) {
+        console.error("Error updating service:", e);
+        throw e;
+    }
   };
   
   const deleteService = async (id: string) => {
     const service = services.find(s => s.id === id);
-    await deleteDoc(doc(db, "services", id));
-    if (service) await addLogEntry(`Eliminó el servicio: ${service.name}`);
+    try {
+        await deleteDoc(doc(db, "services", id));
+        if (service) await addLogEntry(`Eliminó el servicio: ${service.name}`);
+    } catch(e) {
+        console.error("Error deleting service:", e);
+        throw e;
+    }
   };
   
   const addCollaborator = async (collaborator: Omit<Collaborator, 'id'>): Promise<Collaborator> => {
-    const docRef = await addDoc(collection(db, "collaborators"), collaborator);
-    await addLogEntry(`Creó al colaborador: ${collaborator.name}`);
-    return { ...collaborator, id: docRef.id } as Collaborator;
+    try {
+        const docRef = await addDoc(collection(db, "collaborators"), collaborator);
+        await addLogEntry(`Creó al colaborador: ${collaborator.name}`);
+        return { ...collaborator, id: docRef.id } as Collaborator;
+    } catch(e) {
+        console.error("Error creating collaborator:", e);
+        throw e;
+    }
   };
   
   const getCollaborator = (id: string) => {
@@ -400,34 +459,59 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateCollaborator = async (id: string, updatedCollaborator: Partial<Omit<Collaborator, 'id'>>) => {
-    const docRef = doc(db, "collaborators", id);
-    await updateDoc(docRef, updatedCollaborator);
-    await addLogEntry(`Actualizó al colaborador: ${updatedCollaborator.name}`);
+    try {
+        const docRef = doc(db, "collaborators", id);
+        await updateDoc(docRef, updatedCollaborator);
+        await addLogEntry(`Actualizó al colaborador: ${updatedCollaborator.name}`);
+    } catch(e) {
+        console.error("Error updating collaborator:", e);
+        throw e;
+    }
   };
 
   const deleteCollaborator = async (id: string) => {
     const collaborator = getCollaborator(id);
-    await deleteDoc(doc(db, "collaborators", id));
-    if (collaborator) await addLogEntry(`Eliminó al colaborador: ${collaborator.name}`);
+    try {
+        await deleteDoc(doc(db, "collaborators", id));
+        if (collaborator) await addLogEntry(`Eliminó al colaborador: ${collaborator.name}`);
+    } catch(e) {
+        console.error("Error deleting collaborator:", e);
+        throw e;
+    }
   };
   
   const addVehicle = async (vehicle: Omit<Vehicle, 'id'>): Promise<Vehicle> => {
     const vehicleData = { ...vehicle, maintenanceLog: vehicle.maintenanceLog || [] };
-    const docRef = await addDoc(collection(db, "vehicles"), vehicleData);
-    await addLogEntry(`Añadió el vehículo: ${vehicle.model} (${vehicle.plate})`);
-    return { ...vehicleData, id: docRef.id } as Vehicle;
+    try {
+        const docRef = await addDoc(collection(db, "vehicles"), vehicleData);
+        await addLogEntry(`Añadió el vehículo: ${vehicle.model} (${vehicle.plate})`);
+        return { ...vehicleData, id: docRef.id } as Vehicle;
+    } catch(e) {
+        console.error("Error creating vehicle:", e);
+        throw e;
+    }
   };
 
   const updateVehicle = async (id: string, updatedVehicle: Partial<Omit<Vehicle, 'id'>>) => {
-    const docRef = doc(db, "vehicles", id);
-    await updateDoc(docRef, updatedVehicle);
-    await addLogEntry(`Actualizó el vehículo: ${updatedVehicle.model} (${updatedVehicle.plate})`);
+    try {
+        const docRef = doc(db, "vehicles", id);
+        await updateDoc(docRef, updatedVehicle);
+        await addLogEntry(`Actualizó el vehículo: ${updatedVehicle.model} (${updatedVehicle.plate})`);
+    } catch(e) {
+        console.error("Error updating vehicle:", e);
+        throw e;
+    }
   };
 
   const deleteVehicle = async (id: string) => {
     const vehicle = vehicles.find(v => v.id === id);
-    await deleteDoc(doc(db, "vehicles", id));
-    if (vehicle) await addLogEntry(`Eliminó el vehículo: ${vehicle.model} (${vehicle.plate})`);
+    try {
+        await deleteDoc(doc(db, "vehicles", id));
+        if (vehicle) await addLogEntry(`Eliminó el vehículo: ${vehicle.model} (${vehicle.plate})`);
+    } catch(e) {
+        console.error("Error deleting vehicle:", e);
+        throw e;
+    }
   };
 
   const addGanttChart = async (ganttChart: Omit<GanttChart, 'id'>): Promise<GanttChart> => {
@@ -439,9 +523,14 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
               startDate: Timestamp.fromDate(new Date(task.startDate)),
           }))
       };
-      const docRef = await addDoc(collection(db, "gantt-charts"), dataToSave);
-      await addLogEntry(`Creó la Carta Gantt: ${ganttChart.name}`);
-      return { ...ganttChart, id: docRef.id };
+      try {
+        const docRef = await addDoc(collection(db, "gantt-charts"), dataToSave);
+        await addLogEntry(`Creó la Carta Gantt: ${ganttChart.name}`);
+        return { ...ganttChart, id: docRef.id };
+      } catch(e) {
+        console.error("Error creating Gantt chart:", e);
+        throw e;
+      }
   };
   
   const getGanttChart = (id: string) => {
@@ -466,74 +555,123 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
       if (ganttChartData.assignedOT === 'none') {
           dataToSave.assignedOT = '';
       }
-
-      await updateDoc(docRef, dataToSave);
-      await addLogEntry(`Actualizó la Carta Gantt: ${ganttChartData.name}`);
+      try {
+        await updateDoc(docRef, dataToSave);
+        await addLogEntry(`Actualizó la Carta Gantt: ${ganttChartData.name}`);
+      } catch(e) {
+        console.error("Error updating Gantt chart:", e);
+        throw e;
+      }
   };
 
   const deleteGanttChart = async (id: string) => {
     const chart = getGanttChart(id);
-    await deleteDoc(doc(db, "gantt-charts", id));
-    if (chart) await addLogEntry(`Eliminó la Carta Gantt: ${chart.name}`);
+    try {
+        await deleteDoc(doc(db, "gantt-charts", id));
+        if (chart) await addLogEntry(`Eliminó la Carta Gantt: ${chart.name}`);
+    } catch(e) {
+        console.error("Error deleting Gantt chart:", e);
+        throw e;
+    }
   };
   
   const addSuggestedTask = async (task: Omit<SuggestedTask, 'id'>): Promise<SuggestedTask> => {
-    const docRef = await addDoc(collection(db, "suggested-tasks"), task);
-    await addLogEntry(`Añadió tarea sugerida: ${task.name}`);
-    return { id: docRef.id, ...task } as SuggestedTask;
+    try {
+        const docRef = await addDoc(collection(db, "suggested-tasks"), task);
+        await addLogEntry(`Añadió tarea sugerida: ${task.name}`);
+        return { id: docRef.id, ...task } as SuggestedTask;
+    } catch(e) {
+        console.error("Error creating suggested task:", e);
+        throw e;
+    }
   };
 
   const updateSuggestedTask = async (id: string, updatedTask: Partial<SuggestedTask>) => {
-    const docRef = doc(db, "suggested-tasks", id);
-    await updateDoc(docRef, updatedTask);
-    await addLogEntry(`Actualizó tarea sugerida: ${updatedTask.name}`);
+    try {
+        const docRef = doc(db, "suggested-tasks", id);
+        await updateDoc(docRef, updatedTask);
+        await addLogEntry(`Actualizó tarea sugerida: ${updatedTask.name}`);
+    } catch(e) {
+        console.error("Error updating suggested task:", e);
+        throw e;
+    }
   };
 
   const deleteSuggestedTask = async (id: string) => {
     const task = suggestedTasks.find(t => t.id === id);
-    await deleteDoc(doc(db, "suggested-tasks", id));
-    if (task) await addLogEntry(`Eliminó tarea sugerida: ${task.name}`);
+    try {
+        await deleteDoc(doc(db, "suggested-tasks", id));
+        if (task) await addLogEntry(`Eliminó tarea sugerida: ${task.name}`);
+    } catch(e) {
+        console.error("Error deleting suggested task:", e);
+        throw e;
+    }
   };
   
   const updatePhaseName = async (category: string, oldPhaseName: string, newPhaseName: string) => {
     const q = query(collection(db, 'suggested-tasks'), where('category', '==', category), where('phase', '==', oldPhaseName));
-    const snapshot = await getDocs(q);
-    const batch = writeBatch(db);
-    snapshot.forEach(doc => {
-      batch.update(doc.ref, { phase: newPhaseName });
-    });
-    await batch.commit();
-    await addLogEntry(`Renombró la fase '${oldPhaseName}' a '${newPhaseName}' en la categoría '${category}'`);
+    try {
+        const snapshot = await getDocs(q);
+        const batch = writeBatch(db);
+        snapshot.forEach(doc => {
+        batch.update(doc.ref, { phase: newPhaseName });
+        });
+        await batch.commit();
+        await addLogEntry(`Renombró la fase '${oldPhaseName}' a '${newPhaseName}' en la categoría '${category}'`);
+    } catch(e) {
+        console.error("Error updating phase name:", e);
+        throw e;
+    }
   };
 
   const deletePhase = async (category: string, phaseName: string) => {
     const q = query(collection(db, 'suggested-tasks'), where('category', '==', category), where('phase', '==', phaseName));
-    const snapshot = await getDocs(q);
-    const batch = writeBatch(db);
-    snapshot.forEach(doc => {
-      batch.delete(doc.ref);
-    });
-    await batch.commit();
-    await addLogEntry(`Eliminó la fase '${phaseName}' en la categoría '${category}'`);
+    try {
+        const snapshot = await getDocs(q);
+        const batch = writeBatch(db);
+        snapshot.forEach(doc => {
+        batch.delete(doc.ref);
+        });
+        await batch.commit();
+        await addLogEntry(`Eliminó la fase '${phaseName}' en la categoría '${category}'`);
+    } catch(e) {
+        console.error("Error deleting phase:", e);
+        throw e;
+    }
   };
   
   const addReportTemplate = async (template: Omit<ReportTemplate, 'id'>): Promise<ReportTemplate> => {
-    const docRef = await addDoc(collection(db, "report-templates"), template);
-    await addLogEntry(`Creó la plantilla de informe: ${template.name}`);
-    return { id: docRef.id, ...template } as ReportTemplate;
+    try {
+        const docRef = await addDoc(collection(db, "report-templates"), template);
+        await addLogEntry(`Creó la plantilla de informe: ${template.name}`);
+        return { id: docRef.id, ...template } as ReportTemplate;
+    } catch(e) {
+        console.error("Error creating report template:", e);
+        throw e;
+    }
   };
 
   const updateReportTemplate = async (id: string, updatedTemplate: Partial<ReportTemplate>) => {
-    const docRef = doc(db, "report-templates", id);
-    await updateDoc(docRef, updatedTemplate);
-    await addLogEntry(`Actualizó la plantilla de informe: ${updatedTemplate.name}`);
+    try {
+        const docRef = doc(db, "report-templates", id);
+        await updateDoc(docRef, updatedTemplate);
+        await addLogEntry(`Actualizó la plantilla de informe: ${updatedTemplate.name}`);
+    } catch(e) {
+        console.error("Error updating report template:", e);
+        throw e;
+    }
   };
 
 
   const deleteReportTemplate = async (id: string) => {
     const template = reportTemplates.find(t => t.id === id);
-    await deleteDoc(doc(db, "report-templates", id));
-    if (template) await addLogEntry(`Eliminó la plantilla de informe: ${template.name}`);
+    try {
+        await deleteDoc(doc(db, "report-templates", id));
+        if (template) await addLogEntry(`Eliminó la plantilla de informe: ${template.name}`);
+    } catch(e) {
+        console.error("Error deleting report template:", e);
+        throw e;
+    }
   };
 
   const addSubmittedReport = async (report: Omit<SubmittedReport, 'id' | 'submittedAt'>): Promise<SubmittedReport> => {
@@ -541,34 +679,60 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         ...report,
         submittedAt: serverTimestamp(),
     };
-    const docRef = await addDoc(collection(db, "submitted-reports"), reportData);
-    await addLogEntry(`Envió el informe '${report.templateName}' para la OT ${report.otDetails.ot_number}`);
-    return { ...report, id: docRef.id, submittedAt: Timestamp.now() } as SubmittedReport; 
+    try {
+        const docRef = await addDoc(collection(db, "submitted-reports"), reportData);
+        await addLogEntry(`Envió el informe '${report.templateName}' para la OT ${report.otDetails.ot_number}`);
+        return { ...report, id: docRef.id, submittedAt: Timestamp.now() } as SubmittedReport; 
+    } catch(e) {
+        console.error("Error adding submitted report:", e);
+        throw e;
+    }
   };
 
   const updateSubmittedReport = async (id: string, report: Partial<SubmittedReport>) => {
     const docRef = doc(db, "submitted-reports", id);
-    await updateDoc(docRef, report);
-    const originalReport = submittedReports.find(r => r.id === id);
-    if(originalReport) await addLogEntry(`Actualizó el informe para la OT ${originalReport.otDetails.ot_number}`);
+    try {
+        await updateDoc(docRef, report);
+        const originalReport = submittedReports.find(r => r.id === id);
+        if(originalReport) await addLogEntry(`Actualizó el informe para la OT ${originalReport.otDetails.ot_number}`);
+    } catch(e) {
+        console.error("Error updating submitted report:", e);
+        throw e;
+    }
   };
 
   const deleteSubmittedReport = async (id: string) => {
     const report = submittedReports.find(r => r.id === id);
-    await deleteDoc(doc(db, "submitted-reports", id));
-    if(report) await addLogEntry(`Eliminó el informe para la OT ${report.otDetails.ot_number}`);
+    try {
+        await deleteDoc(doc(db, "submitted-reports", id));
+        if(report) await addLogEntry(`Eliminó el informe para la OT ${report.otDetails.ot_number}`);
+    } catch(e) {
+        console.error("Error deleting submitted report:", e);
+        throw e;
+    }
   };
 
   const updateCompanyInfo = async (info: CompanyInfo) => {
     const docRef = doc(db, 'settings', 'companyInfo');
-    await setDoc(docRef, info, { merge: true });
-    await addLogEntry(`Actualizó la información de la empresa.`);
+    try {
+        await setDoc(docRef, info, { merge: true });
+        await addLogEntry(`Actualizó la información de la empresa.`);
+        await fetchData(); // Re-fetch all data to reflect changes
+    } catch (e) {
+        console.error("Error updating company info:", e);
+        throw e;
+    }
   };
 
   const updateSmtpConfig = async (config: SmtpConfig) => {
     const docRef = doc(db, 'settings', 'smtpConfig');
-    await setDoc(docRef, config, { merge: true });
-    await addLogEntry(`Actualizó la configuración SMTP.`);
+    try {
+        await setDoc(docRef, config, { merge: true });
+        await addLogEntry(`Actualizó la configuración SMTP.`);
+    } catch (e) {
+        console.error("Error updating SMTP config:", e);
+        throw e;
+    }
   };
   
   const convertActivityToWorkOrder = async (activityId: string, newPrefix: string) => {
@@ -586,9 +750,13 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         status: 'Por Iniciar',
     };
 
-    await updateOrder(activityId, updatedData);
-    toast({ title: "Actividad Convertida", description: `La actividad ahora es la OT ${newOtNumber}.` });
-    await addLogEntry(`Convirtió la actividad '${activity.description}' a la OT ${newOtNumber}`);
+    try {
+        await updateOrder(activityId, updatedData);
+        toast({ title: "Actividad Convertida", description: `La actividad ahora es la OT ${newOtNumber}.` });
+        await addLogEntry(`Convirtió la actividad '${activity.description}' a la OT ${newOtNumber}`);
+    } catch(e) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo convertir la actividad.' });
+    }
   };
 
   return (
@@ -669,3 +837,5 @@ export const useWorkOrders = () => {
   return context;
 };
 
+
+    
