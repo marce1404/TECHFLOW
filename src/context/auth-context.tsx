@@ -1,10 +1,11 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import type { AppUser } from '@/lib/types';
 import { useRouter, usePathname } from 'next/navigation';
 
@@ -24,32 +25,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname();
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        // Fetch user profile only once on auth state change
-        const userDocRef = doc(db, 'users', currentUser.uid);
-        try {
-            const docSnap = await getDoc(userDocRef);
-            if (docSnap.exists()) {
-                setUserProfile(docSnap.data() as AppUser);
-            } else {
-                console.warn(`No user profile found for UID: ${currentUser.uid}`);
-                setUserProfile(null);
-            }
-        } catch (error) {
-            console.error("Error fetching user profile:", error);
-            setUserProfile(null);
-        }
-      } else {
-        setUser(null);
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      if (!currentUser) {
         setUserProfile(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribeAuth();
   }, []);
+
+  useEffect(() => {
+    let unsubscribeProfile: (() => void) | undefined;
+    
+    if (user) {
+      const userDocRef = doc(db, 'users', user.uid);
+      unsubscribeProfile = onSnapshot(userDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+          setUserProfile(docSnap.data() as AppUser);
+        } else {
+          console.warn(`No user profile found for UID: ${user.uid}`);
+          setUserProfile(null);
+        }
+        setLoading(false);
+      }, (error) => {
+        console.error("Error fetching user profile:", error);
+        setUserProfile(null);
+        setLoading(false);
+      });
+    } else {
+      setLoading(false);
+    }
+    
+    return () => {
+      if (unsubscribeProfile) {
+        unsubscribeProfile();
+      }
+    };
+  }, [user]);
   
   useEffect(() => {
     if (!loading) {

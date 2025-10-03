@@ -34,7 +34,7 @@ import { auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { useAuth } from '@/context/auth-context';
-import { Avatar, AvatarFallback } from '../ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Separator } from '../ui/separator';
 
 export default function AppSidebar() {
@@ -227,24 +227,28 @@ export default function AppSidebar() {
     <>
       <SidebarHeader>
         <div className="flex items-center gap-2 p-2">
-            <div className="bg-primary p-2 rounded-lg">
-                 <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-6 w-6 text-primary-foreground"
-                >
-                    <path d="M12 2 L12 22" />
-                    <path d="M12 2 L6 8" />
-                    <path d="M12 2 L18 8" />
-                    <path d="M12 14 L6 20" />
-                    <path d="M12 14 L18 20" />
-                </svg>
-            </div>
+            {companyInfo?.logoUrl ? (
+                <img src={companyInfo.logoUrl} alt="Logo" className="h-10 w-10 object-contain" />
+            ) : (
+                <div className="bg-primary p-2 rounded-lg">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-6 w-6 text-primary-foreground"
+                    >
+                        <path d="M12 2 L12 22" />
+                        <path d="M12 2 L6 8" />
+                        <path d="M12 2 L18 8" />
+                        <path d="M12 14 L6 20" />
+                        <path d="M12 14 L18 20" />
+                    </svg>
+                </div>
+            )}
             <span className="font-headline text-lg font-semibold text-sidebar-foreground">
               {companyInfo?.name || 'TechFlow'}
             </span>
@@ -285,7 +289,7 @@ export default function AppSidebar() {
           <Separator className="my-1 bg-sidebar-border" />
           <div className="flex items-center gap-3 p-2">
             <Avatar className="h-9 w-9">
-                <AvatarFallback>{getInitials(userProfile?.displayName)}</AvatarFallback>
+               {userProfile?.photoURL ? <AvatarImage src={userProfile.photoURL} alt={userProfile.displayName} /> : <AvatarFallback>{getInitials(userProfile?.displayName)}</AvatarFallback>}
             </Avatar>
             <div className="flex flex-col flex-1 min-w-0">
                 <span className="font-semibold text-sm leading-tight truncate">{userProfile?.displayName}</span>
