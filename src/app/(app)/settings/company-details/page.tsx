@@ -29,7 +29,8 @@ type CompanyFormValues = z.infer<typeof companyFormSchema>;
 
 export default function CompanyDetailsPage() {
   const { toast } = useToast();
-  const { companyInfo, updateCompanyInfo, loading } = useWorkOrders();
+  const { companyInfo, updateCompanyInfo } = useWorkOrders();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [logoFile, setLogoFile] = React.useState<File | null>(null);
   const [logoPreview, setLogoPreview] = React.useState<string | null>(null);
   
@@ -69,6 +70,7 @@ export default function CompanyDetailsPage() {
   };
 
   const onSubmit = async (data: CompanyFormValues) => {
+    setIsSubmitting(true);
     let finalData = { ...data };
 
     try {
@@ -93,6 +95,8 @@ export default function CompanyDetailsPage() {
             title: "Error al Guardar",
             description: "No se pudo actualizar la información de la empresa.",
         });
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
@@ -160,7 +164,7 @@ export default function CompanyDetailsPage() {
                             onChange={handleLogoChange}
                         />
                         {logoPreview ? (
-                            <Image src={logoPreview} alt="Vista previa del logo" layout="fill" objectFit="contain" className="rounded-md" />
+                            <Image src={logoPreview} alt="Vista previa del logo" fill objectFit="contain" className="rounded-md" />
                         ) : (
                             <div className="text-center text-muted-foreground">
                                 <UploadCloud className="mx-auto h-10 w-10 mb-2"/>
@@ -173,8 +177,8 @@ export default function CompanyDetailsPage() {
               </div>
 
               <div className="flex justify-end">
-                <Button type="submit" disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Guardar Cambios
                 </Button>
               </div>
