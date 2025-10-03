@@ -97,16 +97,20 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   const checkAndCreatePredefinedTemplates = useCallback(async () => {
-    const templatesCollection = collection(db, 'report-templates');
-    const existingTemplatesSnapshot = await getDocs(templatesCollection);
-    if (existingTemplatesSnapshot.empty) {
-        const batch = writeBatch(db);
-        predefinedReportTemplates.forEach(template => {
-            const docRef = doc(collection(db, 'report-templates'));
-            batch.set(docRef, template);
-        });
-        await batch.commit();
-        console.log("Created predefined report templates.");
+    try {
+        const templatesCollection = collection(db, 'report-templates');
+        const existingTemplatesSnapshot = await getDocs(templatesCollection);
+        if (existingTemplatesSnapshot.empty) {
+            const batch = writeBatch(db);
+            predefinedReportTemplates.forEach(template => {
+                const docRef = doc(collection(db, 'report-templates'));
+                batch.set(docRef, template);
+            });
+            await batch.commit();
+            console.log("Created predefined report templates.");
+        }
+    } catch(e) {
+        console.error("Permission error checking templates, skipping creation.", e)
     }
   }, []);
 
@@ -128,9 +132,14 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         ];
 
         const promises = collectionsToFetch.map(async ({ name, setter }) => {
+          try {
             const snapshot = await getDocs(query(collection(db, name)));
             const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setter(data.map(processFirestoreTimestamp));
+          } catch (e) {
+            console.error(`Error fetching collection ${name}:`, e);
+            // We don't re-throw, so other fetches can continue
+          }
         });
 
         const singleDocsToFetch = [
@@ -142,6 +151,8 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             promises.push(
                 getDoc(doc(db, path)).then(doc => {
                     setter(doc.exists() ? doc.data() : null);
+                }).catch(e => {
+                   console.error(`Error fetching doc ${path}:`, e);
                 })
             );
         });
@@ -221,14 +232,19 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
-    const updateOrder = useCallback(async (id: string, updatedData: Partial<WorkOrder>) => {
-        const orderRef = doc(db, 'work-orders', id);
+  const updateOrder = useCallback(async (id: string, updatedData: Partial<WorkOrder>) => {
+      const orderRef = doc(db, 'work-orders', id);
+      try {
         await updateDoc(orderRef, updatedData);
         const order = workOrders.find(o => o.id === id);
         if (order) {
             await addLogEntry(`Actualizó la OT: ${order.ot_number}`);
         }
-    }, [workOrders]);
+      } catch (e) {
+        console.error(`Error updating order ${id}:`, e);
+        throw e;
+      }
+  }, [workOrders]);
 
   const getNextOtNumber = useCallback((prefix: string): string => {
     if (!prefix) return '';
@@ -308,7 +324,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const deleteOrder = async (id: string) => {
     const order = getOrder(id);
     await deleteDoc(doc(db, 'work-orders', id));
-    await addLogEntry(`Eliminó la OT: ${order?.ot_number}`);
+    if (order) await addLogEntry(`Eliminó la OT: ${order.ot_number}`);
   };
   
   const promptToCloseOrder = (order: WorkOrder) => {
@@ -328,7 +344,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory> => {
     const docRef = await addDoc(collection(db, "ot-categories"), category);
     await addLogEntry(`Creó la categoría de OT: ${category.name}`);
-    await fetchData(); // Refetch static data
     return { id: docRef.id, ...category } as OTCategory;
   };
 
@@ -336,13 +351,11 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const docRef = doc(db, "ot-categories", id);
     await updateDoc(docRef, updatedCategory);
     await addLogEntry(`Actualizó la categoría de OT: ${updatedCategory.name}`);
-    await fetchData(); // Refetch static data
   };
 
   const addStatus = async (status: Omit<OTStatus, 'id'>): Promise<OTStatus> => {
     const docRef = await addDoc(collection(db, "ot-statuses"), status);
     await addLogEntry(`Creó el estado de OT: ${status.name}`);
-    await fetchData(); // Refetch static data
     return { id: docRef.id, ...status } as OTStatus;
   };
 
@@ -350,20 +363,17 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const docRef = doc(db, "ot-statuses", id);
     await updateDoc(docRef, updatedStatus);
     await addLogEntry(`Actualizó el estado de OT: ${updatedStatus.name}`);
-    await fetchData(); // Refetch static data
   };
 
   const deleteStatus = async (id: string) => {
     const status = otStatuses.find(s => s.id === id);
     await deleteDoc(doc(db, "ot-statuses", id));
-    await addLogEntry(`Eliminó el estado de OT: ${status?.name}`);
-    await fetchData(); // Refetch static data
+    if (status) await addLogEntry(`Eliminó el estado de OT: ${status.name}`);
   };
 
   const addService = async (service: Omit<Service, 'id'>): Promise<Service> => {
     const docRef = await addDoc(collection(db, "services"), service);
     await addLogEntry(`Creó el servicio: ${service.name}`);
-    await fetchData(); // Refetch static data
     return { id: docRef.id, ...service } as Service;
   };
 
@@ -371,20 +381,17 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const docRef = doc(db, "services", id);
     await updateDoc(docRef, updatedService);
     await addLogEntry(`Actualizó el servicio: ${updatedService.name}`);
-    await fetchData(); // Refetch static data
   };
   
   const deleteService = async (id: string) => {
     const service = services.find(s => s.id === id);
     await deleteDoc(doc(db, "services", id));
-    await addLogEntry(`Eliminó el servicio: ${service?.name}`);
-    await fetchData(); // Refetch static data
+    if (service) await addLogEntry(`Eliminó el servicio: ${service.name}`);
   };
   
   const addCollaborator = async (collaborator: Omit<Collaborator, 'id'>): Promise<Collaborator> => {
     const docRef = await addDoc(collection(db, "collaborators"), collaborator);
     await addLogEntry(`Creó al colaborador: ${collaborator.name}`);
-    await fetchData(); // Refetch static data
     return { ...collaborator, id: docRef.id } as Collaborator;
   };
   
@@ -396,21 +403,18 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const docRef = doc(db, "collaborators", id);
     await updateDoc(docRef, updatedCollaborator);
     await addLogEntry(`Actualizó al colaborador: ${updatedCollaborator.name}`);
-    await fetchData(); // Refetch static data
   };
 
   const deleteCollaborator = async (id: string) => {
     const collaborator = getCollaborator(id);
     await deleteDoc(doc(db, "collaborators", id));
-    await addLogEntry(`Eliminó al colaborador: ${collaborator?.name}`);
-    await fetchData(); // Refetch static data
+    if (collaborator) await addLogEntry(`Eliminó al colaborador: ${collaborator.name}`);
   };
   
   const addVehicle = async (vehicle: Omit<Vehicle, 'id'>): Promise<Vehicle> => {
     const vehicleData = { ...vehicle, maintenanceLog: vehicle.maintenanceLog || [] };
     const docRef = await addDoc(collection(db, "vehicles"), vehicleData);
     await addLogEntry(`Añadió el vehículo: ${vehicle.model} (${vehicle.plate})`);
-    await fetchData(); // Refetch static data
     return { ...vehicleData, id: docRef.id } as Vehicle;
   };
 
@@ -418,14 +422,12 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const docRef = doc(db, "vehicles", id);
     await updateDoc(docRef, updatedVehicle);
     await addLogEntry(`Actualizó el vehículo: ${updatedVehicle.model} (${updatedVehicle.plate})`);
-    await fetchData(); // Refetch static data
   };
 
   const deleteVehicle = async (id: string) => {
     const vehicle = vehicles.find(v => v.id === id);
     await deleteDoc(doc(db, "vehicles", id));
-    await addLogEntry(`Eliminó el vehículo: ${vehicle?.model} (${vehicle?.plate})`);
-    await fetchData(); // Refetch static data
+    if (vehicle) await addLogEntry(`Eliminó el vehículo: ${vehicle.model} (${vehicle.plate})`);
   };
 
   const addGanttChart = async (ganttChart: Omit<GanttChart, 'id'>): Promise<GanttChart> => {
@@ -472,13 +474,12 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const deleteGanttChart = async (id: string) => {
     const chart = getGanttChart(id);
     await deleteDoc(doc(db, "gantt-charts", id));
-    await addLogEntry(`Eliminó la Carta Gantt: ${chart?.name}`);
+    if (chart) await addLogEntry(`Eliminó la Carta Gantt: ${chart.name}`);
   };
   
   const addSuggestedTask = async (task: Omit<SuggestedTask, 'id'>): Promise<SuggestedTask> => {
     const docRef = await addDoc(collection(db, "suggested-tasks"), task);
     await addLogEntry(`Añadió tarea sugerida: ${task.name}`);
-    await fetchData(); // Refetch static data
     return { id: docRef.id, ...task } as SuggestedTask;
   };
 
@@ -486,14 +487,12 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const docRef = doc(db, "suggested-tasks", id);
     await updateDoc(docRef, updatedTask);
     await addLogEntry(`Actualizó tarea sugerida: ${updatedTask.name}`);
-    await fetchData(); // Refetch static data
   };
 
   const deleteSuggestedTask = async (id: string) => {
     const task = suggestedTasks.find(t => t.id === id);
     await deleteDoc(doc(db, "suggested-tasks", id));
-    await addLogEntry(`Eliminó tarea sugerida: ${task?.name}`);
-    await fetchData(); // Refetch static data
+    if (task) await addLogEntry(`Eliminó tarea sugerida: ${task.name}`);
   };
   
   const updatePhaseName = async (category: string, oldPhaseName: string, newPhaseName: string) => {
@@ -505,7 +504,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     });
     await batch.commit();
     await addLogEntry(`Renombró la fase '${oldPhaseName}' a '${newPhaseName}' en la categoría '${category}'`);
-    await fetchData(); // Refetch static data
   };
 
   const deletePhase = async (category: string, phaseName: string) => {
@@ -517,13 +515,11 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     });
     await batch.commit();
     await addLogEntry(`Eliminó la fase '${phaseName}' en la categoría '${category}'`);
-    await fetchData(); // Refetch static data
   };
   
   const addReportTemplate = async (template: Omit<ReportTemplate, 'id'>): Promise<ReportTemplate> => {
     const docRef = await addDoc(collection(db, "report-templates"), template);
     await addLogEntry(`Creó la plantilla de informe: ${template.name}`);
-    await fetchData(); // Refetch static data
     return { id: docRef.id, ...template } as ReportTemplate;
   };
 
@@ -531,15 +527,13 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const docRef = doc(db, "report-templates", id);
     await updateDoc(docRef, updatedTemplate);
     await addLogEntry(`Actualizó la plantilla de informe: ${updatedTemplate.name}`);
-    await fetchData(); // Refetch static data
   };
 
 
   const deleteReportTemplate = async (id: string) => {
     const template = reportTemplates.find(t => t.id === id);
     await deleteDoc(doc(db, "report-templates", id));
-    await addLogEntry(`Eliminó la plantilla de informe: ${template?.name}`);
-    await fetchData(); // Refetch static data
+    if (template) await addLogEntry(`Eliminó la plantilla de informe: ${template.name}`);
   };
 
   const addSubmittedReport = async (report: Omit<SubmittedReport, 'id' | 'submittedAt'>): Promise<SubmittedReport> => {
@@ -556,27 +550,25 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const docRef = doc(db, "submitted-reports", id);
     await updateDoc(docRef, report);
     const originalReport = submittedReports.find(r => r.id === id);
-    await addLogEntry(`Actualizó el informe para la OT ${originalReport?.otDetails.ot_number}`);
+    if(originalReport) await addLogEntry(`Actualizó el informe para la OT ${originalReport.otDetails.ot_number}`);
   };
 
   const deleteSubmittedReport = async (id: string) => {
     const report = submittedReports.find(r => r.id === id);
     await deleteDoc(doc(db, "submitted-reports", id));
-    await addLogEntry(`Eliminó el informe para la OT ${report?.otDetails.ot_number}`);
+    if(report) await addLogEntry(`Eliminó el informe para la OT ${report.otDetails.ot_number}`);
   };
 
   const updateCompanyInfo = async (info: CompanyInfo) => {
     const docRef = doc(db, 'settings', 'companyInfo');
     await setDoc(docRef, info, { merge: true });
     await addLogEntry(`Actualizó la información de la empresa.`);
-    await fetchData();
   };
 
   const updateSmtpConfig = async (config: SmtpConfig) => {
     const docRef = doc(db, 'settings', 'smtpConfig');
     await setDoc(docRef, config, { merge: true });
     await addLogEntry(`Actualizó la configuración SMTP.`);
-    await fetchData();
   };
   
   const convertActivityToWorkOrder = async (activityId: string, newPrefix: string) => {
