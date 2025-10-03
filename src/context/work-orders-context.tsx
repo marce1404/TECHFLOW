@@ -566,17 +566,27 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateCompanyInfo = async (info: CompanyInfo) => {
-    const docRef = doc(db, 'settings', 'companyInfo');
-    await setDoc(docRef, info, { merge: true });
-    setCompanyInfo(prev => ({ ...prev, ...info }));
-    await addLogEntry(`Actualizó la información de la empresa.`);
+    setLoading(true);
+    try {
+        const docRef = doc(db, 'settings', 'companyInfo');
+        await setDoc(docRef, info, { merge: true });
+        setCompanyInfo(prev => ({ ...(prev || { name: '' }), ...info }));
+        await addLogEntry(`Actualizó la información de la empresa.`);
+    } finally {
+        setLoading(false);
+    }
   };
 
   const updateSmtpConfig = async (config: SmtpConfig) => {
-    const docRef = doc(db, 'settings', 'smtpConfig');
-    await setDoc(docRef, config, { merge: true });
-    setSmtpConfig(prev => ({ ...prev, ...config }));
-    await addLogEntry(`Actualizó la configuración SMTP.`);
+    setLoading(true);
+    try {
+        const docRef = doc(db, 'settings', 'smtpConfig');
+        await setDoc(docRef, config, { merge: true });
+        setSmtpConfig(prev => ({ ...(prev || {}), ...config }));
+        await addLogEntry(`Actualizó la configuración SMTP.`);
+    } finally {
+        setLoading(false);
+    }
   };
   
   const convertActivityToWorkOrder = async (activityId: string, newPrefix: string) => {
