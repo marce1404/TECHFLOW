@@ -13,14 +13,14 @@
   position: relative;
   width: 100%;
   overflow: hidden;
-  height: 2.5rem; /* 40px */
+  height: 3.5rem; /* 56px */
   box-sizing: content-box;
 }
 
 .ticker {
   display: inline-flex;
-  height: 2.5rem; /* 40px */
-  line-height: 2.5rem;
+  height: 3.5rem; /* 56px */
+  line-height: 3.5rem; /* 56px */
   white-space: nowrap;
   padding-right: 100%;
   box-sizing: content-box;
@@ -33,7 +33,7 @@
 .ticker__item {
   display: inline-block;
   padding: 0 4rem;
-  font-size: 0.875rem; /* 14px */
+  font-size: 1.25rem; /* 20px */
   font-weight: 600;
   color: hsl(var(--primary-foreground));
 }

@@ -218,6 +218,13 @@ export default function DashboardPage() {
                     <span className="sr-only">{isFullscreen ? 'Salir de pantalla completa' : 'Ver en pantalla completa'}</span>
                 </Button>
             </div>
+
+            {isFullscreen && (
+              <header className="w-full bg-background shrink-0 mt-4">
+                  <MotivationalTicker />
+              </header>
+            )}
+
             {chunkedOrders.length > 0 ? (
             <Carousel setApi={setApi} className="w-full mt-4">
                 <CarouselContent>
@@ -254,9 +261,6 @@ export default function DashboardPage() {
             </div>
             )}
         </div>
-        <footer className={cn("w-full bg-background shrink-0", !isFullscreen && 'hidden')}>
-            <MotivationalTicker />
-        </footer>
     </div>
   );
 }
