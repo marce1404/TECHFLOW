@@ -204,7 +204,7 @@ export default function DashboardPage() {
 
   return (
      <div ref={dashboardRef} className={cn("flex flex-1 flex-col bg-background h-full", isFullscreen && "h-screen")}>
-        <div className={cn("flex-1", isFullscreen ? "p-4 sm:p-6 lg:p-8 overflow-y-auto" : "")}>
+        <div className={cn("flex-1", isFullscreen ? "p-4 sm:p-6 lg:p-8 overflow-y-auto" : "pt-4")}>
             <div className="flex items-center justify-between pr-4">
                 <div className="flex items-center gap-4">
                     {count > 1 && !isFullscreen && (
@@ -218,12 +218,6 @@ export default function DashboardPage() {
                     <span className="sr-only">{isFullscreen ? 'Salir de pantalla completa' : 'Ver en pantalla completa'}</span>
                 </Button>
             </div>
-
-            {isFullscreen && (
-              <header className="w-full bg-background shrink-0 mt-4">
-                  <MotivationalTicker />
-              </header>
-            )}
 
             {chunkedOrders.length > 0 ? (
             <Carousel setApi={setApi} className="w-full mt-4">
@@ -261,6 +255,12 @@ export default function DashboardPage() {
             </div>
             )}
         </div>
+
+        {isFullscreen && (
+          <footer className="w-full bg-background shrink-0 p-4">
+              <MotivationalTicker />
+          </footer>
+        )}
     </div>
   );
 }
