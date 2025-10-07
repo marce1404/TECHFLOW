@@ -34,14 +34,14 @@ const excelRowSchema = z.object({
   client: z.string().optional(),
   rut: z.string().optional(),
   service: z.string().optional(),
-  date: z.string().optional(),
-  endDate: z.string().optional(),
+  date: z.union([z.date(), z.string()]).optional(),
+  endDate: z.union([z.date(), z.string()]).optional(),
   status: z.string().optional(),
   comercial: z.string().optional(),
-  assigned: z.array(z.string()).optional(),
-  technicians: z.array(z.string()).optional(),
-  netPrice: z.coerce.number().optional().default(0),
-  facturado: z.boolean().optional(),
+  assigned: z.string().optional(),
+  technicians: z.string().optional(),
+  netPrice: z.any().optional(),
+  facturado: z.any().optional(),
   ocNumber: z.string().optional(),
   hesEmMigo: z.string().optional(),
   saleNumber: z.union([z.string(), z.number()]).optional(),
@@ -51,7 +51,7 @@ const excelRowSchema = z.object({
 
 
 export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: ImportOrdersDialogProps) {
-  const { collaborators, addOrder, services: availableServices, otStatuses, workOrders, updateOrder, getNextOtNumber } = useWorkOrders();
+  const { collaborators, addOrder, services: availableServices, otStatuses, workOrders, updateOrder } = useWorkOrders();
   const [file, setFile] = React.useState<File | null>(null);
   const [newOrders, setNewOrders] = React.useState<CreateWorkOrderInput[]>([]);
   const [duplicateOrders, setDuplicateOrders] = React.useState<CreateWorkOrderInput[]>([]);
@@ -91,7 +91,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     }
 
     if (typeof dateInput === 'string' && dateInput.trim() !== '') {
-        const formats = ['dd/MM/yyyy', 'd/M/yy', 'yyyy-MM-dd', 'd-M-yy', 'dd-MM-yyyy'];
+        const formats = ['dd/MM/yyyy', 'd/M/yy', 'yyyy-MM-dd', 'd-M-yy', 'dd-MM-yyyy', 'MM/dd/yyyy'];
         for (const fmt of formats) {
             try {
                 const parsedDate = parse(dateInput, fmt, new Date());
@@ -129,7 +129,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = xlsx.read(data, { type: 'array', cellDates: true, cellNF: false, cellText: false });
+        const workbook = xlsx.read(data, { type: 'array', cellDates: true });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         
@@ -142,22 +142,22 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         }
 
         const keyMapping: { [key: string]: string } = {
-            'OT': 'ot_number',
-            'Fecha Ingreso': 'date',
-            'NOMBRE DEL PROYECTO': 'description',
-            'CLIENTE': 'client',
-            'RUT': 'rut',
-            'VENDEDOR': 'comercial',
-            'SUPERV.': 'assigned',
-            'SISTEMA': 'service',
-            'MONTO NETO': 'netPrice',
-            'ESTADO': 'status',
-            'FACTURADO?': 'facturado',
-            'OBSERVACION': 'ocNumber',
-            'EM-HES - MIGO': 'hesEmMigo',
-            'NV': 'saleNumber',
-            'FACT. N°': 'invoiceNumber',
-            'Fecha': 'invoiceDate',
+            'ot': 'ot_number',
+            'fecha ingreso': 'date',
+            'nombre del proyecto': 'description',
+            'cliente': 'client',
+            'rut': 'rut',
+            'vendedor': 'comercial',
+            'superv.': 'assigned',
+            'sistema': 'service',
+            'monto neto': 'netPrice',
+            'estado': 'status',
+            'facturado?': 'facturado',
+            'observacion': 'ocNumber',
+            'em-hes - migo': 'hesEmMigo',
+            'nv': 'saleNumber',
+            'fact. n°': 'invoiceNumber',
+            'fecha': 'invoiceDate', // This is for the invoice date, next to invoice number
         };
 
         const validationErrors: string[] = [];
@@ -170,38 +170,32 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             const mappedRow: { [key: string]: any } = {};
             for (const key in row) {
                 const normalizedKey = normalizeString(key.trim());
-                let found = false;
-                for(const excelKey in keyMapping) {
-                    if(normalizeString(excelKey) === normalizedKey) {
-                        mappedRow[keyMapping[excelKey]] = row[key];
-                        found = true;
-                        break;
-                    }
+                if (keyMapping[normalizedKey]) {
+                    mappedRow[keyMapping[normalizedKey]] = row[key];
                 }
             }
-
-            // Always prioritize "Fecha Ingreso" if it exists
-            const rawDate = mappedRow['date'] || mappedRow['Fecha Inicio Compromiso'];
-
-            const result = excelRowSchema.safeParse({ ...mappedRow, date: rawDate });
+            
+            const rawDateValue = mappedRow['date'] || row['Fecha Inicio Compromiso'];
+            
+            const result = excelRowSchema.safeParse({ ...mappedRow, date: rawDateValue });
             
             if (result.success) {
                 const { 
-                    date: rawDateValue,
+                    date: parsedDateValue,
                     status: rawStatus,
                     facturado: rawFacturado,
                     comercial,
-                    assigned,
-                    technicians,
+                    assigned: rawAssigned,
+                    technicians: rawTechnicians,
                     service,
                     invoiceNumber,
                     invoiceDate,
-                    netPrice,
-                    saleNumber,
+                    netPrice: rawNetPrice,
+                    saleNumber: rawSaleNumber,
                     ...rest
                 } = result.data;
                 
-                const finalDate = manualDateParse(rawDateValue);
+                const finalDate = manualDateParse(parsedDateValue);
                 
                 if (!finalDate) {
                     validationErrors.push(`Fila ${index + 2} (${rest.ot_number || 'N/A'}): La fecha es requerida o inválida.`);
@@ -220,33 +214,31 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     else status = findMatchingString(rawStatus || '', otStatuses) as WorkOrder['status'] || 'Por Iniciar';
                 }
                 
-                const parseCollaborators = (names: string | string[] | undefined): string[] => {
+                const parseCollaborators = (names: string | undefined): string[] => {
                   if (!names) return [];
-                  const nameArray = Array.isArray(names) ? names : String(names).split(/[,;]/);
-                  return nameArray.map(name => findMatchingCollaborator(name.trim())).filter(Boolean);
+                  return names.split(/[,;]/).map(name => findMatchingCollaborator(name.trim())).filter(Boolean);
                 };
                 
-                let finalNetPrice = netPrice;
-                if (typeof netPrice === 'string') {
-                    const cleanedPrice = netPrice.replace(/[^0-9,]/g, '').replace(',', '.');
+                let finalNetPrice = 0;
+                if (typeof rawNetPrice === 'number') {
+                    finalNetPrice = rawNetPrice;
+                } else if (typeof rawNetPrice === 'string' && rawNetPrice.trim()) {
+                    const cleanedPrice = rawNetPrice.replace(/[^0-9,]/g, '').replace(',', '.');
                     finalNetPrice = parseFloat(cleanedPrice) || 0;
-                } else if (typeof netPrice !== 'number') {
-                    finalNetPrice = 0;
                 }
-
-
+                
                 const orderData: CreateWorkOrderInput = {
                     date: finalDate,
                     status,
                     priority: 'Baja',
                     netPrice: finalNetPrice,
                     comercial: comercial ? findMatchingCollaborator(comercial.trim()) : '',
-                    assigned: parseCollaborators(assigned),
-                    technicians: parseCollaborators(technicians),
+                    assigned: parseCollaborators(rawAssigned),
+                    technicians: parseCollaborators(rawTechnicians),
                     service: findMatchingString(service || '', availableServices),
                     facturado: isFacturado,
                     invoices: [],
-                    saleNumber: saleNumber ? String(saleNumber) : undefined,
+                    saleNumber: rawSaleNumber ? String(rawSaleNumber) : undefined,
                     ...rest,
                 };
                 
