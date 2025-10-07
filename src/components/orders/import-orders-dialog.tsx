@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -112,9 +111,13 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     if (typeof dateInput === 'string' && dateInput.trim() !== '') {
         const formats = ['dd/MM/yyyy', 'd/M/yy', 'yyyy-MM-dd', 'd-M-yy', 'dd-MM-yyyy', 'MM/dd/yyyy'];
         for (const fmt of formats) {
-            const parsedDate = parse(dateInput, fmt, new Date());
-            if (isValid(parsedDate)) {
-                return format(parsedDate, 'yyyy-MM-dd');
+            try {
+              const parsedDate = parse(dateInput, fmt, new Date());
+              if (isValid(parsedDate)) {
+                  return format(parsedDate, 'yyyy-MM-dd');
+              }
+            } catch (e) {
+              // ignore parse errors and try next format
             }
         }
     }
@@ -143,36 +146,36 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             return;
         }
 
-        const headers = Object.keys(jsonData[0]).map(key => ({ original: key, normalized: normalizeString(key) }));
+        const headers = Object.keys(jsonData[0]).map(key => ({ original: key, normalized: normalizeString(key).replace(/\s+/g, '') }));
 
         const findHeader = (variants: string[]) => {
             for (const variant of variants) {
-                const normalizedVariant = normalizeString(variant);
+                const normalizedVariant = normalizeString(variant).replace(/\s+/g, '');
                 const header = headers.find(h => h.normalized === normalizedVariant);
                 if (header) return header.original;
             }
             return null;
         };
-
+        
         const keyMapping: { [key: string]: string | null } = {
             ot_number: findHeader(['ot', 'n ot']),
-            date: findHeader(['fecha ingreso']),
-            description: findHeader(['nombre del proyecto', 'descripcion']),
+            date: findHeader(['fechaingreso']),
+            description: findHeader(['nombredelproyecto', 'descripcion']),
             client: findHeader(['cliente']),
             rut: findHeader(['rut']),
             comercial: findHeader(['vendedor']),
             assigned: findHeader(['superv', 'encargado']),
             technicians: findHeader(['tecnico']),
             service: findHeader(['sistema', 'servicio']),
-            netPrice: findHeader(['monto neto']),
-            status_legacy: findHeader(['estado']),
+            netPrice: findHeader(['montoneto']),
+            notes: findHeader(['observacion', 'estado']),
             factproc: findHeader(['factproc']),
             facturado: findHeader(['facturado']),
-            notes: findHeader(['observacion']),
-            hesEmMigo: findHeader(['em - hes - migo']),
+            hesEmMigo: findHeader(['em-hes-migo']),
             saleNumber: findHeader(['nv']),
-            invoiceNumber: findHeader(['fact. n', 'factura']),
-            invoiceDate: findHeader(['fecha fact']),
+            invoiceNumber: findHeader(['fact.n', 'factura']),
+            invoiceDate: findHeader(['fechafact']),
+            endDate: findHeader(['fechainiciocompromiso']),
         };
 
 
@@ -180,7 +183,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         const tempNewOrders: CreateWorkOrderInput[] = [];
         const tempDuplicateOrders: CreateWorkOrderInput[] = [];
 
-        const existingOtNumbers = new Set(workOrders.map(wo => wo.ot_number));
+        const existingOtNumbers = new Set(workOrders.map(wo => String(wo.ot_number).trim()));
 
         jsonData.forEach((row, index) => {
             const mappedRow: { [key: string]: any } = {};
@@ -191,8 +194,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 }
             }
             
-            const rawDate = mappedRow.date;
-            const finalDate = robustDateParse(rawDate);
+            const finalDate = robustDateParse(mappedRow.date);
             
             if (!finalDate) {
               validationErrors.push(`Fila ${index + 2} (${mappedRow.ot_number || 'N/A'}): La fecha de ingreso es requerida o inválida.`);
@@ -250,9 +252,12 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 }
                 
                 const combinedNotes = [rawNotes, rawStatusLegacy].filter(Boolean).join(' - ');
+                
+                const otNumberString = String(rest.ot_number).trim();
 
                 const orderData: CreateWorkOrderInput = {
                     ...rest,
+                    ot_number: otNumberString,
                     endDate: finalEndDate,
                     status: finalStatus,
                     priority: 'Baja',
@@ -279,7 +284,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     }
                 }
 
-                if (existingOtNumbers.has(orderData.ot_number.trim())) {
+                if (existingOtNumbers.has(orderData.ot_number)) {
                     tempDuplicateOrders.push(orderData);
                 } else {
                     tempNewOrders.push(orderData);
@@ -321,7 +326,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
     if (strategy === 'replace') {
         duplicateOrders.forEach(dupOrder => {
-            const existingOrder = workOrders.find(wo => wo.ot_number === dupOrder.ot_number);
+            const existingOrder = workOrders.find(wo => String(wo.ot_number).trim() === String(dupOrder.ot_number).trim());
             if (existingOrder) {
                 ordersToUpdate.push({ id: existingOrder.id, data: dupOrder });
             }
@@ -553,5 +558,3 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
-
-    
