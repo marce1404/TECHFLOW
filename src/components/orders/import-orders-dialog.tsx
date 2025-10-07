@@ -20,6 +20,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { normalizeString } from '@/lib/utils';
 import { format, parse, isValid } from 'date-fns';
+import { Progress } from '../ui/progress';
 
 interface ImportOrdersDialogProps {
   open: boolean;
@@ -62,6 +63,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
   const [loading, setLoading] = React.useState(false);
   const [importResult, setImportResult] = React.useState<{ successCount: number; errorCount: number; errors: string[] } | null>(null);
   const [step, setStep] = React.useState<ImportStep>('selectFile');
+  const [importProgress, setImportProgress] = React.useState(0);
   const { toast } = useToast();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,7 +112,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         }
 
         if (typeof dateInput === 'string' && dateInput.trim() !== '') {
-            if (dateInput.trim() === '2011-2023') return null; // Specific edge case
+            if (dateInput.trim() === '2011-2023') return null;
             const formats = ['dd/MM/yyyy', 'd/M/yy', 'yyyy-MM-dd', 'd-M-yy', 'dd-MM-yyyy', 'MM/dd/yyyy'];
             for (const fmt of formats) {
                 try {
@@ -345,10 +347,13 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
     setLoading(true);
     setImportResult(null);
+    setImportProgress(0);
     
     let successCount = 0;
     let errorCount = 0;
     const batchErrors: string[] = [];
+    const totalToProcess = ordersToCreate.length + ordersToUpdate.length;
+    let processedCount = 0;
 
     for (const orderData of ordersToCreate) {
         try {
@@ -358,6 +363,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             errorCount++;
             batchErrors.push(`Creación OT ${orderData.ot_number}: ${error.message}`);
         }
+        processedCount++;
+        setImportProgress((processedCount / totalToProcess) * 100);
     }
 
     for (const { id, data } of ordersToUpdate) {
@@ -368,6 +375,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             errorCount++;
             batchErrors.push(`Actualización OT ${data.ot_number}: ${error.message}`);
         }
+        processedCount++;
+        setImportProgress((processedCount / totalToProcess) * 100);
     }
     
     onImportSuccess();
@@ -383,6 +392,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     setErrors([]);
     setImportResult(null);
     setLoading(false);
+    setImportProgress(0);
     setStep('selectFile');
     onOpenChange(false);
   }
@@ -406,7 +416,10 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             />
             <label htmlFor="file-upload" className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted">
                 {loading ? (
-                    <Loader2 className="h-12 w-12 text-muted-foreground animate-spin"/>
+                    <div className="text-center">
+                        <Loader2 className="mx-auto h-12 w-12 text-muted-foreground animate-spin mb-2"/>
+                        <p>Analizando archivo...</p>
+                    </div>
                 ) : (
                     <>
                         <UploadCloud className="h-12 w-12 text-muted-foreground mb-2"/>
@@ -498,6 +511,15 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
   }
   
   const renderFooter = () => {
+    if (loading && step !== 'selectFile') {
+        return (
+            <div className="w-full flex flex-col items-center gap-2">
+                <Progress value={importProgress} className="w-full" />
+                <p className="text-sm text-muted-foreground">Procesando {Math.round((importProgress/100) * (newOrders.length + duplicateOrders.length))} de {newOrders.length + duplicateOrders.length}...</p>
+            </div>
+        )
+    }
+
     switch (step) {
       case 'selectFile':
         return (
