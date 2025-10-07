@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -197,11 +198,11 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     ...rest
                 } = result.data;
                 
-                const finalDate = manualDateParse(rawDate);
-                 if (!finalDate) {
+                if (!rawDate) {
                     validationErrors.push(`Fila ${index + 2} (${mappedRow.ot_number || 'N/A'}): La fecha de ingreso es requerida o inválida.`);
                     return;
                 }
+                const finalDate = manualDateParse(rawDate);
 
                 const finalEndDate = manualDateParse(rawEndDate);
                 const isFacturado = typeof rawFacturado === 'string' ? normalizeString(rawFacturado).includes('facturado') : !!rawFacturado;
@@ -235,7 +236,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
                 const orderData: CreateWorkOrderInput = {
                     ...rest,
-                    date: finalDate,
+                    date: finalDate!,
                     endDate: finalEndDate,
                     status: finalStatus,
                     priority: 'Baja',
@@ -536,3 +537,5 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
+
+    
