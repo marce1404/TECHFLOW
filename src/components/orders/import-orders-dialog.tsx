@@ -31,28 +31,27 @@ interface ImportOrdersDialogProps {
 type ImportStep = 'selectFile' | 'confirmDuplicates' | 'showResult';
 
 const excelRowSchema = z.object({
-  ot_number: z.union([z.string(), z.number()]).transform(val => String(val).trim()),
+  ot_number: z.string().min(1, "La columna OT es obligatoria."),
   description: z.string().optional(),
   client: z.string().optional(),
-  rut: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
+  rut: z.string().optional(),
   service: z.string().optional(),
-  date: z.any(),
-  endDate: z.any().optional(),
-  ocNumber: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
+  date: z.string().optional(),
+  endDate: z.string().optional(),
+  ocNumber: z.string().optional(),
   status: z.string().optional(),
   comercial: z.string().optional(),
-  assigned: z.string().optional(),
+  assigned: z.array(z.string()).optional(),
   netPrice: z.coerce.number().optional().default(0),
-  hesEmMigo: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
-  facturado: z.string().optional(),
-  saleNumber: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
-  invoiceNumber: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
-  invoiceDate: z.any().optional(),
+  hesEmMigo: z.string().optional(),
+  facturado: z.boolean().optional(),
+  saleNumber: z.string().optional(),
+  invoices: z.array(z.any()).optional(),
 });
 
 
 export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: ImportOrdersDialogProps) {
-  const { collaborators, vehicles: availableVehicles, addOrder, services: availableServices, otStatuses, workOrders, updateOrder } = useWorkOrders();
+  const { collaborators, addOrder, services: availableServices, otStatuses, workOrders, updateOrder } = useWorkOrders();
   const [file, setFile] = React.useState<File | null>(null);
   const [newOrders, setNewOrders] = React.useState<CreateWorkOrderInput[]>([]);
   const [duplicateOrders, setDuplicateOrders] = React.useState<CreateWorkOrderInput[]>([]);
@@ -89,7 +88,9 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
     if (dateValue instanceof Date) {
         const utcDate = new Date(Date.UTC(dateValue.getFullYear(), dateValue.getMonth(), dateValue.getDate()));
-        return utcDate.toISOString().split('T')[0];
+        if (!isNaN(utcDate.getTime())) {
+          return utcDate.toISOString().split('T')[0];
+        }
     }
     
     if (typeof dateValue === 'string') {
@@ -122,170 +123,166 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     return undefined;
   }
   
-  const getColumnValue = (row: any, keys: string[]): any => {
-      const normalizedRowKeys = Object.keys(row).reduce((acc, key) => {
-          acc[normalizeString(key).replace(/\s/g, '')] = row[key];
-          return acc;
-      }, {} as Record<string, any>);
-
-      for (const key of keys) {
-          const normalizedKey = normalizeString(key).replace(/\s/g, '');
-          if (normalizedRowKeys[normalizedKey] !== undefined) {
-              return normalizedRowKeys[normalizedKey];
-          }
-      }
-      return undefined;
+  const keyMapping: { [key: string]: keyof CreateWorkOrderInput } = {
+      'ot': 'ot_number',
+      'fecha inicio compromiso': 'date',
+      'fecha ingreso': 'date',
+      'nombre del proyecto': 'description',
+      'cliente': 'client',
+      'rut': 'rut',
+      'vendedor': 'comercial',
+      'superv.': 'assigned',
+      'sistema': 'service',
+      'monto neto': 'netPrice',
+      'estado': 'status',
+      'facturado?': 'facturado',
+      'observacion': 'ocNumber',
+      'em-hes - migo': 'hesEmMigo',
+      'nv': 'saleNumber',
+      'fact. n°': 'invoiceNumber',
+      'fecha': 'invoiceDate'
   };
-
 
   const parseFile = (fileToParse: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
-      const data = new Uint8Array(e.target?.result as ArrayBuffer);
-      const workbook = xlsx.read(data, { type: 'array', cellDates: true });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const json = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
-      
-      if (json.length < 2) {
-          setErrors(["El archivo está vacío o no tiene datos."]);
-          return;
-      }
-      
-      const headers: string[] = (json[0] as any[]).map(h => typeof h === 'string' ? h : String(h));
-      const dataRows = json.slice(1);
-
-      const validationErrors: string[] = [];
-      const tempNewOrders: CreateWorkOrderInput[] = [];
-      const tempDuplicateOrders: CreateWorkOrderInput[] = [];
-
-      const existingOtNumbers = new Set(workOrders.map(wo => wo.ot_number));
-
-      dataRows.forEach((rowArray: any, index: number) => {
-        const row: any = {};
-        headers.forEach((header, i) => {
-            row[header] = rowArray[i];
-        });
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = xlsx.read(data, { type: 'array', cellDates: true });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
         
-        const mappedRow = {
-          ot_number: getColumnValue(row, ['OT', 'N° OT', 'Numero OT']),
-          description: getColumnValue(row, ['NOMBRE DEL PROYECTO', 'Descripcion']),
-          client: getColumnValue(row, ['CLIENTE']),
-          rut: getColumnValue(row, ['RUT']),
-          service: getColumnValue(row, ['SISTEMA', 'Servicio']),
-          date: getColumnValue(row, ['Fecha Inicio Compromiso', 'Fecha Ingreso']),
-          endDate: getColumnValue(row, ['Fecha Termino']),
-          ocNumber: getColumnValue(row, ['OBSERVACION', 'Nº OC', 'OC']),
-          status: getColumnValue(row, ['ESTADO']),
-          comercial: getColumnValue(row, ['VENDEDOR']),
-          assigned: getColumnValue(row, ['SUPERV.']),
-          netPrice: getColumnValue(row, ['MONTO NETO']),
-          hesEmMigo: getColumnValue(row, ['EM-HES - MIGO', 'EM-HES-MIGO', 'HES/EM/MIGO']),
-          facturado: getColumnValue(row, ['FACTURADO?']),
-          saleNumber: getColumnValue(row, ['NV']),
-          invoiceNumber: getColumnValue(row, ['FACT. N°']),
-          invoiceDate: getColumnValue(row, ['Fecha']),
-        };
+        // This is a more robust way to get JSON data
+        const jsonData: any[] = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
 
-        const result = excelRowSchema.safeParse(mappedRow);
-
-        if (result.success) {
-          const { 
-              ot_number,
-              description, client, rut, service,
-              date: rawDate,
-              endDate: rawEndDate,
-              status: rawStatus,
-              comercial, assigned, netPrice,
-              ocNumber, hesEmMigo, facturado, saleNumber,
-              invoiceNumber, invoiceDate
-          } = result.data;
-          
-          if (!ot_number) {
-            validationErrors.push(`Fila ${index + 2}: La columna OT es obligatoria.`);
+        if (jsonData.length === 0) {
+            setErrors(["El archivo está vacío o no tiene datos."]);
             return;
-          }
-
-          const formattedDate = parseDate(rawDate);
-          if (!formattedDate) {
-              validationErrors.push(`Fila ${index + 2}: La columna de fecha es requerida o tiene un formato inválido.`);
-              return;
-          }
-          
-          const formattedEndDate = parseDate(rawEndDate);
-
-          const isFacturado = facturado ? normalizeString(facturado).includes('facturado') : false;
-          
-          let status: WorkOrder['status'];
-          if (isFacturado) {
-              status = 'Cerrada';
-          } else {
-              const normalizedStatus = normalizeString(rawStatus || '');
-              if (normalizedStatus === 'terminado') status = 'Cerrada';
-              else if (normalizedStatus === 'en proceso') status = 'En Progreso';
-              else status = findMatchingString(rawStatus || '', otStatuses) as WorkOrder['status'] || 'Por Iniciar';
-          }
-
-          const mappedAssigned = assigned 
-            ? assigned.split(',').map(name => findMatchingCollaborator(name.trim()))
-            : [];
-            
-          const orderData: CreateWorkOrderInput = {
-            ot_number,
-            description: description || '',
-            client: client || '',
-            rut,
-            service: findMatchingString(service || '', availableServices),
-            date: formattedDate,
-            endDate: formattedEndDate,
-            status,
-            priority: 'Baja', // Default priority
-            netPrice: netPrice, 
-            ocNumber: ocNumber,
-            hesEmMigo: hesEmMigo,
-            assigned: mappedAssigned,
-            comercial: comercial ? findMatchingCollaborator(comercial.trim()) : '',
-            facturado: isFacturado,
-            saleNumber: saleNumber,
-            invoices: [],
-          };
-          
-          if (invoiceNumber) {
-            const parsedInvoiceDate = parseDate(invoiceDate);
-            if (parsedInvoiceDate) {
-                orderData.invoices?.push({
-                    id: crypto.randomUUID(),
-                    number: String(invoiceNumber),
-                    date: parsedInvoiceDate,
-                    amount: netPrice || 0,
-                });
-            }
-          }
-
-          if (existingOtNumbers.has(ot_number)) {
-              tempDuplicateOrders.push(orderData);
-          } else {
-              tempNewOrders.push(orderData);
-          }
-
-        } else {
-          const formattedErrors = result.error.issues.map(issue => `Fila ${index + 2}: Campo '${issue.path.join('.')}' - ${issue.message}`).join('; ');
-          validationErrors.push(formattedErrors);
         }
-      });
 
-      setErrors(validationErrors);
-      setNewOrders(tempNewOrders);
-      setDuplicateOrders(tempDuplicateOrders);
-      
-      if(validationErrors.length > 0) {
-        setStep('selectFile'); // Stay on file selection to show errors
-      } else if (tempDuplicateOrders.length > 0) {
-        setStep('confirmDuplicates');
-      } else if (tempNewOrders.length > 0) {
-        setStep('selectFile'); // Show preview
-      } else {
-        setStep('selectFile'); // No data found
+        const validationErrors: string[] = [];
+        const tempNewOrders: CreateWorkOrderInput[] = [];
+        const tempDuplicateOrders: CreateWorkOrderInput[] = [];
+
+        const existingOtNumbers = new Set(workOrders.map(wo => wo.ot_number));
+
+        jsonData.forEach((row: any, index: number) => {
+            const mappedRow: any = {};
+            
+            for (const key in row) {
+                const normalizedKey = normalizeString(key);
+                const targetKey = keyMapping[normalizedKey];
+                if (targetKey) {
+                    mappedRow[targetKey] = row[key];
+                } else if (key === 'FACT. N°') {
+                    mappedRow['invoiceNumber'] = row[key];
+                } else if (key === 'Fecha' && 'FACT. N°' in row) {
+                    mappedRow['invoiceDate'] = row[key];
+                }
+            }
+
+            // Ensure ot_number is a string
+            if(mappedRow.ot_number) mappedRow.ot_number = String(mappedRow.ot_number);
+
+            const result = excelRowSchema.safeParse(mappedRow);
+
+            if (result.success) {
+                const { 
+                    ot_number,
+                    date: rawDate,
+                    status: rawStatus,
+                    facturado: rawFacturado,
+                    comercial,
+                    assigned: rawAssigned,
+                    service,
+                    invoices,
+                    invoiceNumber,
+                    invoiceDate,
+                    netPrice,
+                    ...rest
+                } = result.data;
+                
+                if (!ot_number) {
+                    validationErrors.push(`Fila ${index + 2}: La columna OT es obligatoria.`);
+                    return;
+                }
+
+                const formattedDate = parseDate(rawDate);
+                if (!formattedDate) {
+                    validationErrors.push(`Fila ${index + 2}: La columna de fecha es requerida o tiene un formato inválido.`);
+                    return;
+                }
+
+                const isFacturado = typeof rawFacturado === 'string' ? normalizeString(rawFacturado).includes('facturado') : !!rawFacturado;
+                
+                let status: WorkOrder['status'];
+                if (isFacturado) {
+                    status = 'Cerrada';
+                } else {
+                    const normalizedStatus = normalizeString(rawStatus || '');
+                    if (normalizedStatus === 'terminado') status = 'Cerrada';
+                    else if (normalizedStatus === 'en proceso') status = 'En Progreso';
+                    else status = findMatchingString(rawStatus || '', otStatuses) as WorkOrder['status'] || 'Por Iniciar';
+                }
+
+                const mappedAssigned = Array.isArray(rawAssigned) ? rawAssigned : (rawAssigned ? String(rawAssigned).split(',').map(name => findMatchingCollaborator(name.trim())) : []);
+
+                const orderData: CreateWorkOrderInput = {
+                    ot_number,
+                    date: formattedDate,
+                    status,
+                    priority: 'Baja',
+                    netPrice,
+                    comercial: comercial ? findMatchingCollaborator(comercial.trim()) : '',
+                    assigned: mappedAssigned,
+                    service: findMatchingString(service || '', availableServices),
+                    facturado: isFacturado,
+                    invoices: [],
+                    ...rest,
+                };
+                
+                const finalInvoiceNumber = mappedRow.invoiceNumber || invoiceNumber;
+                if (finalInvoiceNumber) {
+                    const finalInvoiceDate = parseDate(mappedRow.invoiceDate || invoiceDate);
+                    if (finalInvoiceDate) {
+                        orderData.invoices?.push({
+                            id: crypto.randomUUID(),
+                            number: String(finalInvoiceNumber),
+                            date: finalInvoiceDate,
+                            amount: netPrice || 0,
+                        });
+                    }
+                }
+
+                if (existingOtNumbers.has(ot_number)) {
+                    tempDuplicateOrders.push(orderData);
+                } else {
+                    tempNewOrders.push(orderData);
+                }
+
+            } else {
+                const formattedErrors = result.error.issues.map(issue => `Fila ${index + 2}: Campo '${issue.path.join('.')}' - ${issue.message}`).join('; ');
+                validationErrors.push(formattedErrors);
+            }
+        });
+
+        setErrors(validationErrors);
+        setNewOrders(tempNewOrders);
+        setDuplicateOrders(tempDuplicateOrders);
+        
+        if(validationErrors.length > 0) {
+            setStep('selectFile');
+        } else if (tempDuplicateOrders.length > 0) {
+            setStep('confirmDuplicates');
+        } else if (tempNewOrders.length > 0) {
+            setStep('selectFile');
+        } else {
+            setStep('selectFile');
+        }
+      } catch (err) {
+        console.error("Error parsing Excel file:", err);
+        setErrors(["Ocurrió un error inesperado al leer el archivo. Asegúrate de que el formato sea correcto."]);
+        setStep('selectFile');
       }
     };
     reader.readAsArrayBuffer(fileToParse);
@@ -316,7 +313,6 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     let errorCount = 0;
     const batchErrors: string[] = [];
 
-    // Process creations
     for (const orderData of ordersToCreate) {
         try {
             await addOrder(orderData);
@@ -327,7 +323,6 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         }
     }
 
-    // Process updates
     for (const { id, data } of ordersToUpdate) {
         try {
             await updateOrder(id, data);
