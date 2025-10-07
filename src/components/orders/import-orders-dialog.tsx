@@ -34,37 +34,24 @@ const workOrderStatuses = ['Por Iniciar', 'En Progreso', 'En Proceso', 'Pendient
 const workOrderPriorities = ['Baja', 'Media', 'Alta'] as const;
 
 const CreateWorkOrderInputSchemaForExcel = z.object({
-  'Numero OT': z.string().min(1, 'La columna "Numero OT" no puede estar vacía.').transform(val => val.replace(/-/g, '')),
-  'Descripción': z.string().min(1, 'La columna "Descripción" no puede estar vacía.'),
-  'Cliente': z.string().min(1, 'La columna "Cliente" no puede estar vacía.'),
-  'Servicio': z.string().min(1, 'La columna "Servicio" no puede estar vacía.'),
-  'Fecha Inicio': z.any().optional(),
-  'Fecha Termino': z.any().optional(),
-  'Notas': z.string().optional(),
-  'Estado': z.string().transform((val) => {
+  'OT': z.string().min(1, 'La columna "OT" no puede estar vacía.'),
+  'NOMBRE DEL PROYECTO': z.string().min(1, 'La columna "NOMBRE DEL PROYECTO" no puede estar vacía.'),
+  'CLIENTE': z.string().min(1, 'La columna "CLIENTE" no puede estar vacía.'),
+  'SISTEMA': z.string().min(1, 'La columna "SISTEMA" no puede estar vacía.'),
+  'Fecha Ingreso': z.any().optional(),
+  'OBSERVACION': z.string().optional().describe("Este campo contiene el N° de OC."),
+  'ESTADO': z.string().transform((val) => {
     const normalized = normalizeString(val);
+    if (normalized === 'terminado') return 'Cerrada';
     if (normalized === 'en proceso') return 'En Progreso';
-    if (normalized === 'terminada') return 'Cerrada';
     const foundStatus = workOrderStatuses.find(s => normalizeString(s) === normalized);
     return foundStatus || val;
   }),
-  'Prioridad': z.string().optional().transform((val) => {
-      if (!val) return 'Baja';
-      const normalized = normalizeString(val);
-      const foundPriority = workOrderPriorities.find(p => normalizeString(p) === normalized);
-      return foundPriority || 'Baja';
-  }),
-  'Precio Neto': z.coerce.number().optional().default(0),
-  'Nº Orden de Compra': z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
-  'Encargados (nombres separados por coma)': z.string().optional(),
-  'Técnicos (nombres separados por coma)': z.string().optional(),
-  'Comercial': z.string().optional(),
-  'RUT': z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
-  'Nº Venta': z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
-  'HES/EM/MIGO': z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
-  'Vehículo Arrendado': z.string().optional(),
-  'Vehículos (patentes separadas por coma)': z.string().optional(),
-  'Facturado': z.string().optional(),
+  'VENDEDOR': z.string().optional(),
+  'SUPERV.': z.string().optional(),
+  'MONTO NETO': z.coerce.number().optional().default(0),
+  'EM-HES-MIGO': z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
+  'FACTURADO?': z.string().optional(),
 });
 
 
@@ -164,11 +151,10 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
       json.forEach((row: any, index: number) => {
         const rowData = { ...row };
         
-        rowData['Fecha Inicio'] = parseDate(rowData['Fecha Inicio']);
-        rowData['Fecha Termino'] = parseDate(rowData['Fecha Termino']);
+        rowData['Fecha Ingreso'] = parseDate(rowData['Fecha Ingreso']);
 
-        if (!rowData['Fecha Inicio']) {
-            validationErrors.push(`Fila ${index + 2}: La columna 'Fecha Inicio' es requerida o tiene un formato inválido.`);
+        if (!rowData['Fecha Ingreso']) {
+            validationErrors.push(`Fila ${index + 2}: La columna 'Fecha Ingreso' es requerida o tiene un formato inválido.`);
             return;
         }
 
@@ -176,54 +162,36 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
         if (result.success) {
           const { 
-              'Numero OT': ot_number,
-              'Descripción': description,
-              'Cliente': client,
-              'RUT': rut,
-              'Servicio': service,
-              'Fecha Inicio': date,
-              'Fecha Termino': endDate,
-              'Estado': status,
-              'Prioridad': priority,
-              'Precio Neto': netPrice,
-              'Nº Orden de Compra': ocNumber,
-              'Encargados (nombres separados por coma)': assigned,
-              'Técnicos (nombres separados por coma)': technicians,
-              'Vehículos (patentes separadas por coma)': vehicles,
-              'Comercial': comercial,
-              'Nº Venta': saleNumber,
-              'HES/EM/MIGO': hesEmMigo,
-              'Vehículo Arrendado': rentedVehicle,
-              'Notas': notes,
-              'Facturado': facturado,
+              'OT': ot_number,
+              'NOMBRE DEL PROYECTO': description,
+              'CLIENTE': client,
+              'SISTEMA': service,
+              'Fecha Ingreso': date,
+              'ESTADO': status,
+              'VENDEDOR': comercial,
+              'SUPERV.': assigned,
+              'MONTO NETO': netPrice,
+              'OBSERVACION': ocNumber,
+              'EM-HES-MIGO': hesEmMigo,
+              'FACTURADO?': facturado,
           } = result.data;
           
           const mappedAssigned = assigned 
             ? assigned.split(',').map(name => findMatchingCollaborator(name.trim()))
             : [];
-
-          const mappedTechnicians = technicians 
-            ? technicians.split(',').map(name => findMatchingCollaborator(name.trim()))
-            : [];
-            
-          const mappedVehicles = vehicles
-            ? vehicles.split(',').map(plate => findMatchingVehicle(plate.trim()))
-            : [];
-
-          const mappedComercial = comercial
-            ? findMatchingCollaborator(comercial.trim())
-            : '';
             
           const orderData: CreateWorkOrderInput = {
-            ot_number, description, client, rut,
+            ot_number, description, client,
             service: findMatchingString(service, availableServices),
-            date: date, endDate: endDate, notes: notes,
+            date: date,
             status: findMatchingString(status, otStatuses) as CreateWorkOrderInput['status'],
-            priority: priority, netPrice: netPrice, ocNumber: ocNumber,
-            assigned: mappedAssigned, technicians: mappedTechnicians, vehicles: mappedVehicles,
-            comercial: mappedComercial, saleNumber: saleNumber, hesEmMigo: hesEmMigo,
-            rentedVehicle: rentedVehicle,
-            facturado: normalizeString(facturado || '') === 'si',
+            priority: 'Baja', // Default priority
+            netPrice: netPrice, 
+            ocNumber: ocNumber,
+            hesEmMigo: hesEmMigo,
+            assigned: mappedAssigned,
+            comercial: comercial ? findMatchingCollaborator(comercial.trim()) : '',
+            facturado: normalizeString(facturado || '') === 'facturado',
           };
 
           if (existingOtNumbers.has(ot_number)) {
@@ -473,4 +441,3 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
-

@@ -288,12 +288,18 @@ export const CreateUserInputSchema = UpdateUserInputSchema.extend({
 export type CreateUserInput = z.infer<typeof CreateUserInputSchema>;
 
 
-export const UpdateUserOutputSchema = z.object({
+export const CreateWorkOrderOutputSchema = z.object({
   success: z.boolean(),
+  orderId: z.string().optional(),
   message: z.string(),
 });
+export type CreateWorkOrderOutput = z.infer<typeof CreateWorkOrderOutputSchema>;
 
-export type UpdateUserOutput = z.infer<typeof UpdateUserOutputSchema>;
+// Attachment type for emails
+export type MailAttachment = {
+  filename: string;
+  content: string; // base64 encoded
+};
 
 // Excel Import Types & API Types
 const workOrderStatuses = z.enum(['Por Iniciar', 'En Progreso', 'En Proceso', 'Pendiente', 'Atrasada', 'Cerrada', 'CERRADA', 'Actividad', 'Terminada']);
@@ -318,7 +324,6 @@ export const CreateWorkOrderInputSchema = z.object({
   status: workOrderStatuses.describe("The initial status of the work order."),
   priority: z.enum(['Baja', 'Media', 'Alta']).optional().describe("The priority of the work order."),
   netPrice: z.number().optional().default(0).describe("The net price of the work order."),
-  invoices: z.array(invoiceSchema).optional().default([]),
   assigned: z.array(z.string()).optional().default([]).describe("A list of names for assigned supervisors/managers."),
   technicians: z.array(z.string()).optional().default([]).describe("A list of names for assigned technicians."),
   vehicles: z.array(z.string()).optional().default([]).describe("A list of assigned vehicles."),
@@ -335,16 +340,3 @@ export type CreateWorkOrderInput = z.infer<typeof CreateWorkOrderInputSchema>;
 export const CreateWorkOrderInputSchemaForExcel = CreateWorkOrderInputSchema.omit({ invoices: true }).extend({
     invoiceNumber: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
 });
-
-export const CreateWorkOrderOutputSchema = z.object({
-  success: z.boolean(),
-  orderId: z.string().optional(),
-  message: z.string(),
-});
-export type CreateWorkOrderOutput = z.infer<typeof CreateWorkOrderOutputSchema>;
-
-// Attachment type for emails
-export type MailAttachment = {
-  filename: string;
-  content: string; // base64 encoded
-};
