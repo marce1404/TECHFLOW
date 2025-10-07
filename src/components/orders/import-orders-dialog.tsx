@@ -85,7 +85,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
   
   const manualDateParse = (dateInput: any): string | undefined => {
     if (!dateInput) return undefined;
-    
+
     if (dateInput instanceof Date && !isNaN(dateInput.getTime())) {
       return format(dateInput, 'yyyy-MM-dd');
     }
@@ -99,23 +99,10 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     return format(parsedDate, 'yyyy-MM-dd');
                 }
             } catch (e) {
-                // Ignore parsing errors and try next format
+                // Continue to next format
             }
         }
     }
-    
-    if (typeof dateInput === 'number' && dateInput > 0) { // Excel date serial number
-        try {
-            const excelEpoch = new Date(1899, 11, 30);
-            const date = new Date(excelEpoch.getTime() + dateInput * 86400000);
-            if (!isNaN(date.getTime())) {
-                return format(date, 'yyyy-MM-dd');
-            }
-        } catch(e) {
-            // Ignore errors with serial number conversion
-        }
-    }
-    
     return undefined;
   };
 
@@ -149,6 +136,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             'rut': 'rut',
             'vendedor': 'comercial',
             'superv.': 'assigned',
+            'tecnico': 'technicians',
             'sistema': 'service',
             'monto neto': 'netPrice',
             'estado': 'status',
@@ -157,7 +145,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             'em-hes - migo': 'hesEmMigo',
             'nv': 'saleNumber',
             'fact. n°': 'invoiceNumber',
-            'fecha': 'invoiceDate', // This is for the invoice date, next to invoice number
+            'fecha': 'invoiceDate',
         };
 
         const validationErrors: string[] = [];
@@ -175,7 +163,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 }
             }
             
-            const rawDateValue = mappedRow['date'] || row['Fecha Inicio Compromiso'];
+            const rawDateValue = mappedRow['date'];
             
             const result = excelRowSchema.safeParse({ ...mappedRow, date: rawDateValue });
             
@@ -528,3 +516,5 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
+
+    
