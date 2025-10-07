@@ -145,15 +145,28 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
       const workbook = xlsx.read(data, { type: 'array', cellDates: true });
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
-      const json = xlsx.utils.sheet_to_json(worksheet, { raw: false, range: 1 });
+      const json = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
       
+      if (json.length < 2) {
+          setErrors(["El archivo está vacío o no tiene datos."]);
+          return;
+      }
+      
+      const headers: string[] = (json[0] as any[]).map(h => typeof h === 'string' ? h : String(h));
+      const dataRows = json.slice(1);
+
       const validationErrors: string[] = [];
       const tempNewOrders: CreateWorkOrderInput[] = [];
       const tempDuplicateOrders: CreateWorkOrderInput[] = [];
 
       const existingOtNumbers = new Set(workOrders.map(wo => wo.ot_number));
 
-      json.forEach((row: any, index: number) => {
+      dataRows.forEach((rowArray: any, index: number) => {
+        const row: any = {};
+        headers.forEach((header, i) => {
+            row[header] = rowArray[i];
+        });
+        
         const mappedRow = {
           ot_number: getColumnValue(row, ['OT', 'N° OT', 'Numero OT']),
           description: getColumnValue(row, ['NOMBRE DEL PROYECTO', 'Descripcion']),
