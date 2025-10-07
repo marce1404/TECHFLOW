@@ -45,6 +45,8 @@ const excelRowSchema = z.object({
   hesEmMigo: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
   facturado: z.string().optional(),
   saleNumber: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
+  invoiceNumber: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
+  invoiceDate: z.any().optional(),
 });
 
 
@@ -158,6 +160,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
           hesEmMigo: getColumnValue(row, ['EM-HES - MIGO', 'EM-HES-MIGO', 'HES/EM/MIGO']),
           facturado: getColumnValue(row, ['FACTURADO?', 'Facturado']),
           saleNumber: getColumnValue(row, ['NV', 'Nº Venta']),
+          invoiceNumber: getColumnValue(row, ['FACT. N°', 'Numero Factura']),
+          invoiceDate: getColumnValue(row, ['Fecha']),
         };
 
         const result = excelRowSchema.safeParse(mappedRow);
@@ -169,7 +173,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
               date: rawDate,
               status: rawStatus,
               comercial, assigned, netPrice,
-              ocNumber, hesEmMigo, facturado, saleNumber
+              ocNumber, hesEmMigo, facturado, saleNumber,
+              invoiceNumber, invoiceDate
           } = result.data;
           
           const formattedDate = parseDate(rawDate);
@@ -207,7 +212,20 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             comercial: comercial ? findMatchingCollaborator(comercial.trim()) : '',
             facturado: isFacturado,
             saleNumber: saleNumber,
+            invoices: [],
           };
+          
+          if (invoiceNumber) {
+            const parsedInvoiceDate = parseDate(invoiceDate);
+            if (parsedInvoiceDate) {
+                orderData.invoices?.push({
+                    id: crypto.randomUUID(),
+                    number: String(invoiceNumber),
+                    date: parsedInvoiceDate,
+                    amount: netPrice || 0,
+                });
+            }
+          }
 
           if (existingOtNumbers.has(ot_number)) {
               tempDuplicateOrders.push(orderData);
@@ -458,5 +476,3 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
-
-    
