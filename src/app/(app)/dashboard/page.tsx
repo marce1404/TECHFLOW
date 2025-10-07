@@ -177,23 +177,32 @@ export default function DashboardPage() {
         </div>
 
         {/* Main Content */}
-        <div className={cn("flex-1", isFullscreen && "overflow-y-auto")}>
+        <div className={cn("flex-1", isFullscreen && "overflow-y-hidden")}>
             <div 
                 className={cn(
                     "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4", 
                     isFullscreen ? "p-4" : "p-4 sm:p-6 lg:p-8",
-                    isFullscreen && sortedOrders.length > 8 && "animate-[scroll_40s_linear_infinite]"
                 )}
-                style={{ animationPlayState: isFullscreen ? 'running' : 'paused' }}
             >
-                {sortedOrders.map(order => (
+                {(!isFullscreen || sortedOrders.length <= 8) && sortedOrders.map(order => (
                     <OrderCard key={order.id} order={order} progress={getProgress(order)} />
                 ))}
-
-                {/* Duplicate for seamless scrolling in fullscreen */}
-                {isFullscreen && sortedOrders.length > 8 && sortedOrders.map(order => (
-                    <OrderCard key={`${order.id}-clone`} order={order} progress={getProgress(order)} />
-                ))}
+                
+                {isFullscreen && sortedOrders.length > 8 && (
+                  <div 
+                    className="col-span-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 animate-[scroll_40s_linear_infinite]"
+                    style={{ animationPlayState: isFullscreen ? 'running' : 'paused' }}
+                  >
+                    {/* Render original items */}
+                    {sortedOrders.map(order => (
+                        <OrderCard key={order.id} order={order} progress={getProgress(order)} />
+                    ))}
+                    {/* Render duplicated items for seamless loop */}
+                    {sortedOrders.map(order => (
+                        <OrderCard key={`${order.id}-clone`} order={order} progress={getProgress(order)} />
+                    ))}
+                  </div>
+                )}
 
                 {sortedOrders.length === 0 && (
                     <div className="col-span-full flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
