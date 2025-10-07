@@ -10,7 +10,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 function ProtectedRoutes({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const router = useRouter();
   
+  React.useEffect(() => {
+      if (!loading && !user) {
+          router.replace('/login');
+      }
+  }, [user, loading, router]);
+
+
   if (loading || !user) {
       return (
         <div className="flex flex-col h-screen">
