@@ -276,7 +276,10 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     facturado: isFacturado,
                     invoices: [],
                     notes: combinedNotes,
-                    saleNumber: rawSaleNumber ? String(rawSaleNumber) : undefined,
+                    saleNumber: rawSaleNumber ? String(rawSaleNumber) : '',
+                    ocNumber: rest.ocNumber ? String(rest.ocNumber) : '',
+                    rut: rest.rut ? String(rest.rut) : '',
+                    hesEmMigo: rest.hesEmMigo ? String(rest.hesEmMigo) : '',
                 };
                 
                 if (invoiceNumber) {
@@ -585,3 +588,5 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
+
+    
