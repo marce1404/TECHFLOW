@@ -30,15 +30,16 @@ interface ImportOrdersDialogProps {
 
 type ImportStep = 'selectFile' | 'confirmDuplicates' | 'showResult';
 
-// Define a flexible schema that can handle different column names
 const excelRowSchema = z.object({
-  ot: z.union([z.string(), z.number()]).transform(val => String(val).trim()),
-  description: z.string().min(1, 'La descripción no puede estar vacía.'),
-  client: z.string().min(1, 'El cliente no puede estar vacío.'),
-  service: z.string().min(1, 'El servicio/sistema no puede estar vacío.'),
+  ot_number: z.union([z.string(), z.number()]).transform(val => String(val).trim()),
+  description: z.string().optional(),
+  client: z.string().optional(),
+  rut: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
+  service: z.string().optional(),
   date: z.any(),
+  endDate: z.any().optional(),
   ocNumber: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
-  status: z.string(),
+  status: z.string().optional(),
   comercial: z.string().optional(),
   assigned: z.string().optional(),
   netPrice: z.coerce.number().optional().default(0),
@@ -121,20 +122,21 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     return undefined;
   }
   
-    const getColumnValue = (row: any, keys: string[]): any => {
-        const normalizedRowKeys = Object.keys(row).reduce((acc, key) => {
-            acc[normalizeString(key).replace(/\s+/g, '')] = row[key];
-            return acc;
-        }, {} as Record<string, any>);
+  const getColumnValue = (row: any, keys: string[]): any => {
+      const normalizedRowKeys = Object.keys(row).reduce((acc, key) => {
+          acc[normalizeString(key).replace(/\s/g, '')] = row[key];
+          return acc;
+      }, {} as Record<string, any>);
 
-        for (const key of keys) {
-            const normalizedKey = normalizeString(key).replace(/\s+/g, '');
-            if (normalizedRowKeys[normalizedKey] !== undefined) {
-                return normalizedRowKeys[normalizedKey];
-            }
-        }
-        return undefined;
-    };
+      for (const key of keys) {
+          const normalizedKey = normalizeString(key).replace(/\s/g, '');
+          if (normalizedRowKeys[normalizedKey] !== undefined) {
+              return normalizedRowKeys[normalizedKey];
+          }
+      }
+      return undefined;
+  };
+
 
   const parseFile = (fileToParse: File) => {
     const reader = new FileReader();
@@ -143,7 +145,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
       const workbook = xlsx.read(data, { type: 'array', cellDates: true });
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
-      const json = xlsx.utils.sheet_to_json(worksheet, {raw: false});
+      const json = xlsx.utils.sheet_to_json(worksheet, { raw: false, range: 1 });
       
       const validationErrors: string[] = [];
       const tempNewOrders: CreateWorkOrderInput[] = [];
@@ -153,17 +155,19 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
       json.forEach((row: any, index: number) => {
         const mappedRow = {
-          ot: getColumnValue(row, ['OT']),
-          description: getColumnValue(row, ['NOMBRE DEL PROYECTO']),
+          ot_number: getColumnValue(row, ['OT', 'N° OT', 'Numero OT']),
+          description: getColumnValue(row, ['NOMBRE DEL PROYECTO', 'Descripcion']),
           client: getColumnValue(row, ['CLIENTE']),
-          service: getColumnValue(row, ['SISTEMA']),
+          rut: getColumnValue(row, ['RUT']),
+          service: getColumnValue(row, ['SISTEMA', 'Servicio']),
           date: getColumnValue(row, ['Fecha Inicio Compromiso', 'Fecha Ingreso']),
+          endDate: getColumnValue(row, ['Fecha Termino']),
           ocNumber: getColumnValue(row, ['OBSERVACION', 'Nº OC', 'OC']),
           status: getColumnValue(row, ['ESTADO']),
           comercial: getColumnValue(row, ['VENDEDOR']),
           assigned: getColumnValue(row, ['SUPERV.']),
           netPrice: getColumnValue(row, ['MONTO NETO']),
-          hesEmMigo: getColumnValue(row, ['EM-HES - MIGO', 'EM-HES-MIGO']),
+          hesEmMigo: getColumnValue(row, ['EM-HES - MIGO', 'EM-HES-MIGO', 'HES/EM/MIGO']),
           facturado: getColumnValue(row, ['FACTURADO?']),
           saleNumber: getColumnValue(row, ['NV']),
           invoiceNumber: getColumnValue(row, ['FACT. N°']),
@@ -174,20 +178,28 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
         if (result.success) {
           const { 
-              ot: ot_number,
-              description, client, service,
+              ot_number,
+              description, client, rut, service,
               date: rawDate,
+              endDate: rawEndDate,
               status: rawStatus,
               comercial, assigned, netPrice,
               ocNumber, hesEmMigo, facturado, saleNumber,
               invoiceNumber, invoiceDate
           } = result.data;
           
+          if (!ot_number) {
+            validationErrors.push(`Fila ${index + 2}: La columna OT es obligatoria.`);
+            return;
+          }
+
           const formattedDate = parseDate(rawDate);
           if (!formattedDate) {
               validationErrors.push(`Fila ${index + 2}: La columna de fecha es requerida o tiene un formato inválido.`);
               return;
           }
+          
+          const formattedEndDate = parseDate(rawEndDate);
 
           const isFacturado = facturado ? normalizeString(facturado).includes('facturado') : false;
           
@@ -195,10 +207,10 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
           if (isFacturado) {
               status = 'Cerrada';
           } else {
-              const normalizedStatus = normalizeString(rawStatus);
+              const normalizedStatus = normalizeString(rawStatus || '');
               if (normalizedStatus === 'terminado') status = 'Cerrada';
               else if (normalizedStatus === 'en proceso') status = 'En Progreso';
-              else status = findMatchingString(rawStatus, otStatuses) as WorkOrder['status'] || 'Por Iniciar';
+              else status = findMatchingString(rawStatus || '', otStatuses) as WorkOrder['status'] || 'Por Iniciar';
           }
 
           const mappedAssigned = assigned 
@@ -206,9 +218,13 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             : [];
             
           const orderData: CreateWorkOrderInput = {
-            ot_number, description, client,
-            service: findMatchingString(service, availableServices),
+            ot_number,
+            description: description || '',
+            client: client || '',
+            rut,
+            service: findMatchingString(service || '', availableServices),
             date: formattedDate,
+            endDate: formattedEndDate,
             status,
             priority: 'Baja', // Default priority
             netPrice: netPrice, 
