@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -12,15 +11,13 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Download, FileUp, Loader2, UploadCloud, CheckCircle, AlertCircle, FileWarning } from 'lucide-react';
+import { Download, FileUp, Loader2, UploadCloud, CheckCircle, FileWarning } from 'lucide-react';
 import * as xlsx from 'xlsx';
 import { z } from 'zod';
 import type { CreateWorkOrderInput, WorkOrder } from '@/lib/types';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { ScrollArea } from '../ui/scroll-area';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { normalizeString } from '@/lib/utils';
-import { Separator } from '../ui/separator';
 
 interface ImportOrdersDialogProps {
   open: boolean;
@@ -38,20 +35,21 @@ const excelRowSchema = z.object({
   service: z.string().optional(),
   date: z.string().optional(),
   endDate: z.string().optional(),
-  ocNumber: z.string().optional(),
   status: z.string().optional(),
   comercial: z.string().optional(),
   assigned: z.array(z.string()).optional(),
   netPrice: z.coerce.number().optional().default(0),
-  hesEmMigo: z.string().optional(),
   facturado: z.boolean().optional(),
+  ocNumber: z.string().optional(),
+  hesEmMigo: z.string().optional(),
   saleNumber: z.string().optional(),
-  invoices: z.array(z.any()).optional(),
+  invoiceNumber: z.string().optional(),
+  invoiceDate: z.string().optional(),
 });
 
 
 export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: ImportOrdersDialogProps) {
-  const { collaborators, addOrder, services: availableServices, otStatuses, workOrders, updateOrder } = useWorkOrders();
+  const { collaborators, addOrder, services: availableServices, otStatuses, workOrders, updateOrder, getNextOtNumber } = useWorkOrders();
   const [file, setFile] = React.useState<File | null>(null);
   const [newOrders, setNewOrders] = React.useState<CreateWorkOrderInput[]>([]);
   const [duplicateOrders, setDuplicateOrders] = React.useState<CreateWorkOrderInput[]>([]);
@@ -83,67 +81,50 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
       return found?.name || input;
   }
 
-  const parseDate = (dateValue: any): string | undefined => {
-    if (!dateValue) return undefined;
+  const manualDateParse = (dateInput: string | number | Date): string | undefined => {
+    if (!dateInput) return undefined;
 
-    if (dateValue instanceof Date) {
-        const utcDate = new Date(Date.UTC(dateValue.getFullYear(), dateValue.getMonth(), dateValue.getDate()));
-        if (!isNaN(utcDate.getTime())) {
-          return utcDate.toISOString().split('T')[0];
+    if (dateInput instanceof Date) {
+        // Handle native Excel dates
+        if (!isNaN(dateInput.getTime())) {
+            const utcDate = new Date(Date.UTC(dateInput.getFullYear(), dateInput.getMonth(), dateInput.getDate()));
+            return utcDate.toISOString().split('T')[0];
         }
     }
     
-    if (typeof dateValue === 'string') {
-        const parts = dateValue.split(/[/.-]/);
+    // Handle string dates like "DD/MM/YYYY" or "DD-MM-YYYY"
+    if (typeof dateInput === 'string') {
+        const parts = dateInput.split(/[/.-]/);
         if (parts.length === 3) {
-            let day, month, year;
-            if (parts[2].length === 4) { // DD/MM/YYYY
-                day = parseInt(parts[0], 10);
-                month = parseInt(parts[1], 10);
-                year = parseInt(parts[2], 10);
-            } else if (parts[0].length === 4) { // YYYY/MM/DD
-                year = parseInt(parts[0], 10);
-                month = parseInt(parts[1], 10);
-                day = parseInt(parts[2], 10);
+            const day = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+            let year = parseInt(parts[2], 10);
+
+            if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+                 // Handle 2-digit year
+                if (year < 100) {
+                    year += 2000;
+                }
+                const date = new Date(Date.UTC(year, month, day));
+                if (!isNaN(date.getTime())) {
+                    return date.toISOString().split('T')[0];
+                }
             }
-            if (day && month && year && !isNaN(day) && !isNaN(month) && !isNaN(year)) {
-                 const date = new Date(Date.UTC(year, month - 1, day));
-                 if (!isNaN(date.getTime())) {
-                     return date.toISOString().split('T')[0];
-                 }
-            }
-        }
-        const directParse = new Date(dateValue);
-        if (!isNaN(directParse.getTime())) {
-             const utcDate = new Date(Date.UTC(directParse.getFullYear(), directParse.getMonth(), directParse.getDate()));
-             return utcDate.toISOString().split('T')[0];
         }
     }
     
+    // As a fallback for other formats
+    const parsedDate = new Date(dateInput);
+    if (!isNaN(parsedDate.getTime())) {
+        const utcDate = new Date(Date.UTC(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate()));
+        return utcDate.toISOString().split('T')[0];
+    }
+
     return undefined;
-  }
-  
-  const keyMapping: { [key: string]: keyof CreateWorkOrderInput } = {
-      'ot': 'ot_number',
-      'fecha inicio compromiso': 'date',
-      'fecha ingreso': 'date',
-      'nombre del proyecto': 'description',
-      'cliente': 'client',
-      'rut': 'rut',
-      'vendedor': 'comercial',
-      'superv.': 'assigned',
-      'sistema': 'service',
-      'monto neto': 'netPrice',
-      'estado': 'status',
-      'facturado?': 'facturado',
-      'observacion': 'ocNumber',
-      'em-hes - migo': 'hesEmMigo',
-      'nv': 'saleNumber',
-      'fact. n°': 'invoiceNumber',
-      'fecha': 'invoiceDate'
   };
 
   const parseFile = (fileToParse: File) => {
+    setLoading(true);
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
@@ -152,13 +133,34 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         
-        // This is a more robust way to get JSON data
-        const jsonData: any[] = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
+        const jsonData: any[] = xlsx.utils.sheet_to_json(worksheet, { raw: false, defval: "" });
 
         if (jsonData.length === 0) {
             setErrors(["El archivo está vacío o no tiene datos."]);
+            setLoading(false);
             return;
         }
+
+        const keyMapping: { [key: string]: keyof CreateWorkOrderInput } = {
+            'ot': 'ot_number',
+            'fecha inicio compromiso': 'date',
+            'fecha ingreso': 'date',
+            'nombre del proyecto': 'description',
+            'cliente': 'client',
+            'rut': 'rut',
+            'vendedor': 'comercial',
+            'superv.': 'assigned',
+            'sistema': 'service',
+            'monto neto': 'netPrice',
+            'estado': 'status',
+            'facturado?': 'facturado',
+            'observacion': 'ocNumber',
+            'em-hes - migo': 'hesEmMigo',
+            'nv': 'saleNumber',
+            'fact. n°': 'invoiceNumber',
+            'fecha': 'invoiceDate'
+        };
+
 
         const validationErrors: string[] = [];
         const tempNewOrders: CreateWorkOrderInput[] = [];
@@ -174,10 +176,6 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 const targetKey = keyMapping[normalizedKey];
                 if (targetKey) {
                     mappedRow[targetKey] = row[key];
-                } else if (key === 'FACT. N°') {
-                    mappedRow['invoiceNumber'] = row[key];
-                } else if (key === 'Fecha' && 'FACT. N°' in row) {
-                    mappedRow['invoiceDate'] = row[key];
                 }
             }
 
@@ -185,7 +183,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             if(mappedRow.ot_number) mappedRow.ot_number = String(mappedRow.ot_number);
 
             const result = excelRowSchema.safeParse(mappedRow);
-
+            
             if (result.success) {
                 const { 
                     ot_number,
@@ -195,7 +193,6 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     comercial,
                     assigned: rawAssigned,
                     service,
-                    invoices,
                     invoiceNumber,
                     invoiceDate,
                     netPrice,
@@ -207,9 +204,9 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     return;
                 }
 
-                const formattedDate = parseDate(rawDate);
+                const formattedDate = manualDateParse(rawDate);
                 if (!formattedDate) {
-                    validationErrors.push(`Fila ${index + 2}: La columna de fecha es requerida o tiene un formato inválido.`);
+                    validationErrors.push(`Fila ${index + 2} (${ot_number}): La fecha es requerida o inválida.`);
                     return;
                 }
 
@@ -225,7 +222,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     else status = findMatchingString(rawStatus || '', otStatuses) as WorkOrder['status'] || 'Por Iniciar';
                 }
 
-                const mappedAssigned = Array.isArray(rawAssigned) ? rawAssigned : (rawAssigned ? String(rawAssigned).split(',').map(name => findMatchingCollaborator(name.trim())) : []);
+                const mappedAssigned = Array.isArray(rawAssigned) ? rawAssigned.map(name => findMatchingCollaborator(name.trim())) : (rawAssigned ? String(rawAssigned).split(/[,;]/).map(name => findMatchingCollaborator(name.trim())) : []);
 
                 const orderData: CreateWorkOrderInput = {
                     ot_number,
@@ -241,13 +238,12 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     ...rest,
                 };
                 
-                const finalInvoiceNumber = mappedRow.invoiceNumber || invoiceNumber;
-                if (finalInvoiceNumber) {
-                    const finalInvoiceDate = parseDate(mappedRow.invoiceDate || invoiceDate);
+                if (invoiceNumber) {
+                    const finalInvoiceDate = manualDateParse(invoiceDate);
                     if (finalInvoiceDate) {
                         orderData.invoices?.push({
                             id: crypto.randomUUID(),
-                            number: String(finalInvoiceNumber),
+                            number: String(invoiceNumber),
                             date: finalInvoiceDate,
                             amount: netPrice || 0,
                         });
@@ -283,6 +279,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         console.error("Error parsing Excel file:", err);
         setErrors(["Ocurrió un error inesperado al leer el archivo. Asegúrate de que el formato sea correcto."]);
         setStep('selectFile');
+      } finally {
+        setLoading(false);
       }
     };
     reader.readAsArrayBuffer(fileToParse);
@@ -365,18 +363,28 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 onChange={handleFileChange}
                 accept=".xlsx, .xls, .csv"
+                disabled={loading}
             />
             <label htmlFor="file-upload" className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted">
-                <UploadCloud className="h-12 w-12 text-muted-foreground mb-2"/>
-                <p className="font-semibold text-primary">Haz clic para subir un archivo</p>
-                <p className="text-sm text-muted-foreground">o arrástralo y suéltalo aquí</p>
+                {loading ? (
+                    <Loader2 className="h-12 w-12 text-muted-foreground animate-spin"/>
+                ) : (
+                    <>
+                        <UploadCloud className="h-12 w-12 text-muted-foreground mb-2"/>
+                        <p className="font-semibold text-primary">Haz clic para subir un archivo</p>
+                        <p className="text-sm text-muted-foreground">o arrástralo y suéltalo aquí</p>
+                    </>
+                )}
             </label>
         </div>
-        {file && errors.length === 0 && newOrders.length === 0 && duplicateOrders.length === 0 && <p>Archivo procesado. No se encontraron datos para importar.</p>}
-        {file && newOrders.length > 0 && duplicateOrders.length === 0 && errors.length === 0 && (
-          <div className="pt-4">
-            <h3 className="font-semibold">Previsualización de Importación</h3>
-            <p className="text-sm text-muted-foreground">{newOrders.length} nuevas órdenes de trabajo listas para importar.</p>
+        {file && newOrders.length === 0 && duplicateOrders.length === 0 && errors.length === 0 && !loading && (
+          <p className="text-center text-sm text-muted-foreground pt-4">Archivo procesado. No se encontraron datos para importar.</p>
+        )}
+        {file && (newOrders.length > 0 || duplicateOrders.length > 0) && errors.length === 0 && !loading && (
+          <div className="pt-4 text-center">
+            <CheckCircle className="mx-auto h-8 w-8 text-green-500 mb-2"/>
+            <h3 className="font-semibold">Archivo listo para importar</h3>
+            <p className="text-sm text-muted-foreground">{newOrders.length} nuevas órdenes y {duplicateOrders.length} órdenes duplicadas encontradas.</p>
           </div>
         )}
     </div>
@@ -389,17 +397,17 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 <FileWarning className="h-5 w-5"/>
                 <h3>Confirmación de Duplicados</h3>
             </div>
-            <p className="text-sm mt-2">Se encontraron OTs con números que ya existen en el sistema.</p>
+            <p className="text-sm mt-2">Se encontraron {duplicateOrders.length} OTs con números que ya existen en el sistema.</p>
         </div>
 
         <div className="grid grid-cols-2 gap-4 text-center">
             <div className="p-3 border rounded-md">
                 <p className="text-2xl font-bold">{newOrders.length}</p>
-                <p className="text-sm text-muted-foreground">Órdenes Nuevas</p>
+                <p className="text-sm text-muted-foreground">Órdenes Nuevas a Crear</p>
             </div>
             <div className="p-3 border rounded-md">
                 <p className="text-2xl font-bold">{duplicateOrders.length}</p>
-                <p className="text-sm text-muted-foreground">Órdenes Duplicadas</p>
+                <p className="text-sm text-muted-foreground">Órdenes a Actualizar</p>
             </div>
         </div>
         
@@ -496,6 +504,16 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         </DialogHeader>
         
         <div className="py-4">
+            {errors.length > 0 && (
+                <div className="mb-4 p-4 rounded-md bg-destructive/10 text-destructive">
+                    <h4 className="font-bold">Errores de Validación</h4>
+                    <ScrollArea className="h-32 mt-2">
+                        <ul className="text-xs list-disc pl-5">
+                            {errors.map((err, i) => <li key={i}>{err}</li>)}
+                        </ul>
+                    </ScrollArea>
+                </div>
+            )}
             {renderContent()}
         </div>
 
@@ -506,5 +524,3 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
-
-    
