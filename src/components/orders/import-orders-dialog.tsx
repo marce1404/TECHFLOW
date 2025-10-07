@@ -30,8 +30,6 @@ interface ImportOrdersDialogProps {
 
 type ImportStep = 'selectFile' | 'confirmDuplicates' | 'showResult';
 
-const workOrderStatuses = ['Por Iniciar', 'En Progreso', 'En Proceso', 'Pendiente', 'Atrasada', 'Cerrada', 'Terminada'] as const;
-
 // Define a flexible schema that can handle different column names
 const excelRowSchema = z.object({
   ot: z.union([z.string(), z.number()]).transform(val => String(val).trim()),
@@ -39,7 +37,7 @@ const excelRowSchema = z.object({
   client: z.string().min(1, 'El cliente no puede estar vacío.'),
   service: z.string().min(1, 'El servicio/sistema no puede estar vacío.'),
   date: z.any(),
-  ocNumber: z.string().optional(),
+  ocNumber: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
   status: z.string(),
   comercial: z.string().optional(),
   assigned: z.string().optional(),
@@ -151,12 +149,12 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
           client: getColumnValue(row, ['CLIENTE', 'Cliente']),
           service: getColumnValue(row, ['SISTEMA', 'Servicio']),
           date: getColumnValue(row, ['Fecha Ingreso', 'Fecha Inicio']),
-          ocNumber: getColumnValue(row, ['OBSERVACION', 'N° OC', 'OC']),
+          ocNumber: getColumnValue(row, ['OBSERVACION', 'Nº OC', 'OC']),
           status: getColumnValue(row, ['ESTADO', 'Estado']),
           comercial: getColumnValue(row, ['VENDEDOR', 'Comercial']),
           assigned: getColumnValue(row, ['SUPERV.', 'Encargados']),
           netPrice: getColumnValue(row, ['MONTO NETO', 'Precio Neto']),
-          hesEmMigo: getColumnValue(row, ['EM-HES-MIGO', 'HES/EM/MIGO']),
+          hesEmMigo: getColumnValue(row, ['EM-HES - MIGO', 'EM-HES-MIGO', 'HES/EM/MIGO']),
           facturado: getColumnValue(row, ['FACTURADO?', 'Facturado']),
         };
 
@@ -457,3 +455,5 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
+
+    
