@@ -34,7 +34,7 @@ const workOrderStatuses = ['Por Iniciar', 'En Progreso', 'En Proceso', 'Pendient
 const workOrderPriorities = ['Baja', 'Media', 'Alta'] as const;
 
 const CreateWorkOrderInputSchemaForExcel = z.object({
-  'OT': z.string().min(1, 'La columna "OT" no puede estar vacía.'),
+  'OT': z.union([z.string(), z.number()]).transform(val => String(val).trim()).refine(val => val.length > 0, 'La columna "OT" no puede estar vacía.'),
   'NOMBRE DEL PROYECTO': z.string().min(1, 'La columna "NOMBRE DEL PROYECTO" no puede estar vacía.'),
   'CLIENTE': z.string().min(1, 'La columna "CLIENTE" no puede estar vacía.'),
   'SISTEMA': z.string().min(1, 'La columna "SISTEMA" no puede estar vacía.'),
@@ -176,6 +176,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
               'FACTURADO?': facturado,
           } = result.data;
           
+          const isFacturado = normalizeString(facturado || '').includes('facturado');
+
           const mappedAssigned = assigned 
             ? assigned.split(',').map(name => findMatchingCollaborator(name.trim()))
             : [];
@@ -184,14 +186,14 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             ot_number, description, client,
             service: findMatchingString(service, availableServices),
             date: date,
-            status: findMatchingString(status, otStatuses) as CreateWorkOrderInput['status'],
+            status: isFacturado ? 'Cerrada' : (findMatchingString(status, otStatuses) as CreateWorkOrderInput['status']),
             priority: 'Baja', // Default priority
             netPrice: netPrice, 
             ocNumber: ocNumber,
             hesEmMigo: hesEmMigo,
             assigned: mappedAssigned,
             comercial: comercial ? findMatchingCollaborator(comercial.trim()) : '',
-            facturado: normalizeString(facturado || '') === 'facturado',
+            facturado: isFacturado,
           };
 
           if (existingOtNumbers.has(ot_number)) {
@@ -441,5 +443,3 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
-
-    
