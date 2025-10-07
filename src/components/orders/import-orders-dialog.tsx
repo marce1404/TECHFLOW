@@ -87,7 +87,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
   }
   
   const excelSerialDateToJSDate = (serial: number) => {
-    if (serial < 1) return null;
+    if (typeof serial !== 'number' || serial < 1) return null;
     const utc_days = Math.floor(serial - 25569);
     const utc_value = utc_days * 86400;
     const date_info = new Date(utc_value * 1000);
@@ -95,7 +95,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     return new Date(date_info.getTime() + timezoneOffset);
   }
   
-  const manualDateParse = (dateInput: any): string | undefined => {
+  const robustDateParse = (dateInput: any): string | undefined => {
     if (!dateInput) return undefined;
     
     if (dateInput instanceof Date && isValid(dateInput)) {
@@ -131,7 +131,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = xlsx.read(data, { type: 'array' });
+        const workbook = xlsx.read(data, { type: 'array', cellDates: true });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         
@@ -148,7 +148,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         const findHeader = (variants: string[]) => {
             for (const variant of variants) {
                 const normalizedVariant = normalizeString(variant);
-                const header = headers.find(h => h.normalized.includes(normalizedVariant));
+                const header = headers.find(h => h.normalized === normalizedVariant);
                 if (header) return header.original;
             }
             return null;
@@ -165,14 +165,14 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             technicians: findHeader(['tecnico']),
             service: findHeader(['sistema', 'servicio']),
             netPrice: findHeader(['monto neto']),
-            status_legacy: findHeader(['estado']), // Renamed to avoid conflict with main status
+            status_legacy: findHeader(['estado']),
+            factproc: findHeader(['factproc']),
             facturado: findHeader(['facturado']),
             notes: findHeader(['observacion']),
             hesEmMigo: findHeader(['em - hes - migo']),
             saleNumber: findHeader(['nv']),
             invoiceNumber: findHeader(['fact. n', 'factura']),
             invoiceDate: findHeader(['fecha fact']),
-            factproc: findHeader(['factproc']),
         };
 
 
@@ -192,14 +192,15 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             }
             
             const rawDate = mappedRow.date;
-            const finalDate = manualDateParse(rawDate);
-
+            const finalDate = robustDateParse(rawDate);
+            
             if (!finalDate) {
               validationErrors.push(`Fila ${index + 2} (${mappedRow.ot_number || 'N/A'}): La fecha de ingreso es requerida o inválida.`);
-              return; // Skip this row
+              return;
             }
+            
+            mappedRow.date = finalDate;
 
-            // After confirming date is valid, proceed with parsing the rest
             const result = excelRowSchema.safeParse(mappedRow);
             
             if (result.success) {
@@ -220,7 +221,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     ...rest
                 } = mappedRow;
                 
-                const finalEndDate = manualDateParse(rawEndDate);
+                const finalEndDate = robustDateParse(rawEndDate);
                 const isFacturado = typeof rawFacturado === 'string' ? normalizeString(rawFacturado).includes('facturado') : !!rawFacturado;
 
                 let finalStatus: WorkOrder['status'] = 'Por Iniciar';
@@ -252,7 +253,6 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
                 const orderData: CreateWorkOrderInput = {
                     ...rest,
-                    date: finalDate!,
                     endDate: finalEndDate,
                     status: finalStatus,
                     priority: 'Baja',
@@ -268,7 +268,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 };
                 
                 if (invoiceNumber) {
-                    const finalInvoiceDate = manualDateParse(invoiceDate);
+                    const finalInvoiceDate = robustDateParse(invoiceDate);
                     if (finalInvoiceDate) {
                         orderData.invoices?.push({
                             id: crypto.randomUUID(),
@@ -553,3 +553,5 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
+
+    
