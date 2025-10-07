@@ -19,6 +19,7 @@ import type { CreateWorkOrderInput, WorkOrder } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { normalizeString } from '@/lib/utils';
+import { format } from 'date-fns';
 
 interface ImportOrdersDialogProps {
   open: boolean;
@@ -34,8 +35,8 @@ const excelRowSchema = z.object({
   client: z.string().optional(),
   rut: z.string().optional(),
   service: z.string().optional(),
-  date: z.string().optional(),
-  endDate: z.string().optional(),
+  date: z.union([z.date(), z.string()]).optional(),
+  endDate: z.union([z.date(), z.string()]).optional(),
   status: z.string().optional(),
   comercial: z.string().optional(),
   assigned: z.string().optional(),
@@ -44,9 +45,9 @@ const excelRowSchema = z.object({
   facturado: z.boolean().optional(),
   ocNumber: z.string().optional(),
   hesEmMigo: z.string().optional(),
-  saleNumber: z.string().optional(),
+  saleNumber: z.union([z.string(), z.number()]).optional(),
   invoiceNumber: z.union([z.string(), z.number()]).optional(),
-  invoiceDate: z.string().optional(),
+  invoiceDate: z.union([z.date(), z.string()]).optional(),
 });
 
 
@@ -84,27 +85,16 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
   }
   
   const manualDateParse = (dateInput: any): string | undefined => {
-    if (!dateInput) return undefined;
-    if (typeof dateInput === 'string' && dateInput.trim() === '') return undefined;
+    if (!dateInput || (typeof dateInput === 'string' && dateInput.trim() === '')) return undefined;
 
     try {
-        // Excel date (number)
-        if (typeof dateInput === 'number' && dateInput > 0) {
-            const date = new Date(Math.round((dateInput - 25569) * 86400 * 1000));
-            if (!isNaN(date.getTime())) {
-                return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-            }
-        }
-
-        // Date object
+        let date: Date | null = null;
         if (dateInput instanceof Date) {
-            if (!isNaN(dateInput.getTime())) {
-                return new Date(dateInput.getTime() - (dateInput.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-            }
-        }
-        
-        // String date (DD/MM/YYYY or DD-MM-YYYY)
-        if (typeof dateInput === 'string') {
+            date = dateInput;
+        } else if (typeof dateInput === 'number' && dateInput > 0) { // Excel date number
+            const excelDate = new Date(Math.round((dateInput - 25569) * 86400 * 1000));
+            if(!isNaN(excelDate.getTime())) date = excelDate;
+        } else if (typeof dateInput === 'string') { // String date
             const parts = dateInput.split(/[/ -]/);
             if (parts.length === 3) {
                 const d = parseInt(parts[0], 10);
@@ -113,12 +103,14 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 if (y < 100) y += 2000;
                 
                 if (d > 0 && d <= 31 && m >= 0 && m < 12 && y > 1900) {
-                    const date = new Date(y, m, d);
-                    if (!isNaN(date.getTime())) {
-                        return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-                    }
+                    const parsedDate = new Date(Date.UTC(y, m, d));
+                    if (!isNaN(parsedDate.getTime())) date = parsedDate;
                 }
             }
+        }
+        
+        if (date && !isNaN(date.getTime())) {
+          return format(date, 'yyyy-MM-dd');
         }
     } catch (e) {
       console.warn(`Could not parse date: ${dateInput}`, e);
@@ -136,7 +128,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = xlsx.read(data, { type: 'array', cellDates: true });
+        const workbook = xlsx.read(data, { type: 'array', cellDates: true, raw: false });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         
@@ -178,28 +170,22 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             const mappedRow: { [key: string]: any } = {};
             for (const key in row) {
                 const normalizedKey = key.trim();
-                const mappedKey = keyMapping[normalizedKey];
-                if (mappedKey) {
+                const mappedKey = keyMapping[normalizedKey] || normalizedKey;
+                if(keyMapping[normalizedKey]) {
                     mappedRow[mappedKey] = row[key];
                 }
             }
-            
+
             // Handle number parsing for netPrice
             let netPrice = 0;
             const rawNetPrice = mappedRow.netPrice;
             if (typeof rawNetPrice === 'number') {
                 netPrice = rawNetPrice;
             } else if (typeof rawNetPrice === 'string' && rawNetPrice.trim() !== '') {
-                const cleaned = rawNetPrice.replace(/[^0-9,.-]/g, '').replace(',', '.');
+                const cleaned = String(rawNetPrice).replace(/[^0-9,.-]/g, '').replace(',', '.');
                 netPrice = parseFloat(cleaned) || 0;
             }
-            mappedRow.netPrice = netPrice;
-            
-            // Handle invoiceNumber as string
-            if (mappedRow.invoiceNumber !== undefined && typeof mappedRow.invoiceNumber !== 'string') {
-                mappedRow.invoiceNumber = String(mappedRow.invoiceNumber);
-            }
-
+            mappedRow.netPrice = isNaN(netPrice) ? 0 : netPrice;
 
             const result = excelRowSchema.safeParse(mappedRow);
             
@@ -209,12 +195,13 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     status: rawStatus,
                     facturado: rawFacturado,
                     comercial,
-                    assigned: rawAssigned,
-                    technicians: rawTechnicians,
+                    assigned,
+                    technicians,
                     service,
                     invoiceNumber,
                     invoiceDate,
                     netPrice,
+                    saleNumber,
                     ...rest
                 } = result.data;
                 
@@ -242,20 +229,18 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                   return String(names).split(/[,;]/).map(name => findMatchingCollaborator(name.trim())).filter(Boolean);
                 };
 
-                const mappedAssigned = parseCollaborators(rawAssigned);
-                const mappedTechnicians = parseCollaborators(rawTechnicians);
-
                 const orderData: CreateWorkOrderInput = {
                     date: finalDate,
                     status,
                     priority: 'Baja',
                     netPrice,
                     comercial: comercial ? findMatchingCollaborator(comercial.trim()) : '',
-                    assigned: mappedAssigned,
-                    technicians: mappedTechnicians,
+                    assigned: parseCollaborators(assigned),
+                    technicians: parseCollaborators(technicians),
                     service: findMatchingString(service || '', availableServices),
                     facturado: isFacturado,
                     invoices: [],
+                    saleNumber: saleNumber ? String(saleNumber) : undefined,
                     ...rest,
                 };
                 
