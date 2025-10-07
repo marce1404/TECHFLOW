@@ -18,7 +18,7 @@ import type { CreateWorkOrderInput, WorkOrder } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { normalizeString } from '@/lib/utils';
-import { format, parse } from 'date-fns';
+import { format, parse, isValid } from 'date-fns';
 
 interface ImportOrdersDialogProps {
   open: boolean;
@@ -88,19 +88,18 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     const utc_days = Math.floor(serial - 25569);
     const utc_value = utc_days * 86400;
     const date_info = new Date(utc_value * 1000);
-    return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate());
+    const timezoneOffset = date_info.getTimezoneOffset() * 60000;
+    return new Date(date_info.getTime() + timezoneOffset);
   }
 
   const manualDateParse = (dateInput: any): string | undefined => {
-    if (!dateInput) return undefined;
-
-    if (dateInput instanceof Date && !isNaN(dateInput.getTime())) {
+    if (dateInput instanceof Date && isValid(dateInput)) {
       return format(dateInput, 'yyyy-MM-dd');
     }
     
     if (typeof dateInput === 'number' && dateInput > 1) {
         const date = excelSerialDateToJSDate(dateInput);
-        if (date && !isNaN(date.getTime())) {
+        if (date && isValid(date)) {
             return format(date, 'yyyy-MM-dd');
         }
     }
@@ -108,12 +107,10 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     if (typeof dateInput === 'string' && dateInput.trim() !== '') {
         const formats = ['dd/MM/yyyy', 'd/M/yy', 'yyyy-MM-dd', 'd-M-yy', 'dd-MM-yyyy', 'MM/dd/yyyy'];
         for (const fmt of formats) {
-            try {
-                const parsedDate = parse(dateInput, fmt, new Date());
-                if (!isNaN(parsedDate.getTime())) {
-                    return format(parsedDate, 'yyyy-MM-dd');
-                }
-            } catch (e) { /* Continue to next format */ }
+            const parsedDate = parse(dateInput, fmt, new Date());
+            if (isValid(parsedDate)) {
+                return format(parsedDate, 'yyyy-MM-dd');
+            }
         }
     }
     return undefined;
@@ -158,7 +155,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             'em - hes - migo': 'hesEmMigo',
             'nv': 'saleNumber',
             'fact. n°': 'invoiceNumber',
-            'fecha': 'invoiceDate', // This might clash with 'date' but we prioritize 'Fecha Ingreso'
+            'fecha fact': 'invoiceDate',
         };
 
         const validationErrors: string[] = [];
@@ -175,12 +172,17 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     mappedRow[keyMapping[normalizedKey]] = row[key];
                 }
             }
-            
+
+            const finalDate = manualDateParse(mappedRow['date']);
+            if (!finalDate) {
+              validationErrors.push(`Fila ${index + 2} (${mappedRow.ot_number || 'N/A'}): La fecha es requerida o inválida.`);
+              return;
+            }
+
             const result = excelRowSchema.safeParse(mappedRow);
             
             if (result.success) {
                 const { 
-                    date: rawDate,
                     endDate: rawEndDate,
                     status: rawStatus,
                     facturado: rawFacturado,
@@ -195,11 +197,6 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     ...rest
                 } = result.data;
                 
-                const finalDate = manualDateParse(rawDate);
-                if (!finalDate) {
-                    validationErrors.push(`Fila ${index + 2} (${rest.ot_number || 'N/A'}): La fecha es requerida o inválida.`);
-                    return;
-                }
                 const finalEndDate = manualDateParse(rawEndDate);
 
                 const isFacturado = typeof rawFacturado === 'string' ? normalizeString(rawFacturado).includes('facturado') : !!rawFacturado;
@@ -227,7 +224,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 if (typeof rawNetPrice === 'number') {
                     finalNetPrice = rawNetPrice;
                 } else if (typeof rawNetPrice === 'string' && rawNetPrice.trim()) {
-                    const cleanedPrice = rawNetPrice.replace(/[^0-9,]/g, '').replace(',', '.');
+                    const cleanedPrice = rawNetPrice.replace(/[$. ]/g, '').replace(',', '.');
                     finalNetPrice = parseFloat(cleanedPrice) || 0;
                 }
                 
