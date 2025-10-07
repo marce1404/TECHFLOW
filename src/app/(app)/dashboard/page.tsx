@@ -9,7 +9,6 @@ import type { WorkOrder } from '@/lib/types';
 import { ClosedOrdersCard } from '@/components/dashboard/closed-orders-card';
 import React from 'react';
 import { normalizeString } from '@/lib/utils';
-import { Carousel, CarouselContent, CarouselItem, type CarouselApi, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 import { Button } from '@/components/ui/button';
 import { Expand, Shrink } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -18,14 +17,9 @@ import { differenceInDays, parseISO, addYears } from 'date-fns';
 import { useAuth } from '@/context/auth-context';
 
 
-const ITEMS_PER_PAGE = 10;
-
 export default function DashboardPage() {
   const { workOrders, loading, ganttCharts, collaborators } = useWorkOrders();
   const { user, loading: authLoading } = useAuth();
-  const [api, setApi] = React.useState<CarouselApi>();
-  const [current, setCurrent] = React.useState(0);
-  const [count, setCount] = React.useState(0);
   const [isFullscreen, setIsFullscreen] = React.useState(false);
   const dashboardRef = React.useRef<HTMLDivElement>(null);
 
@@ -52,15 +46,6 @@ export default function DashboardPage() {
 
       return dateB - dateA;
     });
-
-  const chunkedOrders = sortedOrders.reduce((resultArray, item, index) => { 
-    const chunkIndex = Math.floor(index / ITEMS_PER_PAGE)
-    if(!resultArray[chunkIndex]) {
-      resultArray[chunkIndex] = [] // start a new chunk
-    }
-    resultArray[chunkIndex].push(item)
-    return resultArray
-  }, [] as WorkOrder[][]);
 
   const getProgress = (order: WorkOrder) => {
     const assignedGantt = ganttCharts.find(g => g.assignedOT === order.ot_number);
@@ -157,39 +142,6 @@ export default function DashboardPage() {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-
-  React.useEffect(() => {
-    if (!api) {
-      return;
-    }
-
-    setCount(api.scrollSnapList().length);
-    setCurrent(api.selectedScrollSnap() + 1);
-
-    api.on("select", () => {
-      setCurrent(api.selectedScrollSnap() + 1);
-    });
-
-    let interval: NodeJS.Timeout;
-    if (isFullscreen) {
-        interval = setInterval(() => {
-            if (api.canScrollNext()) {
-                api.scrollNext();
-            } else {
-                api.scrollTo(0);
-            }
-        }, 15000); // Rotate every 15 seconds
-    }
-
-    return () => {
-        if (interval) {
-            clearInterval(interval);
-        }
-    }
-
-  }, [api, isFullscreen]);
-
-
   if (loading || authLoading) {
     return (
       <div className="flex flex-col gap-8">
@@ -205,55 +157,27 @@ export default function DashboardPage() {
   return (
      <div ref={dashboardRef} className={cn("flex flex-1 flex-col bg-background h-full", isFullscreen && "h-screen")}>
         <div className={cn("flex-1", isFullscreen ? "p-4 sm:p-6 lg:p-8 overflow-y-auto" : "pt-4")}>
-            <div className="flex items-center justify-between pr-4">
-                <div className="flex items-center gap-4">
-                    {count > 1 && !isFullscreen && (
-                        <div className="text-sm text-muted-foreground ml-4">
-                            Página {current} de {count}
-                        </div>
-                    )}
-                </div>
+            <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8">
+                <div></div>
                 <Button onClick={toggleFullscreen} variant="outline" size="icon">
                     {isFullscreen ? <Shrink className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
                     <span className="sr-only">{isFullscreen ? 'Salir de pantalla completa' : 'Ver en pantalla completa'}</span>
                 </Button>
             </div>
-
-            {chunkedOrders.length > 0 ? (
-            <Carousel setApi={setApi} className="w-full mt-4">
-                <CarouselContent>
-                {chunkedOrders.map((page, index) => (
-                    <CarouselItem key={index}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {page.map(order => (
-                        <OrderCard key={order.id} order={order} progress={getProgress(order)} />
-                        ))}
-                        {index === 0 && (
-                            <>
-                                <ClosedOrdersCard orders={closedOrdersThisMonth} />
-                                <ExpirationAlertsCard items={expiringItems} />
-                            </>
-                        )}
-                    </div>
-                    </CarouselItem>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4 sm:p-6 lg:p-8">
+                <ClosedOrdersCard orders={closedOrdersThisMonth} />
+                <ExpirationAlertsCard items={expiringItems} />
+                {sortedOrders.map(order => (
+                    <OrderCard key={order.id} order={order} progress={getProgress(order)} />
                 ))}
-                </CarouselContent>
-                {count > 1 && !isFullscreen && (
-                    <>
-                        <CarouselPrevious variant="default" className="left-[-5px]" />
-                        <CarouselNext variant="default" className="right-[-5px]" />
-                    </>
+                 {sortedOrders.length === 0 && (
+                    <div className="col-span-full flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
+                        <p className="text-muted-foreground">No hay órdenes de trabajo activas.</p>
+                    </div>
                 )}
-            </Carousel>
-            ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
-                <div className="col-span-full flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
-                <p className="text-muted-foreground">No hay órdenes de trabajo activas.</p>
-                </div>
-                 <ClosedOrdersCard orders={closedOrdersThisMonth} />
-                 <ExpirationAlertsCard items={expiringItems} />
             </div>
-            )}
+
         </div>
 
         {isFullscreen && (
