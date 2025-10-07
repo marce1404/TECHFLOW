@@ -31,27 +31,21 @@ interface ImportOrdersDialogProps {
 type ImportStep = 'selectFile' | 'confirmDuplicates' | 'showResult';
 
 const workOrderStatuses = ['Por Iniciar', 'En Progreso', 'En Proceso', 'Pendiente', 'Atrasada', 'Cerrada', 'Terminada'] as const;
-const workOrderPriorities = ['Baja', 'Media', 'Alta'] as const;
 
-const CreateWorkOrderInputSchemaForExcel = z.object({
-  'OT': z.union([z.string(), z.number()]).transform(val => String(val).trim()).refine(val => val.length > 0, 'La columna "OT" no puede estar vacía.'),
-  'NOMBRE DEL PROYECTO': z.string().min(1, 'La columna "NOMBRE DEL PROYECTO" no puede estar vacía.'),
-  'CLIENTE': z.string().min(1, 'La columna "CLIENTE" no puede estar vacía.'),
-  'SISTEMA': z.string().min(1, 'La columna "SISTEMA" no puede estar vacía.'),
-  'Fecha Ingreso': z.any().optional(),
-  'OBSERVACION': z.string().optional().describe("Este campo contiene el N° de OC."),
-  'ESTADO': z.string().transform((val) => {
-    const normalized = normalizeString(val);
-    if (normalized === 'terminado') return 'Cerrada';
-    if (normalized === 'en proceso') return 'En Progreso';
-    const foundStatus = workOrderStatuses.find(s => normalizeString(s) === normalized);
-    return foundStatus || val;
-  }),
-  'VENDEDOR': z.string().optional(),
-  'SUPERV.': z.string().optional(),
-  'MONTO NETO': z.coerce.number().optional().default(0),
-  'EM-HES-MIGO': z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
-  'FACTURADO?': z.string().optional(),
+// Define a flexible schema that can handle different column names
+const excelRowSchema = z.object({
+  ot: z.union([z.string(), z.number()]).transform(val => String(val).trim()),
+  description: z.string().min(1, 'La descripción no puede estar vacía.'),
+  client: z.string().min(1, 'El cliente no puede estar vacío.'),
+  service: z.string().min(1, 'El servicio/sistema no puede estar vacío.'),
+  date: z.any(),
+  ocNumber: z.string().optional(),
+  status: z.string(),
+  comercial: z.string().optional(),
+  assigned: z.string().optional(),
+  netPrice: z.coerce.number().optional().default(0),
+  hesEmMigo: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
+  facturado: z.string().optional(),
 });
 
 
@@ -87,13 +81,6 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
       const found = validList.find(item => normalizeString(item.name) === normalizedInput);
       return found?.name || input;
   }
-  
-  const findMatchingVehicle = (plate: string) => {
-    if (!plate?.trim()) return plate;
-    const normalizedPlate = normalizeString(plate);
-    const found = availableVehicles.find(v => normalizeString(v.plate) === normalizedPlate);
-    return found?.plate || plate;
-  };
 
   const parseDate = (dateValue: any): string | undefined => {
     if (!dateValue) return undefined;
@@ -132,6 +119,15 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     
     return undefined;
   }
+  
+  const getColumnValue = (row: any, keys: string[]): any => {
+    for (const key of keys) {
+      if (row[key] !== undefined) {
+        return row[key];
+      }
+    }
+    return undefined;
+  };
 
   const parseFile = (fileToParse: File) => {
     const reader = new FileReader();
@@ -149,34 +145,50 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
       const existingOtNumbers = new Set(workOrders.map(wo => wo.ot_number));
 
       json.forEach((row: any, index: number) => {
-        const rowData = { ...row };
-        
-        rowData['Fecha Ingreso'] = parseDate(rowData['Fecha Ingreso']);
+        const mappedRow = {
+          ot: getColumnValue(row, ['OT', 'N° OT', 'Numero OT']),
+          description: getColumnValue(row, ['NOMBRE DEL PROYECTO', 'Descripción']),
+          client: getColumnValue(row, ['CLIENTE', 'Cliente']),
+          service: getColumnValue(row, ['SISTEMA', 'Servicio']),
+          date: getColumnValue(row, ['Fecha Ingreso', 'Fecha Inicio']),
+          ocNumber: getColumnValue(row, ['OBSERVACION', 'N° OC', 'OC']),
+          status: getColumnValue(row, ['ESTADO', 'Estado']),
+          comercial: getColumnValue(row, ['VENDEDOR', 'Comercial']),
+          assigned: getColumnValue(row, ['SUPERV.', 'Encargados']),
+          netPrice: getColumnValue(row, ['MONTO NETO', 'Precio Neto']),
+          hesEmMigo: getColumnValue(row, ['EM-HES-MIGO', 'HES/EM/MIGO']),
+          facturado: getColumnValue(row, ['FACTURADO?', 'Facturado']),
+        };
 
-        if (!rowData['Fecha Ingreso']) {
-            validationErrors.push(`Fila ${index + 2}: La columna 'Fecha Ingreso' es requerida o tiene un formato inválido.`);
-            return;
-        }
-
-        const result = CreateWorkOrderInputSchemaForExcel.safeParse(rowData);
+        const result = excelRowSchema.safeParse(mappedRow);
 
         if (result.success) {
           const { 
-              'OT': ot_number,
-              'NOMBRE DEL PROYECTO': description,
-              'CLIENTE': client,
-              'SISTEMA': service,
-              'Fecha Ingreso': date,
-              'ESTADO': status,
-              'VENDEDOR': comercial,
-              'SUPERV.': assigned,
-              'MONTO NETO': netPrice,
-              'OBSERVACION': ocNumber,
-              'EM-HES-MIGO': hesEmMigo,
-              'FACTURADO?': facturado,
+              ot: ot_number,
+              description, client, service,
+              date: rawDate,
+              status: rawStatus,
+              comercial, assigned, netPrice,
+              ocNumber, hesEmMigo, facturado,
           } = result.data;
           
+          const formattedDate = parseDate(rawDate);
+          if (!formattedDate) {
+              validationErrors.push(`Fila ${index + 2}: La columna de fecha es requerida o tiene un formato inválido.`);
+              return;
+          }
+
           const isFacturado = normalizeString(facturado || '').includes('facturado');
+          
+          let status: WorkOrder['status'];
+          if (isFacturado) {
+              status = 'Cerrada';
+          } else {
+              const normalizedStatus = normalizeString(rawStatus);
+              if (normalizedStatus === 'terminado') status = 'Cerrada';
+              else if (normalizedStatus === 'en proceso') status = 'En Progreso';
+              else status = findMatchingString(rawStatus, otStatuses) as WorkOrder['status'] || 'Por Iniciar';
+          }
 
           const mappedAssigned = assigned 
             ? assigned.split(',').map(name => findMatchingCollaborator(name.trim()))
@@ -185,8 +197,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
           const orderData: CreateWorkOrderInput = {
             ot_number, description, client,
             service: findMatchingString(service, availableServices),
-            date: date,
-            status: isFacturado ? 'Cerrada' : (findMatchingString(status, otStatuses) as CreateWorkOrderInput['status']),
+            date: formattedDate,
+            status,
             priority: 'Baja', // Default priority
             netPrice: netPrice, 
             ocNumber: ocNumber,
@@ -203,7 +215,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
           }
 
         } else {
-          const formattedErrors = result.error.issues.map(issue => `Fila ${index + 2}: Columna '${issue.path.join('.')}' - ${issue.message}`).join('; ');
+          const formattedErrors = result.error.issues.map(issue => `Fila ${index + 2}: Campo '${issue.path.join('.')}' - ${issue.message}`).join('; ');
           validationErrors.push(formattedErrors);
         }
       });
@@ -216,8 +228,10 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         setStep('selectFile'); // Stay on file selection to show errors
       } else if (tempDuplicateOrders.length > 0) {
         setStep('confirmDuplicates');
+      } else if (tempNewOrders.length > 0) {
+        setStep('selectFile'); // Show preview
       } else {
-        setStep('selectFile'); // Show preview even if no duplicates
+        setStep('selectFile'); // No data found
       }
     };
     reader.readAsArrayBuffer(fileToParse);
