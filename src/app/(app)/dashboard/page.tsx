@@ -16,6 +16,7 @@ import { differenceInDays, parseISO, addYears } from 'date-fns';
 import { useAuth } from '@/context/auth-context';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import Autoplay from "embla-carousel-autoplay";
+import MotivationalTicker from '@/components/dashboard/motivational-ticker';
 
 const CARDS_PER_PAGE = 8; // Number of OT cards to show per carousel slide
 
@@ -223,6 +224,11 @@ export default function DashboardPage() {
                 </div>
             )}
         </div>
+         {isFullscreen && (
+            <footer className="w-full shrink-0">
+                <MotivationalTicker />
+            </footer>
+        )}
     </div>
   );
 }
