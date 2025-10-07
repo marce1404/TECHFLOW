@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -94,35 +95,35 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     return new Date(date_info.getTime() + timezoneOffset);
   }
   
-  const robustDateParse = (dateInput: any): string | undefined => {
-    if (!dateInput) return undefined;
-    
-    if (dateInput instanceof Date && isValid(dateInput)) {
-      return format(dateInput, 'yyyy-MM-dd');
-    }
-    
-    if (typeof dateInput === 'number' && dateInput > 1) {
-        const date = excelSerialDateToJSDate(dateInput);
-        if (date && isValid(date)) {
-            return format(date, 'yyyy-MM-dd');
-        }
-    }
+    const robustDateParse = (dateInput: any): string | undefined => {
+        if (!dateInput && dateInput !== 0) return undefined;
 
-    if (typeof dateInput === 'string' && dateInput.trim() !== '') {
-        const formats = ['dd/MM/yyyy', 'd/M/yy', 'yyyy-MM-dd', 'd-M-yy', 'dd-MM-yyyy', 'MM/dd/yyyy'];
-        for (const fmt of formats) {
-            try {
-              const parsedDate = parse(dateInput, fmt, new Date());
-              if (isValid(parsedDate)) {
-                  return format(parsedDate, 'yyyy-MM-dd');
-              }
-            } catch (e) {
-              // ignore parse errors and try next format
+        if (dateInput instanceof Date && isValid(dateInput)) {
+            return format(dateInput, 'yyyy-MM-dd');
+        }
+        
+        if (typeof dateInput === 'number' && dateInput > 1) {
+            const date = excelSerialDateToJSDate(dateInput);
+            if (date && isValid(date)) {
+                return format(date, 'yyyy-MM-dd');
             }
         }
-    }
-    return undefined;
-  };
+
+        if (typeof dateInput === 'string' && dateInput.trim() !== '') {
+            const formats = ['dd/MM/yyyy', 'd/M/yy', 'yyyy-MM-dd', 'd-M-yy', 'dd-MM-yyyy', 'MM/dd/yyyy'];
+            for (const fmt of formats) {
+                try {
+                const parsedDate = parse(dateInput, fmt, new Date());
+                if (isValid(parsedDate)) {
+                    return format(parsedDate, 'yyyy-MM-dd');
+                }
+                } catch (e) {
+                // ignore parse errors and try next format
+                }
+            }
+        }
+        return undefined;
+    };
 
 
   const parseFile = (fileToParse: File) => {
@@ -146,7 +147,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             return;
         }
 
-        const headers = Object.keys(jsonData[0]).map(key => ({ original: key, normalized: normalizeString(key).replace(/\s+/g, '') }));
+        const headers: { original: string, normalized: string }[] = xlsx.utils.sheet_to_json<string[]>(worksheet, { header: 1 })[0]
+            .map(h => ({ original: h, normalized: normalizeString(h).replace(/\s+/g, '') }));
 
         const findHeader = (variants: string[]) => {
             for (const variant of variants) {
@@ -194,10 +196,12 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 }
             }
             
-            const finalDate = robustDateParse(mappedRow.date);
-            
+            const rawDateValue = mappedRow.date;
+            const finalDate = robustDateParse(rawDateValue);
+
             if (!finalDate) {
-              validationErrors.push(`Fila ${index + 2} (${mappedRow.ot_number || 'N/A'}): La fecha de ingreso es requerida o inválida.`);
+              const displayValue = rawDateValue instanceof Date ? rawDateValue.toISOString() : String(rawDateValue);
+              validationErrors.push(`Fila ${index + 2} (${mappedRow.ot_number || 'N/A'}): La fecha de ingreso es requerida o inválida. Valor encontrado: '${displayValue || ''}'`);
               return;
             }
             
