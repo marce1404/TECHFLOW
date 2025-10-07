@@ -42,6 +42,7 @@ const excelRowSchema = z.object({
   technicians: z.any().optional(),
   netPrice: z.any().optional(),
   facturado: z.any().optional(),
+  notes: z.string().optional(),
   ocNumber: z.string().optional(),
   hesEmMigo: z.string().optional(),
   saleNumber: z.any().optional(),
@@ -151,7 +152,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             'monto neto': 'netPrice',
             'estado': 'status',
             'facturado?': 'facturado',
-            'observacion': 'ocNumber',
+            'observacion': 'notes',
             'em - hes - migo': 'hesEmMigo',
             'nv': 'saleNumber',
             'fact. n°': 'invoiceNumber',
@@ -173,16 +174,11 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 }
             }
 
-            const finalDate = manualDateParse(mappedRow['date']);
-            if (!finalDate) {
-              validationErrors.push(`Fila ${index + 2} (${mappedRow.ot_number || 'N/A'}): La fecha es requerida o inválida.`);
-              return;
-            }
-
             const result = excelRowSchema.safeParse(mappedRow);
             
             if (result.success) {
                 const { 
+                    date: rawDate,
                     endDate: rawEndDate,
                     status: rawStatus,
                     facturado: rawFacturado,
@@ -190,6 +186,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     assigned: rawAssigned,
                     technicians: rawTechnicians,
                     service,
+                    notes: rawNotes,
                     invoiceNumber,
                     invoiceDate,
                     netPrice: rawNetPrice,
@@ -197,22 +194,17 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     ...rest
                 } = result.data;
                 
+                const finalDate = manualDateParse(rawDate);
+                 if (!finalDate) {
+                    validationErrors.push(`Fila ${index + 2} (${mappedRow.ot_number || 'N/A'}): La fecha de ingreso es requerida o inválida.`);
+                    return;
+                }
+
                 const finalEndDate = manualDateParse(rawEndDate);
 
                 const isFacturado = typeof rawFacturado === 'string' ? normalizeString(rawFacturado).includes('facturado') : !!rawFacturado;
                 
-                let status: WorkOrder['status'];
-                const normalizedStatus = normalizeString(rawStatus || '');
-                
-                if (isFacturado || normalizedStatus === 'facturado') {
-                    status = 'Cerrada';
-                } else if (normalizedStatus === 'terminado') {
-                    status = 'Cerrada';
-                } else if (normalizedStatus === 'enproceso') {
-                    status = 'En Progreso';
-                } else {
-                    status = findMatchingString(rawStatus || '', otStatuses) as WorkOrder['status'] || 'Por Iniciar';
-                }
+                const finalStatus: WorkOrder['status'] = isFacturado ? 'Cerrada' : 'Por Iniciar';
                 
                 const parseCollaborators = (names: any): string[] => {
                   if (!names) return [];
@@ -228,10 +220,13 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     finalNetPrice = parseFloat(cleanedPrice) || 0;
                 }
                 
+                const combinedNotes = [rawNotes, rawStatus].filter(Boolean).join(' - ');
+
                 const orderData: CreateWorkOrderInput = {
+                    ...rest,
                     date: finalDate,
                     endDate: finalEndDate,
-                    status,
+                    status: finalStatus,
                     priority: 'Baja',
                     netPrice: finalNetPrice,
                     comercial: comercial ? findMatchingCollaborator(comercial.trim()) : '',
@@ -240,8 +235,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     service: findMatchingString(service || '', availableServices),
                     facturado: isFacturado,
                     invoices: [],
+                    notes: combinedNotes,
                     saleNumber: rawSaleNumber ? String(rawSaleNumber) : undefined,
-                    ...rest,
                 };
                 
                 if (invoiceNumber) {
