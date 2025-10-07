@@ -15,6 +15,12 @@ import { ExpirationAlertsCard } from '@/app/(app)/dashboard/expiration-alerts-ca
 import { differenceInDays, parseISO, addYears } from 'date-fns';
 import { useAuth } from '@/context/auth-context';
 import MotivationalTicker from '@/components/dashboard/motivational-ticker';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from "@/components/ui/carousel"
+import Autoplay from "embla-carousel-autoplay"
 
 export default function DashboardPage() {
   const { workOrders, loading, ganttCharts, collaborators } = useWorkOrders();
@@ -141,6 +147,15 @@ export default function DashboardPage() {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  const ordersPerPage = 8;
+  const paginatedOrders = React.useMemo(() => {
+    const pages = [];
+    for (let i = 0; i < sortedOrders.length; i += ordersPerPage) {
+        pages.push(sortedOrders.slice(i, i + ordersPerPage));
+    }
+    return pages;
+  }, [sortedOrders]);
+
   if (loading || authLoading) {
     return (
       <div className="flex flex-col gap-8 p-4 sm:p-6 lg:p-8">
@@ -177,39 +192,37 @@ export default function DashboardPage() {
         </div>
 
         {/* Main Content */}
-        <div className={cn("flex-1", isFullscreen && "overflow-y-hidden")}>
-            <div 
-                className={cn(
-                    "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4", 
-                    isFullscreen ? "p-4" : "p-4 sm:p-6 lg:p-8",
-                )}
+        <div className={cn("flex-1", isFullscreen && "overflow-hidden")}>
+          {isFullscreen ? (
+            <Carousel 
+              className="w-full h-full"
+              plugins={[Autoplay({ delay: 10000, stopOnInteraction: true })]}
             >
-                {(!isFullscreen || sortedOrders.length <= 8) && sortedOrders.map(order => (
-                    <OrderCard key={order.id} order={order} progress={getProgress(order)} />
-                ))}
-                
-                {isFullscreen && sortedOrders.length > 8 && (
-                  <div 
-                    className="col-span-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 animate-[scroll_40s_linear_infinite]"
-                    style={{ animationPlayState: isFullscreen ? 'running' : 'paused' }}
-                  >
-                    {/* Render original items */}
-                    {sortedOrders.map(order => (
+              <CarouselContent>
+                {paginatedOrders.map((page, pageIndex) => (
+                  <CarouselItem key={pageIndex}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
+                      {page.map(order => (
                         <OrderCard key={order.id} order={order} progress={getProgress(order)} />
-                    ))}
-                    {/* Render duplicated items for seamless loop */}
-                    {sortedOrders.map(order => (
-                        <OrderCard key={`${order.id}-clone`} order={order} progress={getProgress(order)} />
-                    ))}
-                  </div>
-                )}
-
-                {sortedOrders.length === 0 && (
-                    <div className="col-span-full flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
-                        <p className="text-muted-foreground">No hay órdenes de trabajo activas.</p>
+                      ))}
                     </div>
-                )}
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </Carousel>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4 sm:p-6 lg:p-8">
+              {sortedOrders.map(order => (
+                <OrderCard key={order.id} order={order} progress={getProgress(order)} />
+              ))}
             </div>
+          )}
+
+          {sortedOrders.length === 0 && !isFullscreen && (
+              <div className="col-span-full flex items-center justify-center h-64 border-2 border-dashed rounded-lg m-8">
+                  <p className="text-muted-foreground">No hay órdenes de trabajo activas.</p>
+              </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -218,14 +231,6 @@ export default function DashboardPage() {
                 <MotivationalTicker />
             </footer>
         )}
-
-        {/* CSS for scrolling animation */}
-        <style jsx global>{`
-          @keyframes scroll {
-            from { transform: translateY(0); }
-            to { transform: translateY(-50%); }
-          }
-        `}</style>
     </div>
   );
 }
