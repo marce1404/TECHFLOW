@@ -37,6 +37,7 @@ const excelRowSchema = z.object({
   date: z.any().optional(),
   endDate: z.any().optional(),
   status: z.string().optional(),
+  factproc: z.string().optional(),
   comercial: z.string().optional(),
   assigned: z.any().optional(),
   technicians: z.any().optional(),
@@ -157,6 +158,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             'nv': 'saleNumber',
             'fact. n°': 'invoiceNumber',
             'fecha fact': 'invoiceDate',
+            'factproc': 'factproc',
         };
 
         const validationErrors: string[] = [];
@@ -180,6 +182,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 const { 
                     date: rawDate,
                     endDate: rawEndDate,
+                    factproc: rawFactproc,
                     status: rawStatus,
                     facturado: rawFacturado,
                     comercial,
@@ -201,10 +204,18 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 }
 
                 const finalEndDate = manualDateParse(rawEndDate);
-
                 const isFacturado = typeof rawFacturado === 'string' ? normalizeString(rawFacturado).includes('facturado') : !!rawFacturado;
-                
-                const finalStatus: WorkOrder['status'] = isFacturado ? 'Cerrada' : 'Por Iniciar';
+
+                let finalStatus: WorkOrder['status'] = 'Por Iniciar';
+                const factprocStatus = normalizeString(rawFactproc || '');
+
+                if (factprocStatus === 'facturado' || factprocStatus === 'terminada') {
+                    finalStatus = 'Cerrada';
+                } else if (factprocStatus === 'en proceso') {
+                    finalStatus = 'En Progreso';
+                } else if (factprocStatus === 'por iniciar') {
+                    finalStatus = 'Por Iniciar';
+                }
                 
                 const parseCollaborators = (names: any): string[] => {
                   if (!names) return [];
