@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -19,7 +18,7 @@ import type { CreateWorkOrderInput, WorkOrder } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { normalizeString } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 
 interface ImportOrdersDialogProps {
   open: boolean;
@@ -39,8 +38,8 @@ const excelRowSchema = z.object({
   endDate: z.union([z.date(), z.string()]).optional(),
   status: z.string().optional(),
   comercial: z.string().optional(),
-  assigned: z.string().optional(),
-  technicians: z.string().optional(),
+  assigned: z.union([z.string(), z.array(z.string())]).optional(),
+  technicians: z.union([z.string(), z.array(z.string())]).optional(),
   netPrice: z.coerce.number().optional().default(0),
   facturado: z.boolean().optional(),
   ocNumber: z.string().optional(),
@@ -85,36 +84,31 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
   }
   
   const manualDateParse = (dateInput: any): string | undefined => {
-    if (!dateInput || (typeof dateInput === 'string' && dateInput.trim() === '')) return undefined;
+    if (!dateInput) return undefined;
+    
+    if (dateInput instanceof Date && !isNaN(dateInput.getTime())) {
+      return format(dateInput, 'yyyy-MM-dd');
+    }
 
-    try {
-        let date: Date | null = null;
-        if (dateInput instanceof Date) {
-            date = dateInput;
-        } else if (typeof dateInput === 'number' && dateInput > 0) { // Excel date number
-            const excelDate = new Date(Math.round((dateInput - 25569) * 86400 * 1000));
-            if(!isNaN(excelDate.getTime())) date = excelDate;
-        } else if (typeof dateInput === 'string') { // String date
-            const parts = dateInput.split(/[/ -]/);
-            if (parts.length === 3) {
-                const d = parseInt(parts[0], 10);
-                const m = parseInt(parts[1], 10) - 1;
-                let y = parseInt(parts[2], 10);
-                if (y < 100) y += 2000;
-                
-                if (d > 0 && d <= 31 && m >= 0 && m < 12 && y > 1900) {
-                    const parsedDate = new Date(Date.UTC(y, m, d));
-                    if (!isNaN(parsedDate.getTime())) date = parsedDate;
-                }
+    if (typeof dateInput === 'string' && dateInput.trim() !== '') {
+        const formats = ['dd/MM/yyyy', 'd/M/yy', 'yyyy-MM-dd'];
+        for (const fmt of formats) {
+            const parsedDate = parse(dateInput, fmt, new Date());
+            if (!isNaN(parsedDate.getTime())) {
+                return format(parsedDate, 'yyyy-MM-dd');
             }
         }
-        
-        if (date && !isNaN(date.getTime())) {
-          return format(date, 'yyyy-MM-dd');
-        }
-    } catch (e) {
-      console.warn(`Could not parse date: ${dateInput}`, e);
     }
+    
+    if (typeof dateInput === 'number' && dateInput > 0) { // Excel date serial number
+        const excelEpoch = new Date(1899, 11, 30);
+        const date = new Date(excelEpoch.getTime() + dateInput * 86400000);
+        if (!isNaN(date.getTime())) {
+            return format(date, 'yyyy-MM-dd');
+        }
+    }
+    
+    console.warn(`Could not parse date: ${dateInput}`);
     return undefined;
   };
 
@@ -128,7 +122,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = xlsx.read(data, { type: 'array', cellDates: true, raw: false });
+        const workbook = xlsx.read(data, { type: 'array', cellDates: true });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         
@@ -140,7 +134,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             return;
         }
 
-        const keyMapping: { [key: string]: keyof z.infer<typeof excelRowSchema> } = {
+        const keyMapping: { [key: string]: string } = {
             'OT': 'ot_number',
             'Fecha Ingreso': 'date',
             'Fecha Inicio Compromiso': 'date',
@@ -157,7 +151,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             'EM-HES - MIGO': 'hesEmMigo',
             'NV': 'saleNumber',
             'FACT. N°': 'invoiceNumber',
-            'Fecha': 'invoiceDate',
+            'Fecha': 'invoiceDate', // This one might conflict if there are multiple "Fecha" columns
         };
 
         const validationErrors: string[] = [];
@@ -170,24 +164,30 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             const mappedRow: { [key: string]: any } = {};
             for (const key in row) {
                 const normalizedKey = key.trim();
-                const mappedKey = keyMapping[normalizedKey] || normalizedKey;
-                if(keyMapping[normalizedKey]) {
-                    mappedRow[mappedKey] = row[key];
+                let found = false;
+                for(const excelKey in keyMapping) {
+                    if(normalizeString(excelKey) === normalizeString(normalizedKey)) {
+                        mappedRow[keyMapping[excelKey]] = row[key];
+                        found = true;
+                        break;
+                    }
+                }
+                 if (!found) {
+                    mappedRow[normalizeString(normalizedKey)] = row[key];
+                }
+            }
+            
+            let finalRow = {};
+            for(const key in mappedRow) {
+                const normalizedKey = normalizeString(key);
+                if (key === 'Fecha Inicio Compromiso' || key === 'Fecha Ingreso') {
+                    finalRow['date'] = mappedRow[key];
+                } else {
+                     finalRow[key] = mappedRow[key];
                 }
             }
 
-            // Handle number parsing for netPrice
-            let netPrice = 0;
-            const rawNetPrice = mappedRow.netPrice;
-            if (typeof rawNetPrice === 'number') {
-                netPrice = rawNetPrice;
-            } else if (typeof rawNetPrice === 'string' && rawNetPrice.trim() !== '') {
-                const cleaned = String(rawNetPrice).replace(/[^0-9,.-]/g, '').replace(',', '.');
-                netPrice = parseFloat(cleaned) || 0;
-            }
-            mappedRow.netPrice = isNaN(netPrice) ? 0 : netPrice;
-
-            const result = excelRowSchema.safeParse(mappedRow);
+            const result = excelRowSchema.safeParse(finalRow);
             
             if (result.success) {
                 const { 
@@ -224,9 +224,10 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     else status = findMatchingString(rawStatus || '', otStatuses) as WorkOrder['status'] || 'Por Iniciar';
                 }
                 
-                const parseCollaborators = (names: string | undefined): string[] => {
+                const parseCollaborators = (names: string | string[] | undefined): string[] => {
                   if (!names) return [];
-                  return String(names).split(/[,;]/).map(name => findMatchingCollaborator(name.trim())).filter(Boolean);
+                  const nameArray = Array.isArray(names) ? names : String(names).split(/[,;]/);
+                  return nameArray.map(name => findMatchingCollaborator(name.trim())).filter(Boolean);
                 };
 
                 const orderData: CreateWorkOrderInput = {
