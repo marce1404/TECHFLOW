@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -120,21 +121,20 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     return undefined;
   }
   
-  const getColumnValue = (row: any, keys: string[]): any => {
-    const rowKeys = Object.keys(row).reduce((acc, key) => {
-        acc[normalizeString(key).replace(/\s+/g, '')] = key;
-        return acc;
-    }, {} as Record<string, string>);
+    const getColumnValue = (row: any, keys: string[]): any => {
+        const normalizedRowKeys = Object.keys(row).reduce((acc, key) => {
+            acc[normalizeString(key).replace(/\s+/g, '')] = row[key];
+            return acc;
+        }, {} as Record<string, any>);
 
-    for (const key of keys) {
-        const normalizedKey = normalizeString(key).replace(/\s+/g, '');
-        const originalKey = rowKeys[normalizedKey];
-        if (originalKey && row[originalKey] !== undefined) {
-            return row[originalKey];
+        for (const key of keys) {
+            const normalizedKey = normalizeString(key).replace(/\s+/g, '');
+            if (normalizedRowKeys[normalizedKey] !== undefined) {
+                return normalizedRowKeys[normalizedKey];
+            }
         }
-    }
-    return undefined;
-  };
+        return undefined;
+    };
 
   const parseFile = (fileToParse: File) => {
     const reader = new FileReader();
@@ -153,20 +153,20 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
       json.forEach((row: any, index: number) => {
         const mappedRow = {
-          ot: getColumnValue(row, ['OT', 'N° OT', 'Numero OT']),
-          description: getColumnValue(row, ['NOMBRE DEL PROYECTO', 'Descripción']),
-          client: getColumnValue(row, ['CLIENTE', 'Cliente']),
-          service: getColumnValue(row, ['SISTEMA', 'Servicio']),
+          ot: getColumnValue(row, ['OT']),
+          description: getColumnValue(row, ['NOMBRE DEL PROYECTO']),
+          client: getColumnValue(row, ['CLIENTE']),
+          service: getColumnValue(row, ['SISTEMA']),
           date: getColumnValue(row, ['Fecha Inicio Compromiso', 'Fecha Ingreso']),
           ocNumber: getColumnValue(row, ['OBSERVACION', 'Nº OC', 'OC']),
-          status: getColumnValue(row, ['ESTADO', 'Estado']),
-          comercial: getColumnValue(row, ['VENDEDOR', 'Comercial']),
-          assigned: getColumnValue(row, ['SUPERV.', 'Encargados']),
-          netPrice: getColumnValue(row, ['MONTO NETO', 'Precio Neto']),
-          hesEmMigo: getColumnValue(row, ['EM-HES - MIGO', 'EM-HES-MIGO', 'HES/EM/MIGO']),
-          facturado: getColumnValue(row, ['FACTURADO?', 'Facturado']),
-          saleNumber: getColumnValue(row, ['NV', 'Nº Venta']),
-          invoiceNumber: getColumnValue(row, ['FACT. N°', 'Numero Factura', 'N° Factura']),
+          status: getColumnValue(row, ['ESTADO']),
+          comercial: getColumnValue(row, ['VENDEDOR']),
+          assigned: getColumnValue(row, ['SUPERV.']),
+          netPrice: getColumnValue(row, ['MONTO NETO']),
+          hesEmMigo: getColumnValue(row, ['EM-HES - MIGO', 'EM-HES-MIGO']),
+          facturado: getColumnValue(row, ['FACTURADO?']),
+          saleNumber: getColumnValue(row, ['NV']),
+          invoiceNumber: getColumnValue(row, ['FACT. N°']),
           invoiceDate: getColumnValue(row, ['Fecha']),
         };
 
@@ -189,7 +189,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
               return;
           }
 
-          const isFacturado = normalizeString(facturado || '').includes('facturado');
+          const isFacturado = facturado ? normalizeString(facturado).includes('facturado') : false;
           
           let status: WorkOrder['status'];
           if (isFacturado) {
@@ -482,3 +482,5 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
+
+    
