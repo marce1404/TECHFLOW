@@ -95,8 +95,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     return new Date(date_info.getTime() + timezoneOffset);
   }
   
-    const robustDateParse = (dateInput: any): string | undefined => {
-        if (!dateInput && dateInput !== 0) return undefined;
+    const robustDateParse = (dateInput: any): string | null => {
+        if (!dateInput && dateInput !== 0) return null;
 
         if (dateInput instanceof Date && isValid(dateInput)) {
             return format(dateInput, 'yyyy-MM-dd');
@@ -110,6 +110,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         }
 
         if (typeof dateInput === 'string' && dateInput.trim() !== '') {
+            if (dateInput.trim() === '2011-2023') return null; // Specific edge case
             const formats = ['dd/MM/yyyy', 'd/M/yy', 'yyyy-MM-dd', 'd-M-yy', 'dd-MM-yyyy', 'MM/dd/yyyy'];
             for (const fmt of formats) {
                 try {
@@ -122,7 +123,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 }
             }
         }
-        return undefined;
+        return null;
     };
 
 
@@ -146,9 +147,9 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             setLoading(false);
             return;
         }
-
+        
         const headers: { original: string, normalized: string }[] = xlsx.utils.sheet_to_json<string[]>(worksheet, { header: 1 })[0]
-            .map(h => ({ original: h, normalized: normalizeString(h).replace(/\s+/g, '') }));
+            .map(h => ({ original: String(h), normalized: normalizeString(String(h)).replace(/\s+/g, '') }));
 
         const findHeader = (variants: string[]) => {
             for (const variant of variants) {
@@ -161,7 +162,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         
         const keyMapping: { [key: string]: string | null } = {
             ot_number: findHeader(['ot', 'n ot']),
-            date: findHeader(['fechaingreso']),
+            date: findHeader(['fechaingreso', 'fecha ingreso']),
             description: findHeader(['nombredelproyecto', 'descripcion']),
             client: findHeader(['cliente']),
             rut: findHeader(['rut']),
@@ -177,7 +178,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             saleNumber: findHeader(['nv']),
             invoiceNumber: findHeader(['fact.n', 'factura']),
             invoiceDate: findHeader(['fechafact']),
-            endDate: findHeader(['fechainiciocompromiso']),
+            endDate: findHeader(['fechainiciocompromiso', 'fecha termino']),
         };
 
 
@@ -218,7 +219,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     assigned: rawAssigned,
                     technicians: rawTechnicians,
                     service,
-                    status_legacy: rawStatusLegacy,
+                    status: rawStatusLegacy,
                     notes: rawNotes,
                     invoiceNumber,
                     invoiceDate,
@@ -262,7 +263,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 const orderData: CreateWorkOrderInput = {
                     ...rest,
                     ot_number: otNumberString,
-                    endDate: finalEndDate,
+                    endDate: finalEndDate || '',
                     status: finalStatus,
                     priority: 'Baja',
                     netPrice: finalNetPrice,
