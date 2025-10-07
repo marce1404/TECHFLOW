@@ -34,19 +34,19 @@ const excelRowSchema = z.object({
   client: z.string().optional(),
   rut: z.string().optional(),
   service: z.string().optional(),
-  date: z.union([z.date(), z.string()]).optional(),
-  endDate: z.union([z.date(), z.string()]).optional(),
+  date: z.any().optional(),
+  endDate: z.any().optional(),
   status: z.string().optional(),
   comercial: z.string().optional(),
-  assigned: z.string().optional(),
-  technicians: z.string().optional(),
+  assigned: z.any().optional(),
+  technicians: z.any().optional(),
   netPrice: z.any().optional(),
   facturado: z.any().optional(),
   ocNumber: z.string().optional(),
   hesEmMigo: z.string().optional(),
-  saleNumber: z.union([z.string(), z.number()]).optional(),
-  invoiceNumber: z.union([z.string(), z.number()]).optional(),
-  invoiceDate: z.union([z.date(), z.string()]).optional(),
+  saleNumber: z.any().optional(),
+  invoiceNumber: z.any().optional(),
+  invoiceDate: z.any().optional(),
 });
 
 
@@ -84,21 +84,11 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
   }
   
   const excelSerialDateToJSDate = (serial: number) => {
+    if (serial < 1) return null;
     const utc_days = Math.floor(serial - 25569);
     const utc_value = utc_days * 86400;
     const date_info = new Date(utc_value * 1000);
-
-    const fractional_day = serial - Math.floor(serial) + 0.0000001;
-
-    let total_seconds = Math.floor(86400 * fractional_day);
-
-    const seconds = total_seconds % 60;
-    total_seconds -= seconds;
-
-    const hours = Math.floor(total_seconds / (60 * 60));
-    const minutes = Math.floor(total_seconds / 60) % 60;
-
-    return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate(), hours, minutes, seconds);
+    return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate());
   }
 
   const manualDateParse = (dateInput: any): string | undefined => {
@@ -110,7 +100,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     
     if (typeof dateInput === 'number' && dateInput > 1) {
         const date = excelSerialDateToJSDate(dateInput);
-        if (!isNaN(date.getTime())) {
+        if (date && !isNaN(date.getTime())) {
             return format(date, 'yyyy-MM-dd');
         }
     }
@@ -123,9 +113,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 if (!isNaN(parsedDate.getTime())) {
                     return format(parsedDate, 'yyyy-MM-dd');
                 }
-            } catch (e) {
-                // Continue to next format
-            }
+            } catch (e) { /* Continue to next format */ }
         }
     }
     return undefined;
@@ -160,17 +148,17 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             'cliente': 'client',
             'rut': 'rut',
             'vendedor': 'comercial',
-            'superv.': 'assigned',
+            'superv': 'assigned',
             'tecnico': 'technicians',
             'sistema': 'service',
             'monto neto': 'netPrice',
             'estado': 'status',
             'facturado?': 'facturado',
             'observacion': 'ocNumber',
-            'em-hes - migo': 'hesEmMigo',
+            'em - hes - migo': 'hesEmMigo',
             'nv': 'saleNumber',
             'fact. n°': 'invoiceNumber',
-            'fecha': 'invoiceDate',
+            'fecha': 'invoiceDate', // This might clash with 'date' but we prioritize 'Fecha Ingreso'
         };
 
         const validationErrors: string[] = [];
@@ -192,7 +180,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             
             if (result.success) {
                 const { 
-                    date: parsedDateValue,
+                    date: rawDate,
+                    endDate: rawEndDate,
                     status: rawStatus,
                     facturado: rawFacturado,
                     comercial,
@@ -206,28 +195,32 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     ...rest
                 } = result.data;
                 
-                const finalDate = manualDateParse(parsedDateValue);
-                
+                const finalDate = manualDateParse(rawDate);
                 if (!finalDate) {
                     validationErrors.push(`Fila ${index + 2} (${rest.ot_number || 'N/A'}): La fecha es requerida o inválida.`);
                     return;
                 }
+                const finalEndDate = manualDateParse(rawEndDate);
 
                 const isFacturado = typeof rawFacturado === 'string' ? normalizeString(rawFacturado).includes('facturado') : !!rawFacturado;
                 
                 let status: WorkOrder['status'];
-                if (isFacturado) {
+                const normalizedStatus = normalizeString(rawStatus || '');
+                
+                if (isFacturado || normalizedStatus === 'facturado') {
                     status = 'Cerrada';
+                } else if (normalizedStatus === 'terminado') {
+                    status = 'Cerrada';
+                } else if (normalizedStatus === 'enproceso') {
+                    status = 'En Progreso';
                 } else {
-                    const normalizedStatus = normalizeString(rawStatus || '');
-                    if (normalizedStatus === 'terminado') status = 'Cerrada';
-                    else if (normalizedStatus === 'enproceso') status = 'En Progreso';
-                    else status = findMatchingString(rawStatus || '', otStatuses) as WorkOrder['status'] || 'Por Iniciar';
+                    status = findMatchingString(rawStatus || '', otStatuses) as WorkOrder['status'] || 'Por Iniciar';
                 }
                 
-                const parseCollaborators = (names: string | undefined): string[] => {
+                const parseCollaborators = (names: any): string[] => {
                   if (!names) return [];
-                  return names.split(/[,;]/).map(name => findMatchingCollaborator(name.trim())).filter(Boolean);
+                  if(Array.isArray(names)) return names.map(name => findMatchingCollaborator(String(name).trim())).filter(Boolean);
+                  return String(names).split(/[,;]/).map(name => findMatchingCollaborator(name.trim())).filter(Boolean);
                 };
                 
                 let finalNetPrice = 0;
@@ -240,6 +233,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 
                 const orderData: CreateWorkOrderInput = {
                     date: finalDate,
+                    endDate: finalEndDate,
                     status,
                     priority: 'Baja',
                     netPrice: finalNetPrice,
@@ -539,5 +533,3 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
-
-    
