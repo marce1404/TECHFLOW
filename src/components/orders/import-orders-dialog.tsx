@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -122,10 +121,17 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
   }
   
   const getColumnValue = (row: any, keys: string[]): any => {
+    const rowKeys = Object.keys(row).reduce((acc, key) => {
+        acc[normalizeString(key).replace(/\s+/g, '')] = key;
+        return acc;
+    }, {} as Record<string, string>);
+
     for (const key of keys) {
-      if (row[key] !== undefined) {
-        return row[key];
-      }
+        const normalizedKey = normalizeString(key).replace(/\s+/g, '');
+        const originalKey = rowKeys[normalizedKey];
+        if (originalKey && row[originalKey] !== undefined) {
+            return row[originalKey];
+        }
     }
     return undefined;
   };
@@ -151,7 +157,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
           description: getColumnValue(row, ['NOMBRE DEL PROYECTO', 'Descripción']),
           client: getColumnValue(row, ['CLIENTE', 'Cliente']),
           service: getColumnValue(row, ['SISTEMA', 'Servicio']),
-          date: getColumnValue(row, ['Fecha Inicio Compromiso', 'Fecha Ingreso', 'Fecha Inicio']),
+          date: getColumnValue(row, ['Fecha Inicio Compromiso', 'Fecha Ingreso']),
           ocNumber: getColumnValue(row, ['OBSERVACION', 'Nº OC', 'OC']),
           status: getColumnValue(row, ['ESTADO', 'Estado']),
           comercial: getColumnValue(row, ['VENDEDOR', 'Comercial']),
@@ -160,7 +166,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
           hesEmMigo: getColumnValue(row, ['EM-HES - MIGO', 'EM-HES-MIGO', 'HES/EM/MIGO']),
           facturado: getColumnValue(row, ['FACTURADO?', 'Facturado']),
           saleNumber: getColumnValue(row, ['NV', 'Nº Venta']),
-          invoiceNumber: getColumnValue(row, ['FACT. N°', 'Numero Factura']),
+          invoiceNumber: getColumnValue(row, ['FACT. N°', 'Numero Factura', 'N° Factura']),
           invoiceDate: getColumnValue(row, ['Fecha']),
         };
 
