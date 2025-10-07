@@ -34,12 +34,12 @@ const excelRowSchema = z.object({
   client: z.string().optional(),
   rut: z.string().optional(),
   service: z.string().optional(),
-  date: z.union([z.date(), z.string()]).optional(),
-  endDate: z.union([z.date(), z.string()]).optional(),
+  date: z.string().optional(),
+  endDate: z.string().optional(),
   status: z.string().optional(),
   comercial: z.string().optional(),
-  assigned: z.union([z.string(), z.array(z.string())]).optional(),
-  technicians: z.union([z.string(), z.array(z.string())]).optional(),
+  assigned: z.array(z.string()).optional(),
+  technicians: z.array(z.string()).optional(),
   netPrice: z.coerce.number().optional().default(0),
   facturado: z.boolean().optional(),
   ocNumber: z.string().optional(),
@@ -91,24 +91,31 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     }
 
     if (typeof dateInput === 'string' && dateInput.trim() !== '') {
-        const formats = ['dd/MM/yyyy', 'd/M/yy', 'yyyy-MM-dd'];
+        const formats = ['dd/MM/yyyy', 'd/M/yy', 'yyyy-MM-dd', 'd-M-yy', 'dd-MM-yyyy'];
         for (const fmt of formats) {
-            const parsedDate = parse(dateInput, fmt, new Date());
-            if (!isNaN(parsedDate.getTime())) {
-                return format(parsedDate, 'yyyy-MM-dd');
+            try {
+                const parsedDate = parse(dateInput, fmt, new Date());
+                if (!isNaN(parsedDate.getTime())) {
+                    return format(parsedDate, 'yyyy-MM-dd');
+                }
+            } catch (e) {
+                // Ignore parsing errors and try next format
             }
         }
     }
     
     if (typeof dateInput === 'number' && dateInput > 0) { // Excel date serial number
-        const excelEpoch = new Date(1899, 11, 30);
-        const date = new Date(excelEpoch.getTime() + dateInput * 86400000);
-        if (!isNaN(date.getTime())) {
-            return format(date, 'yyyy-MM-dd');
+        try {
+            const excelEpoch = new Date(1899, 11, 30);
+            const date = new Date(excelEpoch.getTime() + dateInput * 86400000);
+            if (!isNaN(date.getTime())) {
+                return format(date, 'yyyy-MM-dd');
+            }
+        } catch(e) {
+            // Ignore errors with serial number conversion
         }
     }
     
-    console.warn(`Could not parse date: ${dateInput}`);
     return undefined;
   };
 
@@ -122,7 +129,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = xlsx.read(data, { type: 'array', cellDates: true });
+        const workbook = xlsx.read(data, { type: 'array', cellDates: true, cellNF: false, cellText: false });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         
@@ -137,7 +144,6 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         const keyMapping: { [key: string]: string } = {
             'OT': 'ot_number',
             'Fecha Ingreso': 'date',
-            'Fecha Inicio Compromiso': 'date',
             'NOMBRE DEL PROYECTO': 'description',
             'CLIENTE': 'client',
             'RUT': 'rut',
@@ -151,7 +157,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             'EM-HES - MIGO': 'hesEmMigo',
             'NV': 'saleNumber',
             'FACT. N°': 'invoiceNumber',
-            'Fecha': 'invoiceDate', // This one might conflict if there are multiple "Fecha" columns
+            'Fecha': 'invoiceDate',
         };
 
         const validationErrors: string[] = [];
@@ -163,35 +169,25 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         jsonData.forEach((row, index) => {
             const mappedRow: { [key: string]: any } = {};
             for (const key in row) {
-                const normalizedKey = key.trim();
+                const normalizedKey = normalizeString(key.trim());
                 let found = false;
                 for(const excelKey in keyMapping) {
-                    if(normalizeString(excelKey) === normalizeString(normalizedKey)) {
+                    if(normalizeString(excelKey) === normalizedKey) {
                         mappedRow[keyMapping[excelKey]] = row[key];
                         found = true;
                         break;
                     }
                 }
-                 if (!found) {
-                    mappedRow[normalizeString(normalizedKey)] = row[key];
-                }
-            }
-            
-            let finalRow = {};
-            for(const key in mappedRow) {
-                const normalizedKey = normalizeString(key);
-                if (key === 'Fecha Inicio Compromiso' || key === 'Fecha Ingreso') {
-                    finalRow['date'] = mappedRow[key];
-                } else {
-                     finalRow[key] = mappedRow[key];
-                }
             }
 
-            const result = excelRowSchema.safeParse(finalRow);
+            // Always prioritize "Fecha Ingreso" if it exists
+            const rawDate = mappedRow['date'] || mappedRow['Fecha Inicio Compromiso'];
+
+            const result = excelRowSchema.safeParse({ ...mappedRow, date: rawDate });
             
             if (result.success) {
                 const { 
-                    date: rawDate,
+                    date: rawDateValue,
                     status: rawStatus,
                     facturado: rawFacturado,
                     comercial,
@@ -205,7 +201,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     ...rest
                 } = result.data;
                 
-                const finalDate = manualDateParse(rawDate);
+                const finalDate = manualDateParse(rawDateValue);
                 
                 if (!finalDate) {
                     validationErrors.push(`Fila ${index + 2} (${rest.ot_number || 'N/A'}): La fecha es requerida o inválida.`);
@@ -229,12 +225,21 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                   const nameArray = Array.isArray(names) ? names : String(names).split(/[,;]/);
                   return nameArray.map(name => findMatchingCollaborator(name.trim())).filter(Boolean);
                 };
+                
+                let finalNetPrice = netPrice;
+                if (typeof netPrice === 'string') {
+                    const cleanedPrice = netPrice.replace(/[^0-9,]/g, '').replace(',', '.');
+                    finalNetPrice = parseFloat(cleanedPrice) || 0;
+                } else if (typeof netPrice !== 'number') {
+                    finalNetPrice = 0;
+                }
+
 
                 const orderData: CreateWorkOrderInput = {
                     date: finalDate,
                     status,
                     priority: 'Baja',
-                    netPrice,
+                    netPrice: finalNetPrice,
                     comercial: comercial ? findMatchingCollaborator(comercial.trim()) : '',
                     assigned: parseCollaborators(assigned),
                     technicians: parseCollaborators(technicians),
@@ -252,7 +257,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                             id: crypto.randomUUID(),
                             number: String(invoiceNumber),
                             date: finalInvoiceDate,
-                            amount: netPrice || 0,
+                            amount: finalNetPrice || 0,
                         });
                     }
                 }
