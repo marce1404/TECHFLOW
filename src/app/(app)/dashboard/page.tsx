@@ -4,7 +4,6 @@
 import { useWorkOrders } from '@/context/work-orders-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import { OrderCard } from '@/components/dashboard/order-card';
-import MotivationalTicker from '@/components/dashboard/motivational-ticker';
 import type { WorkOrder } from '@/lib/types';
 import { ClosedOrdersCard } from '@/components/dashboard/closed-orders-card';
 import React from 'react';
@@ -15,13 +14,20 @@ import { cn } from '@/lib/utils';
 import { ExpirationAlertsCard } from '@/app/(app)/dashboard/expiration-alerts-card';
 import { differenceInDays, parseISO, addYears } from 'date-fns';
 import { useAuth } from '@/context/auth-context';
+import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
+import Autoplay from "embla-carousel-autoplay";
 
+const CARDS_PER_PAGE = 8; // Number of OT cards to show per carousel slide
 
 export default function DashboardPage() {
   const { workOrders, loading, ganttCharts, collaborators } = useWorkOrders();
   const { user, loading: authLoading } = useAuth();
   const [isFullscreen, setIsFullscreen] = React.useState(false);
   const dashboardRef = React.useRef<HTMLDivElement>(null);
+  
+  const autoplay = React.useRef(
+    Autoplay({ delay: 10000, stopOnInteraction: true })
+  );
 
   const activeWorkOrders = React.useMemo(() => {
     return workOrders.filter(o => normalizeString(o.status) !== 'cerrada');
@@ -133,6 +139,15 @@ export default function DashboardPage() {
       document.exitFullscreen();
     }
   };
+  
+    // Chunk orders for carousel pages
+  const orderPages = React.useMemo(() => {
+    const pages = [];
+    for (let i = 0; i < sortedOrders.length; i += CARDS_PER_PAGE) {
+      pages.push(sortedOrders.slice(i, i + CARDS_PER_PAGE));
+    }
+    return pages;
+  }, [sortedOrders]);
 
   React.useEffect(() => {
     const handleFullscreenChange = () => {
@@ -144,7 +159,7 @@ export default function DashboardPage() {
 
   if (loading || authLoading) {
     return (
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-8 p-4 sm:p-6 lg:p-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {[...Array(12)].map((_, i) => (
             <Skeleton key={i} className="h-64 w-full" />
@@ -155,9 +170,9 @@ export default function DashboardPage() {
   }
 
   return (
-     <div ref={dashboardRef} className={cn("flex flex-1 flex-col bg-background h-full", isFullscreen && "h-screen")}>
-        <div className={cn("flex-1", isFullscreen ? "p-4 sm:p-6 lg:p-8 overflow-y-auto" : "pt-4")}>
-            <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8">
+     <div ref={dashboardRef} className={cn("flex flex-1 flex-col bg-background h-full", isFullscreen && "h-screen p-4 sm:p-6 lg:p-8")}>
+        <div className={cn("flex-1 overflow-y-auto")}>
+            <div className={cn("flex items-center justify-between", isFullscreen ? "mb-4" : "p-4 sm:p-6 lg:p-8 pb-0")}>
                 <div></div>
                 <Button onClick={toggleFullscreen} variant="outline" size="icon">
                     {isFullscreen ? <Shrink className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
@@ -165,26 +180,49 @@ export default function DashboardPage() {
                 </Button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4 sm:p-6 lg:p-8">
+             <div className={cn("grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4", isFullscreen ? "" : "p-4 sm:p-6 lg:p-8")}>
                 <ClosedOrdersCard orders={closedOrdersThisMonth} />
                 <ExpirationAlertsCard items={expiringItems} />
-                {sortedOrders.map(order => (
-                    <OrderCard key={order.id} order={order} progress={getProgress(order)} />
-                ))}
-                 {sortedOrders.length === 0 && (
-                    <div className="col-span-full flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
-                        <p className="text-muted-foreground">No hay órdenes de trabajo activas.</p>
-                    </div>
-                )}
             </div>
 
+            {isFullscreen ? (
+                <Carousel
+                    plugins={[autoplay.current]}
+                    className="w-full"
+                    onMouseEnter={autoplay.current.stop}
+                    onMouseLeave={autoplay.current.reset}
+                >
+                    <CarouselContent>
+                        {orderPages.length > 0 ? orderPages.map((page, index) => (
+                            <CarouselItem key={index}>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 py-4">
+                                    {page.map(order => (
+                                        <OrderCard key={order.id} order={order} progress={getProgress(order)} />
+                                    ))}
+                                </div>
+                            </CarouselItem>
+                        )) : (
+                             <CarouselItem>
+                                <div className="col-span-full flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
+                                    <p className="text-muted-foreground">No hay órdenes de trabajo activas.</p>
+                                </div>
+                            </CarouselItem>
+                        )}
+                    </CarouselContent>
+                </Carousel>
+            ) : (
+                <div className={cn("grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4", isFullscreen ? "mt-4" : "p-4 sm:p-6 lg:p-8 pt-0")}>
+                    {sortedOrders.map(order => (
+                        <OrderCard key={order.id} order={order} progress={getProgress(order)} />
+                    ))}
+                    {sortedOrders.length === 0 && (
+                        <div className="col-span-full flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
+                            <p className="text-muted-foreground">No hay órdenes de trabajo activas.</p>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
-
-        {isFullscreen && (
-          <footer className="w-full bg-background shrink-0 p-4">
-              <MotivationalTicker />
-          </footer>
-        )}
     </div>
   );
 }
