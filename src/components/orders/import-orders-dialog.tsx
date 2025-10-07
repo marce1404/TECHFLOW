@@ -44,6 +44,7 @@ const excelRowSchema = z.object({
   netPrice: z.coerce.number().optional().default(0),
   hesEmMigo: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
   facturado: z.string().optional(),
+  saleNumber: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
 });
 
 
@@ -148,7 +149,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
           description: getColumnValue(row, ['NOMBRE DEL PROYECTO', 'Descripción']),
           client: getColumnValue(row, ['CLIENTE', 'Cliente']),
           service: getColumnValue(row, ['SISTEMA', 'Servicio']),
-          date: getColumnValue(row, ['Fecha Ingreso', 'Fecha Inicio']),
+          date: getColumnValue(row, ['Fecha Inicio Compromiso', 'Fecha Ingreso', 'Fecha Inicio']),
           ocNumber: getColumnValue(row, ['OBSERVACION', 'Nº OC', 'OC']),
           status: getColumnValue(row, ['ESTADO', 'Estado']),
           comercial: getColumnValue(row, ['VENDEDOR', 'Comercial']),
@@ -156,6 +157,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
           netPrice: getColumnValue(row, ['MONTO NETO', 'Precio Neto']),
           hesEmMigo: getColumnValue(row, ['EM-HES - MIGO', 'EM-HES-MIGO', 'HES/EM/MIGO']),
           facturado: getColumnValue(row, ['FACTURADO?', 'Facturado']),
+          saleNumber: getColumnValue(row, ['NV', 'Nº Venta']),
         };
 
         const result = excelRowSchema.safeParse(mappedRow);
@@ -167,7 +169,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
               date: rawDate,
               status: rawStatus,
               comercial, assigned, netPrice,
-              ocNumber, hesEmMigo, facturado,
+              ocNumber, hesEmMigo, facturado, saleNumber
           } = result.data;
           
           const formattedDate = parseDate(rawDate);
@@ -204,6 +206,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             assigned: mappedAssigned,
             comercial: comercial ? findMatchingCollaborator(comercial.trim()) : '',
             facturado: isFacturado,
+            saleNumber: saleNumber,
           };
 
           if (existingOtNumbers.has(ot_number)) {
