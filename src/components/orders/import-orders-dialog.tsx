@@ -38,7 +38,8 @@ const excelRowSchema = z.object({
   endDate: z.string().optional(),
   status: z.string().optional(),
   comercial: z.string().optional(),
-  assigned: z.array(z.string()).optional(),
+  assigned: z.string().optional(),
+  technicians: z.string().optional(),
   netPrice: z.coerce.number().optional().default(0),
   facturado: z.boolean().optional(),
   ocNumber: z.string().optional(),
@@ -83,26 +84,27 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
   }
   
   const manualDateParse = (dateInput: any): string | undefined => {
-      if (!dateInput) return undefined;
+    if (!dateInput) return undefined;
+    if (typeof dateInput === 'string' && dateInput.trim() === '') return undefined;
 
-      // Excel date (number)
-      if (typeof dateInput === 'number' && dateInput > 0) {
-          const date = new Date(Math.round((dateInput - 25569) * 86400 * 1000));
-          if (!isNaN(date.getTime())) {
-              return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-          }
-      }
+    try {
+        // Excel date (number)
+        if (typeof dateInput === 'number' && dateInput > 0) {
+            const date = new Date(Math.round((dateInput - 25569) * 86400 * 1000));
+            if (!isNaN(date.getTime())) {
+                return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+            }
+        }
 
-      // Date object
-      if (dateInput instanceof Date) {
-          if (!isNaN(dateInput.getTime())) {
-              return new Date(dateInput.getTime() - (dateInput.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-          }
-      }
-      
-      // String date (DD/MM/YYYY or DD-MM-YYYY)
-      if (typeof dateInput === 'string') {
-          try {
+        // Date object
+        if (dateInput instanceof Date) {
+            if (!isNaN(dateInput.getTime())) {
+                return new Date(dateInput.getTime() - (dateInput.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+            }
+        }
+        
+        // String date (DD/MM/YYYY or DD-MM-YYYY)
+        if (typeof dateInput === 'string') {
             const parts = dateInput.split(/[/ -]/);
             if (parts.length === 3) {
                 const d = parseInt(parts[0], 10);
@@ -117,13 +119,13 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     }
                 }
             }
-          } catch (e) {
-              // ignore parse error, will return undefined
-          }
-      }
-
-      return undefined;
+        }
+    } catch (e) {
+      console.warn(`Could not parse date: ${dateInput}`, e);
+    }
+    return undefined;
   };
+
 
   const parseFile = (fileToParse: File) => {
     setLoading(true);
@@ -134,102 +136,81 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = xlsx.read(data, { type: 'array' });
+        const workbook = xlsx.read(data, { type: 'array', cellDates: true });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         
-        const jsonData: any[] = xlsx.utils.sheet_to_json(worksheet, { header: 1, raw: false });
+        const jsonData: any[] = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
 
-        if (jsonData.length < 2) {
+        if (jsonData.length === 0) {
             setErrors(["El archivo está vacío o no tiene datos."]);
             setLoading(false);
             return;
         }
 
-        const headerRow = jsonData[0];
-        const headerMapping: {[key: string]: number} = {};
-        headerRow.forEach((header: string, index: number) => {
-            if(header && typeof header === 'string') {
-                headerMapping[normalizeString(header).replace(/\s/g, '')] = index;
-            }
-        });
-
-        const getColumnIndex = (...keys: string[]) => {
-            for (const key of keys) {
-                const normalizedKey = normalizeString(key).replace(/\s/g, '');
-                if (headerMapping.hasOwnProperty(normalizedKey)) {
-                    return headerMapping[normalizedKey];
-                }
-            }
-            return -1;
-        }
-        
-        const keyMap = {
-          ot_number: getColumnIndex('OT'),
-          description: getColumnIndex('NOMBREDELPROYECTO'),
-          client: getColumnIndex('CLIENTE'),
-          rut: getColumnIndex('RUT'),
-          service: getColumnIndex('SISTEMA'),
-          date: getColumnIndex('FechaInicioCompromiso', 'FechaIngreso'),
-          status: getColumnIndex('ESTADO'),
-          comercial: getColumnIndex('VENDEDOR'),
-          assigned: getColumnIndex('SUPERV.'),
-          netPrice: getColumnIndex('MONTONETO'),
-          facturado: getColumnIndex('FACTURADO?'),
-          ocNumber: getColumnIndex('OBSERVACION'),
-          hesEmMigo: getColumnIndex('EM-HES-MIGO'),
-          saleNumber: getColumnIndex('NV'),
-          invoiceNumber: getColumnIndex('FACT.N°'),
-          invoiceDate: getColumnIndex('Fecha')
+        const keyMapping: { [key: string]: keyof z.infer<typeof excelRowSchema> } = {
+            'OT': 'ot_number',
+            'Fecha Ingreso': 'date',
+            'Fecha Inicio Compromiso': 'date',
+            'NOMBRE DEL PROYECTO': 'description',
+            'CLIENTE': 'client',
+            'RUT': 'rut',
+            'VENDEDOR': 'comercial',
+            'SUPERV.': 'assigned',
+            'SISTEMA': 'service',
+            'MONTO NETO': 'netPrice',
+            'ESTADO': 'status',
+            'FACTURADO?': 'facturado',
+            'OBSERVACION': 'ocNumber',
+            'EM-HES - MIGO': 'hesEmMigo',
+            'NV': 'saleNumber',
+            'FACT. N°': 'invoiceNumber',
+            'Fecha': 'invoiceDate',
         };
-        
+
         const validationErrors: string[] = [];
         const tempNewOrders: CreateWorkOrderInput[] = [];
         const tempDuplicateOrders: CreateWorkOrderInput[] = [];
 
         const existingOtNumbers = new Set(workOrders.map(wo => wo.ot_number));
 
-        for (let i = 1; i < jsonData.length; i++) {
-            const row = jsonData[i];
+        jsonData.forEach((row, index) => {
+            const mappedRow: { [key: string]: any } = {};
+            for (const key in row) {
+                const normalizedKey = key.trim();
+                const mappedKey = keyMapping[normalizedKey];
+                if (mappedKey) {
+                    mappedRow[mappedKey] = row[key];
+                }
+            }
             
-            const rawNetPrice = row[keyMap.netPrice];
+            // Handle number parsing for netPrice
             let netPrice = 0;
+            const rawNetPrice = mappedRow.netPrice;
             if (typeof rawNetPrice === 'number') {
                 netPrice = rawNetPrice;
-            } else if (typeof rawNetPrice === 'string') {
+            } else if (typeof rawNetPrice === 'string' && rawNetPrice.trim() !== '') {
                 const cleaned = rawNetPrice.replace(/[^0-9,.-]/g, '').replace(',', '.');
                 netPrice = parseFloat(cleaned) || 0;
             }
+            mappedRow.netPrice = netPrice;
+            
+            // Handle invoiceNumber as string
+            if (mappedRow.invoiceNumber !== undefined && typeof mappedRow.invoiceNumber !== 'string') {
+                mappedRow.invoiceNumber = String(mappedRow.invoiceNumber);
+            }
 
-            const mappedRow = {
-                ot_number: String(row[keyMap.ot_number] || ''),
-                description: row[keyMap.description] || '',
-                client: row[keyMap.client] || '',
-                rut: row[keyMap.rut] || '',
-                service: row[keyMap.service] || '',
-                date: row[keyMap.date] || '',
-                status: row[keyMap.status] || '',
-                comercial: row[keyMap.comercial] || '',
-                assigned: row[keyMap.assigned] || '',
-                netPrice,
-                facturado: row[keyMap.facturado] || false,
-                ocNumber: row[keyMap.ocNumber] || '',
-                hesEmMigo: row[keyMap.hesEmMigo] || '',
-                saleNumber: row[keyMap.saleNumber] || '',
-                invoiceNumber: row[keyMap.invoiceNumber] || '',
-                invoiceDate: row[keyMap.invoiceDate] || ''
-            };
 
             const result = excelRowSchema.safeParse(mappedRow);
             
             if (result.success) {
                 const { 
-                    ot_number,
                     date: rawDate,
                     status: rawStatus,
                     facturado: rawFacturado,
                     comercial,
                     assigned: rawAssigned,
+                    technicians: rawTechnicians,
                     service,
                     invoiceNumber,
                     invoiceDate,
@@ -240,8 +221,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 const finalDate = manualDateParse(rawDate);
                 
                 if (!finalDate) {
-                    validationErrors.push(`Fila ${i + 1} (${ot_number || 'N/A'}): La fecha es requerida o inválida.`);
-                    continue;
+                    validationErrors.push(`Fila ${index + 2} (${rest.ot_number || 'N/A'}): La fecha es requerida o inválida.`);
+                    return;
                 }
 
                 const isFacturado = typeof rawFacturado === 'string' ? normalizeString(rawFacturado).includes('facturado') : !!rawFacturado;
@@ -255,17 +236,23 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     else if (normalizedStatus === 'enproceso') status = 'En Progreso';
                     else status = findMatchingString(rawStatus || '', otStatuses) as WorkOrder['status'] || 'Por Iniciar';
                 }
+                
+                const parseCollaborators = (names: string | undefined): string[] => {
+                  if (!names) return [];
+                  return String(names).split(/[,;]/).map(name => findMatchingCollaborator(name.trim())).filter(Boolean);
+                };
 
-                const mappedAssigned = Array.isArray(rawAssigned) ? rawAssigned.map(name => findMatchingCollaborator(name.trim())) : (rawAssigned ? String(rawAssigned).split(/[,;]/).map(name => findMatchingCollaborator(name.trim())) : []);
+                const mappedAssigned = parseCollaborators(rawAssigned);
+                const mappedTechnicians = parseCollaborators(rawTechnicians);
 
                 const orderData: CreateWorkOrderInput = {
-                    ot_number: ot_number.trim(),
                     date: finalDate,
                     status,
                     priority: 'Baja',
                     netPrice,
                     comercial: comercial ? findMatchingCollaborator(comercial.trim()) : '',
                     assigned: mappedAssigned,
+                    technicians: mappedTechnicians,
                     service: findMatchingString(service || '', availableServices),
                     facturado: isFacturado,
                     invoices: [],
@@ -284,17 +271,17 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     }
                 }
 
-                if (existingOtNumbers.has(ot_number.trim())) {
+                if (existingOtNumbers.has(orderData.ot_number.trim())) {
                     tempDuplicateOrders.push(orderData);
                 } else {
                     tempNewOrders.push(orderData);
                 }
 
             } else {
-                const formattedErrors = result.error.issues.map(issue => `Fila ${i + 1}: Campo '${issue.path.join('.')}' - ${issue.message}`).join('; ');
+                const formattedErrors = result.error.issues.map(issue => `Fila ${index + 2}: Campo '${issue.path.join('.')}' - ${issue.message}`).join('; ');
                 validationErrors.push(formattedErrors);
             }
-        };
+        });
 
         setErrors(validationErrors);
         setNewOrders(tempNewOrders);
@@ -558,4 +545,3 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
-
