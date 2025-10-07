@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -85,35 +86,27 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     if (!dateInput) return undefined;
 
     if (dateInput instanceof Date) {
-        // Handle native Excel dates
         if (!isNaN(dateInput.getTime())) {
             const utcDate = new Date(Date.UTC(dateInput.getFullYear(), dateInput.getMonth(), dateInput.getDate()));
             return utcDate.toISOString().split('T')[0];
         }
     }
     
-    // Handle string dates like "DD/MM/YYYY" or "DD-MM-YYYY"
     if (typeof dateInput === 'string') {
         const parts = dateInput.split(/[/.-]/);
         if (parts.length === 3) {
             const day = parseInt(parts[0], 10);
-            const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+            const month = parseInt(parts[1], 10) - 1;
             let year = parseInt(parts[2], 10);
 
             if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
-                 // Handle 2-digit year
-                if (year < 100) {
-                    year += 2000;
-                }
+                if (year < 100) year += 2000;
                 const date = new Date(Date.UTC(year, month, day));
-                if (!isNaN(date.getTime())) {
-                    return date.toISOString().split('T')[0];
-                }
+                if (!isNaN(date.getTime())) return date.toISOString().split('T')[0];
             }
         }
     }
     
-    // As a fallback for other formats
     const parsedDate = new Date(dateInput);
     if (!isNaN(parsedDate.getTime())) {
         const utcDate = new Date(Date.UTC(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate()));
@@ -125,26 +118,29 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
   const parseFile = (fileToParse: File) => {
     setLoading(true);
+    setErrors([]);
+    setNewOrders([]);
+    setDuplicateOrders([]);
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = xlsx.read(data, { type: 'array', cellDates: true });
+        const workbook = xlsx.read(data, { type: 'array' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         
-        const jsonData: any[] = xlsx.utils.sheet_to_json(worksheet, { raw: false, defval: "" });
+        const jsonData: any[] = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
 
         if (jsonData.length === 0) {
             setErrors(["El archivo está vacío o no tiene datos."]);
             setLoading(false);
             return;
         }
-
-        const keyMapping: { [key: string]: keyof CreateWorkOrderInput } = {
+        
+        const keyMapping: { [key: string]: string } = {
             'ot': 'ot_number',
             'fecha inicio compromiso': 'date',
-            'fecha ingreso': 'date',
+            'fecha ingreso': 'date_alt',
             'nombre del proyecto': 'description',
             'cliente': 'client',
             'rut': 'rut',
@@ -161,6 +157,16 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             'fecha': 'invoiceDate'
         };
 
+        const processedData = jsonData.map(row => {
+            const newRow: { [key: string]: any } = {};
+            for (const key in row) {
+                const normalizedKey = normalizeString(key);
+                if (keyMapping[normalizedKey]) {
+                    newRow[keyMapping[normalizedKey]] = row[key];
+                }
+            }
+            return newRow;
+        });
 
         const validationErrors: string[] = [];
         const tempNewOrders: CreateWorkOrderInput[] = [];
@@ -168,21 +174,14 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
         const existingOtNumbers = new Set(workOrders.map(wo => wo.ot_number));
 
-        jsonData.forEach((row: any, index: number) => {
-            const mappedRow: any = {};
+        processedData.forEach((row: any, index: number) => {
             
-            for (const key in row) {
-                const normalizedKey = normalizeString(key);
-                const targetKey = keyMapping[normalizedKey];
-                if (targetKey) {
-                    mappedRow[targetKey] = row[key];
-                }
+            // Clean netPrice before validation
+            if (typeof row.netPrice === 'string') {
+                row.netPrice = parseFloat(row.netPrice.replace(/[^0-9,-]+/g,"").replace(",", "."));
             }
 
-            // Ensure ot_number is a string
-            if(mappedRow.ot_number) mappedRow.ot_number = String(mappedRow.ot_number);
-
-            const result = excelRowSchema.safeParse(mappedRow);
+            const result = excelRowSchema.safeParse(row);
             
             if (result.success) {
                 const { 
@@ -199,14 +198,10 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     ...rest
                 } = result.data;
                 
-                if (!ot_number) {
-                    validationErrors.push(`Fila ${index + 2}: La columna OT es obligatoria.`);
-                    return;
-                }
-
-                const formattedDate = manualDateParse(rawDate);
-                if (!formattedDate) {
-                    validationErrors.push(`Fila ${index + 2} (${ot_number}): La fecha es requerida o inválida.`);
+                const finalDate = manualDateParse(rawDate || row.date_alt);
+                
+                if (!finalDate) {
+                    validationErrors.push(`Fila ${index + 2} (${ot_number || 'N/A'}): La fecha es requerida o inválida.`);
                     return;
                 }
 
@@ -226,7 +221,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
                 const orderData: CreateWorkOrderInput = {
                     ot_number,
-                    date: formattedDate,
+                    date: finalDate,
                     status,
                     priority: 'Baja',
                     netPrice,
