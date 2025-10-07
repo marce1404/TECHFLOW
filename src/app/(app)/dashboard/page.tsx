@@ -14,21 +14,13 @@ import { cn } from '@/lib/utils';
 import { ExpirationAlertsCard } from '@/app/(app)/dashboard/expiration-alerts-card';
 import { differenceInDays, parseISO, addYears } from 'date-fns';
 import { useAuth } from '@/context/auth-context';
-import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
-import Autoplay from "embla-carousel-autoplay";
 import MotivationalTicker from '@/components/dashboard/motivational-ticker';
-
-const CARDS_PER_PAGE = 8; // Number of OT cards to show per carousel slide
 
 export default function DashboardPage() {
   const { workOrders, loading, ganttCharts, collaborators } = useWorkOrders();
   const { user, loading: authLoading } = useAuth();
   const [isFullscreen, setIsFullscreen] = React.useState(false);
   const dashboardRef = React.useRef<HTMLDivElement>(null);
-  
-  const autoplay = React.useRef(
-    Autoplay({ delay: 10000, stopOnInteraction: true })
-  );
 
   const activeWorkOrders = React.useMemo(() => {
     return workOrders.filter(o => normalizeString(o.status) !== 'cerrada');
@@ -140,15 +132,6 @@ export default function DashboardPage() {
       document.exitFullscreen();
     }
   };
-  
-    // Chunk orders for carousel pages
-  const orderPages = React.useMemo(() => {
-    const pages = [];
-    for (let i = 0; i < sortedOrders.length; i += CARDS_PER_PAGE) {
-      pages.push(sortedOrders.slice(i, i + CARDS_PER_PAGE));
-    }
-    return pages;
-  }, [sortedOrders]);
 
   React.useEffect(() => {
     const handleFullscreenChange = () => {
@@ -171,64 +154,69 @@ export default function DashboardPage() {
   }
 
   return (
-     <div ref={dashboardRef} className={cn("flex flex-1 flex-col bg-background h-full", isFullscreen && "h-screen p-4 sm:p-6 lg:p-8")}>
-        <div className={cn("flex-1 overflow-y-auto")}>
-            <div className={cn("flex items-center justify-between", isFullscreen ? "mb-4" : "p-4 sm:p-6 lg:p-8 pb-0")}>
+     <div 
+        ref={dashboardRef} 
+        className={cn(
+            "flex flex-col bg-background", 
+            isFullscreen ? "h-screen" : "h-full"
+        )}
+     >
+        {/* Header */}
+        <div className={cn("sticky top-0 z-20 bg-background/80 backdrop-blur-sm", isFullscreen ? "p-4" : "p-4 sm:p-6 lg:p-8")}>
+            <div className="flex items-center justify-between">
                 <div></div>
                 <Button onClick={toggleFullscreen} variant="outline" size="icon">
                     {isFullscreen ? <Shrink className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
                     <span className="sr-only">{isFullscreen ? 'Salir de pantalla completa' : 'Ver en pantalla completa'}</span>
                 </Button>
             </div>
-            
-             <div className={cn("grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4", isFullscreen ? "" : "p-4 sm:p-6 lg:p-8")}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
                 <ClosedOrdersCard orders={closedOrdersThisMonth} />
                 <ExpirationAlertsCard items={expiringItems} />
             </div>
-
-            {isFullscreen ? (
-                <Carousel
-                    plugins={[autoplay.current]}
-                    className="w-full"
-                    onMouseEnter={autoplay.current.stop}
-                    onMouseLeave={autoplay.current.reset}
-                >
-                    <CarouselContent>
-                        {orderPages.length > 0 ? orderPages.map((page, index) => (
-                            <CarouselItem key={index}>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 py-4">
-                                    {page.map(order => (
-                                        <OrderCard key={order.id} order={order} progress={getProgress(order)} />
-                                    ))}
-                                </div>
-                            </CarouselItem>
-                        )) : (
-                             <CarouselItem>
-                                <div className="col-span-full flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
-                                    <p className="text-muted-foreground">No hay órdenes de trabajo activas.</p>
-                                </div>
-                            </CarouselItem>
-                        )}
-                    </CarouselContent>
-                </Carousel>
-            ) : (
-                <div className={cn("grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4", isFullscreen ? "mt-4" : "p-4 sm:p-6 lg:p-8 pt-0")}>
-                    {sortedOrders.map(order => (
-                        <OrderCard key={order.id} order={order} progress={getProgress(order)} />
-                    ))}
-                    {sortedOrders.length === 0 && (
-                        <div className="col-span-full flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
-                            <p className="text-muted-foreground">No hay órdenes de trabajo activas.</p>
-                        </div>
-                    )}
-                </div>
-            )}
         </div>
-         {isFullscreen && (
+
+        {/* Main Content */}
+        <div className={cn("flex-1", isFullscreen && "overflow-y-auto")}>
+            <div 
+                className={cn(
+                    "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4", 
+                    isFullscreen ? "p-4" : "p-4 sm:p-6 lg:p-8",
+                    isFullscreen && sortedOrders.length > 8 && "animate-[scroll_40s_linear_infinite]"
+                )}
+                style={{ animationPlayState: isFullscreen ? 'running' : 'paused' }}
+            >
+                {sortedOrders.map(order => (
+                    <OrderCard key={order.id} order={order} progress={getProgress(order)} />
+                ))}
+
+                {/* Duplicate for seamless scrolling in fullscreen */}
+                {isFullscreen && sortedOrders.length > 8 && sortedOrders.map(order => (
+                    <OrderCard key={`${order.id}-clone`} order={order} progress={getProgress(order)} />
+                ))}
+
+                {sortedOrders.length === 0 && (
+                    <div className="col-span-full flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
+                        <p className="text-muted-foreground">No hay órdenes de trabajo activas.</p>
+                    </div>
+                )}
+            </div>
+        </div>
+
+        {/* Footer */}
+        {isFullscreen && (
             <footer className="w-full shrink-0">
                 <MotivationalTicker />
             </footer>
         )}
+
+        {/* CSS for scrolling animation */}
+        <style jsx global>{`
+          @keyframes scroll {
+            from { transform: translateY(0); }
+            to { transform: translateY(-50%); }
+          }
+        `}</style>
     </div>
   );
 }
