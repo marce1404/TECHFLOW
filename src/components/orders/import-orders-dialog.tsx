@@ -94,8 +94,10 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     const timezoneOffset = date_info.getTimezoneOffset() * 60000;
     return new Date(date_info.getTime() + timezoneOffset);
   }
-
+  
   const manualDateParse = (dateInput: any): string | undefined => {
+    if (!dateInput) return undefined;
+    
     if (dateInput instanceof Date && isValid(dateInput)) {
       return format(dateInput, 'yyyy-MM-dd');
     }
@@ -129,7 +131,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = xlsx.read(data, { type: 'array', cellDates: true });
+        const workbook = xlsx.read(data, { type: 'array' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         
@@ -141,26 +143,38 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             return;
         }
 
-        const keyMapping: { [key: string]: string } = {
-            'ot': 'ot_number',
-            'fecha ingreso': 'date',
-            'nombre del proyecto': 'description',
-            'cliente': 'client',
-            'rut': 'rut',
-            'vendedor': 'comercial',
-            'superv': 'assigned',
-            'tecnico': 'technicians',
-            'sistema': 'service',
-            'monto neto': 'netPrice',
-            'estado': 'status',
-            'facturado?': 'facturado',
-            'observacion': 'notes',
-            'em - hes - migo': 'hesEmMigo',
-            'nv': 'saleNumber',
-            'fact. n°': 'invoiceNumber',
-            'fecha fact': 'invoiceDate',
-            'factproc': 'factproc',
+        const headers = Object.keys(jsonData[0]).map(key => ({ original: key, normalized: normalizeString(key) }));
+
+        const findHeader = (variants: string[]) => {
+            for (const variant of variants) {
+                const normalizedVariant = normalizeString(variant);
+                const header = headers.find(h => h.normalized.includes(normalizedVariant));
+                if (header) return header.original;
+            }
+            return null;
         };
+
+        const keyMapping: { [key: string]: string | null } = {
+            ot_number: findHeader(['ot', 'n ot']),
+            date: findHeader(['fecha ingreso']),
+            description: findHeader(['nombre del proyecto', 'descripcion']),
+            client: findHeader(['cliente']),
+            rut: findHeader(['rut']),
+            comercial: findHeader(['vendedor']),
+            assigned: findHeader(['superv', 'encargado']),
+            technicians: findHeader(['tecnico']),
+            service: findHeader(['sistema', 'servicio']),
+            netPrice: findHeader(['monto neto']),
+            status_legacy: findHeader(['estado']), // Renamed to avoid conflict with main status
+            facturado: findHeader(['facturado']),
+            notes: findHeader(['observacion']),
+            hesEmMigo: findHeader(['em - hes - migo']),
+            saleNumber: findHeader(['nv']),
+            invoiceNumber: findHeader(['fact. n', 'factura']),
+            invoiceDate: findHeader(['fecha fact']),
+            factproc: findHeader(['factproc']),
+        };
+
 
         const validationErrors: string[] = [];
         const tempNewOrders: CreateWorkOrderInput[] = [];
@@ -170,40 +184,42 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
         jsonData.forEach((row, index) => {
             const mappedRow: { [key: string]: any } = {};
-            for (const key in row) {
-                const normalizedKey = normalizeString(key.trim());
-                if (keyMapping[normalizedKey]) {
-                    mappedRow[keyMapping[normalizedKey]] = row[key];
+            for (const targetKey in keyMapping) {
+                const excelKey = keyMapping[targetKey as keyof typeof keyMapping];
+                if (excelKey && row[excelKey] !== undefined) {
+                    mappedRow[targetKey] = row[excelKey];
                 }
             }
+            
+            const rawDate = mappedRow.date;
+            const finalDate = manualDateParse(rawDate);
 
+            if (!finalDate) {
+              validationErrors.push(`Fila ${index + 2} (${mappedRow.ot_number || 'N/A'}): La fecha de ingreso es requerida o inválida.`);
+              return; // Skip this row
+            }
+
+            // After confirming date is valid, proceed with parsing the rest
             const result = excelRowSchema.safeParse(mappedRow);
             
             if (result.success) {
                 const { 
-                    date: rawDate,
                     endDate: rawEndDate,
                     factproc: rawFactproc,
-                    status: rawStatus,
                     facturado: rawFacturado,
                     comercial,
                     assigned: rawAssigned,
                     technicians: rawTechnicians,
                     service,
+                    status_legacy: rawStatusLegacy,
                     notes: rawNotes,
                     invoiceNumber,
                     invoiceDate,
                     netPrice: rawNetPrice,
                     saleNumber: rawSaleNumber,
                     ...rest
-                } = result.data;
+                } = mappedRow;
                 
-                if (!rawDate) {
-                    validationErrors.push(`Fila ${index + 2} (${mappedRow.ot_number || 'N/A'}): La fecha de ingreso es requerida o inválida.`);
-                    return;
-                }
-                const finalDate = manualDateParse(rawDate);
-
                 const finalEndDate = manualDateParse(rawEndDate);
                 const isFacturado = typeof rawFacturado === 'string' ? normalizeString(rawFacturado).includes('facturado') : !!rawFacturado;
 
@@ -232,7 +248,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     finalNetPrice = parseFloat(cleanedPrice) || 0;
                 }
                 
-                const combinedNotes = [rawNotes, rawStatus].filter(Boolean).join(' - ');
+                const combinedNotes = [rawNotes, rawStatusLegacy].filter(Boolean).join(' - ');
 
                 const orderData: CreateWorkOrderInput = {
                     ...rest,
@@ -537,5 +553,3 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
-
-    
