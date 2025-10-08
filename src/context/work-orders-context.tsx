@@ -831,13 +831,19 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         const snapshot = await getDocs(q);
         const batch = writeBatch(db);
         snapshot.forEach(doc => {
-        batch.update(doc.ref, { phase: newPhaseName });
+            batch.update(doc.ref, { phase: newPhaseName });
         });
         await batch.commit();
         await addLogEntry(`Renombró la fase '${oldPhaseName}' a '${newPhaseName}' en la categoría '${category}'`);
     } catch(e: any) {
         console.error("Error updating phase name:", e);
-        toast({ variant: 'destructive', title: 'Error al renombrar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
+        const permissionError = new FirestorePermissionError({
+            path: q.toString(), // Approximation
+            operation: 'update',
+            requestResourceData: { phase: newPhaseName },
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al renombrar', description: `Permiso denegado o error de red.`});
         throw e;
     }
   };
@@ -854,7 +860,13 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         await addLogEntry(`Eliminó la fase '${phaseName}' en la categoría '${category}'`);
     } catch(e: any) {
         console.error("Error deleting phase:", e);
-        toast({ variant: 'destructive', title: 'Error al eliminar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
+        const permissionError = new FirestorePermissionError({
+            path: 'suggested-tasks',
+            operation: 'delete',
+            requestResourceData: { category, phase: phaseName },
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al eliminar', description: `Permiso denegado o error de red.`});
         throw e;
     }
   };
@@ -1051,7 +1063,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
       });
       return batch.commit().catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
-            path: collectionRef.path,
+            path: collectionName,
             operation: 'delete',
         });
         errorEmitter.emit('permission-error', permissionError);
