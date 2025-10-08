@@ -230,7 +230,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     ...rest
                 } = mappedRow;
                 
-                const finalEndDate = robustDateParse(rawEndDate) || undefined;
+                const finalEndDate = robustDateParse(rawEndDate) || '';
                 const factprocStatus = normalizeString(rawFactproc || '');
                 const isFacturado = factprocStatus === 'facturado';
 
