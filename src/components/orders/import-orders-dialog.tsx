@@ -81,33 +81,19 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
       if (!name?.trim()) return '';
       const normalizedName = normalizeString(name);
 
-      // 1. Exact match (case-insensitive, accent-insensitive, ignores extra characters like '.')
       const exactMatch = collaborators.find(c => normalizeString(c.name) === normalizedName);
       if (exactMatch) return exactMatch.name;
-
-      // 2. Partial match (if no exact match is found)
+      
       const nameParts = normalizedName.split(' ');
       const partialMatch = collaborators.find(c => {
           const collaboratorNameParts = normalizeString(c.name).split(' ');
-          // Prioritize exact match of parts
-          if (nameParts.length === collaboratorNameParts.length) {
-              return nameParts.every(part => collaboratorNameParts.includes(part));
+          if (nameParts.every(part => collaboratorNameParts.includes(part))) {
+              return true;
           }
-          // Fallback to looser 'includes' for cases like "Angel Contreras" vs "Miguel Angel Contreras"
-          return nameParts.every(part => normalizeString(c.name).includes(part));
+           return nameParts.every(part => normalizeString(c.name).includes(part));
       });
-      
-      // If we found a partial match but there's an exact match for another collaborator, prefer the exact one
-      // This is to avoid matching "Angel Contreras" with "Miguel Angel Contreras" if "Angel Contreras" exists
-      if (partialMatch) {
-          const anotherExactMatch = collaborators.some(c => normalizeString(c.name) === normalizedName);
-          if (!anotherExactMatch) {
-              return partialMatch.name;
-          }
-      }
 
-      // 3. Fallback to original name if no reliable match found
-      return name;
+      return partialMatch ? partialMatch.name : name;
   };
 
   const findMatchingString = (input: string, validList: {name: string}[]) => {
@@ -142,9 +128,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
         if (typeof dateInput === 'string' && dateInput.trim() !== '') {
             const trimmedDateInput = dateInput.trim();
-            if (trimmedDateInput.trim() === '2011-2023') return null;
-
-            // Handle month names like "JULIO"
+            
             const monthNames: { [key: string]: number } = {
                 enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5,
                 julio: 6, agosto: 7, septiembre: 8, octubre: 9, noviembre: 10, diciembre: 11
@@ -155,7 +139,6 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 return format(new Date(currentYear, monthNames[normalizedMonth], 1), 'yyyy-MM-dd');
             }
 
-            // Handle standard date formats
             const formats = ['dd/MM/yyyy', 'd/M/yy', 'yyyy-MM-dd', 'd-M-yy', 'dd-MM-yyyy', 'MM/dd/yyyy'];
             for (const fmt of formats) {
                 try {
@@ -163,9 +146,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     if (isValid(parsedDate)) {
                         return format(parsedDate, 'yyyy-MM-dd');
                     }
-                } catch (e) {
-                    // ignore parse errors and try next format
-                }
+                } catch (e) {}
             }
         }
         return null;
@@ -194,7 +175,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             return foundStatus.name as WorkOrder['status'];
         }
     
-        return 'Por Iniciar'; // Default fallback
+        return 'Por Iniciar';
     }
 
 
@@ -220,18 +201,18 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         }
         
         const headers: { original: string, normalized: string }[] = xlsx.utils.sheet_to_json<string[]>(worksheet, { header: 1 })[0]
-            .map(h => ({ original: String(h), normalized: normalizeString(String(h)).replace(/[\s\n\.\°\/\\-]+/g, '') }));
+            .map(h => ({ original: String(h), normalized: normalizeString(String(h)).replace(/[^a-z0-9]/gi, '') }));
         
         const findHeader = (variants: string[]) => {
             for (const variant of variants) {
-                const normalizedVariant = normalizeString(variant).replace(/[\s\n\.\°\/\\-]+/g, '');
+                const normalizedVariant = normalizeString(variant).replace(/[^a-z0-9]/gi, '');
                 const header = headers.find(h => h.normalized === normalizedVariant);
                 if (header) return header.original;
             }
             return null;
         };
         
-        const keyMapping: { [key in keyof z.infer<typeof excelRowSchema>]?: string | null } = {
+        const keyMapping = {
             ot_number: findHeader(['ot', 'n ot', 'numero ot']),
             date: findHeader(['fechaingreso']),
             description: findHeader(['nombredelproyecto', 'descripcion']),
@@ -243,7 +224,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             service: findHeader(['sistema', 'servicio']),
             netPrice: findHeader(['montoneto']),
             factproc: findHeader(['factproc', 'fact proces', 'factprocs']),
-            hesEmMigo: findHeader(['em-hes-migo', 'emhesmigo', 'emhes-migo']),
+            hesEmMigo: findHeader(['emhesmigo', 'em-hes-migo']),
             ocNumber: findHeader(['oc', 'nordencompra']),
             saleNumber: findHeader(['nv', 'nventa']),
             invoiceNumber: findHeader(['factn', 'factura', 'nfactura', 'fact n']),
@@ -261,116 +242,84 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         const existingOtNumbers = new Set(workOrders.map(wo => String(wo.ot_number).trim()));
         
         jsonData.forEach((row, index) => {
-            const mappedRow: { [key: string]: any } = {};
-            for (const targetKey in keyMapping) {
-                const excelKey = keyMapping[targetKey as keyof typeof keyMapping];
-                if (excelKey && row[excelKey] !== undefined) {
-                    mappedRow[targetKey] = row[excelKey];
-                }
-            }
-            
-            const rawDateValue = mappedRow.date;
+            const rawDateValue = row[keyMapping.date!];
             const finalDate = robustDateParse(rawDateValue);
+
+            if (!keyMapping.ot_number || !row[keyMapping.ot_number]) {
+                 validationErrors.push(`Fila ${index + 2}: Falta el número de OT, no se puede importar.`);
+                 return;
+            }
 
             if (!finalDate) {
               const displayValue = rawDateValue instanceof Date ? rawDateValue.toISOString() : String(rawDateValue || 'VACÍO');
-              validationErrors.push(`Fila ${index + 2} (${mappedRow.ot_number || 'N/A'}): Valor de fecha de ingreso no válido encontrado: '${displayValue}'`);
+              validationErrors.push(`Fila ${index + 2} (${row[keyMapping.ot_number!] || 'N/A'}): Valor de fecha de ingreso no válido encontrado: '${displayValue}'`);
               return;
             }
+
+            const rawNetPrice = row[keyMapping.netPrice!]
+            let finalNetPrice = 0;
+            if (typeof rawNetPrice === 'number') {
+                finalNetPrice = rawNetPrice;
+            } else if (typeof rawNetPrice === 'string' && rawNetPrice.trim()) {
+                const cleanedPrice = rawNetPrice.replace(/[$. ]/g, '').replace(',', '.');
+                finalNetPrice = parseFloat(cleanedPrice) || 0;
+            }
+
+            const parseCollaborators = (key: 'assigned' | 'technicians' | 'comercial'): string[] | string => {
+                const header = keyMapping[key];
+                if (!header || !row[header]) return key === 'comercial' ? '' : [];
+                const value = String(row[header]);
+                
+                const names = value.split(/[,;]/).map(name => findMatchingCollaborator(name.trim())).filter(Boolean);
+
+                if (key === 'comercial') return names[0] || '';
+                return names;
+            };
+
+            const otNumberString = String(row[keyMapping.ot_number!]).trim();
+
+            const orderData: CreateWorkOrderInput = {
+                ot_number: otNumberString,
+                date: finalDate,
+                description: String(row[keyMapping.description!] || ''),
+                client: String(row[keyMapping.client!] || ''),
+                rut: String(row[keyMapping.rut!] || ''),
+                service: findMatchingString(String(row[keyMapping.service!] || ''), availableServices),
+                endDate: robustDateParse(row[keyMapping.endDate!]) || '',
+                startTime: '',
+                endTime: '',
+                notes: String(row[keyMapping.factproc!] || ''),
+                status: mapFactprocToStatus(String(row[keyMapping.factproc!])),
+                priority: 'Baja',
+                netPrice: finalNetPrice,
+                assigned: parseCollaborators('assigned') as string[],
+                technicians: parseCollaborators('technicians') as string[],
+                vehicles: [],
+                comercial: parseCollaborators('comercial') as string,
+                ocNumber: String(row[keyMapping.ocNumber!] || ''),
+                saleNumber: String(row[keyMapping.saleNumber!] || ''),
+                hesEmMigo: String(row[keyMapping.hesEmMigo!] || ''),
+                rentedVehicle: String(row[keyMapping.rentedVehicle!] || ''),
+                manualProgress: 0,
+                facturado: !!row[keyMapping.billingMonth!] || (!!row[keyMapping.invoiceDate!] && !!row[keyMapping.invoiceNumber!]),
+                invoices: [],
+            };
             
-            mappedRow.date = finalDate;
+            const finalInvoiceDate = robustDateParse(row[keyMapping.invoiceDate!]);
+            if (orderData.facturado && row[keyMapping.invoiceNumber!] && finalInvoiceDate) {
+                orderData.invoices?.push({
+                    id: crypto.randomUUID(),
+                    number: String(row[keyMapping.invoiceNumber!]),
+                    date: finalInvoiceDate,
+                    amount: finalNetPrice || 0,
+                    billingMonth: row[keyMapping.billingMonth!] ? String(row[keyMapping.billingMonth!]) : undefined,
+                });
+            }
 
-            const result = excelRowSchema.safeParse(mappedRow);
-            
-            if (result.success) {
-                const { 
-                    endDate: rawEndDate,
-                    factproc: rawFactproc,
-                    comercial,
-                    assigned: rawAssigned,
-                    technicians: rawTechnicians,
-                    service,
-                    invoiceNumber,
-                    invoiceDate,
-                    billingMonth,
-                    netPrice: rawNetPrice,
-                    saleNumber: rawSaleNumber,
-                    ocNumber: rawOcNumber,
-                    rut: rawRut,
-                    hesEmMigo: rawHes,
-                    rentedVehicle: rawRentedVehicle,
-                    ...rest
-                } = mappedRow;
-                
-                const finalEndDate = robustDateParse(rawEndDate);
-                
-                const finalStatus = mapFactprocToStatus(rawFactproc);
-                
-                const isFacturado = !!billingMonth || (!!invoiceDate && !!invoiceNumber);
-                
-                const parseCollaborators = (names: any): string[] => {
-                  if (!names) return [];
-                  if(Array.isArray(names)) return names.map(name => findMatchingCollaborator(String(name).trim())).filter(Boolean);
-                  return String(names).split(/[,;]/).map(name => findMatchingCollaborator(name.trim())).filter(Boolean);
-                };
-                
-                let finalNetPrice = 0;
-                if (typeof rawNetPrice === 'number') {
-                    finalNetPrice = rawNetPrice;
-                } else if (typeof rawNetPrice === 'string' && rawNetPrice.trim()) {
-                    const cleanedPrice = rawNetPrice.replace(/[$. ]/g, '').replace(',', '.');
-                    finalNetPrice = parseFloat(cleanedPrice) || 0;
-                }
-                
-                const otNumberString = String(rest.ot_number).trim();
-
-                const orderData: CreateWorkOrderInput & { invoices?: any[], notes?: string } = {
-                    ot_number: otNumberString,
-                    description: rest.description || '',
-                    client: rest.client || '',
-                    rut: String(rawRut || ''),
-                    service: findMatchingString(service || '', availableServices),
-                    date: finalDate,
-                    endDate: finalEndDate || '',
-                    startTime: '',
-                    endTime: '',
-                    notes: rawFactproc || '',
-                    status: finalStatus,
-                    priority: 'Baja',
-                    netPrice: finalNetPrice,
-                    assigned: parseCollaborators(rawAssigned),
-                    technicians: parseCollaborators(rawTechnicians),
-                    vehicles: [],
-                    comercial: comercial ? findMatchingCollaborator(comercial.trim()) : '',
-                    ocNumber: String(rawOcNumber || ''),
-                    saleNumber: String(rawSaleNumber || ''),
-                    hesEmMigo: String(rawHes || ''),
-                    rentedVehicle: String(rawRentedVehicle || ''),
-                    manualProgress: 0,
-                    facturado: isFacturado,
-                    invoices: [],
-                };
-                
-                const finalInvoiceDate = robustDateParse(invoiceDate);
-                if (isFacturado && invoiceNumber && finalInvoiceDate) {
-                    orderData.invoices?.push({
-                        id: crypto.randomUUID(),
-                        number: String(invoiceNumber),
-                        date: finalInvoiceDate,
-                        amount: finalNetPrice || 0,
-                        billingMonth: billingMonth ? String(billingMonth) : undefined,
-                    });
-                }
-
-                if (existingOtNumbers.has(orderData.ot_number)) {
-                    tempDuplicateOrders.push(orderData);
-                } else {
-                    tempNewOrders.push(orderData);
-                }
-
+            if (existingOtNumbers.has(orderData.ot_number)) {
+                tempDuplicateOrders.push(orderData);
             } else {
-                const formattedErrors = result.error.issues.map(issue => `Fila ${index + 2}: Campo '${issue.path.join('.')}' - ${issue.message}`).join('; ');
-                validationErrors.push(formattedErrors);
+                tempNewOrders.push(orderData);
             }
         });
 
@@ -408,7 +357,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             if (existingOrder) {
                  const mergedData: Partial<WorkOrder> = {
                   ...dupOrder,
-                  notes: [existingOrder.notes, dupOrder.notes].filter(Boolean).join('\\n---\\n'),
+                  notes: [existingOrder.notes, dupOrder.notes].filter(Boolean).join('\n---\n'),
                 };
                 
                 if (dupOrder.endDate === null) {
@@ -426,7 +375,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     }
 
     setLoading(true);
-    setStep('showResult'); // Move to result/progress view immediately
+    setStep('showResult');
     setImportResult(null);
     setImportProgress(0);
     
@@ -670,5 +619,3 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
-
-    
