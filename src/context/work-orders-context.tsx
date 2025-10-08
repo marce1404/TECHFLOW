@@ -197,55 +197,57 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 }, [user, toast, checkAndCreatePredefinedTemplates, checkAndRestoreCollaborators]);
 
 
-  useEffect(() => {
-      if (user) {
-          fetchData();
+ useEffect(() => {
+    if (!user || authLoading) {
+      setLoading(false);
+      return;
+    }
 
-          const workOrdersQuery = query(collection(db, 'work-orders'), orderBy('date', 'desc'));
-          const ganttQuery = query(collection(db, 'gantt-charts'));
-          const submittedReportsQuery = query(collection(db, 'submitted-reports'), orderBy('submittedAt', 'desc'));
-          const collaboratorsQuery = query(collection(db, 'collaborators'));
+    setLoading(true);
+    fetchData(); // Fetch non-realtime data first
 
-          const unsubWorkOrders = onSnapshot(workOrdersQuery, (snapshot) => {
-              const data = snapshot.docs.map(doc => processFirestoreTimestamp({ id: doc.id, ...doc.data() })) as WorkOrder[];
-              setWorkOrders(data);
-          }, (error) => console.error("Error fetching work-orders:", error));
-          
-          const unsubCollaborators = onSnapshot(collaboratorsQuery, (snapshot) => {
-              const data = snapshot.docs.map(doc => processFirestoreTimestamp({ id: doc.id, ...doc.data() })) as Collaborator[];
-              setCollaborators(data);
-          }, (error) => console.error("Error fetching collaborators:", error));
+    const workOrdersQuery = query(collection(db, 'work-orders'), orderBy('date', 'desc'));
+    const ganttQuery = query(collection(db, 'gantt-charts'));
+    const submittedReportsQuery = query(collection(db, 'submitted-reports'), orderBy('submittedAt', 'desc'));
+    const collaboratorsQuery = query(collection(db, 'collaborators'));
+    const auditLogQuery = query(collection(db, 'audit-log'), orderBy('timestamp', 'desc'));
 
-          const unsubGantt = onSnapshot(ganttQuery, (snapshot) => {
-              const data = snapshot.docs.map(doc => processFirestoreTimestamp({ id: doc.id, ...doc.data() })) as GanttChart[];
-              setGanttCharts(data);
-          }, (error) => console.error("Error fetching gantt-charts:", error));
+    const unsubscribes: Unsubscribe[] = [];
 
-          const unsubSubmittedReports = onSnapshot(submittedReportsQuery, (snapshot) => {
-              const data = snapshot.docs.map(doc => processFirestoreTimestamp({ id: doc.id, ...doc.data() })) as SubmittedReport[];
-              setSubmittedReports(data);
-          }, (error) => console.error("Error fetching submitted-reports:", error));
+    unsubscribes.push(onSnapshot(workOrdersQuery, (snapshot) => {
+        const data = snapshot.docs.map(doc => processFirestoreTimestamp({ id: doc.id, ...doc.data() })) as WorkOrder[];
+        setWorkOrders(data);
+    }, (error) => console.error("Error fetching work-orders:", error)));
 
-          let unsubAuditLog: Unsubscribe | undefined;
-          if (userProfile?.role === 'Admin') {
-              const auditLogQuery = query(collection(db, 'audit-log'), orderBy('timestamp', 'desc'));
-              unsubAuditLog = onSnapshot(auditLogQuery, (snapshot) => {
-                  const data = snapshot.docs.map(doc => processFirestoreTimestamp({ id: doc.id, ...doc.data() }));
-                  setAuditLog(data);
-              }, (error) => console.error("Error fetching audit-log:", error));
-          }
+    unsubscribes.push(onSnapshot(collaboratorsQuery, (snapshot) => {
+        const data = snapshot.docs.map(doc => processFirestoreTimestamp({ id: doc.id, ...doc.data() })) as Collaborator[];
+        setCollaborators(data);
+    }, (error) => console.error("Error fetching collaborators:", error)));
 
-          return () => {
-              unsubWorkOrders();
-              unsubGantt();
-              unsubCollaborators();
-              unsubSubmittedReports();
-              if (unsubAuditLog) unsubAuditLog();
-          };
-      } else if (!authLoading) {
-          setLoading(false);
-      }
-  }, [user, authLoading, userProfile, fetchData]);
+    unsubscribes.push(onSnapshot(ganttQuery, (snapshot) => {
+        const data = snapshot.docs.map(doc => processFirestoreTimestamp({ id: doc.id, ...doc.data() })) as GanttChart[];
+        setGanttCharts(data);
+    }, (error) => console.error("Error fetching gantt-charts:", error)));
+
+    unsubscribes.push(onSnapshot(submittedReportsQuery, (snapshot) => {
+        const data = snapshot.docs.map(doc => processFirestoreTimestamp({ id: doc.id, ...doc.data() })) as SubmittedReport[];
+        setSubmittedReports(data);
+    }, (error) => console.error("Error fetching submitted-reports:", error)));
+
+    if (userProfile?.role === 'Admin') {
+        unsubscribes.push(onSnapshot(auditLogQuery, (snapshot) => {
+            const data = snapshot.docs.map(doc => processFirestoreTimestamp({ id: doc.id, ...doc.data() }));
+            setAuditLog(data);
+        }, (error) => console.error("Error fetching audit-log:", error)));
+    }
+    
+    // setLoading(false) should be handled by fetchData now.
+    
+    // Cleanup function
+    return () => {
+        unsubscribes.forEach(unsub => unsub());
+    };
+}, [user, userProfile, authLoading, fetchData]);
 
 
   // Derived state for active/historical orders
@@ -1156,3 +1158,4 @@ export const useWorkOrders = () => {
   }
   return context;
 };
+
