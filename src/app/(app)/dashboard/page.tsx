@@ -26,7 +26,7 @@ export default function DashboardPage() {
     return workOrders.filter(o => normalizeString(o.status) !== 'cerrada');
   }, [workOrders]);
   
-  const statusOrder: WorkOrder['status'][] = ['Atrasada', 'En Progreso', 'Pendiente', 'Por Iniciar'];
+  const statusOrder: WorkOrder['status'][] = ['Atrasada', 'En Progreso', 'Pendiente', 'Terminada', 'Por Iniciar'];
   
   const finalStatuses = ['cerrada'];
   const filteredActiveOrders = activeWorkOrders.filter(o => !finalStatuses.includes(normalizeString(o.status)));
@@ -47,7 +47,7 @@ export default function DashboardPage() {
     });
 
   const getProgress = (order: WorkOrder) => {
-    if (normalizeString(order.status) === 'cerrada') {
+    if (normalizeString(order.status) === 'cerrada' || normalizeString(order.status) === 'terminada') {
       return 100;
     }
     const assignedGantt = ganttCharts.find(g => g.assignedOT === order.ot_number);

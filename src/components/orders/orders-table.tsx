@@ -51,6 +51,7 @@ export default function OrdersTable({ orders, isActivityTab = false }: OrdersTab
         return 'destructive';
       case 'cerrada':
          return 'default';
+      case 'terminada':
       case 'suspendida':
       case 'pendiente':
         return 'secondary';
@@ -71,6 +72,9 @@ export default function OrdersTable({ orders, isActivityTab = false }: OrdersTab
     }
      if (normalizedStatus === 'cerrada') {
         return 'bg-background text-foreground'
+    }
+     if (normalizedStatus === 'terminada') {
+      return 'bg-blue-500 text-white border-transparent'
     }
     if (normalizedStatus === 'actividad') {
         return 'bg-purple-500 text-white border-transparent';

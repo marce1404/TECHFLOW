@@ -40,7 +40,7 @@ export type WorkOrder = {
   service: string;
   assigned: string[];
   comercial: string;
-  status: 'Por Iniciar' | 'En Progreso' | 'Pendiente' | 'Atrasada' | 'Cerrada' | 'Actividad';
+  status: 'Por Iniciar' | 'En Progreso' | 'Pendiente' | 'Atrasada' | 'Cerrada' | 'Actividad' | 'Terminada';
   priority: 'Baja' | 'Media' | 'Alta';
   technicians: string[];
   vehicles: string[];
@@ -342,5 +342,3 @@ export type CreateWorkOrderInput = z.infer<typeof CreateWorkOrderInputSchema>;
 export const CreateWorkOrderInputSchemaForExcel = CreateWorkOrderInputSchema.omit({ invoices: true }).extend({
     invoiceNumber: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
 });
-
-    

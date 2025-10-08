@@ -35,6 +35,7 @@ export function OrderCard({ order, progress }: OrderCardProps) {
         return 'destructive';
       case 'por iniciar':
         return 'default';
+      case 'terminada':
       case 'suspendida':
       case 'pendiente':
         return 'secondary';
@@ -45,11 +46,14 @@ export function OrderCard({ order, progress }: OrderCardProps) {
   
    const getStatusBadgeClass = (status: WorkOrder['status']) => {
     const normalizedStatus = normalizeString(status);
-    if (normalizedStatus === 'en proceso') {
+    if (normalizedStatus === 'en progreso') {
       return 'bg-green-500 text-white border-transparent';
     }
     if (normalizedStatus === 'por iniciar') {
       return 'bg-primary text-primary-foreground border-transparent'
+    }
+     if (normalizedStatus === 'terminada') {
+      return 'bg-blue-500 text-white border-transparent'
     }
     if (normalizedStatus === 'cerrada') {
       return 'bg-background text-foreground'
@@ -60,7 +64,7 @@ export function OrderCard({ order, progress }: OrderCardProps) {
   
   const getChartColor = (status: WorkOrder['status']) => {
     const normalizedStatus = normalizeString(status);
-    if (normalizedStatus === 'en proceso') {
+    if (normalizedStatus === 'en progreso' || normalizedStatus === 'terminada') {
         return 'hsl(142, 71%, 45%)'; // Green
     }
     if (normalizedStatus === 'atrasada') {
