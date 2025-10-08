@@ -306,7 +306,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 const orderData: CreateWorkOrderInput & { invoices?: any[], notes?: string } = {
                     ...rest,
                     ot_number: otNumberString,
-                    endDate: finalEndDate || undefined,
+                    endDate: finalEndDate || '',
                     status: finalStatus,
                     priority: 'Baja',
                     netPrice: finalNetPrice,
@@ -642,3 +642,5 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
+
+    
