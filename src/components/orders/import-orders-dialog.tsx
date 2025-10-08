@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -198,39 +197,22 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             billingMonth: findHeader(['mesfac']),
             endDate: findHeader(['fechatermino', 'fecha termino']),
             rentedVehicle: findHeader(['vehiculoarrendado', 'arriendovehiculo']),
-            notes: findHeader(['Notas', 'notas']),
+            notes: findHeader(['Notas']),
         };
-
+        
         const validationErrors: string[] = [];
         const groupedByOt = new Map<string, any[]>();
-
-        jsonData.forEach((row, index) => {
+        
+        // Primero, agrupamos todas las filas por número de OT
+        jsonData.forEach((row) => {
             const otNumber = keyMapping.ot_number ? String(row[keyMapping.ot_number] || '').trim() : '';
-            if (!otNumber) {
-                 validationErrors.push(`Fila ${index + 2}: Falta el número de OT, no se puede importar.`);
-                 return;
+            if (otNumber) {
+                if (!groupedByOt.has(otNumber)) {
+                    groupedByOt.set(otNumber, []);
+                }
+                groupedByOt.get(otNumber)!.push(row);
             }
-            
-            const rawDateValue = keyMapping.date ? row[keyMapping.date] : null;
-            const finalDate = robustDateParse(rawDateValue);
-
-            if (!finalDate) {
-                 validationErrors.push(`Fila ${index + 2} (OT: ${otNumber}): Formato de 'fechaingreso' no válido. Por favor, use 'dd/MM/yyyy' o 'yyyy-MM-dd'.`);
-                 return;
-            }
-
-            if (!groupedByOt.has(otNumber)) {
-                groupedByOt.set(otNumber, []);
-            }
-            groupedByOt.get(otNumber)!.push(row);
         });
-
-        if (validationErrors.length > 0) {
-            setErrors(validationErrors);
-            setLoading(false);
-            setStep('selectFile');
-            return;
-        }
 
         const tempNewOrders: CreateWorkOrderInput[] = [];
         const tempDuplicateOrders: CreateWorkOrderInput[] = [];
@@ -239,7 +221,19 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
         groupedByOt.forEach((rows, otNumber) => {
             const firstRow = rows[0];
+            
+            let finalDate: string | null = null;
+            for(const row of rows) {
+                const dateVal = keyMapping.date ? row[keyMapping.date] : null;
+                finalDate = robustDateParse(dateVal);
+                if (finalDate) break;
+            }
 
+            if (!finalDate) {
+                validationErrors.push(`OT ${otNumber}: No se pudo encontrar una fecha de ingreso válida en ninguna de sus filas. No se puede importar.`);
+                return;
+            }
+            
             const rawNetPrice = keyMapping.netPrice ? firstRow[keyMapping.netPrice] : 0;
             let finalNetPrice = 0;
             if (typeof rawNetPrice === 'number') {
@@ -261,8 +255,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 ot_number: otNumber,
                 description: String(firstRow[keyMapping.description!] || ''),
                 client: String(firstRow[keyMapping.client!] || ''),
-                date: robustDateParse(firstRow[keyMapping.date!]) || '',
-                endDate: (keyMapping.endDate ? robustDateParse(firstRow[keyMapping.endDate]) : null) || '',
+                date: finalDate,
+                endDate: (keyMapping.endDate ? robustDateParse(firstRow[keyMapping.endDate!]) : null) || '',
                 service: keyMapping.service ? findMatchingString(String(firstRow[keyMapping.service] || ''), availableServices) : '',
                 status: keyMapping.status ? mapFactprocToStatus(String(firstRow[keyMapping.status])) : 'Por Iniciar',
                 priority: 'Baja',
@@ -285,8 +279,9 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             };
 
             rows.forEach(row => {
-                const finalInvoiceDate = keyMapping.invoiceDate ? robustDateParse(row[keyMapping.invoiceDate]) : null;
                 const invoiceNumber = keyMapping.invoiceNumber ? String(row[keyMapping.invoiceNumber] || '') : '';
+                const finalInvoiceDate = keyMapping.invoiceDate ? robustDateParse(row[keyMapping.invoiceDate]) : null;
+
                 if (invoiceNumber && finalInvoiceDate) {
                     orderData.invoices?.push({
                         id: crypto.randomUUID(),
