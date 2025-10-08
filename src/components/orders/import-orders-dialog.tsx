@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -150,7 +151,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         }
         
         const headers: { original: string, normalized: string }[] = xlsx.utils.sheet_to_json<string[]>(worksheet, { header: 1 })[0]
-            .map(h => ({ original: String(h), normalized: normalizeString(String(h)).replace(/\s+/g, '') }));
+            .map(h => ({ original: String(h), normalized: normalizeString(String(h)).replace(/[\s\n]+/g, '') }));
 
         const findHeader = (variants: string[]) => {
             for (const variant of variants) {
@@ -163,7 +164,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         
         const keyMapping: { [key: string]: string | null } = {
             ot_number: findHeader(['ot', 'n ot']),
-            date: findHeader(['fechaingreso', 'fecha ingreso']),
+            date: findHeader(['fechaingreso']),
             description: findHeader(['nombredelproyecto', 'descripcion']),
             client: findHeader(['cliente']),
             rut: findHeader(['rut']),
@@ -179,7 +180,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             saleNumber: findHeader(['nv']),
             invoiceNumber: findHeader(['fact.n', 'factura']),
             invoiceDate: findHeader(['fechafact']),
-            endDate: findHeader(['fechainiciocompromiso', 'fecha termino']),
+            endDate: findHeader(['fechainiciocompromiso', 'fechatermino']),
         };
 
 
@@ -203,7 +204,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
             if (!finalDate) {
               const displayValue = rawDateValue instanceof Date ? rawDateValue.toISOString() : String(rawDateValue);
-              validationErrors.push(`Fila ${index + 2} (${mappedRow.ot_number || 'N/A'}): La fecha de ingreso es requerida o inválida. Valor encontrado: '${displayValue || ''}'`);
+              validationErrors.push(`Fila ${index + 2} (${mappedRow.ot_number || 'N/A'}): Valor de fecha de ingreso no válido encontrado: '${displayValue || ''}'`);
               return;
             }
             
@@ -215,7 +216,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 const { 
                     endDate: rawEndDate,
                     factproc: rawFactproc,
-                    facturado: rawFacturado,
+                    facturado: rawFacturado, // Legacy facturado column
                     comercial,
                     assigned: rawAssigned,
                     technicians: rawTechnicians,
@@ -229,18 +230,29 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     ...rest
                 } = mappedRow;
                 
-                const finalEndDate = robustDateParse(rawEndDate) || null;
-                const isFacturado = typeof rawFacturado === 'string' ? normalizeString(rawFacturado).includes('facturado') : !!rawFacturado;
+                const finalEndDate = robustDateParse(rawEndDate);
+                const factprocStatus = normalizeString(rawFactproc || '');
+                const isLegacyFacturado = typeof rawFacturado === 'string' ? normalizeString(rawFacturado).includes('facturado') : !!rawFacturado;
 
                 let finalStatus: WorkOrder['status'];
-                const factprocStatus = normalizeString(rawFactproc || '');
+                const activeOtNumbers = new Set([
+                    'OT1374', 'OT-1498', 'OT-1519', 'OT-1510', 'OT-1511', 'OT-1508', 'OT-1524', 'OT-1522', 'OT-1505',
+                    'OT-1528', 'OT-1531', 'OT-1529', 'OT-1530', 'OT-1533', 'OT-1532', 'OT-1536', 'OT-1542', 'OT-1513',
+                    'OT-1539', 'OT-1540', 'OT-1534', 'OT-1537', 'OT-1557', 'OT-1556', 'OT-1545', 'OT-1564', 'OT-1543',
+                    'OT-1544', 'OT-1569', 'OT-1560', 'OT-1500', 'OT-1541', 'OT-1526', 'OT-1572', 'OT-1568', 'OT-1547',
+                    'OT-1535', 'OT-1562', 'OT-1553', 'OT-1550', 'OT-1570', 'OT-1565', 'OT-1561', 'OT-1555', 'OT-1538',
+                    'OT-1577', 'OT-1563', 'OT-1549', 'OT-1558', 'OT-1581', 'OT-1586', 'OT-1546', 'OT-1554', 'OT-1579',
+                    'OT-1567', 'OT-1590', 'OT-1594', 'OT-1551', 'OT-1512', 'OT-1552', 'OT-1587', 'OT-1584', 'OT-1604',
+                    'OT-1591', 'OT-1585', 'OT-1592', 'OT-1605', 'OT-1601', 'OT-1608', 'OT-1580', 'OT-1596', 'OT-1602',
+                    'OT-1559', 'OT-1595', 'OT-1609', 'OT-1578'
+                ]);
 
-                if (factprocStatus === 'en proceso') {
-                    finalStatus = 'En Progreso';
-                } else if (factprocStatus === 'por iniciar') {
-                    finalStatus = 'Por Iniciar';
+                if (activeOtNumbers.has(String(rest.ot_number).trim())) {
+                    if (factprocStatus === 'en proceso') finalStatus = 'En Progreso';
+                    else if (factprocStatus === 'por iniciar') finalStatus = 'Por Iniciar';
+                    else finalStatus = 'Por Iniciar';
                 } else {
-                    finalStatus = 'Cerrada'; // Default to "Cerrada" for "Terminada", "Facturado", empty, etc.
+                    finalStatus = 'Cerrada';
                 }
                 
                 const parseCollaborators = (names: any): string[] => {
@@ -272,7 +284,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     assigned: parseCollaborators(rawAssigned),
                     technicians: parseCollaborators(rawTechnicians),
                     service: findMatchingString(service || '', availableServices),
-                    facturado: isFacturado,
+                    facturado: factprocStatus === 'facturado' || isLegacyFacturado,
                     invoices: [],
                     notes: combinedNotes,
                     saleNumber: rawSaleNumber ? String(rawSaleNumber) : '',
@@ -587,7 +599,5 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
-
-    
 
     
