@@ -56,13 +56,11 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         const exactMatch = collaborators.find(c => normalizeString(c.name) === normalizedName);
         if (exactMatch) return exactMatch.name;
         
-        const nameParts = normalizedName.split(' ');
-        const partialMatch = collaborators.find(c => {
-            const collaboratorNameParts = normalizeString(c.name).split(' ');
-            return nameParts.every(part => collaboratorNameParts.includes(part));
-        });
-
-        return partialMatch ? partialMatch.name : name; 
+        // As a fallback, check if the full name from the DB contains the name from the Excel.
+        // This is less precise and should only be a last resort.
+        const partialMatch = collaborators.find(c => normalizeString(c.name).includes(normalizedName));
+        
+        return partialMatch ? partialMatch.name : name;
     };
 
 
@@ -193,8 +191,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             technicians: findHeader(['tecnico', 'técnico', 'tecnicos']),
             service: findHeader(['sistema', 'servicio']),
             netPrice: findHeader(['montoneto']),
-            factproc: findHeader(['factproc', 'fact proces', 'factprocs']),
-            hesEmMigo: findHeader(['emhesmigo', 'em-hes-migo']),
+            status: findHeader(['factproc', 'fact proces', 'factprocs', 'estado']), // Added 'estado' as variant
+            hesEmMigo: findHeader(['emhesmigo', 'em-hes-migo', 'hes/em/migo']),
             ocNumber: findHeader(['oc', 'nordencompra']),
             saleNumber: findHeader(['nv', 'nventa', 'n de venta']),
             invoiceNumber: findHeader(['factn', 'factura', 'nfactura', 'fact n']),
@@ -248,7 +246,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             };
 
             const otNumberString = String(row[keyMapping.ot_number!]).trim();
-            const finalEndDate = keyMapping.endDate ? robustDateParse(row[keyMapping.endDate]) : null;
+            const finalEndDate = keyMapping.endDate ? robustDateParse(row[keyMapping.endDate]) : '';
 
             const orderData: CreateWorkOrderInput = {
                 ot_number: otNumberString,
@@ -257,11 +255,11 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 client: String(row[keyMapping.client!] || ''),
                 rut: String(row[keyMapping.rut!] || ''),
                 service: keyMapping.service ? findMatchingString(String(row[keyMapping.service] || ''), availableServices) : '',
-                endDate: finalEndDate || '',
+                endDate: finalEndDate,
                 startTime: '',
                 endTime: '',
-                notes: keyMapping.notes ? String(row[keyMapping.notes] || '') : '',
-                status: keyMapping.factproc ? mapFactprocToStatus(String(row[keyMapping.factproc])) : 'Por Iniciar',
+                notes: String(row[keyMapping.notes!] || ''),
+                status: keyMapping.status ? mapFactprocToStatus(String(row[keyMapping.status])) : 'Por Iniciar',
                 priority: 'Baja',
                 netPrice: finalNetPrice,
                 assigned: parseCollaborators('assigned') as string[],
@@ -278,13 +276,13 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             };
             
             const finalInvoiceDate = keyMapping.invoiceDate ? robustDateParse(row[keyMapping.invoiceDate]) : null;
-            if (orderData.facturado && keyMapping.invoiceNumber && row[keyMapping.invoiceNumber] && finalInvoiceDate) {
+            if (orderData.facturado && row[keyMapping.invoiceNumber!] && finalInvoiceDate) {
                 orderData.invoices?.push({
                     id: crypto.randomUUID(),
-                    number: String(row[keyMapping.invoiceNumber]),
+                    number: String(row[keyMapping.invoiceNumber!]),
                     date: finalInvoiceDate,
                     amount: finalNetPrice || 0,
-                    billingMonth: keyMapping.billingMonth ? String(row[keyMapping.billingMonth]) : undefined,
+                    billingMonth: String(row[keyMapping.billingMonth!] || ''),
                 });
             }
 
@@ -592,7 +590,3 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
-
-    
-
-    
