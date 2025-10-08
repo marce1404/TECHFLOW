@@ -28,13 +28,12 @@ interface ImportOrdersDialogProps {
   onImportSuccess: () => void;
 }
 
-type ImportStep = 'selectFile' | 'confirmDuplicates' | 'showResult';
+type ImportStep = 'selectFile' | 'showResult';
 
 export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: ImportOrdersDialogProps) {
   const { collaborators, addOrder, services: availableServices, otStatuses, workOrders, updateOrder } = useWorkOrders();
   const [file, setFile] = React.useState<File | null>(null);
-  const [newOrders, setNewOrders] = React.useState<CreateWorkOrderInput[]>([]);
-  const [duplicateOrders, setDuplicateOrders] = React.useState<CreateWorkOrderInput[]>([]);
+  const [processedOrders, setProcessedOrders] = React.useState<CreateWorkOrderInput[]>([]);
   const [errors, setErrors] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [importResult, setImportResult] = React.useState<{ successCount: number; errorCount: number; errors: string[] } | null>(null);
@@ -79,8 +78,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     return new Date(date_info.getTime() + timezoneOffset);
   }
   
-    const robustDateParse = (dateInput: any): string | null => {
-        if (dateInput === null || dateInput === undefined || dateInput === '') return null;
+    const robustDateParse = (dateInput: any): string => {
+        if (dateInput === null || dateInput === undefined || dateInput === '') return '';
 
         if (dateInput instanceof Date && isValid(dateInput)) {
             return format(dateInput, 'yyyy-MM-dd');
@@ -118,7 +117,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             }
         }
         
-        return null;
+        return '';
     };
 
     const mapFactprocToStatus = (factprocValue: string | undefined): WorkOrder['status'] => {
@@ -151,8 +150,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
   const parseFile = (fileToParse: File) => {
     setLoading(true);
     setErrors([]);
-    setNewOrders([]);
-    setDuplicateOrders([]);
+    setProcessedOrders([]);
+
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
@@ -182,45 +181,41 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         };
         
         const keyMapping = {
-            ot_number: findHeader(['OT', 'N OT', 'Numero OT']),
+            ot_number: findHeader(['OT']),
             date: findHeader(['Fecha Ingreso']),
-            description: findHeader(['NOMBRE DEL PROYECTO', 'descripcion']),
+            description: findHeader(['NOMBRE DEL PROYECTO']),
             client: findHeader(['client', 'cliente']),
             rut: findHeader(['rut']),
             comercial: findHeader(['vendedor']),
-            assigned: findHeader(['SUPERV', 'encargado', 'encargados']),
+            assigned: findHeader(['SUPERV']),
             technicians: findHeader(['tecnico', 'técnico', 'tecnicos']),
-            service: findHeader(['SISTEMA', 'servicio']),
+            service: findHeader(['SISTEMA']),
             netPrice: findHeader(['MONTO NETO']),
-            status: findHeader(['FACTPROCES', 'Fact Proces', 'factprocs', 'estado']),
-            hesEmMigo: findHeader(['emhesmigo', 'em-hes-migo', 'hes/em/migo']),
-            ocNumber: findHeader(['OC', 'nordencompra']),
-            saleNumber: findHeader(['nv', 'nventa', 'n de venta']),
+            status: findHeader(['FACTPROCES']),
+            hesEmMigo: findHeader(['hes/em/migo']),
+            ocNumber: findHeader(['OC']),
+            saleNumber: findHeader(['nventa']),
             invoiceNumber: findHeader(['Fact. N°']),
             invoiceDate: findHeader(['Fecha Fact.']),
             billingMonth: findHeader(['mesfac']),
-            endDate: findHeader(['fechatermino', 'fecha termino']),
-            rentedVehicle: findHeader(['vehiculoarrendado', 'arriendovehiculo']),
+            endDate: findHeader(['fechatermino']),
+            rentedVehicle: findHeader(['vehiculoarrendado']),
             notes: findHeader(['Notas']),
         };
         
         const validationErrors: string[] = [];
-        const processedOrders: CreateWorkOrderInput[] = [];
+        const localProcessedOrders: CreateWorkOrderInput[] = [];
 
         jsonData.forEach((row, index) => {
             const otNumberValue = keyMapping.ot_number ? row[keyMapping.ot_number] : undefined;
             const otNumber = otNumberValue ? String(otNumberValue).trim() : '';
 
             if (!otNumber) {
-                // Skip rows without a valid OT number, but don't stop the whole process
+                // Skip rows without a valid OT number
                 return;
             }
             
-            const finalDate = keyMapping.date ? robustDateParse(row[keyMapping.date]) : null;
-            if (!finalDate) {
-                validationErrors.push(`Fila ${index + 2}: La 'Fecha Ingreso' es inválida o está vacía para la OT ${otNumber}.`);
-                return; // Skip this row if date is invalid, as it's a critical field.
-            }
+            const finalDate = keyMapping.date ? robustDateParse(row[keyMapping.date]) : format(new Date(), 'yyyy-MM-dd');
             
             const rawNetPrice = row[keyMapping.netPrice!] || 0;
             let finalNetPrice = 0;
@@ -290,33 +285,16 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
               }
             }
 
-            processedOrders.push(orderData);
-        });
-
-        const tempNewOrders: CreateWorkOrderInput[] = [];
-        const tempDuplicateOrders: CreateWorkOrderInput[] = [];
-        const existingOtNumbers = new Set(workOrders.map(wo => String(wo.ot_number).trim()));
-
-        processedOrders.forEach(order => {
-            if (existingOtNumbers.has(order.ot_number)) {
-                tempDuplicateOrders.push(order);
-            } else {
-                tempNewOrders.push(order);
-            }
+            localProcessedOrders.push(orderData);
         });
 
         setErrors(validationErrors);
-        setNewOrders(tempNewOrders);
-        setDuplicateOrders(tempDuplicateOrders);
+        setProcessedOrders(localProcessedOrders);
         
         if(validationErrors.length > 0) {
             setStep('selectFile');
-        } else if (tempDuplicateOrders.length > 0) {
-            setStep('confirmDuplicates');
-        } else if (processedOrders.length > 0) {
-            setStep('selectFile'); // Stay on select file to show the summary before import
         } else {
-            setStep('selectFile'); // Stay on select file if no data was processed
+            setStep('selectFile'); 
         }
       } catch (err) {
         console.error("Error parsing Excel file:", err);
@@ -329,30 +307,11 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     reader.readAsArrayBuffer(fileToParse);
   };
   
-  const handleImport = async (strategy: 'omit' | 'replace') => {
-    const ordersToCreate = [...newOrders];
-    let ordersToUpdate: {id: string, data: Partial<WorkOrder>}[] = [];
-
-    if (strategy === 'replace') {
-        duplicateOrders.forEach(dupOrder => {
-            const existingOrder = workOrders.find(wo => String(wo.ot_number).trim() === String(dupOrder.ot_number).trim());
-            if (existingOrder) {
-                 const mergedData: Partial<WorkOrder> = {
-                  ...dupOrder,
-                  notes: [existingOrder.notes, dupOrder.notes].filter(Boolean).join('\n---\n'),
-                };
-                
-                if (dupOrder.endDate === null) {
-                    mergedData.endDate = '';
-                }
-                
-                ordersToUpdate.push({ id: existingOrder.id, data: mergedData });
-            }
-        });
-    }
-
-    if (ordersToCreate.length === 0 && ordersToUpdate.length === 0) {
-      toast({ variant: "destructive", title: "No hay datos para importar", description: "No se encontraron órdenes nuevas o para actualizar." });
+  const handleImport = async () => {
+    let ordersToCreate = [...processedOrders];
+    
+    if (ordersToCreate.length === 0) {
+      toast({ variant: "destructive", title: "No hay datos para importar", description: "No se encontraron órdenes para crear." });
       return;
     }
 
@@ -364,7 +323,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     let successCount = 0;
     let errorCount = 0;
     const batchErrors: string[] = [];
-    const totalToProcess = ordersToCreate.length + ordersToUpdate.length;
+    const totalToProcess = ordersToCreate.length;
     let processedCount = 0;
 
     for (const orderData of ordersToCreate) {
@@ -378,18 +337,6 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         processedCount++;
         setImportProgress((processedCount / totalToProcess) * 100);
     }
-
-    for (const { id, data } of ordersToUpdate) {
-        try {
-            await updateOrder(id, data);
-            successCount++;
-        } catch (error: any) {
-            errorCount++;
-            batchErrors.push(`Actualización OT ${data.ot_number}: ${error.message}`);
-        }
-        processedCount++;
-        setImportProgress((processedCount / totalToProcess) * 100);
-    }
     
     onImportSuccess();
     setImportResult({ successCount, errorCount, errors: batchErrors });
@@ -398,8 +345,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
   const handleClose = () => {
     setFile(null);
-    setNewOrders([]);
-    setDuplicateOrders([]);
+    setProcessedOrders([]);
     setErrors([]);
     setImportResult(null);
     setLoading(false);
@@ -440,50 +386,16 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 )}
             </label>
         </div>
-        {file && newOrders.length === 0 && duplicateOrders.length === 0 && errors.length === 0 && !loading && (
+        {file && processedOrders.length === 0 && errors.length === 0 && !loading && (
           <p className="text-center text-sm text-muted-foreground pt-4">Archivo procesado. No se encontraron datos para importar.</p>
         )}
-        {file && (newOrders.length > 0 || duplicateOrders.length > 0) && errors.length === 0 && !loading && (
+        {file && processedOrders.length > 0 && errors.length === 0 && !loading && (
           <div className="pt-4 text-center">
             <CheckCircle className="mx-auto h-8 w-8 text-green-500 mb-2"/>
             <h3 className="font-semibold">Archivo listo para importar</h3>
-            <p className="text-sm text-muted-foreground">{newOrders.length} nuevas órdenes y {duplicateOrders.length} órdenes existentes encontradas.</p>
+            <p className="text-sm text-muted-foreground">{processedOrders.length} órdenes de trabajo encontradas.</p>
           </div>
         )}
-    </div>
-  );
-
-  const renderConfirmDuplicates = () => (
-    <div className="space-y-4">
-        <div className="p-4 rounded-md bg-yellow-500/10 text-yellow-700">
-            <div className="flex items-center gap-2 font-bold">
-                <FileWarning className="h-5 w-5"/>
-                <h3>Confirmación de Duplicados</h3>
-            </div>
-            <p className="text-sm mt-2">Se encontraron {duplicateOrders.length} OTs con números que ya existen en el sistema. ¿Deseas sobreescribir la información?</p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 text-center">
-            <div className="p-3 border rounded-md">
-                <p className="text-2xl font-bold">{newOrders.length}</p>
-                <p className="text-sm text-muted-foreground">Órdenes Nuevas a Crear</p>
-            </div>
-            <div className="p-3 border rounded-md">
-                <p className="text-2xl font-bold">{duplicateOrders.length}</p>
-                <p className="text-sm text-muted-foreground">Órdenes a Actualizar</p>
-            </div>
-        </div>
-        
-        <p className="text-sm">Al reemplazar, se fusionará la información del Excel con los datos existentes en la app (como facturas añadidas manualmente), sin perderlos.</p>
-        
-        <div className="p-4 border rounded-md">
-            <h4 className="font-semibold">Órdenes Duplicadas Encontradas:</h4>
-             <ScrollArea className="h-24 mt-2">
-                <ul className="text-xs list-disc pl-5">
-                    {duplicateOrders.map((d, index) => <li key={`${d.ot_number}-${index}`}>{d.ot_number} - {d.description}</li>)}
-                </ul>
-            </ScrollArea>
-        </div>
     </div>
   );
 
@@ -493,7 +405,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             <div className="w-full flex flex-col items-center gap-2">
                 <h3 className="font-semibold text-lg">Procesando Importación...</h3>
                 <Progress value={importProgress} className="w-full" />
-                <p className="text-sm text-muted-foreground">Procesando {Math.round((importProgress/100) * (newOrders.length + duplicateOrders.length))} de {newOrders.length + duplicateOrders.length}...</p>
+                <p className="text-sm text-muted-foreground">Procesando {Math.round((importProgress/100) * processedOrders.length)} de {processedOrders.length}...</p>
             </div>
         ) : (
             <>
@@ -522,8 +434,6 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     switch (step) {
       case 'selectFile':
         return renderFileSelection();
-      case 'confirmDuplicates':
-        return renderConfirmDuplicates();
       case 'showResult':
         return renderResult();
       default:
@@ -541,23 +451,9 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         return (
           <>
             <Button variant="ghost" onClick={handleClose}>Cancelar</Button>
-            <Button onClick={() => handleImport('omit')} disabled={loading || !file || errors.length > 0 || (newOrders.length === 0 && duplicateOrders.length === 0)}>
+            <Button onClick={() => handleImport()} disabled={loading || !file || errors.length > 0 || processedOrders.length === 0}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                Importar {newOrders.length > 0 ? `${newOrders.length + duplicateOrders.length} Órdenes` : ''}
-            </Button>
-          </>
-        )
-      case 'confirmDuplicates':
-        return (
-          <>
-            <Button variant="ghost" onClick={handleClose}>Cancelar</Button>
-            <Button variant="outline" onClick={() => handleImport('omit')} disabled={loading}>
-                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                Importar solo nuevas ({newOrders.length})
-            </Button>
-             <Button onClick={() => handleImport('replace')} disabled={loading}>
-                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                Reemplazar duplicados ({duplicateOrders.length})
+                Importar {processedOrders.length > 0 ? `${processedOrders.length} Órdenes` : ''}
             </Button>
           </>
         )
@@ -575,7 +471,6 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
           <DialogTitle>Importar Órdenes de Trabajo</DialogTitle>
           <DialogDescription>
             {step === 'selectFile' && "Sube un archivo Excel para crear nuevas OTs masivamente."}
-            {step === 'confirmDuplicates' && "Confirma cómo proceder con los datos duplicados."}
             {step === 'showResult' && "Resultados de la importación."}
           </DialogDescription>
         </DialogHeader>
@@ -601,5 +496,3 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
-
-    
