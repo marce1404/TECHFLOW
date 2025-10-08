@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -8,6 +9,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -178,20 +180,20 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         };
         
         const keyMapping = {
-            ot_number: findHeader(['OT']),
+            ot_number: findHeader(['OT', 'n ot', 'numero ot']),
             date: findHeader(['Fecha Ingreso']),
-            description: findHeader(['NOMBRE DEL PROYECTO']),
-            client: findHeader(['client']),
+            description: findHeader(['NOMBRE DEL PROYECTO', 'descripcion']),
+            client: findHeader(['cliente']),
             rut: findHeader(['rut']),
             comercial: findHeader(['vendedor']),
-            assigned: findHeader(['SUPERV']),
+            assigned: findHeader(['SUPERV', 'encargado', 'encargados']),
             technicians: findHeader(['tecnico', 'técnico', 'tecnicos']),
-            service: findHeader(['SISTEMA']),
+            service: findHeader(['SISTEMA', 'servicio']),
             netPrice: findHeader(['MONTO NETO']),
-            status: findHeader(['FACTPROCES']),
-            hesEmMigo: findHeader(['hes/em/migo']),
-            ocNumber: findHeader(['OC']),
-            saleNumber: findHeader(['nventa']),
+            status: findHeader(['FACTPROCES', 'estado']),
+            hesEmMigo: findHeader(['hes/em/migo', 'emhesmigo', 'em-hes-migo']),
+            ocNumber: findHeader(['OC', 'nordencompra']),
+            saleNumber: findHeader(['nventa', 'n de venta']),
             invoiceNumber: findHeader(['Fact. N°']),
             invoiceDate: findHeader(['Fecha Fact.']),
             billingMonth: findHeader(['mesfac']),
@@ -203,7 +205,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         const validationErrors: string[] = [];
         const groupedByOt = new Map<string, any[]>();
         
-        jsonData.forEach((row, index) => {
+        jsonData.forEach((row) => {
             const otNumber = keyMapping.ot_number ? String(row[keyMapping.ot_number] || '').trim() : '';
             if (otNumber) {
                 if (!groupedByOt.has(otNumber)) {
@@ -228,10 +230,6 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 if (finalDate) break;
             }
 
-            if (!finalDate) {
-                finalDate = format(new Date(), 'yyyy-MM-dd');
-            }
-            
             const rawNetPrice = keyMapping.netPrice ? firstRow[keyMapping.netPrice] : 0;
             let finalNetPrice = 0;
             if (typeof rawNetPrice === 'number') {
@@ -253,7 +251,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 ot_number: otNumber,
                 description: String(firstRow[keyMapping.description!] || ''),
                 client: String(firstRow[keyMapping.client!] || ''),
-                date: finalDate,
+                date: finalDate || '',
                 endDate: (keyMapping.endDate ? robustDateParse(firstRow[keyMapping.endDate!]) : null) || '',
                 service: keyMapping.service ? findMatchingString(String(firstRow[keyMapping.service] || ''), availableServices) : '',
                 status: keyMapping.status ? mapFactprocToStatus(String(firstRow[keyMapping.status])) : 'Por Iniciar',
@@ -279,13 +277,14 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             rows.forEach(row => {
                 const invoiceNumber = keyMapping.invoiceNumber ? String(row[keyMapping.invoiceNumber] || '') : '';
                 const finalInvoiceDate = keyMapping.invoiceDate ? robustDateParse(row[keyMapping.invoiceDate]) : null;
+                const invoiceAmount = keyMapping.netPrice ? (parseFloat(String(row[keyMapping.netPrice]).replace(/[$. ]/g, '').replace(',', '.')) || 0) : 0;
 
                 if (invoiceNumber && finalInvoiceDate) {
                     orderData.invoices?.push({
                         id: crypto.randomUUID(),
                         number: invoiceNumber,
                         date: finalInvoiceDate,
-                        amount: finalNetPrice || 0,
+                        amount: invoiceAmount,
                         billingMonth: String(row[keyMapping.billingMonth!] || ''),
                     });
                 }
