@@ -236,7 +236,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
                 const normalizedFactproc = normalizeString(rawFactproc || '');
                 let finalStatus: WorkOrder['status'] = 'Por Iniciar';
-
+                
                 if (normalizedFactproc.includes('terminada') || normalizedFactproc.includes('facturado')) {
                     finalStatus = 'Cerrada';
                 } else if (normalizedFactproc.includes('en proceso')) {
@@ -245,8 +245,11 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     const matchedStatus = otStatuses.find(s => normalizeString(s.name) === normalizedFactproc);
                     if (matchedStatus) {
                         finalStatus = matchedStatus.name as WorkOrder['status'];
-                    } else {
-                        finalStatus = 'Por Iniciar';
+                    } else if (rawFactproc && rawFactproc.trim()) {
+                        const directMatch = otStatuses.find(s => s.name === rawFactproc.trim());
+                        if (directMatch) {
+                           finalStatus = directMatch.name as WorkOrder['status'];
+                        }
                     }
                 }
                 
@@ -271,7 +274,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 const orderData: CreateWorkOrderInput & { invoices?: any[] } = {
                     ...rest,
                     ot_number: otNumberString,
-                    endDate: finalEndDate || undefined,
+                    endDate: finalEndDate,
                     status: finalStatus,
                     priority: 'Baja',
                     netPrice: finalNetPrice,
@@ -350,7 +353,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                   notes: [existingOrder.notes, dupOrder.notes].filter(Boolean).join('\n---\n'),
                 };
                 
-                if (dupOrder.endDate === null || dupOrder.endDate === undefined) {
+                if (dupOrder.endDate === null) {
                     mergedData.endDate = '';
                 }
                 
