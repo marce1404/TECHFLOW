@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -230,8 +231,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             }
 
             if (!finalDate) {
-                validationErrors.push(`OT ${otNumber}: No se pudo encontrar una fecha de ingreso válida en ninguna de sus filas. No se puede importar.`);
-                return;
+                finalDate = format(new Date(), 'yyyy-MM-dd'); // Fallback to current date
             }
             
             const rawNetPrice = keyMapping.netPrice ? firstRow[keyMapping.netPrice] : 0;
