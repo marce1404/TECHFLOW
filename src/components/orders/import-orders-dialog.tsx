@@ -77,8 +77,13 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
   
   const findMatchingCollaborator = (name: string) => {
     if (!name?.trim()) return name;
+    // Normalize by removing dots, accents, and converting to lowercase for a more robust match.
     const normalizedName = normalizeString(name).replace(/\./g, '');
-    const found = collaborators.find(c => normalizeString(c.name).replace(/\./g, '').includes(normalizedName));
+    const found = collaborators.find(c => {
+        const collaboratorName = normalizeString(c.name).replace(/\./g, '');
+        // Check if the collaborator name includes the (potentially partial) name from the Excel
+        return collaboratorName.includes(normalizedName);
+    });
     return found?.name || name;
   };
 
@@ -252,6 +257,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     billingMonth,
                     netPrice: rawNetPrice,
                     saleNumber: rawSaleNumber,
+                    ocNumber: rawOcNumber,
                     ...rest
                 } = mappedRow;
                 
@@ -292,7 +298,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     invoices: [],
                     notes: rawFactproc || '', // Save the original FACTPROCES as a note
                     saleNumber: rawSaleNumber ? String(rawSaleNumber) : '',
-                    ocNumber: rest.ocNumber ? String(rest.ocNumber) : '',
+                    ocNumber: rawOcNumber ? String(rawOcNumber) : '',
                     rut: rest.rut ? String(rest.rut) : '',
                     hesEmMigo: rest.hesEmMigo ? String(rest.hesEmMigo) : '',
                 };
@@ -618,5 +624,3 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
-
-    
