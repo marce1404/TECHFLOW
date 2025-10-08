@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -98,36 +97,36 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     return new Date(date_info.getTime() + timezoneOffset);
   }
   
-    const robustDateParse = (dateInput: any): string | null => {
-        if (!dateInput && dateInput !== 0) return null;
+  const robustDateParse = (dateInput: any): string | null => {
+      if (!dateInput && dateInput !== 0) return null;
 
-        if (dateInput instanceof Date && isValid(dateInput)) {
-            return format(dateInput, 'yyyy-MM-dd');
-        }
-        
-        if (typeof dateInput === 'number' && dateInput > 1) {
-            const date = excelSerialDateToJSDate(dateInput);
-            if (date && isValid(date)) {
-                return format(date, 'yyyy-MM-dd');
-            }
-        }
+      if (dateInput instanceof Date && isValid(dateInput)) {
+          return format(dateInput, 'yyyy-MM-dd');
+      }
+      
+      if (typeof dateInput === 'number' && dateInput > 1) {
+          const date = excelSerialDateToJSDate(dateInput);
+          if (date && isValid(date)) {
+              return format(date, 'yyyy-MM-dd');
+          }
+      }
 
-        if (typeof dateInput === 'string' && dateInput.trim() !== '') {
-            if (dateInput.trim() === '2011-2023') return null;
-            const formats = ['dd/MM/yyyy', 'd/M/yy', 'yyyy-MM-dd', 'd-M-yy', 'dd-MM-yyyy', 'MM/dd/yyyy'];
-            for (const fmt of formats) {
-                try {
-                const parsedDate = parse(dateInput, fmt, new Date());
-                if (isValid(parsedDate)) {
-                    return format(parsedDate, 'yyyy-MM-dd');
-                }
-                } catch (e) {
-                // ignore parse errors and try next format
-                }
-            }
-        }
-        return null;
-    };
+      if (typeof dateInput === 'string' && dateInput.trim() !== '') {
+          if (dateInput.trim() === '2011-2023') return null;
+          const formats = ['dd/MM/yyyy', 'd/M/yy', 'yyyy-MM-dd', 'd-M-yy', 'dd-MM-yyyy', 'MM/dd/yyyy'];
+          for (const fmt of formats) {
+              try {
+              const parsedDate = parse(dateInput, fmt, new Date());
+              if (isValid(parsedDate)) {
+                  return format(parsedDate, 'yyyy-MM-dd');
+              }
+              } catch (e) {
+              // ignore parse errors and try next format
+              }
+          }
+      }
+      return null;
+  };
 
 
   const parseFile = (fileToParse: File) => {
@@ -237,10 +236,10 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 let finalStatus: WorkOrder['status'];
                 if (factprocStatus === 'en proceso') {
                     finalStatus = 'En Progreso';
-                } else if (factprocStatus === 'por iniciar') {
-                    finalStatus = 'Por Iniciar';
-                } else {
+                } else if (factprocStatus === 'facturado' || factprocStatus === 'terminada') {
                     finalStatus = 'Cerrada';
+                } else {
+                    finalStatus = 'Por Iniciar';
                 }
                 
                 const parseCollaborators = (names: any): string[] => {
