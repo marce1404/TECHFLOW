@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -97,36 +98,36 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     return new Date(date_info.getTime() + timezoneOffset);
   }
   
-  const robustDateParse = (dateInput: any): string | null => {
-      if (dateInput === null || dateInput === undefined || dateInput === '') return null;
+    const robustDateParse = (dateInput: any): string | null => {
+        if (dateInput === null || dateInput === undefined || dateInput === '') return null;
 
-      if (dateInput instanceof Date && isValid(dateInput)) {
-          return format(dateInput, 'yyyy-MM-dd');
-      }
-      
-      if (typeof dateInput === 'number' && dateInput > 1) {
-          const date = excelSerialDateToJSDate(dateInput);
-          if (date && isValid(date)) {
-              return format(date, 'yyyy-MM-dd');
-          }
-      }
+        if (dateInput instanceof Date && isValid(dateInput)) {
+            return format(dateInput, 'yyyy-MM-dd');
+        }
+        
+        if (typeof dateInput === 'number' && dateInput > 1) {
+            const date = excelSerialDateToJSDate(dateInput);
+            if (date && isValid(date)) {
+                return format(date, 'yyyy-MM-dd');
+            }
+        }
 
-      if (typeof dateInput === 'string' && dateInput.trim() !== '') {
-          if (dateInput.trim() === '2011-2023') return null;
-          const formats = ['dd/MM/yyyy', 'd/M/yy', 'yyyy-MM-dd', 'd-M-yy', 'dd-MM-yyyy', 'MM/dd/yyyy'];
-          for (const fmt of formats) {
-              try {
-              const parsedDate = parse(dateInput, fmt, new Date());
-              if (isValid(parsedDate)) {
-                  return format(parsedDate, 'yyyy-MM-dd');
-              }
-              } catch (e) {
-              // ignore parse errors and try next format
-              }
-          }
-      }
-      return null;
-  };
+        if (typeof dateInput === 'string' && dateInput.trim() !== '') {
+            if (dateInput.trim() === '2011-2023') return null;
+            const formats = ['dd/MM/yyyy', 'd/M/yy', 'yyyy-MM-dd', 'd-M-yy', 'dd-MM-yyyy', 'MM/dd/yyyy'];
+            for (const fmt of formats) {
+                try {
+                const parsedDate = parse(dateInput, fmt, new Date());
+                if (isValid(parsedDate)) {
+                    return format(parsedDate, 'yyyy-MM-dd');
+                }
+                } catch (e) {
+                // ignore parse errors and try next format
+                }
+            }
+        }
+        return null;
+    };
 
 
   const parseFile = (fileToParse: File) => {
@@ -229,28 +230,22 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     ...rest
                 } = mappedRow;
                 
-                const finalEndDate = robustDateParse(rawEndDate) || '';
+                const finalEndDate = robustDateParse(rawEndDate);
 
                 const factprocStatus = normalizeString(rawFactproc || '');
                 let finalStatus: WorkOrder['status'];
 
-                switch(factprocStatus) {
-                    case 'en proceso':
-                        finalStatus = 'En Progreso';
-                        break;
-                    case 'facturado':
-                    case 'terminada':
-                        finalStatus = 'Cerrada';
-                        break;
-                    case 'por iniciar':
-                        finalStatus = 'Por Iniciar';
-                        break;
-                    default:
-                        finalStatus = 'Por Iniciar'; // Safe default
+                if (factprocStatus === 'en proceso') {
+                    finalStatus = 'En Progreso';
+                } else if (factprocStatus === 'por iniciar') {
+                    finalStatus = 'Por Iniciar';
+                } else if (factprocStatus === 'facturado' || factprocStatus === 'terminada') {
+                    finalStatus = 'Cerrada';
+                } else {
+                    finalStatus = 'Por Iniciar';
                 }
                 
-                // If there's a billing month, it's invoiced and thus closed.
-                const isFacturado = !!billingMonth;
+                const isFacturado = !!billingMonth || factprocStatus === 'facturado';
                 if (isFacturado) {
                     finalStatus = 'Cerrada';
                 }
@@ -275,7 +270,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 const orderData: CreateWorkOrderInput & { invoices?: any[] } = {
                     ...rest,
                     ot_number: otNumberString,
-                    endDate: finalEndDate,
+                    endDate: finalEndDate || '',
                     status: finalStatus,
                     priority: 'Baja',
                     netPrice: finalNetPrice,
@@ -609,5 +604,3 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
-
-    
