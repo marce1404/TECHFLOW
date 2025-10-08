@@ -129,6 +129,32 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         return null;
     };
 
+    const mapFactprocToStatus = (factprocValue: string): WorkOrder['status'] | null => {
+        const normalizedFactproc = normalizeString(factprocValue);
+        
+        if (normalizedFactproc.includes('cerrada') || normalizedFactproc.includes('facturado')) {
+            return 'Cerrada';
+        }
+        if (normalizedFactproc.includes('terminada')) {
+            return 'Terminada';
+        }
+        if (normalizedFactproc.includes('en proceso')) {
+            return 'En Progreso';
+        }
+        if (normalizedFactproc.includes('por iniciar')) {
+            return 'Por Iniciar';
+        }
+        
+        // As a fallback, check against the application's status list
+        const appStatuses = otStatuses.map(s => ({ original: s.name, normalized: normalizeString(s.name) }));
+        const matchedStatus = appStatuses.find(s => s.normalized === normalizedFactproc);
+        if (matchedStatus) {
+            return matchedStatus.original as WorkOrder['status'];
+        }
+
+        return null;
+    }
+
 
   const parseFile = (fileToParse: File) => {
     setLoading(true);
@@ -174,7 +200,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             technicians: findHeader(['tecnico', 'técnico', 'tecnicos']),
             service: findHeader(['sistema', 'servicio']),
             netPrice: findHeader(['montoneto']),
-            factproc: findHeader(['factproc']),
+            factproc: findHeader(['factproc', 'estado']),
             hesEmMigo: findHeader(['em-hes-migo', 'em/hes/migo', 'hesemmigo']),
             ocNumber: findHeader(['oc', 'nº orden de compra']),
             saleNumber: findHeader(['nv', 'nº venta']),
@@ -230,23 +256,10 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 
                 const finalEndDate = robustDateParse(rawEndDate);
                 
-                const normalizedFactproc = normalizeString(rawFactproc || '');
-                let finalStatus: WorkOrder['status'] = 'Por Iniciar';
-                
-                if (normalizedFactproc === 'terminada') {
-                    finalStatus = 'Terminada';
-                } else if (normalizedFactproc === 'cerrada' || normalizedFactproc === 'facturado') {
-                    finalStatus = 'Cerrada';
-                } else if (normalizedFactproc === 'en proceso') {
-                    finalStatus = 'En Progreso';
-                } else if (normalizedFactproc === 'por iniciar') {
-                    finalStatus = 'Por Iniciar';
-                } else {
-                    const appStatuses = otStatuses.map(s => ({ original: s.name, normalized: normalizeString(s.name) }));
-                    const matchedStatus = appStatuses.find(s => s.normalized === normalizedFactproc);
-                    if (matchedStatus) {
-                        finalStatus = matchedStatus.original as WorkOrder['status'];
-                    }
+                const finalStatus = mapFactprocToStatus(rawFactproc || '');
+                 if (!finalStatus) {
+                    validationErrors.push(`Fila ${index + 2} (${mappedRow.ot_number || 'N/A'}): Estado no reconocido en FACTPROCES: '${rawFactproc}'.`);
+                    return; // Skip this row
                 }
                 
                 const isFacturado = !!billingMonth || (!!invoiceDate && !!invoiceNumber);
