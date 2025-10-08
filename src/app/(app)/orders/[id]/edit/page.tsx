@@ -552,7 +552,7 @@ export default function EditOrderPage() {
                                         </FormControl>
                                         <SelectContent>
                                             {statusOptions.map(option => (
-                                                <SelectItem key={option.id} value={option.value}>{option.label}</SelectItem>
+                                                <SelectItem key={`${option.id}-${option.value}`} value={option.value}>{option.label}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
