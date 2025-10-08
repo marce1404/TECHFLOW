@@ -51,6 +51,7 @@ const excelRowSchema = z.object({
   saleNumber: z.any().optional(),
   invoiceNumber: z.any().optional(),
   invoiceDate: z.any().optional(),
+  billingMonth: z.string().optional(),
 });
 
 
@@ -164,7 +165,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         
         const keyMapping: { [key: string]: string | null } = {
             ot_number: findHeader(['ot', 'n ot']),
-            date: findHeader(['fechaingreso']),
+            date: findHeader(['fechaingreso', 'fecha ingreso']),
             description: findHeader(['nombredelproyecto', 'descripcion']),
             client: findHeader(['cliente']),
             rut: findHeader(['rut']),
@@ -176,11 +177,12 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             notes: findHeader(['estado']),
             factproc: findHeader(['factproc']),
             facturado: findHeader(['facturado']),
-            hesEmMigo: findHeader(['em-hes-migo']),
+            hesEmMigo: findHeader(['em-hes-migo', 'em/hes/migo']),
             saleNumber: findHeader(['nv']),
-            invoiceNumber: findHeader(['fact.n', 'factura']),
-            invoiceDate: findHeader(['fechafact']),
+            invoiceNumber: findHeader(['fact.n', 'factura', 'nº factura']),
+            invoiceDate: findHeader(['fechafact', 'fecha factura']),
             endDate: findHeader(['fechainiciocompromiso', 'fechatermino']),
+            billingMonth: findHeader(['Mes Fac']),
         };
 
 
@@ -203,7 +205,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             const finalDate = robustDateParse(rawDateValue);
 
             if (!finalDate) {
-              const displayValue = rawDateValue instanceof Date ? rawDateValue.toISOString() : String(rawDateValue || '');
+              const displayValue = rawDateValue instanceof Date ? rawDateValue.toISOString() : String(rawDateValue || 'VACÍO');
               validationErrors.push(`Fila ${index + 2} (${mappedRow.ot_number || 'N/A'}): Valor de fecha de ingreso no válido encontrado: '${displayValue}'`);
               return;
             }
@@ -224,6 +226,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     notes: excelStatusNotes,
                     invoiceNumber,
                     invoiceDate,
+                    billingMonth,
                     netPrice: rawNetPrice,
                     saleNumber: rawSaleNumber,
                     ...rest
@@ -259,10 +262,10 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 
                 const otNumberString = String(rest.ot_number).trim();
 
-                const orderData: CreateWorkOrderInput = {
+                const orderData: CreateWorkOrderInput & { invoices?: any[] } = {
                     ...rest,
                     ot_number: otNumberString,
-                    endDate: finalEndDate || '',
+                    endDate: finalEndDate || undefined,
                     status: finalStatus,
                     priority: 'Baja',
                     netPrice: finalNetPrice,
@@ -287,6 +290,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                             number: String(invoiceNumber),
                             date: finalInvoiceDate,
                             amount: finalNetPrice || 0,
+                            billingMonth: billingMonth || undefined,
                         });
                     }
                 }
@@ -335,7 +339,6 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         duplicateOrders.forEach(dupOrder => {
             const existingOrder = workOrders.find(wo => String(wo.ot_number).trim() === String(dupOrder.ot_number).trim());
             if (existingOrder) {
-                // Smart merge: Excel data overrides, but doesn't delete existing fields
                 const mergedData = { ...existingOrder, ...dupOrder };
                 ordersToUpdate.push({ id: existingOrder.id, data: mergedData });
             }
@@ -465,7 +468,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             </div>
         </div>
         
-        <p className="text-sm">Por favor, elige cómo manejar las órdenes duplicadas. Al reemplazar, se conservarán los datos ingresados manualmente en la app, como facturas y progreso.</p>
+        <p className="text-sm">Al reemplazar, se fusionará la información del Excel con los datos existentes en la app (como facturas añadidas manualmente o progreso), sin perderlos.</p>
         
         <div className="p-4 border rounded-md">
             <h4 className="font-semibold">Órdenes Duplicadas Encontradas:</h4>

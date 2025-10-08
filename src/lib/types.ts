@@ -23,6 +23,7 @@ export type Invoice = {
   number: string;
   date: string;
   amount: number;
+  billingMonth?: string;
 };
 
 export type WorkOrder = {
