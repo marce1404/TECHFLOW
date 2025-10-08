@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -129,19 +128,30 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         return null;
     };
 
-    const mapFactprocToStatus = (factprocValue: string | undefined): WorkOrder['status'] | null => {
-        if (!factprocValue || typeof factprocValue !== 'string') return null;
-
+    const mapFactprocToStatus = (factprocValue: string | undefined): WorkOrder['status'] => {
+        if (!factprocValue || typeof factprocValue !== 'string') return 'Por Iniciar';
+    
         const normalizedFactproc = normalizeString(factprocValue.trim());
+    
+        if (normalizedFactproc === 'terminada') {
+            return 'Terminada';
+        }
+        if (normalizedFactproc === 'cerrada' || normalizedFactproc === 'facturado') {
+            return 'Cerrada';
+        }
+        if (normalizedFactproc === 'en proceso') {
+            return 'En Progreso';
+        }
+        if (normalizedFactproc === 'por iniciar') {
+            return 'Por Iniciar';
+        }
 
-        const statusMap: { [key: string]: WorkOrder['status'] } = {
-            'cerrada': 'Cerrada',
-            'terminada': 'Terminada',
-            'en proceso': 'En Progreso',
-            'por iniciar': 'Por Iniciar'
-        };
-
-        return statusMap[normalizedFactproc] || null;
+        const foundStatus = otStatuses.find(s => normalizeString(s.name) === normalizedFactproc);
+        if (foundStatus) {
+            return foundStatus.name as WorkOrder['status'];
+        }
+    
+        return 'Por Iniciar'; // Default fallback
     }
 
 
@@ -189,7 +199,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             technicians: findHeader(['tecnico', 'técnico', 'tecnicos']),
             service: findHeader(['sistema', 'servicio']),
             netPrice: findHeader(['montoneto']),
-            factproc: findHeader(['factproces', 'factproc']), // Corrected to match image
+            factproc: findHeader(['factproc']),
             hesEmMigo: findHeader(['em-hes-migo', 'emhesmigo']),
             ocNumber: findHeader(['oc', 'n orden de compra']),
             saleNumber: findHeader(['nv', 'n venta']),
@@ -247,10 +257,6 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 const finalEndDate = robustDateParse(rawEndDate);
                 
                 const finalStatus = mapFactprocToStatus(rawFactproc);
-                 if (!finalStatus) {
-                    validationErrors.push(`Fila ${index + 2} (${mappedRow.ot_number || 'N/A'}): Estado no reconocido en FACTPROCES: '${rawFactproc}'.`);
-                    return;
-                }
                 
                 const isFacturado = !!billingMonth || (!!invoiceDate && !!invoiceNumber);
                 
@@ -611,5 +617,3 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
-
-    

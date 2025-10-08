@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -50,25 +48,17 @@ import { Separator } from "@/components/ui/separator";
 export default function EditOrderPage() {
   const params = useParams();
   const router = useRouter();
-  const { getOrder, updateOrder, otCategories, services, collaborators, ganttCharts, otStatuses, vehicles, promptToCloseOrder, deleteOrder, loading: contextLoading } = useWorkOrders();
+  const { getOrder, updateOrder, otCategories, services, collaborators, ganttCharts, otStatuses, vehicles, promptToCloseOrder, deleteOrder, loading: contextLoading } from useWorkOrders();
   const { userProfile } = useAuth();
   const { toast } = useToast();
   
   const orderId = params.id as string;
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = React.useState(false);
   
-  // Get the order data directly and memoize it
   const initialOrder = React.useMemo(() => getOrder(orderId), [orderId, getOrder]);
 
   const methods = useForm<WorkOrder>({
-    // Set default values directly from initialOrder if it exists
-    defaultValues: initialOrder ? {
-        ...initialOrder,
-        service: initialOrder.service || '',
-        status: initialOrder.status || 'Por Iniciar',
-        priority: initialOrder.priority || 'Baja',
-        comercial: initialOrder.comercial || '',
-    } : {}
+    defaultValues: initialOrder || {}
   });
 
   const { fields: invoiceFields, append: appendInvoice, remove: removeInvoice } = useFieldArray({
@@ -86,25 +76,25 @@ export default function EditOrderPage() {
   const watchedInvoices = methods.watch('invoices');
   const watchedInvoiceRequests = methods.watch('invoiceRequestDates');
 
-  const technicians = collaborators
+  const technicians = React.useMemo(() => collaborators
     .filter(c => c.role === 'Técnico')
-    .map(c => ({ value: c.name, label: c.name }));
+    .map(c => ({ value: c.name, label: c.name })), [collaborators]);
 
-  const supervisors = collaborators
+  const supervisors = React.useMemo(() => collaborators
     .filter(c => ['Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado'].includes(c.role))
-    .map(c => ({ value: c.name, label: c.name }));
+    .map(c => ({ value: c.name, label: c.name })), [collaborators]);
 
-  const vendors = collaborators
+  const vendors = React.useMemo(() => collaborators
     .filter(c => c.role === 'Comercial')
-    .map(c => ({ value: c.name, label: c.name }));
+    .map(c => ({ value: c.name, label: c.name })), [collaborators]);
   
-  const vehicleOptions = vehicles.map(v => ({
+  const vehicleOptions = React.useMemo(() => vehicles.map(v => ({
     value: v.plate,
     label: `${v.model} (${v.plate})`,
-  }));
+  })), [vehicles]);
   
-  const serviceOptions = services.map(s => ({value: s.name, label: s.name}));
-  const statusOptions = otStatuses.map(s => ({value: s.name, label: s.name}));
+  const serviceOptions = React.useMemo(() => services.map(s => ({value: s.name, label: s.name})), [services]);
+  const statusOptions = React.useMemo(() => otStatuses.map(s => ({value: s.name, label: s.name})), [otStatuses]);
   const priorityOptions = [{value: 'Baja', label: 'Baja'}, {value: 'Media', label: 'Media'}, {value: 'Alta', label: 'Alta'}];
 
   const startDate = methods.watch('date') ? new Date(methods.watch('date').replace(/-/g, '/')) : undefined;
@@ -123,26 +113,11 @@ export default function EditOrderPage() {
   const assignedGantt = ganttCharts.find(g => g.assignedOT === methods.watch('ot_number'));
   const isGanttAssigned = !!assignedGantt;
 
-  // Reset form when initialOrder is found or changes
   React.useEffect(() => {
       if (initialOrder) {
-          const findCaseInsensitive = (value: string | undefined, options: {value: string, label: string}[]) => {
-              if (!value) return '';
-              const normalizedValue = normalizeString(value);
-              const found = options.find(opt => normalizeString(opt.value) === normalizedValue);
-              return found ? found.value : '';
-          };
-          
-          const defaults = {
-              ...initialOrder,
-              service: findCaseInsensitive(initialOrder.service, serviceOptions),
-              status: findCaseInsensitive(initialOrder.status, statusOptions),
-              priority: findCaseInsensitive(initialOrder.priority, priorityOptions) as WorkOrder['priority'] || 'Baja',
-              comercial: findCaseInsensitive(initialOrder.comercial, vendors),
-          };
-          methods.reset(defaults);
+          methods.reset(initialOrder);
       }
-  }, [initialOrder, serviceOptions.length, statusOptions.length, vendors.length, methods]);
+  }, [initialOrder, methods]);
 
   if (contextLoading) {
       return <div>Cargando orden de trabajo...</div>
@@ -163,7 +138,6 @@ export default function EditOrderPage() {
   const handleUpdateOrder = async (data: WorkOrder) => {
     if (!canEdit || !initialOrder) return;
     
-    // Merge original data with form data to prevent data loss
     const finalData = { ...initialOrder, ...data };
 
     await updateOrder(finalData.id, finalData);
@@ -236,57 +210,66 @@ export default function EditOrderPage() {
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="md:col-span-3">
-                  <Label htmlFor="ot-name">Nombre de OT *</Label>
-                  <Controller
-                    control={methods.control}
-                    name="description"
-                    render={({ field }) => (
-                      <Input
-                        id="ot-name"
-                        {...field}
-                        placeholder="Escribe el nombre o descripción de la OT..."
-                      />
-                    )}
-                   />
+                    <FormField
+                        control={methods.control}
+                        name="description"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Nombre de OT *</FormLabel>
+                                <FormControl>
+                                <Input
+                                    id="ot-name"
+                                    {...field}
+                                    placeholder="Escribe el nombre o descripción de la OT..."
+                                />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                 </div>
                  <div className="md:col-span-1">
-                    <Label htmlFor="createdAt">Fecha de Creación (OT)</Label>
-                    <Controller
+                    <FormField
                         control={methods.control}
                         name="createdAt"
                         render={({ field }) => (
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                        "w-full justify-start text-left font-normal",
-                                        !field.value && "text-muted-foreground"
-                                    )}
-                                    >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {field.value ? format(new Date(field.value.replace(/-/g, '/')), "PPP", { locale: es }) : <span>Elegir fecha</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <Calendar
-                                    mode="single"
-                                    selected={field.value ? new Date(field.value.replace(/-/g, '/')) : undefined}
-                                    onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
-                                    initialFocus
-                                    locale={es}
-                                    />
-                                </PopoverContent>
-                            </Popover>
+                            <FormItem>
+                                <FormLabel>Fecha de Creación (OT)</FormLabel>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                    <FormControl>
+                                        <Button
+                                        variant={"outline"}
+                                        className={cn(
+                                            "w-full justify-start text-left font-normal",
+                                            !field.value && "text-muted-foreground"
+                                        )}
+                                        >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {field.value ? format(new Date(String(field.value).replace(/-/g, '/')), "PPP", { locale: es }) : <span>Elegir fecha</span>}
+                                        </Button>
+                                    </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                        <Calendar
+                                        mode="single"
+                                        selected={field.value ? new Date(String(field.value).replace(/-/g, '/')) : undefined}
+                                        onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+                                        initialFocus
+                                        locale={es}
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                            </FormItem>
                         )}
                     />
                 </div>
             </div>
              <div className="flex items-center gap-4">
                 <div className="w-48">
-                    <Label htmlFor="ot_number">Número de OT *</Label>
-                     <Input
-                        id="ot_number"
+                    <FormLabel>Número de OT *</FormLabel>
+                    <Input
                         value={methods.watch('ot_number')}
                         readOnly
                         className="bg-muted"
@@ -295,37 +278,42 @@ export default function EditOrderPage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                 
-                {/* Left Column */}
                 <div className="space-y-4">
                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <Label htmlFor="client">Cliente</Label>
-                            <Controller
-                                control={methods.control}
-                                name="client"
-                                render={({ field }) => (
-                                    <Input 
-                                        id="client" 
-                                        {...field}
-                                        placeholder="Escribe el nombre del cliente..." 
-                                    />
-                                )}
-                            />
-                        </div>
-                         <div>
-                            <Label htmlFor="rut">RUT Cliente</Label>
-                            <Controller
-                                control={methods.control}
-                                name="rut"
-                                render={({ field }) => (
-                                    <Input 
-                                        id="rut" 
-                                        {...field}
-                                        placeholder="Ej: 12.345.678-9" 
-                                    />
-                                )}
-                            />
-                        </div>
+                        <FormField
+                            control={methods.control}
+                            name="client"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Cliente</FormLabel>
+                                <FormControl>
+                                <Input 
+                                    id="client" 
+                                    {...field}
+                                    placeholder="Escribe el nombre del cliente..." 
+                                />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={methods.control}
+                            name="rut"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>RUT Cliente</FormLabel>
+                                <FormControl>
+                                <Input 
+                                    id="rut" 
+                                    {...field}
+                                    placeholder="Ej: 12.345.678-9" 
+                                />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                     </div>
 
                     <FormField
@@ -351,161 +339,183 @@ export default function EditOrderPage() {
                         )}
                     />
 
-
                     <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <Label htmlFor="start-date">Fecha de Inicio</Label>
-                            <Controller
-                                control={methods.control}
-                                name="date"
-                                render={({ field }) => (
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button
+                        <FormField
+                            control={methods.control}
+                            name="date"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Fecha de Inicio</FormLabel>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                        <Button
+                                        variant={"outline"}
+                                        className={cn(
+                                            "w-full justify-start text-left font-normal",
+                                            !field.value && "text-muted-foreground"
+                                        )}
+                                        >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {field.value ? format(new Date(String(field.value).replace(/-/g, '/')), "PPP", { locale: es }) : <span>Elegir fecha</span>}
+                                        </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                        <Calendar
+                                        mode="single"
+                                        selected={field.value ? new Date(String(field.value).replace(/-/g, '/')) : undefined}
+                                        onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+                                        initialFocus
+                                        locale={es}
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={methods.control}
+                            name="endDate"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Fecha T. Posible</FormLabel>
+                                 <Popover>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                        <Button
                                             variant={"outline"}
                                             className={cn(
                                                 "w-full justify-start text-left font-normal",
                                                 !field.value && "text-muted-foreground"
                                             )}
-                                            >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {field.value ? format(new Date(field.value.replace(/-/g, '/')), "PPP", { locale: es }) : <span>Elegir fecha</span>}
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0">
-                                            <Calendar
-                                            mode="single"
-                                            selected={field.value ? new Date(field.value.replace(/-/g, '/')) : undefined}
-                                            onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
-                                            initialFocus
-                                            locale={es}
-                                            />
-                                        </PopoverContent>
-                                    </Popover>
-                                )}
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor="end-date">Fecha T. Posible</Label>
-                             <Controller
-                                control={methods.control}
-                                name="endDate"
-                                render={({ field }) => (
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button
-                                                variant={"outline"}
-                                                className={cn(
-                                                    "w-full justify-start text-left font-normal",
-                                                    !field.value && "text-muted-foreground"
-                                                )}
-                                            >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {field.value ? format(new Date(field.value.replace(/-/g, '/')), "PPP", { locale: es }) : <span>Elegir fecha</span>}
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0">
-                                            <Calendar
-                                            mode="single"
-                                            selected={field.value ? new Date(field.value.replace(/-/g, '/')) : undefined}
-                                            onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : undefined)}
-                                            initialFocus
-                                            locale={es}
-                                            />
-                                        </PopoverContent>
-                                    </Popover>
-                                )}
-                            />
-                        </div>
+                                        >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {field.value ? format(new Date(String(field.value).replace(/-/g, '/')), "PPP", { locale: es }) : <span>Elegir fecha</span>}
+                                        </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                        <Calendar
+                                        mode="single"
+                                        selected={field.value ? new Date(String(field.value).replace(/-/g, '/')) : undefined}
+                                        onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : undefined)}
+                                        initialFocus
+                                        locale={es}
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <Label htmlFor="start-time">Hora Inicio</Label>
-                            <Controller
-                                control={methods.control}
-                                name="startTime"
-                                render={({ field }) => (
-                                    <Input id="start-time" type="time" {...field} />
-                                )}
+                        <FormField
+                            control={methods.control}
+                            name="startTime"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Hora Inicio</FormLabel>
+                                <FormControl>
+                                <Input id="start-time" type="time" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={methods.control}
+                            name="endTime"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Hora Término</FormLabel>
+                                <FormControl>
+                                <Input id="end-time" type="time" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                    
+                    <FormField
+                        control={methods.control}
+                        name="technicians"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Técnicos Asignados</FormLabel>
+                            <FormControl>
+                            <MultiSelect
+                                options={technicians}
+                                selected={field.value || []}
+                                onChange={field.onChange}
+                                placeholder="Seleccionar técnicos..."
                             />
-                        </div>
-                        <div>
-                            <Label htmlFor="end-time">Hora Término</Label>
-                            <Controller
-                                control={methods.control}
-                                name="endTime"
-                                render={({ field }) => (
-                                    <Input id="end-time" type="time" {...field} />
-                                )}
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    
+                    <FormField
+                        control={methods.control}
+                        name="vehicles"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Vehículos Asignados</FormLabel>
+                             <FormControl>
+                             <MultiSelect
+                                options={vehicleOptions}
+                                selected={field.value || []}
+                                onChange={field.onChange}
+                                placeholder="Seleccionar vehículos..."
                             />
-                        </div>
-                    </div>
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                     
-                    <div>
-                        <Label>Técnicos Asignados</Label>
-                        <Controller
-                            control={methods.control}
-                            name="technicians"
-                            render={({ field }) => (
-                                <MultiSelect
-                                    options={technicians}
-                                    selected={field.value || []}
-                                    onChange={field.onChange}
-                                    placeholder="Seleccionar técnicos..."
-                                />
-                            )}
-                        />
-                    </div>
-                    
-                    <div>
-                        <Label>Vehículos Asignados</Label>
-                         <Controller
-                            control={methods.control}
-                            name="vehicles"
-                            render={({ field }) => (
-                                <MultiSelect
-                                    options={vehicleOptions}
-                                    selected={field.value || []}
-                                    onChange={field.onChange}
-                                    placeholder="Seleccionar vehículos..."
-                                />
-                            )}
-                        />
-                    </div>
-                    
-                    <div>
-                        <Label htmlFor="rented-vehicle">Vehículo Arrendado (Opcional)</Label>
-                        <Controller
-                            control={methods.control}
-                            name="rentedVehicle"
-                            render={({ field }) => (
-                                <Input 
-                                    id="rented-vehicle" 
-                                     {...field}
-                                />
-                            )}
-                        />
-                    </div>
+                    <FormField
+                        control={methods.control}
+                        name="rentedVehicle"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Vehículo Arrendado (Opcional)</FormLabel>
+                            <FormControl>
+                            <Input 
+                                id="rented-vehicle" 
+                                 {...field}
+                            />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
 
-                    <div>
-                        <Label htmlFor="notes">Descripción / Notas Adicionales</Label>
-                        <Controller
-                            control={methods.control}
-                            name="notes"
-                            render={({ field }) => (
-                                <Textarea 
-                                  id="notes" 
-                                  {...field}
-                                  placeholder="Añadir descripción detallada, materiales, notas..." 
-                                  rows={5} 
-                                />
-                            )}
-                        />
-                    </div>
+                    <FormField
+                        control={methods.control}
+                        name="notes"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Descripción / Notas Adicionales</FormLabel>
+                            <FormControl>
+                            <Textarea 
+                              id="notes" 
+                              {...field}
+                              placeholder="Añadir descripción detallada, materiales, notas..." 
+                              rows={5} 
+                            />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                 </div>
 
-                {/* Right Column */}
                 <div className="space-y-4">
                     
                     <div className="grid grid-cols-2 gap-4">
@@ -592,63 +602,75 @@ export default function EditOrderPage() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                         <div>
-                            <Label htmlFor="oc-number">OC</Label>
-                            <Controller
-                                control={methods.control}
-                                name="ocNumber"
-                                render={({ field }) => (
-                                    <Input 
-                                        id="oc-number"
-                                        {...field}
-                                    />
-                                )}
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor="sale-number">Nº Venta</Label>
-                            <Controller
-                                control={methods.control}
-                                name="saleNumber"
-                                render={({ field }) => (
-                                    <Input 
-                                        id="sale-number" 
-                                        {...field}
-                                    />
-                                )}
-                            />
-                        </div>
-                    </div>
-                     <div>
-                        <Label htmlFor="hes-em-migo">HES / EM / MIGO</Label>
-                        <Controller
+                         <FormField
                             control={methods.control}
-                            name="hesEmMigo"
+                            name="ocNumber"
                             render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>OC</FormLabel>
+                                <FormControl>
                                 <Input 
-                                    id="hes-em-migo" 
+                                    id="oc-number"
                                     {...field}
                                 />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
                             )}
                         />
-                    </div>
-
-
-                    <div>
-                        <Label>Encargados</Label>
-                         <Controller
+                        <FormField
                             control={methods.control}
-                            name="assigned"
+                            name="saleNumber"
                             render={({ field }) => (
-                                <MultiSelect
-                                    options={supervisors}
-                                    selected={field.value || []}
-                                    onChange={field.onChange}
-                                    placeholder="Seleccionar encargados..."
+                                <FormItem>
+                                <FormLabel>Nº Venta</FormLabel>
+                                <FormControl>
+                                <Input 
+                                    id="sale-number" 
+                                    {...field}
                                 />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
                             )}
                         />
                     </div>
+                     <FormField
+                        control={methods.control}
+                        name="hesEmMigo"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>HES / EM / MIGO</FormLabel>
+                            <FormControl>
+                            <Input 
+                                id="hes-em-migo" 
+                                {...field}
+                            />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+
+                    <FormField
+                        control={methods.control}
+                        name="assigned"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Encargados</FormLabel>
+                             <FormControl>
+                             <MultiSelect
+                                options={supervisors}
+                                selected={field.value || []}
+                                onChange={field.onChange}
+                                placeholder="Seleccionar encargados..."
+                            />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
 
                     <FormField
                         control={methods.control}
@@ -684,21 +706,24 @@ export default function EditOrderPage() {
                             </div>
                         </div>
                     ) : (
-                        <div>
-                            <Label>Avance Manual ({methods.watch('manualProgress') || 0}%)</Label>
-                            <Controller
-                                control={methods.control}
-                                name="manualProgress"
-                                render={({ field }) => (
-                                    <Slider
-                                        value={[field.value || 0]}
-                                        onValueChange={(value) => field.onChange(value[0])}
-                                        max={100}
-                                        step={5}
-                                    />
-                                )}
-                            />
-                        </div>
+                        <FormField
+                            control={methods.control}
+                            name="manualProgress"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Avance Manual ({field.value || 0}%)</FormLabel>
+                                <FormControl>
+                                <Slider
+                                    value={[field.value || 0]}
+                                    onValueChange={(value) => field.onChange(value[0])}
+                                    max={100}
+                                    step={5}
+                                />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                     )}
                     
                     {methods.watch('status') === 'Cerrada' && endDate && (
@@ -784,7 +809,7 @@ export default function EditOrderPage() {
                               {invoiceFields.map((field, index) => (
                                   <TableRow key={field.id}>
                                       <TableCell>{methods.watch(`invoices.${index}.number`)}</TableCell>
-                                      <TableCell>{format(new Date(methods.watch(`invoices.${index}.date`).replace(/-/g, '/')), "PPP", { locale: es })}</TableCell>
+                                      <TableCell>{format(new Date(String(methods.watch(`invoices.${index}.date`)).replace(/-/g, '/')), "PPP", { locale: es })}</TableCell>
                                       <TableCell className="text-right">{formatCurrency(methods.watch(`invoices.${index}.amount`))}</TableCell>
                                       <TableCell className="text-right">{formatCurrency(Math.round(methods.watch(`invoices.${index}.amount`) * 1.19))}</TableCell>
                                       <TableCell>
@@ -895,4 +920,3 @@ export default function EditOrderPage() {
     </>
   );
 }
-
