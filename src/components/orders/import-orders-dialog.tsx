@@ -230,7 +230,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     ...rest
                 } = mappedRow;
                 
-                const finalEndDate = robustDateParse(rawEndDate);
+                const finalEndDate = robustDateParse(rawEndDate) || undefined;
                 const factprocStatus = normalizeString(rawFactproc || '');
                 const isFacturado = factprocStatus === 'facturado';
 
@@ -262,7 +262,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 const orderData: CreateWorkOrderInput & { invoices?: any[] } = {
                     ...rest,
                     ot_number: otNumberString,
-                    endDate: finalEndDate || undefined,
+                    endDate: finalEndDate,
                     status: finalStatus,
                     priority: 'Baja',
                     netPrice: finalNetPrice,
@@ -475,7 +475,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             <h4 className="font-semibold">Órdenes Duplicadas Encontradas:</h4>
              <ScrollArea className="h-24 mt-2">
                 <ul className="text-xs list-disc pl-5">
-                    {duplicateOrders.map(d => <li key={d.ot_number}>{d.ot_number} - {d.description}</li>)}
+                    {duplicateOrders.map((d, index) => <li key={`${d.ot_number}-${index}`}>{d.ot_number} - {d.description}</li>)}
                 </ul>
             </ScrollArea>
         </div>
@@ -592,4 +592,3 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
-
