@@ -76,8 +76,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     }
   };
   
-  const findMatchingCollaborator = (name: string) => {
-    if (!name?.trim()) return name;
+  const findMatchingCollaborator = (name: string): string => {
+    if (!name?.trim()) return '';
 
     const normalizedName = normalizeString(name);
 
@@ -226,13 +226,13 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             service: findHeader(['sistema', 'servicio']),
             netPrice: findHeader(['montoneto']),
             factproc: findHeader(['factproc', 'fact proces', 'factprocs']),
-            hesEmMigo: findHeader(['em-hes-migo', 'emhesmigo']),
-            ocNumber: findHeader(['oc', 'n orden de compra']),
-            saleNumber: findHeader(['nv', 'n venta']),
-            invoiceNumber: findHeader(['factn', 'factura', 'fact n°']),
-            invoiceDate: findHeader(['fechafact', 'fecha factura', 'fecha fact']),
+            hesEmMigo: findHeader(['em-hes-migo', 'emhesmigo', 'emhes-migo']),
+            ocNumber: findHeader(['oc', 'nordencompra']),
+            saleNumber: findHeader(['nv', 'nventa']),
+            invoiceNumber: findHeader(['factn', 'factura', 'nfactura']),
+            invoiceDate: findHeader(['fechafact', 'fechafactura']),
             billingMonth: findHeader(['mesfac']),
-            endDate: findHeader(['fechatermino', 'fecha termino']),
+            endDate: findHeader(['fechatermino', 'fechatermino']),
         };
 
 
@@ -306,7 +306,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 const orderData: CreateWorkOrderInput & { invoices?: any[], notes?: string } = {
                     ...rest,
                     ot_number: otNumberString,
-                    endDate: finalEndDate,
+                    endDate: finalEndDate || undefined,
                     status: finalStatus,
                     priority: 'Baja',
                     netPrice: finalNetPrice,
@@ -323,17 +323,15 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     hesEmMigo: rest.hesEmMigo ? String(rest.hesEmMigo) : '',
                 };
                 
-                if (isFacturado && invoiceNumber) {
-                    const finalInvoiceDate = robustDateParse(invoiceDate);
-                    if (finalInvoiceDate) {
-                        orderData.invoices?.push({
-                            id: crypto.randomUUID(),
-                            number: String(invoiceNumber),
-                            date: finalInvoiceDate,
-                            amount: finalNetPrice || 0,
-                            billingMonth: billingMonth ? String(billingMonth) : undefined,
-                        });
-                    }
+                const finalInvoiceDate = robustDateParse(invoiceDate);
+                if (isFacturado && invoiceNumber && finalInvoiceDate) {
+                    orderData.invoices?.push({
+                        id: crypto.randomUUID(),
+                        number: String(invoiceNumber),
+                        date: finalInvoiceDate,
+                        amount: finalNetPrice || 0,
+                        billingMonth: billingMonth ? String(billingMonth) : undefined,
+                    });
                 }
 
                 if (existingOtNumbers.has(orderData.ot_number)) {
@@ -644,5 +642,3 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
-
-    
