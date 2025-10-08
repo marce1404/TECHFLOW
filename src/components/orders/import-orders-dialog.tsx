@@ -231,22 +231,19 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 const finalEndDate = robustDateParse(rawEndDate);
 
                 const normalizedFactproc = normalizeString(rawFactproc || '');
-                let finalStatus: WorkOrder['status'] = 'Por Iniciar'; // Default safe status
+                let finalStatus: WorkOrder['status'] = 'Por Iniciar';
                 
-                if (normalizedFactproc.includes('cerrada')) {
-                  finalStatus = 'Cerrada';
+                const appStatuses = otStatuses.map(s => ({ original: s.name, normalized: normalizeString(s.name) }));
+                const matchedStatus = appStatuses.find(s => s.normalized === normalizedFactproc);
+
+                if (matchedStatus) {
+                    finalStatus = matchedStatus.original as WorkOrder['status'];
                 } else if (normalizedFactproc.includes('terminada')) {
-                  finalStatus = 'Terminada';
+                    finalStatus = 'Terminada';
+                } else if (normalizedFactproc.includes('cerrada')) {
+                    finalStatus = 'Cerrada';
                 } else if (normalizedFactproc.includes('en proceso')) {
-                  finalStatus = 'En Progreso';
-                } else if (normalizedFactproc.includes('por iniciar')) {
-                  finalStatus = 'Por Iniciar';
-                } else {
-                  // Check if the status exists in the app's list of valid statuses
-                  const directMatch = otStatuses.find(s => normalizeString(s.name) === normalizedFactproc);
-                  if (directMatch) {
-                    finalStatus = directMatch.name as WorkOrder['status'];
-                  }
+                    finalStatus = 'En Progreso';
                 }
                 
                 const isFacturado = !!billingMonth || (!!invoiceDate && !!invoiceNumber);
@@ -344,7 +341,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         duplicateOrders.forEach(dupOrder => {
             const existingOrder = workOrders.find(wo => String(wo.ot_number).trim() === String(dupOrder.ot_number).trim());
             if (existingOrder) {
-                const mergedData: Partial<WorkOrder> = {
+                 const mergedData: Partial<WorkOrder> = {
                   ...dupOrder,
                   notes: [existingOrder.notes, dupOrder.notes].filter(Boolean).join('\n---\n'),
                 };
@@ -608,3 +605,5 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
+
+    
