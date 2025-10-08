@@ -210,11 +210,27 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                  validationErrors.push(`Fila ${index + 2}: Falta el número de OT, no se puede importar.`);
                  return;
             }
+            
+            const rawDateValue = keyMapping.date ? row[keyMapping.date] : null;
+            const finalDate = robustDateParse(rawDateValue);
+
+            if (!finalDate) {
+                 validationErrors.push(`Fila ${index + 2} (OT: ${otNumber}): Formato de 'fechaingreso' no válido. Por favor, use 'dd/MM/yyyy' o 'yyyy-MM-dd'.`);
+                 return;
+            }
+
             if (!groupedByOt.has(otNumber)) {
                 groupedByOt.set(otNumber, []);
             }
             groupedByOt.get(otNumber)!.push(row);
         });
+
+        if (validationErrors.length > 0) {
+            setErrors(validationErrors);
+            setLoading(false);
+            setStep('selectFile');
+            return;
+        }
 
         const tempNewOrders: CreateWorkOrderInput[] = [];
         const tempDuplicateOrders: CreateWorkOrderInput[] = [];
@@ -223,9 +239,6 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
         groupedByOt.forEach((rows, otNumber) => {
             const firstRow = rows[0];
-
-            const rawDateValue = keyMapping.date ? firstRow[keyMapping.date] : null;
-            const finalDate = robustDateParse(rawDateValue) || format(new Date(), 'yyyy-MM-dd');
 
             const rawNetPrice = keyMapping.netPrice ? firstRow[keyMapping.netPrice] : 0;
             let finalNetPrice = 0;
@@ -248,7 +261,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 ot_number: otNumber,
                 description: String(firstRow[keyMapping.description!] || ''),
                 client: String(firstRow[keyMapping.client!] || ''),
-                date: finalDate,
+                date: robustDateParse(firstRow[keyMapping.date!]) || '',
                 endDate: (keyMapping.endDate ? robustDateParse(firstRow[keyMapping.endDate]) : null) || '',
                 service: keyMapping.service ? findMatchingString(String(firstRow[keyMapping.service] || ''), availableServices) : '',
                 status: keyMapping.status ? mapFactprocToStatus(String(firstRow[keyMapping.status])) : 'Por Iniciar',
