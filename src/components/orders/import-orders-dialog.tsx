@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -230,18 +229,18 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     ...rest
                 } = mappedRow;
                 
-                const finalEndDate = robustDateParse(rawEndDate);
+                const finalEndDate = robustDateParse(rawEndDate) || null;
                 const isFacturado = typeof rawFacturado === 'string' ? normalizeString(rawFacturado).includes('facturado') : !!rawFacturado;
 
-                let finalStatus: WorkOrder['status'] = 'Por Iniciar';
+                let finalStatus: WorkOrder['status'];
                 const factprocStatus = normalizeString(rawFactproc || '');
 
-                if (factprocStatus === 'facturado' || factprocStatus === 'terminada') {
-                    finalStatus = 'Cerrada';
-                } else if (factprocStatus === 'en proceso') {
+                if (factprocStatus === 'en proceso') {
                     finalStatus = 'En Progreso';
                 } else if (factprocStatus === 'por iniciar') {
                     finalStatus = 'Por Iniciar';
+                } else {
+                    finalStatus = 'Cerrada'; // Default to "Cerrada" for "Terminada", "Facturado", empty, etc.
                 }
                 
                 const parseCollaborators = (names: any): string[] => {
@@ -588,5 +587,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
+
+    
 
     
