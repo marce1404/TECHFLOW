@@ -58,7 +58,8 @@ export default function EditOrderPage() {
   const initialOrder = React.useMemo(() => getOrder(orderId), [orderId, getOrder]);
 
   const methods = useForm<WorkOrder>({
-    defaultValues: initialOrder || {}
+    defaultValues: initialOrder || {},
+    values: initialOrder || undefined
   });
 
   const { fields: invoiceFields, append: appendInvoice, remove: removeInvoice } = useFieldArray({
