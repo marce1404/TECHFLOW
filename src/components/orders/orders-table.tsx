@@ -49,15 +49,16 @@ export default function OrdersTable({ orders, isActivityTab = false }: OrdersTab
      switch (normalizeString(status)) {
       case 'atrasada':
         return 'destructive';
-      case 'cerrada':
-         return 'default';
       case 'terminada':
+        return 'default';
+      case 'cerrada':
+        return 'outline';
       case 'suspendida':
       case 'pendiente':
         return 'secondary';
       case 'actividad':
         return 'default';
-      default: // Por Iniciar
+      default: // Por Iniciar y En Progreso
         return 'outline';
     }
   };
