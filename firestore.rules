@@ -3,72 +3,79 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    match /audit-log/{logId} {
-      allow create: if request.auth != null;
+    // Función para verificar si un usuario tiene un rol permitido
+    function isAllowed(allowedRoles) {
+      return request.auth != null && request.auth.token.role in allowedRoles;
     }
 
+    // Colección de Usuarios: Solo los Admins pueden gestionar usuarios.
     match /users/{userId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.uid == userId;
+      allow read, write: if isAllowed(['Admin']);
     }
 
+    // Colecciones de Configuración: Solo Admins y Supervisores pueden leer y escribir.
+    match /settings/{settingId} {
+      allow read: if isAllowed(['Admin', 'Supervisor', 'Técnico', 'Visor']);
+      allow write: if isAllowed(['Admin']);
+    }
+
+    // Colecciones Operativas:
+    // Admins/Supervisors tienen control total.
+    // Técnicos/Visores tienen solo lectura.
     match /ot-categories/{categoryId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.token.role == 'Admin' || request.auth.token.role == 'Supervisor';
+      allow read: if isAllowed(['Admin', 'Supervisor', 'Técnico', 'Visor']);
+      allow write: if isAllowed(['Admin', 'Supervisor']);
     }
-
     match /ot-statuses/{statusId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.token.role == 'Admin' || request.auth.token.role == 'Supervisor';
+      allow read: if isAllowed(['Admin', 'Supervisor', 'Técnico', 'Visor']);
+      allow write: if isAllowed(['Admin', 'Supervisor']);
+    }
+    match /services/{serviceId} {
+      allow read: if isAllowed(['Admin', 'Supervisor', 'Técnico', 'Visor']);
+      allow write: if isAllowed(['Admin', 'Supervisor']);
+    }
+    match /vehicles/{vehicleId} {
+      allow read: if isAllowed(['Admin', 'Supervisor', 'Técnico', 'Visor']);
+      allow create, update, delete: if isAllowed(['Admin', 'Supervisor']);
+    }
+    match /collaborators/{collaboratorId} {
+      allow read: if isAllowed(['Admin', 'Supervisor', 'Técnico', 'Visor']);
+      allow create, update, delete: if isAllowed(['Admin', 'Supervisor']);
+    }
+    match /gantt-charts/{chartId} {
+      allow read: if isAllowed(['Admin', 'Supervisor', 'Técnico', 'Visor']);
+      allow create, update, delete: if isAllowed(['Admin', 'Supervisor']);
+    }
+     match /suggested-tasks/{taskId} {
+      allow read: if isAllowed(['Admin', 'Supervisor', 'Técnico', 'Visor']);
+      allow create, update, delete: if isAllowed(['Admin', 'Supervisor']);
+    }
+     match /report-templates/{templateId} {
+      allow read: if isAllowed(['Admin', 'Supervisor', 'Técnico', 'Visor']);
+      allow create, update, delete: if isAllowed(['Admin', 'Supervisor']);
     }
 
-    match /services/{serviceId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.token.role == 'Admin' || request.auth.token.role == 'Supervisor';
+    // Órdenes de Trabajo: Admins/Supervisors pueden gestionar. Todos pueden leer.
+    match /work-orders/{orderId} {
+      allow read: if isAllowed(['Admin', 'Supervisor', 'Técnico', 'Visor']);
+      allow create, update, delete: if isAllowed(['Admin', 'Supervisor']);
+    }
+
+    // Informes Enviados: Todos los roles pueden leer. Técnicos, Supervisores y Admins pueden crear y actualizar.
+    match /submitted-reports/{reportId} {
+        allow read: if isAllowed(['Admin', 'Supervisor', 'Técnico', 'Visor']);
+        allow create, update: if isAllowed(['Admin', 'Supervisor', 'Técnico']);
+        allow delete: if isAllowed(['Admin', 'Supervisor']);
     }
     
-    match /collaborators/{collaboratorId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.token.role == 'Admin' || request.auth.token.role == 'Supervisor';
+    // Registro de Auditoría: Cualquier usuario autenticado puede crear registros. Solo Admins pueden leer.
+    match /audit-log/{logId} {
+      allow create: if request.auth != null;
+      allow read: if isAllowed(['Admin']);
     }
 
-    match /vehicles/{vehicleId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.token.role == 'Admin' || request.auth.token.role == 'Supervisor';
-    }
-
-    match /gantt-charts/{ganttId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.token.role == 'Admin' || request.auth.token.role == 'Supervisor';
-    }
-
-    match /suggested-tasks/{taskId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.token.role == 'Admin' || request.auth.token.role == 'Supervisor';
-    }
-
-    match /report-templates/{templateId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.token.role == 'Admin' || request.auth.token.role == 'Supervisor';
-    }
-
-    match /submitted-reports/{reportId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.token.role == 'Admin' || request.auth.token.role == 'Supervisor';
-    }
-
-    match /settings/{settingId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.token.role == 'Admin';
-    }
-
-    match /work-orders/{orderId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.token.role == 'Admin' || request.auth.token.role == 'Supervisor';
-    }
-
-    // Make sure no other rules are accidentally matched
-    match /{document=**} {
+    // Regla de denegación por defecto para cualquier otra colección no definida.
+    match /{path=**} {
       allow read, write: if false;
     }
   }
