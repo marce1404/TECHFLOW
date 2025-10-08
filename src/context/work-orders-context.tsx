@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { CloseWorkOrderDialog } from '@/components/orders/close-work-order-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { predefinedReportTemplates } from '@/lib/predefined-templates';
+import { collaborators as fallbackCollaborators } from '@/lib/placeholder-data';
 import { normalizeString, processFirestoreTimestamp } from '@/lib/utils';
 
 interface WorkOrdersContextType {
@@ -98,6 +99,31 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [orderToClose, setOrderToClose] = useState<WorkOrder | null>(null);
   const { toast } = useToast();
 
+  const checkAndRestoreCollaborators = useCallback(async () => {
+    try {
+      const collaboratorsCollection = collection(db, 'collaborators');
+      const existingCollaboratorsSnapshot = await getDocs(collaboratorsCollection);
+      if (existingCollaboratorsSnapshot.empty && fallbackCollaborators.length > 0) {
+        console.log("Collaborators collection is empty. Restoring from placeholder data...");
+        const batch = writeBatch(db);
+        fallbackCollaborators.forEach(collaborator => {
+          // The placeholder data has an `id` field which we should ignore when creating new docs
+          const { id, ...collabData } = collaborator;
+          const docRef = doc(collection(db, 'collaborators'));
+          batch.set(docRef, collabData);
+        });
+        await batch.commit();
+        toast({
+          title: "Colaboradores Restaurados",
+          description: "Se restauró una lista de colaboradores desde una copia de seguridad interna."
+        });
+        // The onSnapshot listener will pick up the changes automatically
+      }
+    } catch (e) {
+      console.error("Permission error checking collaborators, skipping restore.", e);
+    }
+  }, [toast]);
+
   const checkAndCreatePredefinedTemplates = useCallback(async () => {
     try {
         const templatesCollection = collection(db, 'report-templates');
@@ -122,12 +148,12 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     
     try {
         await checkAndCreatePredefinedTemplates();
+        await checkAndRestoreCollaborators();
 
         const collectionsToFetch: { name: string; setter: React.Dispatch<React.SetStateAction<any[]>> }[] = [
             { name: 'ot-categories', setter: setOtCategories },
             { name: 'ot-statuses', setter: setOtStatuses },
             { name: 'services', setter: setServices },
-            { name: 'collaborators', setter: setCollaborators },
             { name: 'vehicles', setter: setVehicles },
             { name: 'suggested-tasks', setter: setSuggestedTasks },
             { name: 'report-templates', setter: setReportTemplates },
@@ -140,7 +166,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             setter(data.map(processFirestoreTimestamp));
           } catch (e) {
             console.error(`Error fetching collection ${name}:`, e);
-            // We don't re-throw, so other fetches can continue
           }
         });
 
@@ -167,7 +192,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     } finally {
         setLoading(false);
     }
-}, [user, toast, checkAndCreatePredefinedTemplates]);
+}, [user, toast, checkAndCreatePredefinedTemplates, checkAndRestoreCollaborators]);
 
 
   useEffect(() => {
@@ -177,11 +202,17 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
           const workOrdersQuery = query(collection(db, 'work-orders'), orderBy('date', 'desc'));
           const ganttQuery = query(collection(db, 'gantt-charts'));
           const submittedReportsQuery = query(collection(db, 'submitted-reports'), orderBy('submittedAt', 'desc'));
+          const collaboratorsQuery = query(collection(db, 'collaborators'));
 
           const unsubWorkOrders = onSnapshot(workOrdersQuery, (snapshot) => {
               const data = snapshot.docs.map(doc => processFirestoreTimestamp({ id: doc.id, ...doc.data() })) as WorkOrder[];
               setWorkOrders(data);
           }, (error) => console.error("Error fetching work-orders:", error));
+          
+          const unsubCollaborators = onSnapshot(collaboratorsQuery, (snapshot) => {
+              const data = snapshot.docs.map(doc => processFirestoreTimestamp({ id: doc.id, ...doc.data() })) as Collaborator[];
+              setCollaborators(data);
+          }, (error) => console.error("Error fetching collaborators:", error));
 
           const unsubGantt = onSnapshot(ganttQuery, (snapshot) => {
               const data = snapshot.docs.map(doc => processFirestoreTimestamp({ id: doc.id, ...doc.data() })) as GanttChart[];
@@ -205,6 +236,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
           return () => {
               unsubWorkOrders();
               unsubGantt();
+              unsubCollaborators();
               unsubSubmittedReports();
               if (unsubAuditLog) unsubAuditLog();
           };
@@ -777,6 +809,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
       'vehicles',
       'gantt-charts',
       'submitted-reports',
+      // 'collaborators' is intentionally left out to prevent accidental deletion
     ];
   
     const batchPromises = collectionsToDelete.map(async (collectionName) => {
