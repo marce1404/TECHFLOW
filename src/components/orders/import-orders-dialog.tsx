@@ -235,21 +235,15 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 const factprocStatus = normalizeString(rawFactproc || '');
                 let finalStatus: WorkOrder['status'];
 
-                if (factprocStatus === 'en proceso') {
-                    finalStatus = 'En Progreso';
-                } else if (factprocStatus === 'por iniciar') {
-                    finalStatus = 'Por Iniciar';
-                } else if (factprocStatus === 'facturado' || factprocStatus === 'terminada') {
+                if (factprocStatus === 'facturado' || factprocStatus === 'terminada') {
                     finalStatus = 'Cerrada';
+                } else if (factprocStatus === 'en proceso') {
+                    finalStatus = 'En Progreso';
                 } else {
                     finalStatus = 'Por Iniciar';
                 }
                 
                 const isFacturado = !!billingMonth || factprocStatus === 'facturado';
-                if (isFacturado) {
-                    finalStatus = 'Cerrada';
-                }
-
                 
                 const parseCollaborators = (names: any): string[] => {
                   if (!names) return [];
@@ -344,9 +338,9 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         duplicateOrders.forEach(dupOrder => {
             const existingOrder = workOrders.find(wo => String(wo.ot_number).trim() === String(dupOrder.ot_number).trim());
             if (existingOrder) {
-                 const mergedData: Partial<WorkOrder> = {
+                const mergedData: Partial<WorkOrder> = {
                   ...dupOrder,
-                  notes: [existingOrder.notes, excelStatusNotes].filter(Boolean).join('\n---\n'),
+                  notes: [existingOrder.notes, dupOrder.notes].filter(Boolean).join('\n---\n'),
                 };
                 
                 if (dupOrder.endDate === null) {
