@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -179,22 +178,22 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         };
         
         const keyMapping = {
-            ot_number: findHeader(['ot', 'n ot', 'numero ot']),
-            date: findHeader(['fechaingreso']),
-            description: findHeader(['nombredelproyecto', 'descripcion']),
-            client: findHeader(['cliente']),
+            ot_number: findHeader(['OT']),
+            date: findHeader(['Fecha Ingreso']),
+            description: findHeader(['NOMBRE DEL PROYECTO']),
+            client: findHeader(['client']),
             rut: findHeader(['rut']),
             comercial: findHeader(['vendedor']),
-            assigned: findHeader(['superv', 'encargado', 'encargados']),
+            assigned: findHeader(['SUPERV']),
             technicians: findHeader(['tecnico', 'técnico', 'tecnicos']),
-            service: findHeader(['sistema', 'servicio']),
-            netPrice: findHeader(['montoneto']),
-            status: findHeader(['factproc', 'fact proces', 'factprocs', 'estado']),
-            hesEmMigo: findHeader(['emhesmigo', 'em-hes-migo', 'hes/em/migo']),
-            ocNumber: findHeader(['oc', 'nordencompra']),
-            saleNumber: findHeader(['nv', 'nventa', 'n de venta']),
-            invoiceNumber: findHeader(['factn', 'factura', 'nfactura', 'fact n']),
-            invoiceDate: findHeader(['fechafact', 'fechafactura', 'fecha fact']),
+            service: findHeader(['SISTEMA']),
+            netPrice: findHeader(['MONTO NETO']),
+            status: findHeader(['FACTPROCES']),
+            hesEmMigo: findHeader(['hes/em/migo']),
+            ocNumber: findHeader(['OC']),
+            saleNumber: findHeader(['nventa']),
+            invoiceNumber: findHeader(['Fact. N°']),
+            invoiceDate: findHeader(['Fecha Fact.']),
             billingMonth: findHeader(['mesfac']),
             endDate: findHeader(['fechatermino', 'fecha termino']),
             rentedVehicle: findHeader(['vehiculoarrendado', 'arriendovehiculo']),
@@ -204,8 +203,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         const validationErrors: string[] = [];
         const groupedByOt = new Map<string, any[]>();
         
-        // Primero, agrupamos todas las filas por número de OT
-        jsonData.forEach((row) => {
+        jsonData.forEach((row, index) => {
             const otNumber = keyMapping.ot_number ? String(row[keyMapping.ot_number] || '').trim() : '';
             if (otNumber) {
                 if (!groupedByOt.has(otNumber)) {
@@ -231,7 +229,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             }
 
             if (!finalDate) {
-                finalDate = format(new Date(), 'yyyy-MM-dd'); // Fallback to current date
+                finalDate = format(new Date(), 'yyyy-MM-dd');
             }
             
             const rawNetPrice = keyMapping.netPrice ? firstRow[keyMapping.netPrice] : 0;
