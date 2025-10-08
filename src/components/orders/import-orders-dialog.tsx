@@ -78,28 +78,36 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
   };
   
   const findMatchingCollaborator = (name: string): string => {
-    if (!name?.trim()) return '';
+      if (!name?.trim()) return '';
+      const normalizedName = normalizeString(name);
 
-    const normalizedName = normalizeString(name);
+      // 1. Exact match (case-insensitive, accent-insensitive, ignores extra characters like '.')
+      const exactMatch = collaborators.find(c => normalizeString(c.name) === normalizedName);
+      if (exactMatch) return exactMatch.name;
 
-    // 1. Exact match (case-insensitive, accent-insensitive)
-    const exactMatch = collaborators.find(c => normalizeString(c.name) === normalizedName);
-    if (exactMatch) return exactMatch.name;
+      // 2. Partial match (if no exact match is found)
+      const nameParts = normalizedName.split(' ');
+      const partialMatch = collaborators.find(c => {
+          const collaboratorNameParts = normalizeString(c.name).split(' ');
+          // Prioritize exact match of parts
+          if (nameParts.length === collaboratorNameParts.length) {
+              return nameParts.every(part => collaboratorNameParts.includes(part));
+          }
+          // Fallback to looser 'includes' for cases like "Angel Contreras" vs "Miguel Angel Contreras"
+          return nameParts.every(part => normalizeString(c.name).includes(part));
+      });
+      
+      // If we found a partial match but there's an exact match for another collaborator, prefer the exact one
+      // This is to avoid matching "Angel Contreras" with "Miguel Angel Contreras" if "Angel Contreras" exists
+      if (partialMatch) {
+          const anotherExactMatch = collaborators.some(c => normalizeString(c.name) === normalizedName);
+          if (!anotherExactMatch) {
+              return partialMatch.name;
+          }
+      }
 
-    // 2. Partial match (if no exact match is found, for cases like "Angel Contreras" vs "Miguel Angel Contreras")
-    // We prefer a perfect match of words, not just includes.
-    const nameParts = normalizedName.split(' ');
-    const partialMatch = collaborators.find(c => {
-        const collaboratorNameParts = normalizeString(c.name).split(' ');
-        return nameParts.every(part => collaboratorNameParts.includes(part));
-    });
-
-    if (partialMatch && normalizeString(partialMatch.name).split(' ').length === nameParts.length) {
-      return partialMatch.name;
-    }
-    
-    // 3. Fallback to original name if no reliable match found
-    return name;
+      // 3. Fallback to original name if no reliable match found
+      return name;
   };
 
   const findMatchingString = (input: string, validList: {name: string}[]) => {
@@ -238,10 +246,10 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             hesEmMigo: findHeader(['em-hes-migo', 'emhesmigo', 'emhes-migo']),
             ocNumber: findHeader(['oc', 'nordencompra']),
             saleNumber: findHeader(['nv', 'nventa']),
-            invoiceNumber: findHeader(['factn', 'factura', 'nfactura']),
-            invoiceDate: findHeader(['fechafact', 'fechafactura']),
+            invoiceNumber: findHeader(['factn', 'factura', 'nfactura', 'fact n']),
+            invoiceDate: findHeader(['fechafact', 'fechafactura', 'fecha fact']),
             billingMonth: findHeader(['mesfac']),
-            endDate: findHeader(['fechatermino', 'fechatermino']),
+            endDate: findHeader(['fechatermino', 'fecha termino']),
             rentedVehicle: findHeader(['vehiculoarrendado', 'arriendovehiculo']),
         };
 
@@ -317,25 +325,30 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 const otNumberString = String(rest.ot_number).trim();
 
                 const orderData: CreateWorkOrderInput & { invoices?: any[], notes?: string } = {
-                    ...rest,
                     ot_number: otNumberString,
+                    description: rest.description || '',
+                    client: rest.client || '',
+                    rut: String(rawRut || ''),
+                    service: findMatchingString(service || '', availableServices),
+                    date: finalDate,
                     endDate: finalEndDate || '',
+                    startTime: '',
+                    endTime: '',
+                    notes: rawFactproc || '',
                     status: finalStatus,
                     priority: 'Baja',
                     netPrice: finalNetPrice,
-                    comercial: comercial ? findMatchingCollaborator(comercial.trim()) : '',
                     assigned: parseCollaborators(rawAssigned),
                     technicians: parseCollaborators(rawTechnicians),
                     vehicles: [],
-                    service: findMatchingString(service || '', availableServices),
+                    comercial: comercial ? findMatchingCollaborator(comercial.trim()) : '',
+                    ocNumber: String(rawOcNumber || ''),
+                    saleNumber: String(rawSaleNumber || ''),
+                    hesEmMigo: String(rawHes || ''),
+                    rentedVehicle: String(rawRentedVehicle || ''),
+                    manualProgress: 0,
                     facturado: isFacturado,
                     invoices: [],
-                    notes: rawFactproc || '', // Save the original FACTPROCES as a note
-                    saleNumber: String(rawSaleNumber || ''),
-                    ocNumber: String(rawOcNumber || ''),
-                    rut: rawRut ? String(rawRut) : '',
-                    hesEmMigo: rawHes ? String(rawHes) : '',
-                    rentedVehicle: rawRentedVehicle ? String(rawRentedVehicle) : '',
                 };
                 
                 const finalInvoiceDate = robustDateParse(invoiceDate);
@@ -657,3 +670,5 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
+
+    
