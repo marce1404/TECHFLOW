@@ -247,10 +247,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     'OT-1559', 'OT-1595', 'OT-1609', 'OT-1578'
                 ]);
 
-                if (activeOtNumbers.has(String(rest.ot_number).trim())) {
-                    if (factprocStatus === 'en proceso') finalStatus = 'En Progreso';
-                    else if (factprocStatus === 'por iniciar') finalStatus = 'Por Iniciar';
-                    else finalStatus = 'Por Iniciar';
+                if (factprocStatus === 'en proceso' || factprocStatus === 'por iniciar') {
+                    finalStatus = factprocStatus === 'en proceso' ? 'En Progreso' : 'Por Iniciar';
                 } else {
                     finalStatus = 'Cerrada';
                 }
@@ -349,7 +347,9 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         duplicateOrders.forEach(dupOrder => {
             const existingOrder = workOrders.find(wo => String(wo.ot_number).trim() === String(dupOrder.ot_number).trim());
             if (existingOrder) {
-                ordersToUpdate.push({ id: existingOrder.id, data: dupOrder });
+                // Smart merge: Excel data overrides, but doesn't delete existing fields
+                const mergedData = { ...existingOrder, ...dupOrder };
+                ordersToUpdate.push({ id: existingOrder.id, data: mergedData });
             }
         });
     }
