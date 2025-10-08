@@ -148,25 +148,30 @@ export default function EditOrderPage() {
   const handleUpdateOrder = async (data: WorkOrder) => {
     if (!canEdit || !initialOrder) return;
     
-    const finalData = { ...initialOrder, ...data };
-    
-     const notificationData: UpdateOrderNotification | null = sendUpdateNotification
-        ? { send: true, cc: updateCcRecipients }
-        : null;
+    try {
+        const finalData = { ...initialOrder, ...data };
+        
+        const notificationData: UpdateOrderNotification | null = sendUpdateNotification
+            ? { send: true, cc: updateCcRecipients }
+            : null;
 
-    await updateOrder(finalData.id, finalData, notificationData);
+        await updateOrder(finalData.id, finalData, notificationData);
 
-    toast({
-      title: "Orden de Trabajo Actualizada",
-      description: `La OT "${finalData.description}" ha sido actualizada.`,
-      duration: 2000,
-    });
-    
-    const isClosed = normalizeString(finalData.status) === 'cerrada';
-    if (isClosed) {
-      router.push(`/orders/history`);
-    } else {
-      router.push(`/orders`);
+        toast({
+        title: "Orden de Trabajo Actualizada",
+        description: `La OT "${finalData.description}" ha sido actualizada.`,
+        duration: 2000,
+        });
+        
+        const isClosed = normalizeString(finalData.status) === 'cerrada';
+        if (isClosed) {
+        router.push(`/orders/history`);
+        } else {
+        router.push(`/orders`);
+        }
+    } catch (error) {
+        // Error toast is handled by the context
+        console.error("Failed to update order:", error);
     }
   };
   

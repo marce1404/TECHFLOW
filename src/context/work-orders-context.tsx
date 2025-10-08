@@ -257,7 +257,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const addLogEntry = async (action: string) => {
     if (!userProfile) return;
     const logRef = collection(db, 'audit-log');
-    addDoc(logRef, {
+    await addDoc(logRef, {
         user: userProfile.displayName,
         email: userProfile.email,
         action,
@@ -465,7 +465,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         errorEmitter.emit('permission-error', permissionError);
         toast({ variant: 'destructive', title: 'Error al eliminar', description: 'Permiso denegado o error de red.'});
-        throw serverError;
     });
   };
   
@@ -1021,7 +1020,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
       batch.delete(doc.ref);
     });
     
-    batch.commit().then(async () => {
+    return batch.commit().then(async () => {
         await addLogEntry('Eliminó todas las órdenes de trabajo.');
     }).catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
@@ -1061,7 +1060,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
       });
     });
   
-    Promise.all(batchPromises).then(async () => {
+    return Promise.all(batchPromises).then(async () => {
         await addLogEntry('Eliminó todos los datos (excepto colaboradores).');
     });
   };
