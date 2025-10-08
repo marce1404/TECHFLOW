@@ -70,6 +70,7 @@ interface WorkOrdersContextType {
   promptToCloseOrder: (order: WorkOrder) => void;
   convertActivityToWorkOrder: (activityId: string, newPrefix: string) => Promise<void>;
   deleteAllData: () => Promise<void>;
+  deleteWorkOrders: () => Promise<void>;
   auditLog: any[];
   fetchData: () => Promise<void>;
 }
@@ -759,10 +760,20 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const deleteWorkOrders = async () => {
+    const collectionRef = collection(db, 'work-orders');
+    const snapshot = await getDocs(collectionRef);
+    const batch = writeBatch(db);
+    snapshot.docs.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+    await addLogEntry('Eliminó todas las órdenes de trabajo.');
+  };
+
   const deleteAllData = async () => {
     const collectionsToDelete = [
       'work-orders',
-      // 'collaborators' is now protected
       'vehicles',
       'gantt-charts',
       'submitted-reports',
@@ -779,7 +790,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     });
   
     await Promise.all(batchPromises);
-    await addLogEntry('Eliminó todos los datos de la aplicación (excepto colaboradores).');
+    await addLogEntry('Eliminó todos los datos (excepto colaboradores).');
   };
 
   return (
@@ -840,6 +851,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         promptToCloseOrder,
         convertActivityToWorkOrder,
         deleteAllData,
+        deleteWorkOrders,
         auditLog,
         fetchData,
     }}>

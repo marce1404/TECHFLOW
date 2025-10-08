@@ -21,13 +21,14 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 
 export default function DataManagementCard() {
-    const { workOrders, otStatuses, collaborators, vehicles, ganttCharts, reportTemplates, services, submittedReports, otCategories, fetchData, deleteAllData } = useWorkOrders();
+    const { workOrders, otStatuses, collaborators, vehicles, ganttCharts, reportTemplates, services, submittedReports, otCategories, fetchData, deleteAllData, deleteWorkOrders } = useWorkOrders();
     const [date, setDate] = React.useState<DateRange | undefined>();
     const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>([]);
     const [isExporting, setIsExporting] = React.useState(false);
     const [isImporting, setIsImporting] = React.useState(false);
     const [isDeleting, setIsDeleting] = React.useState(false);
     const [deleteConfirmationText, setDeleteConfirmationText] = React.useState('');
+    const [deleteOtConfirmationText, setDeleteOtConfirmationText] = React.useState('');
     const { toast } = useToast();
 
     const statusOptions = otStatuses.map(s => ({ value: s.name, label: s.name }));
@@ -223,15 +224,23 @@ export default function DataManagementCard() {
         { title: 'Estados OT', data: otStatuses, fileName: 'estados_ot' },
         { title: 'Servicios', data: services, fileName: 'servicios' },
     ];
-    
-    const handleDeleteAllData = async () => {
+
+    const handleDelete = async (action: 'all' | 'ots') => {
         setIsDeleting(true);
         try {
-            await deleteAllData();
-            toast({
-                title: 'Base de Datos Limpiada',
-                description: 'Todos los datos han sido eliminados. Ahora puedes importar desde cero.',
-            });
+            if (action === 'all') {
+                await deleteAllData();
+                toast({
+                    title: 'Base de Datos Limpiada',
+                    description: 'Todos los datos (excepto colaboradores) han sido eliminados.',
+                });
+            } else {
+                await deleteWorkOrders();
+                toast({
+                    title: 'Órdenes de Trabajo Eliminadas',
+                    description: 'Todas las órdenes de trabajo han sido eliminadas.',
+                });
+            }
         } catch (e: any) {
             toast({
                 variant: 'destructive',
@@ -241,8 +250,10 @@ export default function DataManagementCard() {
         } finally {
             setIsDeleting(false);
             setDeleteConfirmationText('');
+            setDeleteOtConfirmationText('');
         }
     };
+    
 
     return (
         <>
@@ -358,11 +369,52 @@ export default function DataManagementCard() {
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between rounded-lg border border-destructive/50 p-4">
+                        <div>
+                            <h4 className="font-semibold">Eliminar Solo Órdenes de Trabajo</h4>
+                            <p className="text-sm text-muted-foreground">Esta acción borrará todas las OTs. Ideal para re-importar la base de datos.</p>
+                        </div>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" outline>
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Borrar OTs
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Está seguro de que desea borrar TODAS las OTs?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Esta acción no se puede deshacer. Para confirmar, escribe <strong className="text-foreground">BORRAR OTS</strong> en el campo de abajo.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <div className="py-2">
+                                    <Label htmlFor="delete-ot-confirm" className="sr-only">Confirmación</Label>
+                                    <Input 
+                                        id="delete-ot-confirm"
+                                        value={deleteOtConfirmationText}
+                                        onChange={(e) => setDeleteOtConfirmationText(e.target.value)}
+                                        placeholder='Escribe BORRAR OTS para confirmar'
+                                    />
+                                </div>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel onClick={() => setDeleteOtConfirmationText('')}>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        onClick={() => handleDelete('ots')}
+                                        disabled={deleteOtConfirmationText !== 'BORRAR OTS' || isDeleting}
+                                    >
+                                        {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        Sí, eliminar solo las OTs
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                     <div className="flex items-center justify-between rounded-lg border border-destructive/50 p-4">
                         <div>
                             <h4 className="font-semibold">Eliminar Todos los Datos</h4>
-                            <p className="text-sm text-muted-foreground">Esta acción borrará permanentemente todas las OTs, colaboradores, vehículos, y configuraciones de la base de datos.</p>
+                            <p className="text-sm text-muted-foreground">Borrará OTs, vehículos, Gantts, etc. **Los colaboradores no se eliminarán**.</p>
                         </div>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -373,9 +425,9 @@ export default function DataManagementCard() {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>
-                                    <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                                    <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        Esta acción no se puede deshacer. Se eliminarán todos los datos de la aplicación. Para confirmar, escribe <strong className="text-foreground">ELIMINAR</strong> en el campo de abajo.
+                                        Esta acción no se puede deshacer. Se eliminarán todos los datos (excepto los Colaboradores). Para confirmar, escribe <strong className="text-foreground">ELIMINAR</strong> en el campo de abajo.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <div className="py-2">
@@ -390,11 +442,11 @@ export default function DataManagementCard() {
                                 <AlertDialogFooter>
                                     <AlertDialogCancel onClick={() => setDeleteConfirmationText('')}>Cancelar</AlertDialogCancel>
                                     <AlertDialogAction
-                                        onClick={handleDeleteAllData}
+                                        onClick={() => handleDelete('all')}
                                         disabled={deleteConfirmationText !== 'ELIMINAR' || isDeleting}
                                     >
                                         {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        Sí, eliminar todo
+                                        Sí, eliminar todo lo demás
                                     </AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
