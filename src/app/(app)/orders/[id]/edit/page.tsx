@@ -94,7 +94,7 @@ export default function EditOrderPage() {
   })), [vehicles]);
   
   const serviceOptions = React.useMemo(() => services.map(s => ({value: s.name, label: s.name})), [services]);
-  const statusOptions = React.useMemo(() => otStatuses.map(s => ({value: s.name, label: s.name})), [otStatuses]);
+  const statusOptions = React.useMemo(() => otStatuses.map(s => ({value: s.name, label: s.name, id: s.id})), [otStatuses]);
   const priorityOptions = [{value: 'Baja', label: 'Baja'}, {value: 'Media', label: 'Media'}, {value: 'Alta', label: 'Alta'}];
 
   const startDate = methods.watch('date') ? new Date(methods.watch('date').replace(/-/g, '/')) : undefined;
@@ -533,7 +533,7 @@ export default function EditOrderPage() {
                                         </FormControl>
                                         <SelectContent>
                                             {statusOptions.map(option => (
-                                                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                                                <SelectItem key={option.id} value={option.value}>{option.label}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
@@ -967,7 +967,3 @@ export default function EditOrderPage() {
     </>
   );
 }
-
-    
-
-    

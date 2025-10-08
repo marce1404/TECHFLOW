@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -53,7 +52,7 @@ export default function AdvancedFilters({ dateRange, onDateRangeChange, activeFi
   const supervisorOptions = React.useMemo(() => collaborators.filter(c => ['Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado'].includes(c.role)).map(s => ({ value: s.name, label: s.name })), [collaborators]);
   const vendorOptions = React.useMemo(() => collaborators.filter(c => c.role === 'Comercial').map(v => ({ value: v.name, label: v.name })), [collaborators]);
   const priorityOptions: { value: WorkOrder['priority'], label: string }[] = [{value: 'Baja', label: 'Baja'}, {value: 'Media', label: 'Media'}, {value: 'Alta', label: 'Alta'}];
-  const statusOptions = React.useMemo(() => otStatuses.map(s => ({ value: s.name, label: s.name })), [otStatuses]);
+  const statusOptions = React.useMemo(() => otStatuses.map(s => ({ value: s.name, label: s.name, id: s.id })), [otStatuses]);
   const invoicedStatusOptions = [
     { value: 'invoiced', label: 'Facturadas' },
     { value: 'not_invoiced', label: 'Por Facturar' },
