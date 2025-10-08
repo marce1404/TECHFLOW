@@ -130,18 +130,18 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     };
 
     const mapFactprocToStatus = (factprocValue: string | undefined): WorkOrder['status'] | null => {
-        if (!factprocValue || typeof factprocValue !== 'string') {
-            return null;
-        }
+        if (!factprocValue || typeof factprocValue !== 'string') return null;
 
         const normalizedFactproc = normalizeString(factprocValue.trim());
 
-        if (normalizedFactproc === 'terminada') return 'Terminada';
-        if (normalizedFactproc === 'cerrada') return 'Cerrada';
-        if (normalizedFactproc === 'en proceso') return 'En Progreso';
-        if (normalizedFactproc === 'por iniciar') return 'Por Iniciar';
-        
-        return null;
+        const statusMap: { [key: string]: WorkOrder['status'] } = {
+            'cerrada': 'Cerrada',
+            'terminada': 'Terminada',
+            'en proceso': 'En Progreso',
+            'por iniciar': 'Por Iniciar'
+        };
+
+        return statusMap[normalizedFactproc] || null;
     }
 
 
@@ -167,18 +167,18 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         }
         
         const headers: { original: string, normalized: string }[] = xlsx.utils.sheet_to_json<string[]>(worksheet, { header: 1 })[0]
-            .map(h => ({ original: String(h), normalized: normalizeString(String(h)).replace(/[\s\n\.\°]+/g, '') }));
+            .map(h => ({ original: String(h), normalized: normalizeString(String(h)).replace(/[\s\n\.\°\/\\]+/g, '') }));
 
         const findHeader = (variants: string[]) => {
             for (const variant of variants) {
-                const normalizedVariant = normalizeString(variant).replace(/[\s\n\.\°]+/g, '');
+                const normalizedVariant = normalizeString(variant).replace(/[\s\n\.\°\/\\]+/g, '');
                 const header = headers.find(h => h.normalized === normalizedVariant);
                 if (header) return header.original;
             }
             return null;
         };
         
-        const keyMapping: { [key: string]: string | null } = {
+        const keyMapping: { [key in keyof z.infer<typeof excelRowSchema>]?: string | null } = {
             ot_number: findHeader(['ot', 'n ot', 'numero ot']),
             date: findHeader(['fechaingreso', 'fecha ingreso']),
             description: findHeader(['nombredelproyecto', 'descripcion']),
@@ -189,15 +189,16 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             technicians: findHeader(['tecnico', 'técnico', 'tecnicos']),
             service: findHeader(['sistema', 'servicio']),
             netPrice: findHeader(['montoneto']),
-            factproc: findHeader(['factproc']),
-            hesEmMigo: findHeader(['em-hes-migo', 'em/hes/migo', 'hesemmigo']),
-            ocNumber: findHeader(['oc', 'nº orden de compra', 'orden de compra']),
-            saleNumber: findHeader(['nv', 'nº venta']),
-            invoiceNumber: findHeader(['factn', 'factura', 'fact n°', 'fact. n°']),
-            invoiceDate: findHeader(['fechafact', 'fecha factura', 'fecha fact.']),
-            billingMonth: findHeader(['mesfac', 'mes fac']),
+            factproc: findHeader(['factproces', 'factproc']), // Corrected to match image
+            hesEmMigo: findHeader(['em-hes-migo', 'emhesmigo']),
+            ocNumber: findHeader(['oc', 'n orden de compra']),
+            saleNumber: findHeader(['nv', 'n venta']),
+            invoiceNumber: findHeader(['factn', 'factura', 'fact n°']),
+            invoiceDate: findHeader(['fechafact', 'fecha factura', 'fecha fact']),
+            billingMonth: findHeader(['mesfac']),
             endDate: findHeader(['fechatermino', 'fecha termino']),
         };
+
 
         const validationErrors: string[] = [];
         const tempNewOrders: CreateWorkOrderInput[] = [];
@@ -610,3 +611,5 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
+
+    
