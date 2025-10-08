@@ -47,6 +47,9 @@ export default function DashboardPage() {
     });
 
   const getProgress = (order: WorkOrder) => {
+    if (normalizeString(order.status) === 'cerrada') {
+      return 100;
+    }
     const assignedGantt = ganttCharts.find(g => g.assignedOT === order.ot_number);
     if (assignedGantt && assignedGantt.tasks.length > 0) {
       const totalProgress = assignedGantt.tasks.reduce((sum, task) => sum + (task.progress || 0), 0);
