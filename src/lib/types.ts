@@ -215,6 +215,11 @@ export type SmtpConfig = {
     fromName: string;
 };
 
+export type NewOrderNotification = {
+    send: boolean;
+    cc: string[]; // array of collaborator IDs
+};
+
 
 // AI Resource Assignment Types
 export const SuggestOptimalResourceAssignmentInputSchema = z.object({

@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -19,11 +17,12 @@ import Link from 'next/link';
 import { MultiSelect } from "@/components/ui/multi-select";
 import { useToast } from "@/hooks/use-toast";
 import { useWorkOrders } from "@/context/work-orders-context";
-import type { WorkOrder, Invoice } from "@/lib/types";
+import type { WorkOrder, Invoice, NewOrderNotification } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { Slider } from "@/components/ui/slider";
 import { useAuth } from "@/context/auth-context";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
 
 
 export default function NewOrderPage() {
@@ -65,6 +64,10 @@ export default function NewOrderPage() {
     const [newInvoiceNumber, setNewInvoiceNumber] = React.useState('');
     const [newInvoiceDate, setNewInvoiceDate] = React.useState<Date | undefined>(new Date());
     const [newInvoiceAmount, setNewInvoiceAmount] = React.useState(0);
+    
+    // Notification State
+    const [sendEmailNotification, setSendEmailNotification] = React.useState(true);
+    const [ccRecipients, setCcRecipients] = React.useState<string[]>([]);
 
     const lastUsedOt = React.useMemo(() => getLastOtNumber(categoryPrefix), [categoryPrefix, getLastOtNumber, workOrders]);
     
@@ -90,18 +93,32 @@ export default function NewOrderPage() {
       .filter(c => c.role === 'Comercial' && c.status === 'Activo')
       .map(c => ({ value: c.name, label: c.name }));
 
+    const collaboratorEmailOptions = collaborators
+        .filter(c => c.email)
+        .map(c => ({ value: c.id, label: `${c.name} (${c.email})` }));
+
+
   const vehicleOptions = vehicles.map(v => ({
     value: v.plate,
     label: `${v.model} (${v.plate})`,
   }));
 
 
-  const handleCreateOrder = () => {
+  const handleCreateOrder = async () => {
     if (!description || !otNumber) {
         toast({
             variant: "destructive",
             title: "Campos Requeridos",
             description: "Por favor, completa el número de OT y el nombre de la OT.",
+        });
+        return;
+    }
+    
+     if (sendEmailNotification && !comercial) {
+        toast({
+            variant: "destructive",
+            title: "Comercial Requerido",
+            description: "Debes asignar un comercial para poder enviar la notificación por correo.",
         });
         return;
     }
@@ -133,7 +150,11 @@ export default function NewOrderPage() {
         manualProgress,
     };
     
-    addOrder(newOrder);
+    const notificationData: NewOrderNotification | null = sendEmailNotification
+        ? { send: true, cc: ccRecipients }
+        : null;
+    
+    await addOrder(newOrder, notificationData);
 
     toast({
       title: "Orden de Trabajo Creada",
@@ -249,7 +270,7 @@ export default function NewOrderPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {otCategories.filter(cat => cat.status === 'Activa').map(cat => (
-                                        <SelectItem key={cat.prefix} value={cat.prefix}>{cat.name} ({cat.prefix})</SelectItem>
+                                        <SelectItem key={cat.id} value={cat.prefix}>{cat.name} ({cat.prefix})</SelectItem>
                                     ))}
                                 </SelectContent>
                                 </Select>
@@ -555,6 +576,36 @@ export default function NewOrderPage() {
       
         <Card>
             <CardHeader>
+                <CardTitle>Notificación por Correo</CardTitle>
+                <CardDescription>
+                    Envía un correo al comercial asignado para notificar la creación de esta OT.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="flex items-center space-x-2">
+                    <Switch
+                        id="email-notification"
+                        checked={sendEmailNotification}
+                        onCheckedChange={setSendEmailNotification}
+                    />
+                    <Label htmlFor="email-notification">Notificar Creación por Correo</Label>
+                </div>
+                {sendEmailNotification && (
+                    <div>
+                        <Label>Añadir en Copia (CC)</Label>
+                        <MultiSelect
+                            options={collaboratorEmailOptions}
+                            selected={ccRecipients}
+                            onChange={setCcRecipients}
+                            placeholder="Seleccionar destinatarios..."
+                        />
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+        
+        <Card>
+            <CardHeader>
                 <CardTitle>Añadir Nueva Factura</CardTitle>
             </CardHeader>
              <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
@@ -649,4 +700,3 @@ export default function NewOrderPage() {
     </div>
   );
 }
-

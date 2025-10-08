@@ -5,7 +5,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, query, where, writeBatch, serverTimestamp, orderBy, getDoc, setDoc, onSnapshot, Unsubscribe, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { WorkOrder, OTCategory, Service, Collaborator, Vehicle, GanttChart, SuggestedTask, OTStatus, ReportTemplate, SubmittedReport, CompanyInfo, AppUser, SmtpConfig } from '@/lib/types';
+import type { WorkOrder, OTCategory, Service, Collaborator, Vehicle, GanttChart, SuggestedTask, OTStatus, ReportTemplate, SubmittedReport, CompanyInfo, AppUser, SmtpConfig, NewOrderNotification } from '@/lib/types';
 import { useAuth } from './auth-context';
 import { format } from 'date-fns';
 import { CloseWorkOrderDialog } from '@/components/orders/close-work-order-dialog';
@@ -15,6 +15,7 @@ import { normalizeString, processFirestoreTimestamp } from '@/lib/utils';
 import { collaborators as demoCollaborators } from '@/lib/placeholder-data';
 import { errorEmitter } from '@/lib/error-emitter';
 import { FirestorePermissionError } from '@/lib/errors';
+import { sendNewWorkOrderEmailAction } from '@/app/actions';
 
 
 interface WorkOrdersContextType {
@@ -33,7 +34,7 @@ interface WorkOrdersContextType {
   companyInfo: CompanyInfo | null;
   smtpConfig: SmtpConfig | null;
   loading: boolean;
-  addOrder: (order: Omit<WorkOrder, 'id'>) => Promise<WorkOrder>;
+  addOrder: (order: Omit<WorkOrder, 'id'>, notification?: NewOrderNotification | null) => Promise<WorkOrder>;
   updateOrder: (id: string, updatedOrder: Partial<WorkOrder>) => Promise<void>;
   getOrder: (id: string) => WorkOrder | undefined;
   addCategory: (category: Omit<OTCategory, 'id' | 'status'> & { status: string }) => Promise<OTCategory>;
@@ -355,7 +356,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     return lastOtNumber;
   }, [workOrders]);
 
-  const addOrder = async (order: Omit<WorkOrder, 'id'>): Promise<WorkOrder> => {
+  const addOrder = async (order: Omit<WorkOrder, 'id'>, notification?: NewOrderNotification | null): Promise<WorkOrder> => {
     const collRef = collection(db, "work-orders");
     const docRef = await addDoc(collRef, order).catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
@@ -367,8 +368,34 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         toast({ variant: 'destructive', title: 'Error al crear', description: 'Permiso denegado o error de red.'});
         throw serverError;
     });
+    
+    const createdOrder = { id: docRef.id, ...order } as WorkOrder;
     await addLogEntry(`Creó la OT: ${order.ot_number} - ${order.description}`);
-    return { id: docRef.id, ...order } as WorkOrder;
+    
+    // Send email if requested
+    if (notification?.send && smtpConfig) {
+        const comercial = collaborators.find(c => c.name === createdOrder.comercial);
+        if (comercial?.email) {
+            const ccEmails = (notification.cc || [])
+                .map(id => collaborators.find(c => c.id === id)?.email)
+                .filter((email): email is string => !!email);
+
+            await sendNewWorkOrderEmailAction(
+                [comercial.email],
+                ccEmails,
+                createdOrder,
+                smtpConfig
+            );
+        } else {
+             toast({
+                variant: 'destructive',
+                title: 'Advertencia',
+                description: 'OT creada, pero no se pudo enviar el correo. El comercial asignado no tiene un email configurado.'
+            });
+        }
+    }
+    
+    return createdOrder;
   };
   
   const getOrder = (id: string) => {
@@ -1067,4 +1094,3 @@ export const useWorkOrders = () => {
   }
   return context;
 };
-

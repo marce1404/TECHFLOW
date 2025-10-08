@@ -628,3 +628,90 @@ export async function sendActivityEmailAction(
         return { success: false, message: `Error al enviar el correo de actividad: ${error.message}` };
     }
 }
+
+export async function sendNewWorkOrderEmailAction(
+    to: string[],
+    cc: string[],
+    order: WorkOrder,
+    config: SmtpConfig,
+): Promise<{ success: boolean; message: string }> {
+    const { host, port, secure, user, pass, fromName, fromEmail } = config;
+
+    let transporter;
+    try {
+        transporter = nodemailer.createTransport({
+            host, port, secure: secure === 'ssl', auth: { user, pass },
+             ...(secure === 'starttls' && { tls: { ciphers: 'SSLv3' }})
+        });
+        await transporter.verify();
+    } catch (error: any) {
+        console.error("Error verifying SMTP for new OT:", error);
+        return { success: false, message: `Error de conexión SMTP: ${error.message}` };
+    }
+
+    const subject = `Nueva OT Creada: ${order.ot_number} - ${order.description}`;
+    
+    const htmlBody = `
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #333; line-height: 1.5; }
+                .container { max-width: 600px; margin: 20px auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #f8fafc; }
+                .header { text-align: center; padding-bottom: 15px; margin-bottom: 15px; border-bottom: 2px solid #3CA7FA; }
+                .header h1 { font-size: 24px; color: #3CA7FA; margin: 0; }
+                .section { margin-bottom: 25px; }
+                .section h2 { font-size: 18px; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; margin-top: 0; }
+                .details-table { width: 100%; border-collapse: collapse; }
+                .details-table td { padding: 8px 4px; font-size: 14px; }
+                .details-table td:first-child { font-weight: 600; color: #475569; width: 40%; }
+                .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #64748b; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>Nueva Orden de Trabajo Creada</h1>
+                </div>
+                <p>Hola,</p>
+                <p>Se ha creado una nueva Orden de Trabajo en el sistema con los siguientes detalles:</p>
+
+                <div class="section">
+                    <h2>Detalles de la OT</h2>
+                    <table class="details-table">
+                        <tr><td>Nº OT</td><td>${order.ot_number}</td></tr>
+                        <tr><td>Descripción</td><td>${order.description}</td></tr>
+                        <tr><td>Cliente</td><td>${order.client}</td></tr>
+                        <tr><td>Servicio</td><td>${order.service}</td></tr>
+                        <tr><td>Fecha de Inicio</td><td>${order.date}</td></tr>
+                        <tr><td>Encargados</td><td>${order.assigned.join(', ')}</td></tr>
+                        <tr><td>Técnicos</td><td>${order.technicians.join(', ')}</td></tr>
+                    </table>
+                </div>
+
+                <div class="footer">
+                    <p>Este es un correo generado automáticamente por el sistema de gestión OSESA.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+
+    const mailOptions = {
+        from: `"${fromName}" <${fromEmail}>`,
+        to: to.join(','),
+        cc: cc.join(','),
+        subject,
+        html: htmlBody,
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        return { success: true, message: '¡Notificación de nueva OT enviada con éxito!' };
+    } catch (error: any) {
+        console.error("Error sending new OT email:", error);
+        return { success: false, message: `Error al enviar la notificación: ${error.message}` };
+    }
+}
