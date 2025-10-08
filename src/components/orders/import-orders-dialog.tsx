@@ -14,13 +14,11 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Download, FileUp, Loader2, UploadCloud, CheckCircle, FileWarning } from 'lucide-react';
 import * as xlsx from 'xlsx';
-import { z } from 'zod';
 import type { CreateWorkOrderInput, WorkOrder } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { normalizeString } from '@/lib/utils';
 import { format, parse, isValid, getYear } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { Progress } from '../ui/progress';
 
 interface ImportOrdersDialogProps {
@@ -30,32 +28,6 @@ interface ImportOrdersDialogProps {
 }
 
 type ImportStep = 'selectFile' | 'confirmDuplicates' | 'showResult';
-
-const excelRowSchema = z.object({
-  ot_number: z.string().min(1, "La columna OT es obligatoria."),
-  description: z.string().optional(),
-  client: z.string().optional(),
-  rut: z.string().optional(),
-  service: z.string().optional(),
-  date: z.any().optional(),
-  endDate: z.any().optional(),
-  status: z.string().optional(),
-  factproc: z.string().optional(),
-  comercial: z.string().optional(),
-  assigned: z.any().optional(),
-  technicians: z.any().optional(),
-  netPrice: z.any().optional(),
-  facturado: z.any().optional(),
-  notes: z.string().optional(),
-  ocNumber: z.any().optional(),
-  hesEmMigo: z.string().optional(),
-  saleNumber: z.any().optional(),
-  invoiceNumber: z.any().optional(),
-  invoiceDate: z.any().optional(),
-  billingMonth: z.union([z.string(), z.number()]).optional(),
-  rentedVehicle: z.string().optional(),
-});
-
 
 export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: ImportOrdersDialogProps) {
   const { collaborators, addOrder, services: availableServices, otStatuses, workOrders, updateOrder } = useWorkOrders();
@@ -77,24 +49,24 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     }
   };
   
-  const findMatchingCollaborator = (name: string): string => {
-      if (!name?.trim()) return '';
-      const normalizedName = normalizeString(name);
+    const findMatchingCollaborator = (name: string): string => {
+        if (!name?.trim()) return '';
+        const normalizedName = normalizeString(name);
 
-      const exactMatch = collaborators.find(c => normalizeString(c.name) === normalizedName);
-      if (exactMatch) return exactMatch.name;
-      
-      const nameParts = normalizedName.split(' ');
-      const partialMatch = collaborators.find(c => {
-          const collaboratorNameParts = normalizeString(c.name).split(' ');
-          if (nameParts.every(part => collaboratorNameParts.includes(part))) {
-              return true;
-          }
-           return nameParts.every(part => normalizeString(c.name).includes(part));
-      });
+        // 1. Exact Match (case/accent insensitive)
+        const exactMatch = collaborators.find(c => normalizeString(c.name) === normalizedName);
+        if (exactMatch) return exactMatch.name;
+        
+        // 2. Partial Match as fallback (contains all parts)
+        const nameParts = normalizedName.split(' ');
+        const partialMatch = collaborators.find(c => {
+            const collaboratorNameParts = normalizeString(c.name).split(' ');
+            return nameParts.every(part => collaboratorNameParts.includes(part));
+        });
 
-      return partialMatch ? partialMatch.name : name;
-  };
+        return partialMatch ? partialMatch.name : name; // Return original name if no good match is found
+    };
+
 
   const findMatchingString = (input: string, validList: {name: string}[]) => {
       if (!input?.trim()) return input;
@@ -133,7 +105,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5,
                 julio: 6, agosto: 7, septiembre: 8, octubre: 9, noviembre: 10, diciembre: 11
             };
-            const normalizedMonth = normalizeString(trimmedDateInput);
+            const normalizedMonth = normalizeString(trimmedDateInput.split(' ')[0]);
             if (monthNames[normalizedMonth] !== undefined) {
                 const currentYear = getYear(new Date());
                 return format(new Date(currentYear, monthNames[normalizedMonth], 1), 'yyyy-MM-dd');
@@ -226,7 +198,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             factproc: findHeader(['factproc', 'fact proces', 'factprocs']),
             hesEmMigo: findHeader(['emhesmigo', 'em-hes-migo']),
             ocNumber: findHeader(['oc', 'nordencompra']),
-            saleNumber: findHeader(['nv', 'nventa']),
+            saleNumber: findHeader(['nv', 'nventa', 'n de venta']),
             invoiceNumber: findHeader(['factn', 'factura', 'nfactura', 'fact n']),
             invoiceDate: findHeader(['fechafact', 'fechafactura', 'fecha fact']),
             billingMonth: findHeader(['mesfac']),
@@ -242,17 +214,17 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         const existingOtNumbers = new Set(workOrders.map(wo => String(wo.ot_number).trim()));
         
         jsonData.forEach((row, index) => {
-            const rawDateValue = row[keyMapping.date!];
-            const finalDate = robustDateParse(rawDateValue);
-
             if (!keyMapping.ot_number || !row[keyMapping.ot_number]) {
                  validationErrors.push(`Fila ${index + 2}: Falta el número de OT, no se puede importar.`);
                  return;
             }
+            
+            const rawDateValue = row[keyMapping.date!];
+            const finalDate = robustDateParse(rawDateValue);
 
             if (!finalDate) {
               const displayValue = rawDateValue instanceof Date ? rawDateValue.toISOString() : String(rawDateValue || 'VACÍO');
-              validationErrors.push(`Fila ${index + 2} (${row[keyMapping.ot_number!] || 'N/A'}): Valor de fecha de ingreso no válido encontrado: '${displayValue}'`);
+              validationErrors.push(`Fila ${index + 2} (${row[keyMapping.ot_number!] || 'N/A'}): Valor de fecha de ingreso no válido: '${displayValue}'.`);
               return;
             }
 
@@ -277,6 +249,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             };
 
             const otNumberString = String(row[keyMapping.ot_number!]).trim();
+            const finalEndDate = robustDateParse(row[keyMapping.endDate!]);
 
             const orderData: CreateWorkOrderInput = {
                 ot_number: otNumberString,
@@ -285,7 +258,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 client: String(row[keyMapping.client!] || ''),
                 rut: String(row[keyMapping.rut!] || ''),
                 service: findMatchingString(String(row[keyMapping.service!] || ''), availableServices),
-                endDate: robustDateParse(row[keyMapping.endDate!]) || '',
+                endDate: finalEndDate || '',
                 startTime: '',
                 endTime: '',
                 notes: String(row[keyMapping.factproc!] || ''),
@@ -619,3 +592,5 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
+
+    
