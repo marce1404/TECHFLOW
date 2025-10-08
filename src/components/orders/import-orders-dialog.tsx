@@ -198,7 +198,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             billingMonth: findHeader(['mesfac']),
             endDate: findHeader(['fechatermino', 'fecha termino']),
             rentedVehicle: findHeader(['vehiculoarrendado', 'arriendovehiculo']),
-            notes: findHeader(['observaciones', 'notas']),
+            notes: findHeader(['Notas', 'notas']),
         };
 
         const validationErrors: string[] = [];
@@ -225,12 +225,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             const firstRow = rows[0];
 
             const rawDateValue = keyMapping.date ? firstRow[keyMapping.date] : null;
-            const finalDate = robustDateParse(rawDateValue);
-
-            if (!finalDate) {
-              validationErrors.push(`OT ${otNumber}: Valor de fecha de ingreso no válido: '${String(rawDateValue || 'VACÍO')}'.`);
-              return;
-            }
+            const finalDate = robustDateParse(rawDateValue) || format(new Date(), 'yyyy-MM-dd');
 
             const rawNetPrice = keyMapping.netPrice ? firstRow[keyMapping.netPrice] : 0;
             let finalNetPrice = 0;
@@ -292,7 +287,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
             if(orderData.invoices && orderData.invoices.length > 0) {
               const totalInvoiced = orderData.invoices.reduce((sum, inv) => sum + inv.amount, 0);
-              if (totalInvoiced >= orderData.netPrice!) {
+              if (totalInvoiced >= (orderData.netPrice || 0) ) {
                 orderData.facturado = true;
               }
             } else if (keyMapping.billingMonth && !!firstRow[keyMapping.billingMonth]) {
