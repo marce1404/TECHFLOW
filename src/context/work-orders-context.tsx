@@ -13,6 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { predefinedReportTemplates } from '@/lib/predefined-templates';
 import { normalizeString, processFirestoreTimestamp } from '@/lib/utils';
 import { collaborators as demoCollaborators } from '@/lib/placeholder-data';
+import { errorEmitter } from '@/lib/error-emitter';
+import { FirestorePermissionError } from '@/lib/errors';
 
 
 interface WorkOrdersContextType {
@@ -253,12 +255,20 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
   const addLogEntry = async (action: string) => {
     if (!userProfile) return;
-    addDoc(collection(db, 'audit-log'), {
+    const logRef = collection(db, 'audit-log');
+    addDoc(logRef, {
         user: userProfile.displayName,
         email: userProfile.email,
         action,
         timestamp: serverTimestamp()
-    }).catch(e => console.error("Error adding log entry: ", e));
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: logRef.path,
+            operation: 'create',
+            requestResourceData: { action },
+        });
+        errorEmitter.emit('permission-error', permissionError);
+    });
   };
   
   const updateOrder = useCallback(async (id: string, updatedData: Partial<WorkOrder>) => {
@@ -268,11 +278,16 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         if (order) {
             addLogEntry(`Actualizó la OT: ${order.ot_number}`);
         }
-      }).catch(e => {
-        console.error(`Error updating order ${id}:`, e);
-        toast({ variant: 'destructive', title: 'Error al actualizar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
-      });
+      }).catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({
+                path: orderRef.path,
+                operation: 'update',
+                requestResourceData: updatedData,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            // We also toast a generic error in case the dev overlay doesn't show
+            toast({ variant: 'destructive', title: 'Error al actualizar', description: 'Permiso denegado o error de red.' });
+        });
   }, [workOrders, toast]);
 
   const getNextOtNumber = useCallback((prefix: string): string => {
@@ -341,15 +356,19 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   }, [workOrders]);
 
   const addOrder = async (order: Omit<WorkOrder, 'id'>): Promise<WorkOrder> => {
-    try {
-      const docRef = await addDoc(collection(db, "work-orders"), order);
-      await addLogEntry(`Creó la OT: ${order.ot_number} - ${order.description}`);
-      return { id: docRef.id, ...order } as WorkOrder;
-    } catch(e: any) {
-        console.error("Error creating order:", e);
-        toast({ variant: 'destructive', title: 'Error al crear', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
-    }
+    const collRef = collection(db, "work-orders");
+    const docRef = await addDoc(collRef, order).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: collRef.path,
+            operation: 'create',
+            requestResourceData: order,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al crear', description: 'Permiso denegado o error de red.'});
+        throw serverError;
+    });
+    await addLogEntry(`Creó la OT: ${order.ot_number} - ${order.description}`);
+    return { id: docRef.id, ...order } as WorkOrder;
   };
   
   const getOrder = (id: string) => {
@@ -358,12 +377,17 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
   const deleteOrder = async (id: string) => {
     const order = getOrder(id);
-    deleteDoc(doc(db, 'work-orders', id)).then(() => {
+    const docRef = doc(db, 'work-orders', id);
+    deleteDoc(docRef).then(() => {
         if (order) addLogEntry(`Eliminó la OT: ${order.ot_number}`);
-    }).catch(e => {
-        console.error("Error deleting order:", e);
-        toast({ variant: 'destructive', title: 'Error al eliminar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al eliminar', description: 'Permiso denegado o error de red.'});
+        throw serverError;
     });
   };
   
@@ -385,103 +409,142 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   };
   
   const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory> => {
-    try {
-        const docRef = await addDoc(collection(db, "ot-categories"), category);
-        await addLogEntry(`Creó la categoría de OT: ${category.name}`);
-        return { id: docRef.id, ...category } as OTCategory;
-    } catch(e: any) {
-        console.error("Error creating category:", e);
-        toast({ variant: 'destructive', title: 'Error al crear', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
-    }
+    const collRef = collection(db, "ot-categories");
+    const docRef = await addDoc(collRef, category).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: collRef.path,
+            operation: 'create',
+            requestResourceData: category,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al crear', description: 'Permiso denegado o error de red.'});
+        throw serverError;
+    });
+    await addLogEntry(`Creó la categoría de OT: ${category.name}`);
+    return { id: docRef.id, ...category } as OTCategory;
   };
 
   const updateCategory = async (id: string, updatedCategory: Partial<OTCategory>) => {
-    updateDoc(doc(db, "ot-categories", id), updatedCategory).then(() => {
+    const docRef = doc(db, "ot-categories", id);
+    updateDoc(docRef, updatedCategory).then(() => {
         addLogEntry(`Actualizó la categoría de OT: ${updatedCategory.name}`);
-    }).catch(e => {
-        console.error("Error updating category:", e);
-        toast({ variant: 'destructive', title: 'Error al actualizar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'update',
+            requestResourceData: updatedCategory
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al actualizar', description: 'Permiso denegado o error de red.'});
     });
   };
 
   const addStatus = async (status: Omit<OTStatus, 'id'>): Promise<OTStatus> => {
-    try {
-        const docRef = await addDoc(collection(db, "ot-statuses"), status);
-        await addLogEntry(`Creó el estado de OT: ${status.name}`);
-        return { id: docRef.id, ...status } as OTStatus;
-    } catch(e: any) {
-        console.error("Error creating status:", e);
-        toast({ variant: 'destructive', title: 'Error al crear', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
-    }
+    const collRef = collection(db, "ot-statuses");
+    const docRef = await addDoc(collRef, status).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: collRef.path,
+            operation: 'create',
+            requestResourceData: status,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al crear', description: 'Permiso denegado o error de red.'});
+        throw serverError;
+    });
+    await addLogEntry(`Creó el estado de OT: ${status.name}`);
+    return { id: docRef.id, ...status } as OTStatus;
   };
 
   const updateStatus = async (id: string, updatedStatus: Partial<OTStatus>) => {
-    updateDoc(doc(db, "ot-statuses", id), updatedStatus).then(() => {
+    const docRef = doc(db, "ot-statuses", id);
+    updateDoc(docRef, updatedStatus).then(() => {
         addLogEntry(`Actualizó el estado de OT: ${updatedStatus.name}`);
-    }).catch(e => {
-        console.error("Error updating status:", e);
-        toast({ variant: 'destructive', title: 'Error al actualizar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'update',
+            requestResourceData: updatedStatus
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al actualizar', description: 'Permiso denegado o error de red.'});
     });
   };
 
   const deleteStatus = async (id: string) => {
     const status = otStatuses.find(s => s.id === id);
-    deleteDoc(doc(db, "ot-statuses", id)).then(() => {
+    const docRef = doc(db, "ot-statuses", id);
+    deleteDoc(docRef).then(() => {
         if (status) addLogEntry(`Eliminó el estado de OT: ${status.name}`);
-    }).catch(e => {
-        console.error("Error deleting status:", e);
-        toast({ variant: 'destructive', title: 'Error al eliminar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al eliminar', description: 'Permiso denegado o error de red.'});
     });
   };
 
   const addService = async (service: Omit<Service, 'id'>): Promise<Service> => {
-    try {
-        const docRef = await addDoc(collection(db, "services"), service);
-        await addLogEntry(`Creó el servicio: ${service.name}`);
-        return { id: docRef.id, ...service } as Service;
-    } catch(e: any) {
-        console.error("Error creating service:", e);
-        toast({ variant: 'destructive', title: 'Error al crear', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
-    }
+    const collRef = collection(db, "services");
+    const docRef = await addDoc(collRef, service).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: collRef.path,
+            operation: 'create',
+            requestResourceData: service,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al crear', description: 'Permiso denegado o error de red.'});
+        throw serverError;
+    });
+    await addLogEntry(`Creó el servicio: ${service.name}`);
+    return { id: docRef.id, ...service } as Service;
   };
 
   const updateService = async (id: string, updatedService: Partial<Service>) => {
-    updateDoc(doc(db, "services", id), updatedService).then(() => {
+    const docRef = doc(db, "services", id);
+    updateDoc(docRef, updatedService).then(() => {
         addLogEntry(`Actualizó el servicio: ${updatedService.name}`);
-    }).catch(e => {
-        console.error("Error updating service:", e);
-        toast({ variant: 'destructive', title: 'Error al actualizar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'update',
+            requestResourceData: updatedService
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al actualizar', description: 'Permiso denegado o error de red.'});
     });
   };
   
   const deleteService = async (id: string) => {
     const service = services.find(s => s.id === id);
-    deleteDoc(doc(db, "services", id)).then(() => {
+    const docRef = doc(db, "services", id);
+    deleteDoc(docRef).then(() => {
         if (service) addLogEntry(`Eliminó el servicio: ${service.name}`);
-    }).catch(e => {
-        console.error("Error deleting service:", e);
-        toast({ variant: 'destructive', title: 'Error al eliminar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al eliminar', description: 'Permiso denegado o error de red.'});
     });
   };
   
   const addCollaborator = async (collaborator: Omit<Collaborator, 'id'>): Promise<Collaborator> => {
-    try {
-        const docRef = await addDoc(collection(db, "collaborators"), collaborator);
-        await addLogEntry(`Creó al colaborador: ${collaborator.name}`);
-        return { ...collaborator, id: docRef.id } as Collaborator;
-    } catch(e: any) {
-        console.error("Error creating collaborator:", e);
-        toast({ variant: 'destructive', title: 'Error al crear', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
-    }
+    const collRef = collection(db, "collaborators");
+    const docRef = await addDoc(collRef, collaborator).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: collRef.path,
+            operation: 'create',
+            requestResourceData: collaborator,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al crear', description: 'Permiso denegado o error de red.'});
+        throw serverError;
+    });
+    await addLogEntry(`Creó al colaborador: ${collaborator.name}`);
+    return { ...collaborator, id: docRef.id } as Collaborator;
   };
   
   const getCollaborator = (id: string) => {
@@ -489,57 +552,79 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateCollaborator = async (id: string, updatedCollaborator: Partial<Omit<Collaborator, 'id'>>) => {
-    updateDoc(doc(db, "collaborators", id), updatedCollaborator).then(() => {
+    const docRef = doc(db, "collaborators", id);
+    updateDoc(docRef, updatedCollaborator).then(() => {
         addLogEntry(`Actualizó al colaborador: ${updatedCollaborator.name}`);
-    }).catch(e => {
-        console.error("Error updating collaborator:", e);
-        toast({ variant: 'destructive', title: 'Error al actualizar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'update',
+            requestResourceData: updatedCollaborator
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al actualizar', description: 'Permiso denegado o error de red.'});
     });
   };
 
   const deleteCollaborator = async (id: string) => {
     const collaborator = getCollaborator(id);
-    deleteDoc(doc(db, "collaborators", id)).then(() => {
+    const docRef = doc(db, "collaborators", id);
+    deleteDoc(docRef).then(() => {
         if (collaborator) addLogEntry(`Eliminó al colaborador: ${collaborator.name}`);
-    }).catch(e => {
-        console.error("Error deleting collaborator:", e);
-        toast({ variant: 'destructive', title: 'Error al eliminar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al eliminar', description: 'Permiso denegado o error de red.'});
     });
   };
   
   const addVehicle = async (vehicle: Omit<Vehicle, 'id'>): Promise<Vehicle> => {
     const vehicleData = { ...vehicle, maintenanceLog: vehicle.maintenanceLog || [] };
-    try {
-        const docRef = await addDoc(collection(db, "vehicles"), vehicleData);
-        await addLogEntry(`Añadió el vehículo: ${vehicle.model} (${vehicle.plate})`);
-        return { ...vehicleData, id: docRef.id } as Vehicle;
-    } catch(e: any) {
-        console.error("Error creating vehicle:", e);
-        toast({ variant: 'destructive', title: 'Error al crear', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
-    }
+    const collRef = collection(db, "vehicles");
+    const docRef = await addDoc(collRef, vehicleData).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: collRef.path,
+            operation: 'create',
+            requestResourceData: vehicleData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al crear', description: 'Permiso denegado o error de red.'});
+        throw serverError;
+    });
+    await addLogEntry(`Añadió el vehículo: ${vehicle.model} (${vehicle.plate})`);
+    return { ...vehicleData, id: docRef.id } as Vehicle;
   };
 
   const updateVehicle = async (id: string, updatedVehicle: Partial<Omit<Vehicle, 'id'>>) => {
-    updateDoc(doc(db, "vehicles", id), updatedVehicle).then(() => {
+    const docRef = doc(db, "vehicles", id);
+    updateDoc(docRef, updatedVehicle).then(() => {
         addLogEntry(`Actualizó el vehículo: ${updatedVehicle.model} (${updatedVehicle.plate})`);
-    }).catch(e => {
-        console.error("Error updating vehicle:", e);
-        toast({ variant: 'destructive', title: 'Error al actualizar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'update',
+            requestResourceData: updatedVehicle
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al actualizar', description: 'Permiso denegado o error de red.'});
     });
   };
 
   const deleteVehicle = async (id: string) => {
     const vehicle = vehicles.find(v => v.id === id);
-    deleteDoc(doc(db, "vehicles", id)).then(() => {
+    const docRef = doc(db, "vehicles", id);
+    deleteDoc(docRef).then(() => {
         if (vehicle) addLogEntry(`Eliminó el vehículo: ${vehicle.model} (${vehicle.plate})`);
-    }).catch(e => {
-        console.error("Error deleting vehicle:", e);
-        toast({ variant: 'destructive', title: 'Error al eliminar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al eliminar', description: 'Permiso denegado o error de red.'});
     });
   };
 
@@ -552,15 +637,19 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
               startDate: Timestamp.fromDate(new Date(task.startDate)),
           }))
       };
-      try {
-        const docRef = await addDoc(collection(db, "gantt-charts"), dataToSave);
-        await addLogEntry(`Creó la Carta Gantt: ${ganttChart.name}`);
-        return { ...ganttChart, id: docRef.id };
-      } catch(e: any) {
-        console.error("Error creating Gantt chart:", e);
-        toast({ variant: 'destructive', title: 'Error al crear', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
-      }
+      const collRef = collection(db, "gantt-charts");
+      const docRef = await addDoc(collRef, dataToSave).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: collRef.path,
+            operation: 'create',
+            requestResourceData: dataToSave,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al crear', description: 'Permiso denegado o error de red.'});
+        throw serverError;
+      });
+      await addLogEntry(`Creó la Carta Gantt: ${ganttChart.name}`);
+      return { ...ganttChart, id: docRef.id };
   };
   
   const getGanttChart = (id: string) => {
@@ -587,54 +676,75 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
       }
       updateDoc(docRef, dataToSave).then(() => {
         addLogEntry(`Actualizó la Carta Gantt: ${ganttChartData.name}`);
-      }).catch(e => {
-        console.error("Error updating Gantt chart:", e);
-        toast({ variant: 'destructive', title: 'Error al actualizar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
+      }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'update',
+            requestResourceData: dataToSave
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al actualizar', description: 'Permiso denegado o error de red.'});
       });
   };
 
   const deleteGanttChart = async (id: string) => {
     const chart = getGanttChart(id);
-    deleteDoc(doc(db, "gantt-charts", id)).then(() => {
+    const docRef = doc(db, "gantt-charts", id);
+    deleteDoc(docRef).then(() => {
         if (chart) addLogEntry(`Eliminó la Carta Gantt: ${chart.name}`);
-    }).catch(e => {
-        console.error("Error deleting Gantt chart:", e);
-        toast({ variant: 'destructive', title: 'Error al eliminar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al eliminar', description: 'Permiso denegado o error de red.'});
     });
   };
   
   const addSuggestedTask = async (task: Omit<SuggestedTask, 'id'>): Promise<SuggestedTask> => {
-    try {
-        const docRef = await addDoc(collection(db, "suggested-tasks"), task);
-        await addLogEntry(`Añadió tarea sugerida: ${task.name}`);
-        return { id: docRef.id, ...task } as SuggestedTask;
-    } catch(e: any) {
-        console.error("Error creating suggested task:", e);
-        toast({ variant: 'destructive', title: 'Error al crear', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
-    }
+    const collRef = collection(db, "suggested-tasks");
+    const docRef = await addDoc(collRef, task).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: collRef.path,
+            operation: 'create',
+            requestResourceData: task,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al crear', description: 'Permiso denegado o error de red.'});
+        throw serverError;
+    });
+    await addLogEntry(`Añadió tarea sugerida: ${task.name}`);
+    return { id: docRef.id, ...task } as SuggestedTask;
   };
 
   const updateSuggestedTask = async (id: string, updatedTask: Partial<SuggestedTask>) => {
-    updateDoc(doc(db, "suggested-tasks", id), updatedTask).then(() => {
+    const docRef = doc(db, "suggested-tasks", id);
+    updateDoc(docRef, updatedTask).then(() => {
         addLogEntry(`Actualizó tarea sugerida: ${updatedTask.name}`);
-    }).catch(e => {
-        console.error("Error updating suggested task:", e);
-        toast({ variant: 'destructive', title: 'Error al actualizar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'update',
+            requestResourceData: updatedTask,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al actualizar', description: 'Permiso denegado o error de red.'});
     });
   };
 
   const deleteSuggestedTask = async (id: string) => {
     const task = suggestedTasks.find(t => t.id === id);
-    deleteDoc(doc(db, "suggested-tasks", id)).then(() => {
+    const docRef = doc(db, "suggested-tasks", id);
+    deleteDoc(docRef).then(() => {
         if (task) addLogEntry(`Eliminó tarea sugerida: ${task.name}`);
-    }).catch(e => {
-        console.error("Error deleting suggested task:", e);
-        toast({ variant: 'destructive', title: 'Error al eliminar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al eliminar', description: 'Permiso denegado o error de red.'});
     });
   };
   
@@ -673,36 +783,49 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   };
   
   const addReportTemplate = async (template: Omit<ReportTemplate, 'id'>): Promise<ReportTemplate> => {
-    try {
-        const docRef = await addDoc(collection(db, "report-templates"), template);
-        await addLogEntry(`Creó la plantilla de informe: ${template.name}`);
-        return { id: docRef.id, ...template } as ReportTemplate;
-    } catch(e: any) {
-        console.error("Error creating report template:", e);
-        toast({ variant: 'destructive', title: 'Error al crear', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
-    }
+    const collRef = collection(db, "report-templates");
+    const docRef = await addDoc(collRef, template).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: collRef.path,
+            operation: 'create',
+            requestResourceData: template,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al crear', description: 'Permiso denegado o error de red.'});
+        throw serverError;
+    });
+    await addLogEntry(`Creó la plantilla de informe: ${template.name}`);
+    return { id: docRef.id, ...template } as ReportTemplate;
   };
 
   const updateReportTemplate = async (id: string, updatedTemplate: Partial<ReportTemplate>) => {
-    updateDoc(doc(db, "report-templates", id), updatedTemplate).then(() => {
+    const docRef = doc(db, "report-templates", id);
+    updateDoc(docRef, updatedTemplate).then(() => {
         addLogEntry(`Actualizó la plantilla de informe: ${updatedTemplate.name}`);
-    }).catch(e => {
-        console.error("Error updating report template:", e);
-        toast({ variant: 'destructive', title: 'Error al actualizar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'update',
+            requestResourceData: updatedTemplate
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al actualizar', description: 'Permiso denegado o error de red.'});
     });
   };
 
 
   const deleteReportTemplate = async (id: string) => {
     const template = reportTemplates.find(t => t.id === id);
-    deleteDoc(doc(db, "report-templates", id)).then(() => {
+    const docRef = doc(db, "report-templates", id);
+    deleteDoc(docRef).then(() => {
         if (template) addLogEntry(`Eliminó la plantilla de informe: ${template.name}`);
-    }).catch(e => {
-        console.error("Error deleting report template:", e);
-        toast({ variant: 'destructive', title: 'Error al eliminar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al eliminar', description: 'Permiso denegado o error de red.'});
     });
   };
 
@@ -711,36 +834,49 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         ...report,
         submittedAt: serverTimestamp(),
     };
-    try {
-        const docRef = await addDoc(collection(db, "submitted-reports"), reportData);
-        await addLogEntry(`Envió el informe '${report.templateName}' para la OT ${report.otDetails.ot_number}`);
-        return { ...report, id: docRef.id, submittedAt: Timestamp.now() } as SubmittedReport; 
-    } catch(e: any) {
-        console.error("Error adding submitted report:", e);
-        toast({ variant: 'destructive', title: 'Error al enviar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
-    }
+    const collRef = collection(db, "submitted-reports");
+    const docRef = await addDoc(collRef, reportData).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: collRef.path,
+            operation: 'create',
+            requestResourceData: reportData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al enviar', description: 'Permiso denegado o error de red.'});
+        throw serverError;
+    });
+    await addLogEntry(`Envió el informe '${report.templateName}' para la OT ${report.otDetails.ot_number}`);
+    return { ...report, id: docRef.id, submittedAt: Timestamp.now() } as SubmittedReport; 
   };
 
   const updateSubmittedReport = async (id: string, report: Partial<SubmittedReport>) => {
     const originalReport = submittedReports.find(r => r.id === id);
-    updateDoc(doc(db, "submitted-reports", id), report).then(() => {
+    const docRef = doc(db, "submitted-reports", id);
+    updateDoc(docRef, report).then(() => {
         if(originalReport) addLogEntry(`Actualizó el informe para la OT ${originalReport.otDetails.ot_number}`);
-    }).catch(e => {
-        console.error("Error updating submitted report:", e);
-        toast({ variant: 'destructive', title: 'Error al actualizar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'update',
+            requestResourceData: report
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al actualizar', description: 'Permiso denegado o error de red.'});
     });
   };
 
   const deleteSubmittedReport = async (id: string) => {
     const report = submittedReports.find(r => r.id === id);
-    deleteDoc(doc(db, "submitted-reports", id)).then(() => {
+    const docRef = doc(db, "submitted-reports", id);
+    deleteDoc(docRef).then(() => {
         if(report) addLogEntry(`Eliminó el informe para la OT ${report.otDetails.ot_number}`);
-    }).catch(e => {
-        console.error("Error deleting submitted report:", e);
-        toast({ variant: 'destructive', title: 'Error al eliminar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al eliminar', description: 'Permiso denegado o error de red.'});
     });
   };
 
@@ -749,10 +885,14 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     setDoc(docRef, info, { merge: true }).then(() => {
         addLogEntry(`Actualizó la información de la empresa.`);
         fetchData(); // Re-fetch all data to reflect changes
-    }).catch(e => {
-        console.error("Error updating company info:", e);
-        toast({ variant: 'destructive', title: 'Error al guardar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'update',
+            requestResourceData: info
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al guardar', description: 'Permiso denegado o error de red.'});
     });
   };
 
@@ -760,10 +900,14 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const docRef = doc(db, 'settings', 'smtpConfig');
     setDoc(docRef, config, { merge: true }).then(() => {
         addLogEntry(`Actualizó la configuración SMTP.`);
-    }).catch(e => {
-        console.error("Error updating SMTP config:", e);
-        toast({ variant: 'destructive', title: 'Error al guardar', description: `Permiso denegado o error de red. Detalles: ${e.message}`});
-        throw e;
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'update',
+            requestResourceData: config
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al guardar', description: 'Permiso denegado o error de red.'});
     });
   };
   

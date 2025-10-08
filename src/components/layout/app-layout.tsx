@@ -5,6 +5,7 @@ import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar'
 import AppSidebar from '@/components/layout/app-sidebar';
 import AppHeader from '@/components/layout/app-header';
 import { usePathname } from 'next/navigation';
+import { FirebaseErrorListener } from '../firebase-error-listener';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -22,6 +23,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <AppSidebar />
             </Sidebar>
             <SidebarInset>
+                <FirebaseErrorListener />
                 <AppHeader />
                 <main className={isDashboard ? '' : 'p-4 sm:p-6 lg:p-8'}>{children}</main>
             </SidebarInset>
