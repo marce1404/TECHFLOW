@@ -118,12 +118,36 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  const checkAndRestoreCollaborators = useCallback(async () => {
+    try {
+      const collaboratorsCollection = collection(db, 'collaborators');
+      const snapshot = await getDocs(collaboratorsCollection);
+      if (snapshot.empty) {
+        console.log('Collaborators collection is empty. Restoring from placeholder data.');
+        const batch = writeBatch(db);
+        demoCollaborators.forEach((collaborator) => {
+          const docRef = doc(collection(db, 'collaborators'));
+          batch.set(docRef, collaborator);
+        });
+        await batch.commit();
+        toast({
+          title: "Colaboradores Restaurados",
+          description: "La lista de colaboradores ha sido restaurada con éxito.",
+        });
+      }
+    } catch (e) {
+      console.error("Error checking or restoring collaborators:", e);
+    }
+  }, [toast]);
+
+
   const fetchData = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     
     try {
         await checkAndCreatePredefinedTemplates();
+        await checkAndRestoreCollaborators();
 
         const collectionsToFetch: { name: string; setter: React.Dispatch<React.SetStateAction<any[]>> }[] = [
             { name: 'ot-categories', setter: setOtCategories },
@@ -167,7 +191,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     } finally {
         setLoading(false);
     }
-}, [user, toast, checkAndCreatePredefinedTemplates]);
+}, [user, toast, checkAndCreatePredefinedTemplates, checkAndRestoreCollaborators]);
 
 
   useEffect(() => {
