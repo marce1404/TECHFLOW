@@ -176,7 +176,6 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             netPrice: findHeader(['montoneto']),
             notes: findHeader(['estado']),
             factproc: findHeader(['factproc']),
-            facturado: findHeader(['facturado']),
             hesEmMigo: findHeader(['em-hes-migo', 'em/hes/migo']),
             saleNumber: findHeader(['nv']),
             invoiceNumber: findHeader(['fact.n', 'factura', 'nº factura']),
@@ -218,7 +217,6 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 const { 
                     endDate: rawEndDate,
                     factproc: rawFactproc,
-                    facturado: rawFacturado, // Legacy facturado column
                     comercial,
                     assigned: rawAssigned,
                     technicians: rawTechnicians,
@@ -234,10 +232,9 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 
                 const finalEndDate = robustDateParse(rawEndDate);
                 const factprocStatus = normalizeString(rawFactproc || '');
-                const isLegacyFacturado = typeof rawFacturado === 'string' ? normalizeString(rawFacturado).includes('facturado') : !!rawFacturado;
+                const isFacturado = factprocStatus === 'facturado';
 
                 let finalStatus: WorkOrder['status'];
-
                 if (factprocStatus === 'en proceso') {
                     finalStatus = 'En Progreso';
                 } else if (factprocStatus === 'por iniciar') {
@@ -273,7 +270,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     assigned: parseCollaborators(rawAssigned),
                     technicians: parseCollaborators(rawTechnicians),
                     service: findMatchingString(service || '', availableServices),
-                    facturado: factprocStatus === 'facturado' || isLegacyFacturado,
+                    facturado: isFacturado,
                     invoices: [],
                     notes: excelStatusNotes || '',
                     saleNumber: rawSaleNumber ? String(rawSaleNumber) : '',
@@ -339,8 +336,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         duplicateOrders.forEach(dupOrder => {
             const existingOrder = workOrders.find(wo => String(wo.ot_number).trim() === String(dupOrder.ot_number).trim());
             if (existingOrder) {
-                // Smart merge: keep existing invoices/progress, update the rest
                 const mergedData: Partial<WorkOrder> = {
+                  ...existingOrder,
                   ...dupOrder,
                   notes: [existingOrder.notes, dupOrder.notes].filter(Boolean).join('\n---\n'), // Append new notes
                 };
@@ -521,12 +518,13 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
   
   const renderFooter = () => {
     if (loading && step !== 'selectFile') {
-        return (
-            <div className="w-full flex flex-col items-center gap-2">
-                <Progress value={importProgress} className="w-full" />
-                <p className="text-sm text-muted-foreground">Procesando {Math.round((importProgress/100) * (newOrders.length + duplicateOrders.length))} de {newOrders.length + duplicateOrders.length}...</p>
-            </div>
-        )
+      const totalToProcess = newOrders.length + duplicateOrders.length;
+      return (
+        <div className="w-full flex flex-col items-center gap-2">
+            <Progress value={importProgress} className="w-full" />
+            <p className="text-sm text-muted-foreground">Procesando {Math.round((importProgress/100) * totalToProcess)} de {totalToProcess}...</p>
+        </div>
+      )
     }
 
     switch (step) {
