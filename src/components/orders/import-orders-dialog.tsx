@@ -53,18 +53,16 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         if (!name?.trim()) return '';
         const normalizedName = normalizeString(name);
 
-        // 1. Exact Match (case/accent insensitive)
         const exactMatch = collaborators.find(c => normalizeString(c.name) === normalizedName);
         if (exactMatch) return exactMatch.name;
         
-        // 2. Partial Match as fallback (contains all parts)
         const nameParts = normalizedName.split(' ');
         const partialMatch = collaborators.find(c => {
             const collaboratorNameParts = normalizeString(c.name).split(' ');
             return nameParts.every(part => collaboratorNameParts.includes(part));
         });
 
-        return partialMatch ? partialMatch.name : name; // Return original name if no good match is found
+        return partialMatch ? partialMatch.name : name; 
     };
 
 
@@ -204,6 +202,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             billingMonth: findHeader(['mesfac']),
             endDate: findHeader(['fechatermino', 'fecha termino']),
             rentedVehicle: findHeader(['vehiculoarrendado', 'arriendovehiculo']),
+            notes: findHeader(['observaciones', 'notas', 'observaciones/notasadicionales']),
         };
 
 
@@ -218,8 +217,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                  validationErrors.push(`Fila ${index + 2}: Falta el número de OT, no se puede importar.`);
                  return;
             }
-            
-            const rawDateValue = row[keyMapping.date!];
+
+            const rawDateValue = keyMapping.date ? row[keyMapping.date] : null;
             const finalDate = robustDateParse(rawDateValue);
 
             if (!finalDate) {
@@ -227,8 +226,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
               validationErrors.push(`Fila ${index + 2} (${row[keyMapping.ot_number!] || 'N/A'}): Valor de fecha de ingreso no válido: '${displayValue}'.`);
               return;
             }
-
-            const rawNetPrice = row[keyMapping.netPrice!]
+            
+            const rawNetPrice = keyMapping.netPrice ? row[keyMapping.netPrice] : 0;
             let finalNetPrice = 0;
             if (typeof rawNetPrice === 'number') {
                 finalNetPrice = rawNetPrice;
@@ -249,7 +248,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             };
 
             const otNumberString = String(row[keyMapping.ot_number!]).trim();
-            const finalEndDate = robustDateParse(row[keyMapping.endDate!]);
+            const finalEndDate = keyMapping.endDate ? robustDateParse(row[keyMapping.endDate]) : null;
 
             const orderData: CreateWorkOrderInput = {
                 ot_number: otNumberString,
@@ -257,12 +256,12 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 description: String(row[keyMapping.description!] || ''),
                 client: String(row[keyMapping.client!] || ''),
                 rut: String(row[keyMapping.rut!] || ''),
-                service: findMatchingString(String(row[keyMapping.service!] || ''), availableServices),
+                service: keyMapping.service ? findMatchingString(String(row[keyMapping.service] || ''), availableServices) : '',
                 endDate: finalEndDate || '',
                 startTime: '',
                 endTime: '',
-                notes: String(row[keyMapping.factproc!] || ''),
-                status: mapFactprocToStatus(String(row[keyMapping.factproc!])),
+                notes: keyMapping.notes ? String(row[keyMapping.notes] || '') : '',
+                status: keyMapping.factproc ? mapFactprocToStatus(String(row[keyMapping.factproc])) : 'Por Iniciar',
                 priority: 'Baja',
                 netPrice: finalNetPrice,
                 assigned: parseCollaborators('assigned') as string[],
@@ -274,20 +273,21 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 hesEmMigo: String(row[keyMapping.hesEmMigo!] || ''),
                 rentedVehicle: String(row[keyMapping.rentedVehicle!] || ''),
                 manualProgress: 0,
-                facturado: !!row[keyMapping.billingMonth!] || (!!row[keyMapping.invoiceDate!] && !!row[keyMapping.invoiceNumber!]),
+                facturado: (keyMapping.billingMonth && !!row[keyMapping.billingMonth]) || (keyMapping.invoiceDate && !!row[keyMapping.invoiceDate] && keyMapping.invoiceNumber && !!row[keyMapping.invoiceNumber]),
                 invoices: [],
             };
             
-            const finalInvoiceDate = robustDateParse(row[keyMapping.invoiceDate!]);
-            if (orderData.facturado && row[keyMapping.invoiceNumber!] && finalInvoiceDate) {
+            const finalInvoiceDate = keyMapping.invoiceDate ? robustDateParse(row[keyMapping.invoiceDate]) : null;
+            if (orderData.facturado && keyMapping.invoiceNumber && row[keyMapping.invoiceNumber] && finalInvoiceDate) {
                 orderData.invoices?.push({
                     id: crypto.randomUUID(),
-                    number: String(row[keyMapping.invoiceNumber!]),
+                    number: String(row[keyMapping.invoiceNumber]),
                     date: finalInvoiceDate,
                     amount: finalNetPrice || 0,
-                    billingMonth: row[keyMapping.billingMonth!] ? String(row[keyMapping.billingMonth!]) : undefined,
+                    billingMonth: keyMapping.billingMonth ? String(row[keyMapping.billingMonth]) : undefined,
                 });
             }
+
 
             if (existingOtNumbers.has(orderData.ot_number)) {
                 tempDuplicateOrders.push(orderData);
@@ -592,5 +592,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
+
+    
 
     
