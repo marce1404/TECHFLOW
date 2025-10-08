@@ -12,6 +12,8 @@ import { CloseWorkOrderDialog } from '@/components/orders/close-work-order-dialo
 import { useToast } from '@/hooks/use-toast';
 import { predefinedReportTemplates } from '@/lib/predefined-templates';
 import { normalizeString, processFirestoreTimestamp } from '@/lib/utils';
+import { collaborators as demoCollaborators } from '@/lib/placeholder-data';
+
 
 interface WorkOrdersContextType {
   workOrders: WorkOrder[];
