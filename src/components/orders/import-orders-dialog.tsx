@@ -223,7 +223,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     assigned: rawAssigned,
                     technicians: rawTechnicians,
                     service,
-                    notes: excelStatusNotes,
+                    notes: excelNotes,
                     invoiceNumber,
                     invoiceDate,
                     billingMonth,
@@ -234,15 +234,19 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 
                 const finalEndDate = robustDateParse(rawEndDate);
 
-                const factprocStatus = normalizeString(rawFactproc || '');
+                const normalizedFactproc = normalizeString(rawFactproc || '');
                 let finalStatus: WorkOrder['status'] = 'Por Iniciar';
-                
-                if (factprocStatus === 'facturado' || factprocStatus === 'terminada') {
+
+                if (normalizedFactproc.includes('terminada') || normalizedFactproc.includes('facturado')) {
                     finalStatus = 'Cerrada';
+                } else if (normalizedFactproc.includes('en proceso')) {
+                    finalStatus = 'En Progreso';
                 } else {
-                    const matchedStatus = otStatuses.find(s => normalizeString(s.name) === factprocStatus);
+                    const matchedStatus = otStatuses.find(s => normalizeString(s.name) === normalizedFactproc);
                     if (matchedStatus) {
                         finalStatus = matchedStatus.name as WorkOrder['status'];
+                    } else {
+                        finalStatus = 'Por Iniciar';
                     }
                 }
                 
@@ -267,7 +271,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 const orderData: CreateWorkOrderInput & { invoices?: any[] } = {
                     ...rest,
                     ot_number: otNumberString,
-                    endDate: finalEndDate || '',
+                    endDate: finalEndDate || undefined,
                     status: finalStatus,
                     priority: 'Baja',
                     netPrice: finalNetPrice,
@@ -277,14 +281,14 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     service: findMatchingString(service || '', availableServices),
                     facturado: isFacturado,
                     invoices: [],
-                    notes: excelStatusNotes || '',
+                    notes: excelNotes || '',
                     saleNumber: rawSaleNumber ? String(rawSaleNumber) : '',
                     ocNumber: rest.ocNumber ? String(rest.ocNumber) : '',
                     rut: rest.rut ? String(rest.rut) : '',
                     hesEmMigo: rest.hesEmMigo ? String(rest.hesEmMigo) : '',
                 };
                 
-                if (invoiceNumber) {
+                if (isFacturado && invoiceNumber) {
                     const finalInvoiceDate = robustDateParse(invoiceDate);
                     if (finalInvoiceDate) {
                         orderData.invoices?.push({
@@ -346,11 +350,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                   notes: [existingOrder.notes, dupOrder.notes].filter(Boolean).join('\n---\n'),
                 };
                 
-                if (dupOrder.endDate === null) {
+                if (dupOrder.endDate === null || dupOrder.endDate === undefined) {
                     mergedData.endDate = '';
-                } else if (dupOrder.endDate === undefined) {
-                    // Do not overwrite existing endDate if excel cell is empty
-                    delete mergedData.endDate;
                 }
                 
                 ordersToUpdate.push({ id: existingOrder.id, data: mergedData });
@@ -481,7 +482,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             </div>
         </div>
         
-        <p className="text-sm">Al reemplazar, se fusionará la información del Excel con los datos existentes en la app (como facturas añadidas manualmente o progreso), sin perderlos.</p>
+        <p className="text-sm">Al reemplazar, se fusionará la información del Excel con los datos existentes en la app (como facturas añadidas manualmente), sin perderlos.</p>
         
         <div className="p-4 border rounded-md">
             <h4 className="font-semibold">Órdenes Duplicadas Encontradas:</h4>
@@ -604,4 +605,3 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
-
