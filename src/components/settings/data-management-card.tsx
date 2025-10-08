@@ -236,25 +236,27 @@ export default function DataManagementCard() {
         setIsFixing(true);
         toast({ title: "Iniciando corrección...", description: "Este proceso puede tardar unos minutos." });
 
-        // These are the OT numbers that should REMAIN as 'Por Iniciar' or 'En Progreso'.
-        // ALL OTHERS that are currently 'Por Iniciar' should be moved to 'Cerrada'.
         const activeOtNumbers = new Set([
-          "OT-1507", "OT-1498", "OT-1519", "OT-1510", "OT-1511", "OT-1508", "OT-1524",
-          "OT-1522", "OT-1505", "OT-1528", "OT-1531", "OT-1529", "OT-1530", "OT-1533",
-          "OT-1532", "OT-1536", "OT-1542", "OT-1513", "OT-1539", "OT-1540", "OT-1534",
-          "OT-1537", "OT-1557", "OT-1556", "OT-1545", "OT-1564", "OT-1543", "OT-1544",
-          "OT-1569", "OT-1560", "OT-1500", "OT-1541", "OT-1526", "OT-1572", "OT-1568",
-          "OT-1547", "OT-1535", "OT-1562", "OT-1553", "OT-1550", "OT-1570", "OT-1565",
-          "OT-1561", "OT-1555", "OT-1538", "OT-1577", "OT-1563", "OT-1549", "OT-1558",
-          "OT-1581", "OT-1586", "OT-1546", "OT-1554", "OT-1579", "OT-1567", "OT-1590",
-          "OT-1594", "OT-1551", "OT-1512", "OT-1552", "OT-1587", "OT-1584", "OT-1604",
-          "OT-1591", "OT-1585", "OT-1592", "OT-1605", "OT-1601", "OT-1608", "OT-1580",
-          "OT-1596", "OT-1602", "OT-1559", "OT-1595", "OT-1609", "OT-1578"
+            'OT1374', 'OT-1498', 'OT-1519', 'OT-1510', 'OT-1511', 'OT-1508', 'OT-1524',
+            'OT-1522', 'OT-1505', 'OT-1528', 'OT-1531', 'OT-1529', 'OT-1530', 'OT-1533',
+            'OT-1532', 'OT-1536', 'OT-1542', 'OT-1513', 'OT-1539', 'OT-1540', 'OT-1534',
+            'OT-1537', 'OT-1557', 'OT-1556', 'OT-1545', 'OT-1564', 'OT-1543', 'OT-1544',
+            'OT-1569', 'OT-1560', 'OT-1500', 'OT-1541', 'OT-1526', 'OT-1572', 'OT-1568',
+            'OT-1547', 'OT-1535', 'OT-1562', 'OT-1553', 'OT-1550', 'OT-1570', 'OT-1565',
+            'OT-1561', 'OT-1555', 'OT-1538', 'OT-1577', 'OT-1563', 'OT-1549', 'OT-1558',
+            'OT-1581', 'OT-1586', 'OT-1546', 'OT-1554', 'OT-1579', 'OT-1567', 'OT-1590',
+            'OT-1594', 'OT-1551', 'OT-1512', 'OT-1552', 'OT-1587', 'OT-1584', 'OT-1604',
+            'OT-1591', 'OT-1585', 'OT-1592', 'OT-1605', 'OT-1601', 'OT-1608', 'OT-1580',
+            'OT-1596', 'OT-1602', 'OT-1559', 'OT-1595', 'OT-1609', 'OT-1578'
         ]);
         
-        const ordersToFix = workOrders.filter(order =>
-          order.status === 'Por Iniciar' && !activeOtNumbers.has(order.ot_number)
-        );
+        const ordersToFix = workOrders.filter(order => {
+          const isPorIniciar = order.status === 'Por Iniciar';
+          const isEnProgreso = order.status === 'En Progreso';
+          const isActiveStatus = isPorIniciar || isEnProgreso;
+
+          return isActiveStatus && !activeOtNumbers.has(order.ot_number);
+        });
 
         if (ordersToFix.length === 0) {
             toast({ title: "No hay nada que corregir", description: "No se encontraron OTs importadas con estado incorrecto." });
@@ -269,7 +271,7 @@ export default function DataManagementCard() {
             try {
                 await updateOrder(order.id, {
                     status: 'Cerrada',
-                    endDate: order.date, // Set closing date to start date for consistency
+                    endDate: order.endDate || order.date, // Use endDate if exists, otherwise fallback to date
                 });
                 successCount++;
             } catch (e) {
@@ -290,7 +292,8 @@ export default function DataManagementCard() {
                 description: `${successCount} órdenes de trabajo han sido actualizadas al estado 'Cerrada'.`,
             });
         }
-
+        
+        fetchData(); // re-fetch data to update the UI
         setIsFixing(false);
     };
 
@@ -337,11 +340,11 @@ export default function DataManagementCard() {
                                 {date?.from ? (
                                 date.to ? (
                                     <>
-                                    {format(date.from, "dd/MM/yyyy", {locale: es})} -{" "}
-                                    {format(date.to, "dd/MM/yyyy", {locale: es})}
+                                    {format(date.from, "yyyy-MM-dd", {locale: es})} -{" "}
+                                    {format(date.to, "yyyy-MM-dd", {locale: es})}
                                     </>
                                 ) : (
-                                    format(date.from, "dd/MM/yyyy", {locale: es})
+                                    format(date.from, "yyyy-MM-dd", {locale: es})
                                 )
                                 ) : (
                                 <span>Seleccionar rango de fechas</span>
@@ -443,6 +446,3 @@ export default function DataManagementCard() {
     );
 }
 
-    
-
-    
