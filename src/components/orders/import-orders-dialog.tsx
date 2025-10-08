@@ -53,6 +53,7 @@ const excelRowSchema = z.object({
   invoiceNumber: z.any().optional(),
   invoiceDate: z.any().optional(),
   billingMonth: z.union([z.string(), z.number()]).optional(),
+  rentedVehicle: z.string().optional(),
 });
 
 
@@ -85,11 +86,19 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     const exactMatch = collaborators.find(c => normalizeString(c.name) === normalizedName);
     if (exactMatch) return exactMatch.name;
 
-    // 2. Partial match (if no exact match is found)
-    const partialMatch = collaborators.find(c => normalizeString(c.name).includes(normalizedName));
-    if (partialMatch) return partialMatch.name;
+    // 2. Partial match (if no exact match is found, for cases like "Angel Contreras" vs "Miguel Angel Contreras")
+    // We prefer a perfect match of words, not just includes.
+    const nameParts = normalizedName.split(' ');
+    const partialMatch = collaborators.find(c => {
+        const collaboratorNameParts = normalizeString(c.name).split(' ');
+        return nameParts.every(part => collaboratorNameParts.includes(part));
+    });
+
+    if (partialMatch && normalizeString(partialMatch.name).split(' ').length === nameParts.length) {
+      return partialMatch.name;
+    }
     
-    // 3. Fallback to original name if no match found
+    // 3. Fallback to original name if no reliable match found
     return name;
   };
 
@@ -233,6 +242,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             invoiceDate: findHeader(['fechafact', 'fechafactura']),
             billingMonth: findHeader(['mesfac']),
             endDate: findHeader(['fechatermino', 'fechatermino']),
+            rentedVehicle: findHeader(['vehiculoarrendado', 'arriendovehiculo']),
         };
 
 
@@ -278,6 +288,9 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     netPrice: rawNetPrice,
                     saleNumber: rawSaleNumber,
                     ocNumber: rawOcNumber,
+                    rut: rawRut,
+                    hesEmMigo: rawHes,
+                    rentedVehicle: rawRentedVehicle,
                     ...rest
                 } = mappedRow;
                 
@@ -313,14 +326,16 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     comercial: comercial ? findMatchingCollaborator(comercial.trim()) : '',
                     assigned: parseCollaborators(rawAssigned),
                     technicians: parseCollaborators(rawTechnicians),
+                    vehicles: [],
                     service: findMatchingString(service || '', availableServices),
                     facturado: isFacturado,
                     invoices: [],
                     notes: rawFactproc || '', // Save the original FACTPROCES as a note
                     saleNumber: String(rawSaleNumber || ''),
                     ocNumber: String(rawOcNumber || ''),
-                    rut: rest.rut ? String(rest.rut) : '',
-                    hesEmMigo: rest.hesEmMigo ? String(rest.hesEmMigo) : '',
+                    rut: rawRut ? String(rawRut) : '',
+                    hesEmMigo: rawHes ? String(rawHes) : '',
+                    rentedVehicle: rawRentedVehicle ? String(rawRentedVehicle) : '',
                 };
                 
                 const finalInvoiceDate = robustDateParse(invoiceDate);
@@ -642,5 +657,3 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
-
-    
