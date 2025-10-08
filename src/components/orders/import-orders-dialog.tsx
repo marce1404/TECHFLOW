@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -199,7 +200,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             technicians: findHeader(['tecnico', 'técnico', 'tecnicos']),
             service: findHeader(['sistema', 'servicio']),
             netPrice: findHeader(['montoneto']),
-            factproc: findHeader(['factproc']),
+            factproc: findHeader(['factproc', 'fact proces']),
             hesEmMigo: findHeader(['em-hes-migo', 'emhesmigo']),
             ocNumber: findHeader(['oc', 'n orden de compra']),
             saleNumber: findHeader(['nv', 'n venta']),
@@ -355,7 +356,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             if (existingOrder) {
                  const mergedData: Partial<WorkOrder> = {
                   ...dupOrder,
-                  notes: [existingOrder.notes, dupOrder.notes].filter(Boolean).join('\n---\n'),
+                  notes: [existingOrder.notes, dupOrder.notes].filter(Boolean).join('\\n---\\n'),
                 };
                 
                 if (dupOrder.endDate === null) {
@@ -617,3 +618,5 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
+
+    
