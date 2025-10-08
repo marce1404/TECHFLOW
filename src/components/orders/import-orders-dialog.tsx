@@ -190,6 +190,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         const tempDuplicateOrders: CreateWorkOrderInput[] = [];
 
         const existingOtNumbers = new Set(workOrders.map(wo => String(wo.ot_number).trim()));
+        const validStatusNames = otStatuses.map(s => normalizeString(s.name));
+
 
         jsonData.forEach((row, index) => {
             const mappedRow: { [key: string]: any } = {};
@@ -233,17 +235,18 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 const finalEndDate = robustDateParse(rawEndDate);
 
                 const factprocStatus = normalizeString(rawFactproc || '');
-                let finalStatus: WorkOrder['status'];
-
+                let finalStatus: WorkOrder['status'] = 'Por Iniciar';
+                
                 if (factprocStatus === 'facturado' || factprocStatus === 'terminada') {
                     finalStatus = 'Cerrada';
-                } else if (factprocStatus === 'en proceso') {
-                    finalStatus = 'En Progreso';
                 } else {
-                    finalStatus = 'Por Iniciar';
+                    const matchedStatus = otStatuses.find(s => normalizeString(s.name) === factprocStatus);
+                    if (matchedStatus) {
+                        finalStatus = matchedStatus.name as WorkOrder['status'];
+                    }
                 }
                 
-                const isFacturado = !!billingMonth || factprocStatus === 'facturado';
+                const isFacturado = !!billingMonth;
                 
                 const parseCollaborators = (names: any): string[] => {
                   if (!names) return [];
@@ -345,6 +348,9 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 
                 if (dupOrder.endDate === null) {
                     mergedData.endDate = '';
+                } else if (dupOrder.endDate === undefined) {
+                    // Do not overwrite existing endDate if excel cell is empty
+                    delete mergedData.endDate;
                 }
                 
                 ordersToUpdate.push({ id: existingOrder.id, data: mergedData });
@@ -598,3 +604,4 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
+
