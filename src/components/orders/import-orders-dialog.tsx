@@ -182,96 +182,93 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         };
         
         const keyMapping = {
-            ot_number: findHeader(['OT']),
+            ot_number: findHeader(['OT', 'N OT', 'Numero OT']),
             date: findHeader(['Fecha Ingreso']),
-            description: findHeader(['NOMBRE DEL PROYECTO']),
-            client: findHeader(['client']),
+            description: findHeader(['NOMBRE DEL PROYECTO', 'descripcion']),
+            client: findHeader(['client', 'cliente']),
             rut: findHeader(['rut']),
             comercial: findHeader(['vendedor']),
-            assigned: findHeader(['SUPERV']),
-            technicians: findHeader(['tecnico']),
-            service: findHeader(['SISTEMA']),
+            assigned: findHeader(['SUPERV', 'encargado', 'encargados']),
+            technicians: findHeader(['tecnico', 'técnico', 'tecnicos']),
+            service: findHeader(['SISTEMA', 'servicio']),
             netPrice: findHeader(['MONTO NETO']),
-            status: findHeader(['FACTPROCES']),
-            hesEmMigo: findHeader(['hes/em/migo']),
-            ocNumber: findHeader(['OC']),
-            saleNumber: findHeader(['nventa']),
+            status: findHeader(['FACTPROCES', 'Fact Proces', 'factprocs', 'estado']),
+            hesEmMigo: findHeader(['emhesmigo', 'em-hes-migo', 'hes/em/migo']),
+            ocNumber: findHeader(['OC', 'nordencompra']),
+            saleNumber: findHeader(['nv', 'nventa', 'n de venta']),
             invoiceNumber: findHeader(['Fact. N°']),
             invoiceDate: findHeader(['Fecha Fact.']),
             billingMonth: findHeader(['mesfac']),
-            endDate: findHeader(['fechatermino']),
-            rentedVehicle: findHeader(['vehiculoarrendado']),
+            endDate: findHeader(['fechatermino', 'fecha termino']),
+            rentedVehicle: findHeader(['vehiculoarrendado', 'arriendovehiculo']),
             notes: findHeader(['Notas']),
         };
         
         const validationErrors: string[] = [];
-        const groupedByOt = new Map<string, CreateWorkOrderInput>();
+        const processedOrders: CreateWorkOrderInput[] = [];
 
         jsonData.forEach((row, index) => {
             const otNumberValue = keyMapping.ot_number ? row[keyMapping.ot_number] : undefined;
             const otNumber = otNumberValue ? String(otNumberValue).trim() : '';
 
             if (!otNumber) {
-                return; // Skip rows without a valid OT number
+                // Skip rows without a valid OT number, but don't stop the whole process
+                return;
+            }
+            
+            const finalDate = keyMapping.date ? robustDateParse(row[keyMapping.date]) : null;
+            if (!finalDate) {
+                validationErrors.push(`Fila ${index + 2}: La 'Fecha Ingreso' es inválida o está vacía para la OT ${otNumber}.`);
+                return; // Skip this row if date is invalid, as it's a critical field.
+            }
+            
+            const rawNetPrice = row[keyMapping.netPrice!] || 0;
+            let finalNetPrice = 0;
+            if (typeof rawNetPrice === 'number') {
+                finalNetPrice = rawNetPrice;
+            } else if (typeof rawNetPrice === 'string' && rawNetPrice.trim()) {
+                const cleanedPrice = rawNetPrice.replace(/[$. ]/g, '').replace(',', '.');
+                finalNetPrice = parseFloat(cleanedPrice) || 0;
             }
 
+            const parseCollaborators = (key: 'assigned' | 'technicians' | 'comercial'): string[] | string => {
+                const header = keyMapping[key];
+                if (!header || !row[header]) return key === 'comercial' ? '' : [];
+                const value = String(row[header]);
+                const names = value.split(/[,;]/).map(name => findMatchingCollaborator(name.trim())).filter(Boolean);
+                return key === 'comercial' ? names[0] || '' : names;
+            };
+
+            const orderData: CreateWorkOrderInput = {
+                ot_number: otNumber,
+                description: String(row[keyMapping.description!] || ''),
+                client: String(row[keyMapping.client!] || ''),
+                date: finalDate,
+                endDate: (keyMapping.endDate ? robustDateParse(row[keyMapping.endDate!]) : null) || '',
+                service: keyMapping.service ? findMatchingString(String(row[keyMapping.service] || ''), availableServices) : '',
+                status: keyMapping.status ? mapFactprocToStatus(String(row[keyMapping.status])) : 'Por Iniciar',
+                priority: 'Baja',
+                netPrice: finalNetPrice,
+                assigned: parseCollaborators('assigned') as string[],
+                technicians: parseCollaborators('technicians') as string[],
+                comercial: parseCollaborators('comercial') as string,
+                ocNumber: String(row[keyMapping.ocNumber!] || ''),
+                rut: String(row[keyMapping.rut!] || ''),
+                saleNumber: String(row[keyMapping.saleNumber!] || ''),
+                hesEmMigo: String(row[keyMapping.hesEmMigo!] || ''),
+                notes: String(row[keyMapping.notes!] || ''),
+                rentedVehicle: String(row[keyMapping.rentedVehicle!] || ''),
+                invoices: [],
+                facturado: false,
+                manualProgress: 0,
+                startTime: '',
+                endTime: '',
+                vehicles: [],
+            };
+            
             const invoiceNumber = keyMapping.invoiceNumber ? String(row[keyMapping.invoiceNumber] || '').trim() : '';
             const finalInvoiceDate = keyMapping.invoiceDate ? robustDateParse(row[keyMapping.invoiceDate]) : null;
 
-            if (!groupedByOt.has(otNumber)) {
-                const rawNetPrice = row[keyMapping.netPrice!] || 0;
-                let finalNetPrice = 0;
-                if (typeof rawNetPrice === 'number') {
-                    finalNetPrice = rawNetPrice;
-                } else if (typeof rawNetPrice === 'string' && rawNetPrice.trim()) {
-                    const cleanedPrice = rawNetPrice.replace(/[$. ]/g, '').replace(',', '.');
-                    finalNetPrice = parseFloat(cleanedPrice) || 0;
-                }
-
-                const parseCollaborators = (key: 'assigned' | 'technicians' | 'comercial'): string[] | string => {
-                    const header = keyMapping[key];
-                    if (!header || !row[header]) return key === 'comercial' ? '' : [];
-                    const value = String(row[header]);
-                    const names = value.split(/[,;]/).map(name => findMatchingCollaborator(name.trim())).filter(Boolean);
-                    return key === 'comercial' ? names[0] || '' : names;
-                };
-                
-                let finalDate: string | null = keyMapping.date ? robustDateParse(row[keyMapping.date]) : null;
-                if (!finalDate) {
-                  finalDate = format(new Date(), 'yyyy-MM-dd');
-                }
-
-                const orderData: CreateWorkOrderInput = {
-                    ot_number: otNumber,
-                    description: String(row[keyMapping.description!] || ''),
-                    client: String(row[keyMapping.client!] || ''),
-                    date: finalDate,
-                    endDate: (keyMapping.endDate ? robustDateParse(row[keyMapping.endDate!]) : null) || '',
-                    service: keyMapping.service ? findMatchingString(String(row[keyMapping.service] || ''), availableServices) : '',
-                    status: keyMapping.status ? mapFactprocToStatus(String(row[keyMapping.status])) : 'Por Iniciar',
-                    priority: 'Baja',
-                    netPrice: finalNetPrice,
-                    assigned: parseCollaborators('assigned') as string[],
-                    technicians: parseCollaborators('technicians') as string[],
-                    comercial: parseCollaborators('comercial') as string,
-                    ocNumber: String(row[keyMapping.ocNumber!] || ''),
-                    rut: String(row[keyMapping.rut!] || ''),
-                    saleNumber: String(row[keyMapping.saleNumber!] || ''),
-                    hesEmMigo: String(row[keyMapping.hesEmMigo!] || ''),
-                    notes: String(row[keyMapping.notes!] || ''),
-                    rentedVehicle: String(row[keyMapping.rentedVehicle!] || ''),
-                    invoices: [],
-                    facturado: false,
-                    manualProgress: 0,
-                    startTime: '',
-                    endTime: '',
-                    vehicles: [],
-                };
-                groupedByOt.set(otNumber, orderData);
-            }
-            
-            const orderData = groupedByOt.get(otNumber)!;
-            
             if (invoiceNumber && finalInvoiceDate) {
                 const invoiceAmount = parseFloat(String(row[keyMapping.netPrice!]).replace(/[$. ]/g, '').replace(',', '.')) || 0;
                 orderData.invoices?.push({
@@ -292,13 +289,15 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                   orderData.facturado = true;
               }
             }
+
+            processedOrders.push(orderData);
         });
 
         const tempNewOrders: CreateWorkOrderInput[] = [];
         const tempDuplicateOrders: CreateWorkOrderInput[] = [];
         const existingOtNumbers = new Set(workOrders.map(wo => String(wo.ot_number).trim()));
 
-        groupedByOt.forEach(order => {
+        processedOrders.forEach(order => {
             if (existingOtNumbers.has(order.ot_number)) {
                 tempDuplicateOrders.push(order);
             } else {
@@ -314,10 +313,10 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             setStep('selectFile');
         } else if (tempDuplicateOrders.length > 0) {
             setStep('confirmDuplicates');
-        } else if (tempNewOrders.length > 0) {
-            setStep('selectFile');
+        } else if (processedOrders.length > 0) {
+            setStep('selectFile'); // Stay on select file to show the summary before import
         } else {
-            setStep('selectFile');
+            setStep('selectFile'); // Stay on select file if no data was processed
         }
       } catch (err) {
         console.error("Error parsing Excel file:", err);
@@ -448,7 +447,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
           <div className="pt-4 text-center">
             <CheckCircle className="mx-auto h-8 w-8 text-green-500 mb-2"/>
             <h3 className="font-semibold">Archivo listo para importar</h3>
-            <p className="text-sm text-muted-foreground">{newOrders.length} nuevas órdenes y {duplicateOrders.length} órdenes duplicadas encontradas.</p>
+            <p className="text-sm text-muted-foreground">{newOrders.length} nuevas órdenes y {duplicateOrders.length} órdenes existentes encontradas.</p>
           </div>
         )}
     </div>
@@ -461,7 +460,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 <FileWarning className="h-5 w-5"/>
                 <h3>Confirmación de Duplicados</h3>
             </div>
-            <p className="text-sm mt-2">Se encontraron {duplicateOrders.length} OTs con números que ya existen en el sistema.</p>
+            <p className="text-sm mt-2">Se encontraron {duplicateOrders.length} OTs con números que ya existen en el sistema. ¿Deseas sobreescribir la información?</p>
         </div>
 
         <div className="grid grid-cols-2 gap-4 text-center">
@@ -544,7 +543,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             <Button variant="ghost" onClick={handleClose}>Cancelar</Button>
             <Button onClick={() => handleImport('omit')} disabled={loading || !file || errors.length > 0 || (newOrders.length === 0 && duplicateOrders.length === 0)}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                Importar {newOrders.length > 0 ? `${newOrders.length} Órdenes` : ''}
+                Importar {newOrders.length > 0 ? `${newOrders.length + duplicateOrders.length} Órdenes` : ''}
             </Button>
           </>
         )
@@ -602,7 +601,5 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
-
-    
 
     
