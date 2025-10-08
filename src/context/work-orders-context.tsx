@@ -272,53 +272,53 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     });
   };
   
-  const updateOrder = useCallback(async (id: string, updatedData: Partial<WorkOrder>, notification?: UpdateOrderNotification | null) => {
-      const orderRef = doc(db, 'work-orders', id);
-      const order = workOrders.find(o => o.id === id);
+ const updateOrder = useCallback(async (id: string, updatedData: Partial<WorkOrder>, notification?: UpdateOrderNotification | null) => {
+    const orderRef = doc(db, 'work-orders', id);
+    const order = workOrders.find(o => o.id === id);
       
-      await updateDoc(orderRef, updatedData).catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({
-                path: orderRef.path,
-                operation: 'update',
-                requestResourceData: updatedData,
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            toast({ variant: 'destructive', title: 'Error al actualizar', description: 'Permiso denegado o error de red.' });
-            throw serverError; // Rethrow to stop further execution
+    await updateDoc(orderRef, updatedData).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: orderRef.path,
+            operation: 'update',
+            requestResourceData: updatedData,
         });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al actualizar', description: 'Permiso denegado o error de red.' });
+        throw serverError; // Rethrow to stop further execution
+    });
 
-      if (order) {
-          await addLogEntry(`Actualizó la OT: ${order.ot_number}`);
-      }
+    if (order) {
+        await addLogEntry(`Actualizó la OT: ${order.ot_number}`);
+    }
 
-      if (notification?.send && smtpConfig) {
-          const fullUpdatedOrder = { ...order, ...updatedData } as WorkOrder;
-          const getEmail = (name: string) => collaborators.find(c => c.name === name)?.email;
-          
-          const toEmails: string[] = [];
-          if (fullUpdatedOrder.comercial) {
-              const comercialEmail = getEmail(fullUpdatedOrder.comercial);
-              if (comercialEmail) toEmails.push(comercialEmail);
-          }
-          (fullUpdatedOrder.assigned || []).forEach(name => {
-              const email = getEmail(name);
-              if (email) toEmails.push(email);
-          });
-          if (userProfile?.email) toEmails.push(userProfile.email);
+    if (notification?.send && smtpConfig) {
+        const fullUpdatedOrder = { ...order, ...updatedData } as WorkOrder;
+        const getEmail = (name: string) => collaborators.find(c => c.name === name)?.email;
+        
+        const toEmails: string[] = [];
+        if (fullUpdatedOrder.comercial) {
+            const comercialEmail = getEmail(fullUpdatedOrder.comercial);
+            if (comercialEmail) toEmails.push(comercialEmail);
+        }
+        (fullUpdatedOrder.assigned || []).forEach(name => {
+            const email = getEmail(name);
+            if (email) toEmails.push(email);
+        });
+        if (userProfile?.email) toEmails.push(userProfile.email);
 
-          const ccEmails = (notification.cc || [])
-            .map(id => collaborators.find(c => c.id === id)?.email)
-            .filter((email): email is string => !!email);
+        const ccEmails = (notification.cc || [])
+          .map(id => collaborators.find(c => c.id === id)?.email)
+          .filter((email): email is string => !!email);
 
-          if (toEmails.length > 0) {
-              await sendUpdatedWorkOrderEmailAction(
-                  Array.from(new Set(toEmails)),
-                  Array.from(new Set(ccEmails)),
-                  fullUpdatedOrder,
-                  smtpConfig
-              );
-          }
-      }
+        if (toEmails.length > 0) {
+            await sendUpdatedWorkOrderEmailAction(
+                Array.from(new Set(toEmails)),
+                Array.from(new Set(ccEmails)),
+                fullUpdatedOrder,
+                smtpConfig
+            );
+        }
+    }
   }, [workOrders, toast, smtpConfig, userProfile, collaborators]);
 
   const getNextOtNumber = useCallback((prefix: string): string => {
