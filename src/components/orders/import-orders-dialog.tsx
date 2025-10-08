@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -78,7 +79,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     return new Date(date_info.getTime() + timezoneOffset);
   }
   
-    const robustDateParse = (dateInput: any, rowIndex: number): string | null => {
+    const robustDateParse = (dateInput: any): string | null => {
         if (dateInput === null || dateInput === undefined || dateInput === '') return null;
 
         if (dateInput instanceof Date && isValid(dateInput)) {
@@ -115,11 +116,6 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     }
                 } catch (e) {}
             }
-        }
-        
-        // If all parsing fails and the input was not empty, log an error
-        if (dateInput) {
-            setErrors(prev => [...prev, `Fila ${rowIndex + 2}: No se pudo interpretar la fecha "${dateInput}".`]);
         }
         
         return null;
@@ -210,20 +206,19 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         
         const validationErrors: string[] = [];
         const groupedByOt = new Map<string, CreateWorkOrderInput>();
-        const tempNewOrders: CreateWorkOrderInput[] = [];
-        const tempDuplicateOrders: CreateWorkOrderInput[] = [];
-        const existingOtNumbers = new Set(workOrders.map(wo => String(wo.ot_number).trim()));
 
         jsonData.forEach((row, index) => {
-            const otNumber = String(row[keyMapping.ot_number!] || '').trim();
+            const otNumberValue = keyMapping.ot_number ? row[keyMapping.ot_number] : undefined;
+            const otNumber = otNumberValue ? String(otNumberValue).trim() : '';
+
             if (!otNumber) {
-                return; // Skip rows without an OT number
+                return; // Skip rows without a valid OT number
             }
 
-            // If we haven't seen this OT number before, create a new entry
+            const invoiceNumber = keyMapping.invoiceNumber ? String(row[keyMapping.invoiceNumber] || '').trim() : '';
+            const finalInvoiceDate = keyMapping.invoiceDate ? robustDateParse(row[keyMapping.invoiceDate]) : null;
+
             if (!groupedByOt.has(otNumber)) {
-                let finalDate: string | null = robustDateParse(row[keyMapping.date!], index);
-                
                 const rawNetPrice = row[keyMapping.netPrice!] || 0;
                 let finalNetPrice = 0;
                 if (typeof rawNetPrice === 'number') {
@@ -232,7 +227,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     const cleanedPrice = rawNetPrice.replace(/[$. ]/g, '').replace(',', '.');
                     finalNetPrice = parseFloat(cleanedPrice) || 0;
                 }
-                
+
                 const parseCollaborators = (key: 'assigned' | 'technicians' | 'comercial'): string[] | string => {
                     const header = keyMapping[key];
                     if (!header || !row[header]) return key === 'comercial' ? '' : [];
@@ -240,13 +235,18 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     const names = value.split(/[,;]/).map(name => findMatchingCollaborator(name.trim())).filter(Boolean);
                     return key === 'comercial' ? names[0] || '' : names;
                 };
+                
+                let finalDate: string | null = keyMapping.date ? robustDateParse(row[keyMapping.date]) : null;
+                if (!finalDate) {
+                  finalDate = format(new Date(), 'yyyy-MM-dd');
+                }
 
                 const orderData: CreateWorkOrderInput = {
                     ot_number: otNumber,
                     description: String(row[keyMapping.description!] || ''),
                     client: String(row[keyMapping.client!] || ''),
-                    date: finalDate || '',
-                    endDate: (keyMapping.endDate ? robustDateParse(row[keyMapping.endDate!], index) : null) || '',
+                    date: finalDate,
+                    endDate: (keyMapping.endDate ? robustDateParse(row[keyMapping.endDate!]) : null) || '',
                     service: keyMapping.service ? findMatchingString(String(row[keyMapping.service] || ''), availableServices) : '',
                     status: keyMapping.status ? mapFactprocToStatus(String(row[keyMapping.status])) : 'Por Iniciar',
                     priority: 'Baja',
@@ -269,14 +269,11 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 };
                 groupedByOt.set(otNumber, orderData);
             }
-
-            // Add invoice info to the existing OT group
+            
             const orderData = groupedByOt.get(otNumber)!;
-            const invoiceNumber = String(row[keyMapping.invoiceNumber!] || '');
-            const finalInvoiceDate = robustDateParse(row[keyMapping.invoiceDate!], index);
-            const invoiceAmount = parseFloat(String(row[keyMapping.netPrice!]).replace(/[$. ]/g, '').replace(',', '.')) || 0;
-
+            
             if (invoiceNumber && finalInvoiceDate) {
+                const invoiceAmount = parseFloat(String(row[keyMapping.netPrice!]).replace(/[$. ]/g, '').replace(',', '.')) || 0;
                 orderData.invoices?.push({
                     id: crypto.randomUUID(),
                     number: invoiceNumber,
@@ -286,17 +283,20 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 });
             }
 
-            // Legacy facturado logic
             if(!orderData.facturado) {
               const totalInvoiced = orderData.invoices?.reduce((sum, inv) => sum + inv.amount, 0) || 0;
               const netPrice = orderData.netPrice || 0;
               if (netPrice > 0 && totalInvoiced >= netPrice) {
                   orderData.facturado = true;
-              } else if (row[keyMapping.billingMonth!] && String(row[keyMapping.billingMonth!]).trim() !== '') {
+              } else if (keyMapping.billingMonth && row[keyMapping.billingMonth] && String(row[keyMapping.billingMonth]).trim() !== '') {
                   orderData.facturado = true;
               }
             }
         });
+
+        const tempNewOrders: CreateWorkOrderInput[] = [];
+        const tempDuplicateOrders: CreateWorkOrderInput[] = [];
+        const existingOtNumbers = new Set(workOrders.map(wo => String(wo.ot_number).trim()));
 
         groupedByOt.forEach(order => {
             if (existingOtNumbers.has(order.ot_number)) {
@@ -602,5 +602,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
+
+    
 
     
