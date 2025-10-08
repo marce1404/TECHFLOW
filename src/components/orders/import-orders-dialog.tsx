@@ -229,19 +229,26 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 } = mappedRow;
                 
                 const finalEndDate = robustDateParse(rawEndDate);
+                
                 const normalizedFactproc = normalizeString(rawFactproc || '');
                 let finalStatus: WorkOrder['status'] = 'Por Iniciar';
-                const appStatuses = otStatuses.map(s => ({ original: s.name, normalized: normalizeString(s.name) }));
-                const matchedStatus = appStatuses.find(s => s.normalized === normalizedFactproc);
-
+                
                 if (normalizedFactproc === 'terminada') {
                     finalStatus = 'Terminada';
                 } else if (normalizedFactproc === 'cerrada' || normalizedFactproc === 'facturado') {
                     finalStatus = 'Cerrada';
-                } else if (matchedStatus) {
-                    finalStatus = matchedStatus.original as WorkOrder['status'];
+                } else if (normalizedFactproc === 'en proceso') {
+                    finalStatus = 'En Progreso';
+                } else if (normalizedFactproc === 'por iniciar') {
+                    finalStatus = 'Por Iniciar';
+                } else {
+                    const appStatuses = otStatuses.map(s => ({ original: s.name, normalized: normalizeString(s.name) }));
+                    const matchedStatus = appStatuses.find(s => s.normalized === normalizedFactproc);
+                    if (matchedStatus) {
+                        finalStatus = matchedStatus.original as WorkOrder['status'];
+                    }
                 }
-
+                
                 const isFacturado = !!billingMonth || (!!invoiceDate && !!invoiceNumber);
                 
                 const parseCollaborators = (names: any): string[] => {
@@ -601,5 +608,3 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
-
-    
