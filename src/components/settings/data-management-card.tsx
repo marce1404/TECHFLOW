@@ -1,4 +1,3 @@
-
 'use client';
 import * as React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/card';
@@ -250,16 +249,10 @@ export default function DataManagementCard() {
             'OT-1596', 'OT-1602', 'OT-1559', 'OT-1595', 'OT-1609', 'OT-1578'
         ]);
         
-        const ordersToFix = workOrders.filter(order => {
-          const isPorIniciar = order.status === 'Por Iniciar';
-          const isEnProgreso = order.status === 'En Progreso';
-          const isActiveStatus = isPorIniciar || isEnProgreso;
-
-          return isActiveStatus && !activeOtNumbers.has(order.ot_number);
-        });
+        const ordersToFix = workOrders.filter(order => !activeOtNumbers.has(order.ot_number));
 
         if (ordersToFix.length === 0) {
-            toast({ title: "No hay nada que corregir", description: "No se encontraron OTs importadas con estado incorrecto." });
+            toast({ title: "No hay nada que corregir", description: "Todos los estados parecen correctos." });
             setIsFixing(false);
             return;
         }
@@ -269,11 +262,14 @@ export default function DataManagementCard() {
         
         for (const order of ordersToFix) {
             try {
-                await updateOrder(order.id, {
-                    status: 'Cerrada',
-                    endDate: order.endDate || order.date, // Use endDate if exists, otherwise fallback to date
-                });
-                successCount++;
+                if (order.status !== 'Cerrada' || order.facturado !== true) {
+                    await updateOrder(order.id, {
+                        status: 'Cerrada',
+                        facturado: true,
+                        endDate: order.endDate || order.date,
+                    });
+                    successCount++;
+                }
             } catch (e) {
                 console.error(`Failed to update OT ${order.ot_number}:`, e);
                 errorCount++;
@@ -289,7 +285,7 @@ export default function DataManagementCard() {
         } else {
              toast({
                 title: "Corrección Exitosa",
-                description: `${successCount} órdenes de trabajo han sido actualizadas al estado 'Cerrada'.`,
+                description: `${successCount} órdenes de trabajo han sido actualizadas a 'Cerrada' y marcadas como 'Facturada'.`,
             });
         }
         
@@ -400,8 +396,7 @@ export default function DataManagementCard() {
                             <AlertDialogHeader>
                                 <AlertDialogTitle>¿Confirmar corrección de datos?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    Esta acción revisará todas las OTs con estado "Por Iniciar" y las cambiará a "Cerrada" si no corresponden a una OT que deba estar activa.
-                                    Este proceso no se puede deshacer.
+                                    Esta acción revisará todas las OTs que no estén en la lista de activas y las cambiará a "Cerrada" y "Facturada". Este proceso no se puede deshacer.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -445,4 +440,3 @@ export default function DataManagementCard() {
         </>
     );
 }
-
