@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -79,7 +78,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     return new Date(date_info.getTime() + timezoneOffset);
   }
   
-    const robustDateParse = (dateInput: any): string | null => {
+    const robustDateParse = (dateInput: any, rowIndex: number): string | null => {
         if (dateInput === null || dateInput === undefined || dateInput === '') return null;
 
         if (dateInput instanceof Date && isValid(dateInput)) {
@@ -96,6 +95,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         if (typeof dateInput === 'string' && dateInput.trim() !== '') {
             const trimmedDateInput = dateInput.trim();
             
+            // Handle Spanish month names e.g., 'Enero', 'Febrero'
             const monthNames: { [key: string]: number } = {
                 enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5,
                 julio: 6, agosto: 7, septiembre: 8, octubre: 9, noviembre: 10, diciembre: 11
@@ -116,6 +116,12 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 } catch (e) {}
             }
         }
+        
+        // If all parsing fails and the input was not empty, log an error
+        if (dateInput) {
+            setErrors(prev => [...prev, `Fila ${rowIndex + 2}: No se pudo interpretar la fecha "${dateInput}".`]);
+        }
+        
         return null;
     };
 
@@ -180,133 +186,125 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         };
         
         const keyMapping = {
-            ot_number: findHeader(['OT', 'n ot', 'numero ot']),
+            ot_number: findHeader(['OT']),
             date: findHeader(['Fecha Ingreso']),
-            description: findHeader(['NOMBRE DEL PROYECTO', 'descripcion']),
-            client: findHeader(['cliente']),
+            description: findHeader(['NOMBRE DEL PROYECTO']),
+            client: findHeader(['client']),
             rut: findHeader(['rut']),
             comercial: findHeader(['vendedor']),
-            assigned: findHeader(['SUPERV', 'encargado', 'encargados']),
-            technicians: findHeader(['tecnico', 'técnico', 'tecnicos']),
-            service: findHeader(['SISTEMA', 'servicio']),
+            assigned: findHeader(['SUPERV']),
+            technicians: findHeader(['tecnico']),
+            service: findHeader(['SISTEMA']),
             netPrice: findHeader(['MONTO NETO']),
-            status: findHeader(['FACTPROCES', 'estado']),
-            hesEmMigo: findHeader(['hes/em/migo', 'emhesmigo', 'em-hes-migo']),
-            ocNumber: findHeader(['OC', 'nordencompra']),
-            saleNumber: findHeader(['nventa', 'n de venta']),
+            status: findHeader(['FACTPROCES']),
+            hesEmMigo: findHeader(['hes/em/migo']),
+            ocNumber: findHeader(['OC']),
+            saleNumber: findHeader(['nventa']),
             invoiceNumber: findHeader(['Fact. N°']),
             invoiceDate: findHeader(['Fecha Fact.']),
             billingMonth: findHeader(['mesfac']),
-            endDate: findHeader(['fechatermino', 'fecha termino']),
-            rentedVehicle: findHeader(['vehiculoarrendado', 'arriendovehiculo']),
+            endDate: findHeader(['fechatermino']),
+            rentedVehicle: findHeader(['vehiculoarrendado']),
             notes: findHeader(['Notas']),
         };
         
         const validationErrors: string[] = [];
-        const groupedByOt = new Map<string, any[]>();
-        
-        jsonData.forEach((row) => {
-            const otNumber = keyMapping.ot_number ? String(row[keyMapping.ot_number] || '').trim() : '';
-            if (otNumber) {
-                if (!groupedByOt.has(otNumber)) {
-                    groupedByOt.set(otNumber, []);
-                }
-                groupedByOt.get(otNumber)!.push(row);
-            }
-        });
-
+        const groupedByOt = new Map<string, CreateWorkOrderInput>();
         const tempNewOrders: CreateWorkOrderInput[] = [];
         const tempDuplicateOrders: CreateWorkOrderInput[] = [];
-
         const existingOtNumbers = new Set(workOrders.map(wo => String(wo.ot_number).trim()));
 
-        groupedByOt.forEach((rows, otNumber) => {
-            const firstRow = rows[0];
-            
-            let finalDate: string | null = null;
-            for(const row of rows) {
-                const dateVal = keyMapping.date ? row[keyMapping.date] : null;
-                finalDate = robustDateParse(dateVal);
-                if (finalDate) break;
+        jsonData.forEach((row, index) => {
+            const otNumber = String(row[keyMapping.ot_number!] || '').trim();
+            if (!otNumber) {
+                return; // Skip rows without an OT number
             }
 
-            const rawNetPrice = keyMapping.netPrice ? firstRow[keyMapping.netPrice] : 0;
-            let finalNetPrice = 0;
-            if (typeof rawNetPrice === 'number') {
-                finalNetPrice = rawNetPrice;
-            } else if (typeof rawNetPrice === 'string' && rawNetPrice.trim()) {
-                const cleanedPrice = rawNetPrice.replace(/[$. ]/g, '').replace(',', '.');
-                finalNetPrice = parseFloat(cleanedPrice) || 0;
-            }
-
-            const parseCollaborators = (key: 'assigned' | 'technicians' | 'comercial'): string[] | string => {
-                const header = keyMapping[key];
-                if (!header || !firstRow[header]) return key === 'comercial' ? '' : [];
-                const value = String(firstRow[header]);
-                const names = value.split(/[,;]/).map(name => findMatchingCollaborator(name.trim())).filter(Boolean);
-                return key === 'comercial' ? names[0] || '' : names;
-            };
-
-            const orderData: CreateWorkOrderInput = {
-                ot_number: otNumber,
-                description: String(firstRow[keyMapping.description!] || ''),
-                client: String(firstRow[keyMapping.client!] || ''),
-                date: finalDate || '',
-                endDate: (keyMapping.endDate ? robustDateParse(firstRow[keyMapping.endDate!]) : null) || '',
-                service: keyMapping.service ? findMatchingString(String(firstRow[keyMapping.service] || ''), availableServices) : '',
-                status: keyMapping.status ? mapFactprocToStatus(String(firstRow[keyMapping.status])) : 'Por Iniciar',
-                priority: 'Baja',
-                netPrice: finalNetPrice,
-                assigned: parseCollaborators('assigned') as string[],
-                technicians: parseCollaborators('technicians') as string[],
-                comercial: parseCollaborators('comercial') as string,
-                ocNumber: String(firstRow[keyMapping.ocNumber!] || ''),
-                rut: String(firstRow[keyMapping.rut!] || ''),
-                saleNumber: String(firstRow[keyMapping.saleNumber!] || ''),
-                hesEmMigo: String(firstRow[keyMapping.hesEmMigo!] || ''),
-                notes: String(firstRow[keyMapping.notes!] || ''),
-                rentedVehicle: String(firstRow[keyMapping.rentedVehicle!] || ''),
-                invoices: [],
-                facturado: false,
-                manualProgress: 0,
-                startTime: '',
-                endTime: '',
-                vehicles: [],
-            };
-
-            rows.forEach(row => {
-                const invoiceNumber = keyMapping.invoiceNumber ? String(row[keyMapping.invoiceNumber] || '') : '';
-                const finalInvoiceDate = keyMapping.invoiceDate ? robustDateParse(row[keyMapping.invoiceDate]) : null;
-                const invoiceAmount = keyMapping.netPrice ? (parseFloat(String(row[keyMapping.netPrice]).replace(/[$. ]/g, '').replace(',', '.')) || 0) : 0;
-
-                if (invoiceNumber && finalInvoiceDate) {
-                    orderData.invoices?.push({
-                        id: crypto.randomUUID(),
-                        number: invoiceNumber,
-                        date: finalInvoiceDate,
-                        amount: invoiceAmount,
-                        billingMonth: String(row[keyMapping.billingMonth!] || ''),
-                    });
+            // If we haven't seen this OT number before, create a new entry
+            if (!groupedByOt.has(otNumber)) {
+                let finalDate: string | null = robustDateParse(row[keyMapping.date!], index);
+                
+                const rawNetPrice = row[keyMapping.netPrice!] || 0;
+                let finalNetPrice = 0;
+                if (typeof rawNetPrice === 'number') {
+                    finalNetPrice = rawNetPrice;
+                } else if (typeof rawNetPrice === 'string' && rawNetPrice.trim()) {
+                    const cleanedPrice = rawNetPrice.replace(/[$. ]/g, '').replace(',', '.');
+                    finalNetPrice = parseFloat(cleanedPrice) || 0;
                 }
-            });
+                
+                const parseCollaborators = (key: 'assigned' | 'technicians' | 'comercial'): string[] | string => {
+                    const header = keyMapping[key];
+                    if (!header || !row[header]) return key === 'comercial' ? '' : [];
+                    const value = String(row[header]);
+                    const names = value.split(/[,;]/).map(name => findMatchingCollaborator(name.trim())).filter(Boolean);
+                    return key === 'comercial' ? names[0] || '' : names;
+                };
 
-            if(orderData.invoices && orderData.invoices.length > 0) {
-              const totalInvoiced = orderData.invoices.reduce((sum, inv) => sum + inv.amount, 0);
-              if (totalInvoiced >= (orderData.netPrice || 0) ) {
-                orderData.facturado = true;
-              }
-            } else if (keyMapping.billingMonth && !!firstRow[keyMapping.billingMonth]) {
-              orderData.facturado = true;
+                const orderData: CreateWorkOrderInput = {
+                    ot_number: otNumber,
+                    description: String(row[keyMapping.description!] || ''),
+                    client: String(row[keyMapping.client!] || ''),
+                    date: finalDate || '',
+                    endDate: (keyMapping.endDate ? robustDateParse(row[keyMapping.endDate!], index) : null) || '',
+                    service: keyMapping.service ? findMatchingString(String(row[keyMapping.service] || ''), availableServices) : '',
+                    status: keyMapping.status ? mapFactprocToStatus(String(row[keyMapping.status])) : 'Por Iniciar',
+                    priority: 'Baja',
+                    netPrice: finalNetPrice,
+                    assigned: parseCollaborators('assigned') as string[],
+                    technicians: parseCollaborators('technicians') as string[],
+                    comercial: parseCollaborators('comercial') as string,
+                    ocNumber: String(row[keyMapping.ocNumber!] || ''),
+                    rut: String(row[keyMapping.rut!] || ''),
+                    saleNumber: String(row[keyMapping.saleNumber!] || ''),
+                    hesEmMigo: String(row[keyMapping.hesEmMigo!] || ''),
+                    notes: String(row[keyMapping.notes!] || ''),
+                    rentedVehicle: String(row[keyMapping.rentedVehicle!] || ''),
+                    invoices: [],
+                    facturado: false,
+                    manualProgress: 0,
+                    startTime: '',
+                    endTime: '',
+                    vehicles: [],
+                };
+                groupedByOt.set(otNumber, orderData);
             }
 
+            // Add invoice info to the existing OT group
+            const orderData = groupedByOt.get(otNumber)!;
+            const invoiceNumber = String(row[keyMapping.invoiceNumber!] || '');
+            const finalInvoiceDate = robustDateParse(row[keyMapping.invoiceDate!], index);
+            const invoiceAmount = parseFloat(String(row[keyMapping.netPrice!]).replace(/[$. ]/g, '').replace(',', '.')) || 0;
 
-            if (existingOtNumbers.has(orderData.ot_number)) {
-                tempDuplicateOrders.push(orderData);
-            } else {
-                tempNewOrders.push(orderData);
+            if (invoiceNumber && finalInvoiceDate) {
+                orderData.invoices?.push({
+                    id: crypto.randomUUID(),
+                    number: invoiceNumber,
+                    date: finalInvoiceDate,
+                    amount: invoiceAmount,
+                    billingMonth: String(row[keyMapping.billingMonth!] || ''),
+                });
+            }
+
+            // Legacy facturado logic
+            if(!orderData.facturado) {
+              const totalInvoiced = orderData.invoices?.reduce((sum, inv) => sum + inv.amount, 0) || 0;
+              const netPrice = orderData.netPrice || 0;
+              if (netPrice > 0 && totalInvoiced >= netPrice) {
+                  orderData.facturado = true;
+              } else if (row[keyMapping.billingMonth!] && String(row[keyMapping.billingMonth!]).trim() !== '') {
+                  orderData.facturado = true;
+              }
             }
         });
 
+        groupedByOt.forEach(order => {
+            if (existingOtNumbers.has(order.ot_number)) {
+                tempDuplicateOrders.push(order);
+            } else {
+                tempNewOrders.push(order);
+            }
+        });
 
         setErrors(validationErrors);
         setNewOrders(tempNewOrders);
@@ -604,3 +602,5 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
+
+    
