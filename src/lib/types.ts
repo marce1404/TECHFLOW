@@ -89,7 +89,7 @@ export type Collaborator = {
   id: string;
   name: string;
   email?: string;
-  role: 'Técnico' | 'Supervisor' | 'Coordinador' | 'Jefe de Proyecto' | 'Encargado' | 'Comercial';
+  role: 'Técnico' | 'Supervisor' | 'Coordinador' | 'Jefe de Proyecto' | 'Encargado' | 'Comercial' | 'Administración';
   area: string;
   status: 'Activo' | 'Licencia' | 'Vacaciones';
   license: string;

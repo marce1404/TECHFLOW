@@ -127,7 +127,7 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
     control: form.control, name: "certifications"
   });
 
-  const roles: Collaborator['role'][] = ['Técnico', 'Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado', 'Comercial'];
+  const roles: Collaborator['role'][] = ['Técnico', 'Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado', 'Comercial', 'Administración'];
   const statuses: Collaborator['status'][] = ['Activo', 'Licencia', 'Vacaciones'];
 
   React.useEffect(() => {
@@ -213,13 +213,13 @@ export default function CollaboratorForm({ onSave, collaborator, disabled = fals
             disabled={disabled}
             >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {field.value ? format(new Date(field.value), "PPP", { locale: es }) : <span>Elegir fecha</span>}
+            {field.value ? format(new Date(field.value.replace(/-/g, '/')), "PPP", { locale: es }) : <span>Elegir fecha</span>}
             </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0">
             <Calendar
                 mode="single"
-                selected={field.value ? new Date(field.value) : undefined}
+                selected={field.value ? new Date(field.value.replace(/-/g, '/')) : undefined}
                 onSelect={(date) => {
                     if (fieldType === 'deliveryDate' || fieldType === 'issueDate') {
                          handleDeliveryDateChange(date, index, arrayName)

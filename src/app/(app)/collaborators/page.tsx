@@ -78,7 +78,7 @@ export default function CollaboratorsPage() {
         setCurrentPage(1);
     }, [roleFilter, search]);
 
-    const collaboratorRoles: (Collaborator['role'] | 'Todos')[] = ['Todos', 'Técnico', 'Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado', 'Comercial'];
+    const collaboratorRoles: (Collaborator['role'] | 'Todos')[] = ['Todos', 'Técnico', 'Supervisor', 'Coordinador', 'Jefe de Proyecto', 'Encargado', 'Comercial', 'Administración'];
 
     return (
         <div className="flex flex-col gap-8">
