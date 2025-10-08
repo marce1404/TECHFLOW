@@ -2,83 +2,74 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper functions
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-    
-    function isAdmin() {
-        return request.auth.token.role == 'Admin';
-    }
-    
-    function isSupervisor() {
-        return request.auth.token.role == 'Supervisor';
-    }
-
-    match /users/{userId} {
-      allow read: if true;
-      allow write: if isOwner(userId) || isAdmin();
-    }
-    
-    match /settings/{docId} {
-        allow read: if request.auth != null;
-        allow write: if isAdmin();
-    }
-
-    match /work-orders/{orderId} {
-        allow read: if request.auth != null;
-        allow create, update, delete: if isAdmin() || isSupervisor();
-    }
-    
-    match /ot-categories/{categoryId} {
-        allow read: if request.auth != null;
-        allow create, update, delete: if isAdmin() || isSupervisor();
-    }
-    
-    match /ot-statuses/{statusId} {
-        allow read: if request.auth != null;
-        allow create, update, delete: if isAdmin() || isSupervisor();
-    }
-
-    match /services/{serviceId} {
-        allow read: if request.auth != null;
-        allow create, update, delete: if isAdmin() || isSupervisor();
-    }
-    
-    match /collaborators/{collaboratorId} {
-        allow read: if request.auth != null;
-        allow create, update, delete: if isAdmin() || isSupervisor();
-    }
-    
-    match /vehicles/{vehicleId} {
-        allow read: if request.auth != null;
-        allow create, update, delete: if isAdmin() || isSupervisor();
-    }
-    
-    match /gantt-charts/{ganttId} {
-        allow read: if request.auth != null;
-        allow create, update, delete: if isAdmin() || isSupervisor();
-    }
-    
-    match /suggested-tasks/{taskId} {
-        allow read: if request.auth != null;
-        allow create, update, delete: if isAdmin() || isSupervisor();
-    }
-    
-    match /report-templates/{templateId} {
-        allow read: if request.auth != null;
-        allow create, update, delete: if isAdmin();
-    }
-    
-    match /submitted-reports/{reportId} {
-        allow read: if request.auth != null;
-        allow create, update, delete: if isAdmin() || isSupervisor();
-    }
     
     match /audit-log/{logId} {
       allow create: if request.auth != null;
-      allow read: if isAdmin() || isSupervisor();
+    }
+
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.uid == userId;
+    }
+
+    match /ot-categories/{categoryId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.token.role == 'Admin' || request.auth.token.role == 'Supervisor';
+    }
+
+    match /ot-statuses/{statusId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.token.role == 'Admin' || request.auth.token.role == 'Supervisor';
+    }
+
+    match /services/{serviceId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.token.role == 'Admin' || request.auth.token.role == 'Supervisor';
+    }
+    
+    match /collaborators/{collaboratorId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.token.role == 'Admin' || request.auth.token.role == 'Supervisor';
+    }
+
+    match /vehicles/{vehicleId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.token.role == 'Admin' || request.auth.token.role == 'Supervisor';
+    }
+
+    match /gantt-charts/{ganttId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.token.role == 'Admin' || request.auth.token.role == 'Supervisor';
+    }
+
+    match /suggested-tasks/{taskId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.token.role == 'Admin' || request.auth.token.role == 'Supervisor';
+    }
+
+    match /report-templates/{templateId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.token.role == 'Admin' || request.auth.token.role == 'Supervisor';
+    }
+
+    match /submitted-reports/{reportId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.token.role == 'Admin' || request.auth.token.role == 'Supervisor';
+    }
+
+    match /settings/{settingId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.token.role == 'Admin';
+    }
+
+    match /work-orders/{orderId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.token.role == 'Admin' || request.auth.token.role == 'Supervisor';
+    }
+
+    // Make sure no other rules are accidentally matched
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
