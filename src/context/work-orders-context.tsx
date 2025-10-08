@@ -374,23 +374,42 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     
     // Send email if requested
     if (notification?.send && smtpConfig) {
-        const comercial = collaborators.find(c => c.name === createdOrder.comercial);
-        if (comercial?.email) {
-            const ccEmails = (notification.cc || [])
-                .map(id => collaborators.find(c => c.id === id)?.email)
-                .filter((email): email is string => !!email);
+        
+        const getEmail = (name: string) => collaborators.find(c => c.name === name)?.email;
+        
+        const toEmails: string[] = [];
 
+        // 1. Comercial
+        const comercialEmail = getEmail(createdOrder.comercial);
+        if (comercialEmail) toEmails.push(comercialEmail);
+
+        // 2. Encargados
+        createdOrder.assigned.forEach(name => {
+            const email = getEmail(name);
+            if (email) toEmails.push(email);
+        });
+
+        // 3. Creator
+        if (userProfile?.email) toEmails.push(userProfile.email);
+        
+        const ccEmails = (notification.cc || [])
+            .map(id => collaborators.find(c => c.id === id)?.email)
+            .filter((email): email is string => !!email);
+            
+        const uniqueToEmails = Array.from(new Set(toEmails));
+
+        if (uniqueToEmails.length > 0) {
             await sendNewWorkOrderEmailAction(
-                [comercial.email],
-                ccEmails,
+                uniqueToEmails,
+                Array.from(new Set(ccEmails)),
                 createdOrder,
                 smtpConfig
             );
         } else {
              toast({
                 variant: 'destructive',
-                title: 'Advertencia',
-                description: 'OT creada, pero no se pudo enviar el correo. El comercial asignado no tiene un email configurado.'
+                title: 'Advertencia de Envío',
+                description: 'OT creada, pero no se pudo enviar el correo. Ninguno de los destinatarios automáticos (comercial, encargado, creador) tiene un email configurado.'
             });
         }
     }
