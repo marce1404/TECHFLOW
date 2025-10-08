@@ -838,9 +838,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     } catch(e: any) {
         console.error("Error updating phase name:", e);
         const permissionError = new FirestorePermissionError({
-            path: q.toString(), // Approximation
+            path: 'suggested-tasks', // This is an approximation
             operation: 'update',
-            requestResourceData: { phase: newPhaseName },
+            requestResourceData: { category, oldPhaseName, newPhaseName },
         });
         errorEmitter.emit('permission-error', permissionError);
         toast({ variant: 'destructive', title: 'Error al renombrar', description: `Permiso denegado o error de red.`});
