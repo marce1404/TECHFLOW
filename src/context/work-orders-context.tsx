@@ -762,7 +762,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const deleteAllData = async () => {
     const collectionsToDelete = [
       'work-orders',
-      'collaborators',
+      // 'collaborators' is now protected
       'vehicles',
       'gantt-charts',
       'submitted-reports',
@@ -779,7 +779,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     });
   
     await Promise.all(batchPromises);
-    await addLogEntry('Eliminó todos los datos de la aplicación.');
+    await addLogEntry('Eliminó todos los datos de la aplicación (excepto colaboradores).');
   };
 
   return (
