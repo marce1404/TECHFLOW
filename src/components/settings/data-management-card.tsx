@@ -1,8 +1,9 @@
+
 'use client';
 import * as React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/card';
 import { Button } from '../ui/button';
-import { FileUp, FileDown, Loader2, Calendar as CalendarIcon, HardDriveDownload } from 'lucide-react';
+import { FileUp, FileDown, Loader2, Calendar as CalendarIcon, HardDriveDownload, Trash2, AlertTriangle } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
 import { es } from 'date-fns/locale';
 import { format } from 'date-fns';
@@ -15,13 +16,18 @@ import { exportOrdersToExcel } from '@/app/actions';
 import { ImportOrdersDialog } from '@/components/orders/import-orders-dialog';
 import { useWorkOrders } from '@/context/work-orders-context';
 import * as xlsx from 'xlsx';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
 
 export default function DataManagementCard() {
-    const { workOrders, otStatuses, collaborators, vehicles, ganttCharts, reportTemplates, services, submittedReports, otCategories, fetchData } = useWorkOrders();
+    const { workOrders, otStatuses, collaborators, vehicles, ganttCharts, reportTemplates, services, submittedReports, otCategories, fetchData, deleteAllData } = useWorkOrders();
     const [date, setDate] = React.useState<DateRange | undefined>();
     const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>([]);
     const [isExporting, setIsExporting] = React.useState(false);
     const [isImporting, setIsImporting] = React.useState(false);
+    const [isDeleting, setIsDeleting] = React.useState(false);
+    const [deleteConfirmationText, setDeleteConfirmationText] = React.useState('');
     const { toast } = useToast();
 
     const statusOptions = otStatuses.map(s => ({ value: s.name, label: s.name }));
@@ -33,12 +39,14 @@ export default function DataManagementCard() {
 
             if (date?.from) {
                 filteredForExport = filteredForExport.filter(order => {
+                    if (!order.date) return false;
                     const orderDate = new Date(order.date.replace(/-/g, '/'));
                     return orderDate >= date.from!;
                 });
             }
             if (date?.to) {
                 filteredForExport = filteredForExport.filter(order => {
+                    if (!order.date) return false;
                     const orderDate = new Date(order.date.replace(/-/g, '/'));
                     return orderDate <= date.to!;
                 });
@@ -216,6 +224,26 @@ export default function DataManagementCard() {
         { title: 'Servicios', data: services, fileName: 'servicios' },
     ];
     
+    const handleDeleteAllData = async () => {
+        setIsDeleting(true);
+        try {
+            await deleteAllData();
+            toast({
+                title: 'Base de Datos Limpiada',
+                description: 'Todos los datos han sido eliminados. Ahora puedes importar desde cero.',
+            });
+        } catch (e: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Error al Eliminar',
+                description: `Ocurrió un error al limpiar la base de datos: ${e.message}`,
+            });
+        } finally {
+            setIsDeleting(false);
+            setDeleteConfirmationText('');
+        }
+    };
+
     return (
         <>
             <Card>
@@ -315,6 +343,63 @@ export default function DataManagementCard() {
                            {section.title}
                        </Button>
                    ))}
+                </CardContent>
+            </Card>
+
+            <Card className="border-destructive">
+                <CardHeader>
+                    <div className="flex items-center gap-4">
+                        <AlertTriangle className="h-8 w-8 text-destructive" />
+                        <div>
+                            <CardTitle className="text-destructive">Zona de Peligro</CardTitle>
+                            <CardDescription>
+                                Las acciones en esta sección son irreversibles y pueden causar la pérdida permanente de datos.
+                            </CardDescription>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center justify-between rounded-lg border border-destructive/50 p-4">
+                        <div>
+                            <h4 className="font-semibold">Eliminar Todos los Datos</h4>
+                            <p className="text-sm text-muted-foreground">Esta acción borrará permanentemente todas las OTs, colaboradores, vehículos, y configuraciones de la base de datos.</p>
+                        </div>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Borrar Todo
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Esta acción no se puede deshacer. Se eliminarán todos los datos de la aplicación. Para confirmar, escribe <strong className="text-foreground">ELIMINAR</strong> en el campo de abajo.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <div className="py-2">
+                                    <Label htmlFor="delete-confirm" className="sr-only">Confirmación</Label>
+                                    <Input 
+                                        id="delete-confirm"
+                                        value={deleteConfirmationText}
+                                        onChange={(e) => setDeleteConfirmationText(e.target.value)}
+                                        placeholder='Escribe ELIMINAR para confirmar'
+                                    />
+                                </div>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel onClick={() => setDeleteConfirmationText('')}>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        onClick={handleDeleteAllData}
+                                        disabled={deleteConfirmationText !== 'ELIMINAR' || isDeleting}
+                                    >
+                                        {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        Sí, eliminar todo
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                 </CardContent>
             </Card>
             

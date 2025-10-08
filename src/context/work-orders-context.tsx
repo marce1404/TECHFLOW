@@ -69,6 +69,7 @@ interface WorkOrdersContextType {
   updateSmtpConfig: (config: SmtpConfig) => Promise<void>;
   promptToCloseOrder: (order: WorkOrder) => void;
   convertActivityToWorkOrder: (activityId: string, newPrefix: string) => Promise<void>;
+  deleteAllData: () => Promise<void>;
   auditLog: any[];
   fetchData: () => Promise<void>;
 }
@@ -758,6 +759,29 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const deleteAllData = async () => {
+    const collectionsToDelete = [
+      'work-orders',
+      'collaborators',
+      'vehicles',
+      'gantt-charts',
+      'submitted-reports',
+    ];
+  
+    const batchPromises = collectionsToDelete.map(async (collectionName) => {
+      const collectionRef = collection(db, collectionName);
+      const snapshot = await getDocs(collectionRef);
+      const batch = writeBatch(db);
+      snapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+      return batch.commit();
+    });
+  
+    await Promise.all(batchPromises);
+    await addLogEntry('Eliminó todos los datos de la aplicación.');
+  };
+
   return (
     <WorkOrdersContext.Provider value={{ 
         workOrders, 
@@ -815,6 +839,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         updateSmtpConfig,
         promptToCloseOrder,
         convertActivityToWorkOrder,
+        deleteAllData,
         auditLog,
         fetchData,
     }}>
