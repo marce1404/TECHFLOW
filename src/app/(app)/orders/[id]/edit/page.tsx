@@ -808,9 +808,56 @@ export default function EditOrderPage() {
                           <TableBody>
                               {invoiceFields.map((field, index) => (
                                   <TableRow key={field.id}>
-                                      <TableCell>{methods.watch(`invoices.${index}.number`)}</TableCell>
-                                      <TableCell>{format(new Date(String(methods.watch(`invoices.${index}.date`)).replace(/-/g, '/')), "PPP", { locale: es })}</TableCell>
-                                      <TableCell className="text-right">{formatCurrency(methods.watch(`invoices.${index}.amount`))}</TableCell>
+                                      <TableCell>
+                                        <Controller
+                                            control={methods.control}
+                                            name={`invoices.${index}.number`}
+                                            render={({ field }) => <Input {...field} />}
+                                        />
+                                      </TableCell>
+                                      <TableCell>
+                                        <Controller
+                                            control={methods.control}
+                                            name={`invoices.${index}.date`}
+                                            render={({ field }) => {
+                                                const dateValue = field.value ? new Date(String(field.value).replace(/-/g, '/')) : undefined;
+                                                return (
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
+                                                        <Button variant="outline" className="w-full justify-start text-left font-normal">
+                                                            {dateValue ? format(dateValue, "PPP", { locale: es }) : 'Elegir fecha'}
+                                                        </Button>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-auto p-0">
+                                                        <Calendar
+                                                            mode="single"
+                                                            selected={dateValue}
+                                                            onSelect={(d) => field.onChange(d ? format(d, 'yyyy-MM-dd') : '')}
+                                                            locale={es}
+                                                        />
+                                                    </PopoverContent>
+                                                </Popover>
+                                            )}}
+                                        />
+                                      </TableCell>
+                                      <TableCell>
+                                         <Controller
+                                            control={methods.control}
+                                            name={`invoices.${index}.amount`}
+                                            render={({ field }) => (
+                                                <Input 
+                                                    type="text" 
+                                                    className="text-right"
+                                                    value={formatCurrency(field.value)} 
+                                                    onChange={(e) => {
+                                                        const rawValue = e.target.value.replace(/\./g, '');
+                                                        const numericValue = parseInt(rawValue, 10);
+                                                        field.onChange(isNaN(numericValue) ? 0 : numericValue);
+                                                    }}
+                                                />
+                                            )}
+                                        />
+                                      </TableCell>
                                       <TableCell className="text-right">{formatCurrency(Math.round(methods.watch(`invoices.${index}.amount`) * 1.19))}</TableCell>
                                       <TableCell>
                                           <Button variant="ghost" size="icon" onClick={() => removeInvoice(index)}>
