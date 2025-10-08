@@ -2,7 +2,7 @@
 import * as React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/card';
 import { Button } from '../ui/button';
-import { FileUp, FileDown, Loader2, Calendar as CalendarIcon, HardDriveDownload, Wrench } from 'lucide-react';
+import { FileUp, FileDown, Loader2, Calendar as CalendarIcon, HardDriveDownload } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
 import { es } from 'date-fns/locale';
 import { format } from 'date-fns';
@@ -14,29 +14,14 @@ import { useToast } from '@/hooks/use-toast';
 import { exportOrdersToExcel } from '@/app/actions';
 import { ImportOrdersDialog } from '@/components/orders/import-orders-dialog';
 import { useWorkOrders } from '@/context/work-orders-context';
-import { Separator } from '../ui/separator';
 import * as xlsx from 'xlsx';
-import type { WorkOrder } from '@/lib/types';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-
 
 export default function DataManagementCard() {
-    const { workOrders, otStatuses, collaborators, vehicles, ganttCharts, reportTemplates, services, submittedReports, otCategories, fetchData, updateOrder } = useWorkOrders();
+    const { workOrders, otStatuses, collaborators, vehicles, ganttCharts, reportTemplates, services, submittedReports, otCategories, fetchData } = useWorkOrders();
     const [date, setDate] = React.useState<DateRange | undefined>();
     const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>([]);
     const [isExporting, setIsExporting] = React.useState(false);
     const [isImporting, setIsImporting] = React.useState(false);
-    const [isFixing, setIsFixing] = React.useState(false);
     const { toast } = useToast();
 
     const statusOptions = otStatuses.map(s => ({ value: s.name, label: s.name }));
@@ -126,7 +111,7 @@ export default function DataManagementCard() {
             'Cliente': "Cliente Ejemplo S.A.",
             'RUT': "76.123.456-7",
             'Servicio': "CCTV",
-            'Fecha Inicio': "2025-07-20",
+            'Fecha Ingreso': "2025-07-20",
             'Fecha Termino': "2025-07-25",
             'Estado': "Por Iniciar",
             'Prioridad': "Alta",
@@ -231,69 +216,6 @@ export default function DataManagementCard() {
         { title: 'Servicios', data: services, fileName: 'servicios' },
     ];
     
-    const handleFixImportedData = async () => {
-        setIsFixing(true);
-        toast({ title: "Iniciando corrección...", description: "Este proceso puede tardar unos minutos." });
-
-        const activeOtNumbers = new Set([
-            'OT1374', 'OT-1498', 'OT-1519', 'OT-1510', 'OT-1511', 'OT-1508', 'OT-1524',
-            'OT-1522', 'OT-1505', 'OT-1528', 'OT-1531', 'OT-1529', 'OT-1530', 'OT-1533',
-            'OT-1532', 'OT-1536', 'OT-1542', 'OT-1513', 'OT-1539', 'OT-1540', 'OT-1534',
-            'OT-1537', 'OT-1557', 'OT-1556', 'OT-1545', 'OT-1564', 'OT-1543', 'OT-1544',
-            'OT-1569', 'OT-1560', 'OT-1500', 'OT-1541', 'OT-1526', 'OT-1572', 'OT-1568',
-            'OT-1547', 'OT-1535', 'OT-1562', 'OT-1553', 'OT-1550', 'OT-1570', 'OT-1565',
-            'OT-1561', 'OT-1555', 'OT-1538', 'OT-1577', 'OT-1563', 'OT-1549', 'OT-1558',
-            'OT-1581', 'OT-1586', 'OT-1546', 'OT-1554', 'OT-1579', 'OT-1567', 'OT-1590',
-            'OT-1594', 'OT-1551', 'OT-1512', 'OT-1552', 'OT-1587', 'OT-1584', 'OT-1604',
-            'OT-1591', 'OT-1585', 'OT-1592', 'OT-1605', 'OT-1601', 'OT-1608', 'OT-1580',
-            'OT-1596', 'OT-1602', 'OT-1559', 'OT-1595', 'OT-1609', 'OT-1578'
-        ]);
-        
-        const ordersToFix = workOrders.filter(order => !activeOtNumbers.has(order.ot_number));
-
-        if (ordersToFix.length === 0) {
-            toast({ title: "No hay nada que corregir", description: "Todos los estados parecen correctos." });
-            setIsFixing(false);
-            return;
-        }
-
-        let successCount = 0;
-        let errorCount = 0;
-        
-        for (const order of ordersToFix) {
-            try {
-                if (order.status !== 'Cerrada' || order.facturado !== true) {
-                    await updateOrder(order.id, {
-                        status: 'Cerrada',
-                        facturado: true,
-                        endDate: order.endDate || order.date,
-                    });
-                    successCount++;
-                }
-            } catch (e) {
-                console.error(`Failed to update OT ${order.ot_number}:`, e);
-                errorCount++;
-            }
-        }
-        
-        if (errorCount > 0) {
-             toast({
-                variant: 'destructive',
-                title: "Corrección finalizada con errores",
-                description: `${successCount} OTs corregidas. ${errorCount} fallaron.`,
-            });
-        } else {
-             toast({
-                title: "Corrección Exitosa",
-                description: `${successCount} órdenes de trabajo han sido actualizadas a 'Cerrada' y marcadas como 'Facturada'.`,
-            });
-        }
-        
-        fetchData(); // re-fetch data to update the UI
-        setIsFixing(false);
-    };
-
-
     return (
         <>
             <Card>
@@ -373,42 +295,6 @@ export default function DataManagementCard() {
                         </div>
                     </div>
                 </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Mantenimiento de Datos</CardTitle>
-                </CardHeader>
-                <CardContent>
-                     <p className="text-sm text-muted-foreground">
-                        Utiliza esta herramienta si importaste datos y el estado de las OTs no se asignó correctamente. Esto corregirá las OTs que deberían estar "Cerradas".
-                    </p>
-                </CardContent>
-                <CardFooter>
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive">
-                                <Wrench className="mr-2 h-4 w-4" />
-                                Corregir Estados de OTs Importadas
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>¿Confirmar corrección de datos?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Esta acción revisará todas las OTs que no estén en la lista de activas y las cambiará a "Cerrada" y "Facturada". Este proceso no se puede deshacer.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleFixImportedData} disabled={isFixing}>
-                                    {isFixing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                                    Sí, corregir datos
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </CardFooter>
             </Card>
             
             <Card>
