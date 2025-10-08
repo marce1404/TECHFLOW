@@ -10,6 +10,7 @@ import {
   AppUser,
   UpdateUserInput,
   MailAttachment,
+  UpdateOrderNotification,
 } from '@/lib/types';
 import { suggestOptimalResourceAssignment } from '@/ai/flows/suggest-resource-assignment';
 import nodemailer from 'nodemailer';
@@ -629,6 +630,67 @@ export async function sendActivityEmailAction(
     }
 }
 
+const generateWorkOrderEmailHtml = (order: WorkOrder, title: string, introText: string): string => {
+    const formatCurrency = (value?: number) => {
+        if (typeof value !== 'number') return '$0';
+        return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(value);
+    };
+
+    return `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #333; line-height: 1.5; }
+            .container { max-width: 680px; margin: 20px auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #f8fafc; }
+            .header { padding-bottom: 15px; margin-bottom: 15px; border-bottom: 2px solid #3CA7FA; }
+            .header h1 { font-size: 24px; color: #3CA7FA; margin: 0; }
+            .section { margin-bottom: 20px; }
+            .section h2 { font-size: 18px; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; margin-top: 0; }
+            .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; }
+            .detail-item { font-size: 14px; }
+            .detail-item strong { color: #475569; display: block; }
+            .full-width { grid-column: 1 / -1; }
+            .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #64748b; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header"><h1>${title}</h1></div>
+            <p>${introText}</p>
+
+            <div class="section">
+                <h2>Detalles de la Orden de Trabajo</h2>
+                <div class="details-grid">
+                    <div class="detail-item full-width"><strong>Nº OT:</strong> ${order.ot_number}</div>
+                    <div class="detail-item full-width"><strong>Descripción:</strong> ${order.description}</div>
+                    <div class="detail-item"><strong>Cliente:</strong> ${order.client || 'N/A'}</div>
+                    <div class="detail-item"><strong>RUT:</strong> ${order.rut || 'N/A'}</div>
+                    <div class="detail-item"><strong>Servicio:</strong> ${order.service || 'N/A'}</div>
+                    <div class="detail-item"><strong>Estado:</strong> ${order.status}</div>
+                    <div class="detail-item"><strong>Prioridad:</strong> ${order.priority}</div>
+                    <div class="detail-item"><strong>Comercial:</strong> ${order.comercial || 'N/A'}</div>
+                    <div class="detail-item"><strong>Fecha Inicio:</strong> ${order.date}</div>
+                    <div class="detail-item"><strong>Fecha Término:</strong> ${order.endDate || 'N/A'}</div>
+                    <div class="detail-item full-width"><strong>Encargados:</strong> ${(order.assigned || []).join(', ') || 'N/A'}</div>
+                    <div class="detail-item full-width"><strong>Técnicos:</strong> ${(order.technicians || []).join(', ') || 'N/A'}</div>
+                    <div class="detail-item"><strong>Precio Neto:</strong> ${formatCurrency(order.netPrice)}</div>
+                    <div class="detail-item"><strong>Nº OC:</strong> ${order.ocNumber || 'N/A'}</div>
+                    <div class="detail-item full-width"><strong>Notas:</strong> ${order.notes || 'Sin notas.'}</div>
+                </div>
+            </div>
+
+            <div class="footer">
+                <p>Este es un correo generado automáticamente por el sistema de gestión OSESA.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+};
+
 export async function sendNewWorkOrderEmailAction(
     to: string[],
     cc: string[],
@@ -650,54 +712,8 @@ export async function sendNewWorkOrderEmailAction(
     }
 
     const subject = `Nueva OT Creada: ${order.ot_number} - ${order.description}`;
-    
-    const htmlBody = `
-        <!DOCTYPE html>
-        <html lang="es">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #333; line-height: 1.5; }
-                .container { max-width: 600px; margin: 20px auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #f8fafc; }
-                .header { text-align: center; padding-bottom: 15px; margin-bottom: 15px; border-bottom: 2px solid #3CA7FA; }
-                .header h1 { font-size: 24px; color: #3CA7FA; margin: 0; }
-                .section { margin-bottom: 25px; }
-                .section h2 { font-size: 18px; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; margin-top: 0; }
-                .details-table { width: 100%; border-collapse: collapse; }
-                .details-table td { padding: 8px 4px; font-size: 14px; }
-                .details-table td:first-child { font-weight: 600; color: #475569; width: 40%; }
-                .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #64748b; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>Nueva Orden de Trabajo Creada</h1>
-                </div>
-                <p>Hola,</p>
-                <p>Se ha creado una nueva Orden de Trabajo en el sistema con los siguientes detalles:</p>
-
-                <div class="section">
-                    <h2>Detalles de la OT</h2>
-                    <table class="details-table">
-                        <tr><td>Nº OT</td><td>${order.ot_number}</td></tr>
-                        <tr><td>Descripción</td><td>${order.description}</td></tr>
-                        <tr><td>Cliente</td><td>${order.client}</td></tr>
-                        <tr><td>Servicio</td><td>${order.service}</td></tr>
-                        <tr><td>Fecha de Inicio</td><td>${order.date}</td></tr>
-                        <tr><td>Encargados</td><td>${order.assigned.join(', ')}</td></tr>
-                        <tr><td>Técnicos</td><td>${order.technicians.join(', ')}</td></tr>
-                    </table>
-                </div>
-
-                <div class="footer">
-                    <p>Este es un correo generado automáticamente por el sistema de gestión OSESA.</p>
-                </div>
-            </div>
-        </body>
-        </html>
-    `;
+    const introText = 'Se ha creado una nueva Orden de Trabajo en el sistema con los siguientes detalles:';
+    const htmlBody = generateWorkOrderEmailHtml(order, 'Nueva Orden de Trabajo Creada', introText);
 
     const mailOptions = {
         from: `"${fromName}" <${fromEmail}>`,
@@ -712,6 +728,47 @@ export async function sendNewWorkOrderEmailAction(
         return { success: true, message: '¡Notificación de nueva OT enviada con éxito!' };
     } catch (error: any) {
         console.error("Error sending new OT email:", error);
+        return { success: false, message: `Error al enviar la notificación: ${error.message}` };
+    }
+}
+
+export async function sendUpdatedWorkOrderEmailAction(
+    to: string[],
+    cc: string[],
+    order: WorkOrder,
+    config: SmtpConfig,
+): Promise<{ success: boolean; message: string }> {
+    const { host, port, secure, user, pass, fromName, fromEmail } = config;
+
+    let transporter;
+    try {
+        transporter = nodemailer.createTransport({
+            host, port, secure: secure === 'ssl', auth: { user, pass },
+             ...(secure === 'starttls' && { tls: { ciphers: 'SSLv3' }})
+        });
+        await transporter.verify();
+    } catch (error: any) {
+        console.error("Error verifying SMTP for updated OT:", error);
+        return { success: false, message: `Error de conexión SMTP: ${error.message}` };
+    }
+
+    const subject = `OT Actualizada: ${order.ot_number} - ${order.description}`;
+    const introText = 'Se ha actualizado una Orden de Trabajo en el sistema. A continuación los detalles actualizados:';
+    const htmlBody = generateWorkOrderEmailHtml(order, 'Orden de Trabajo Actualizada', introText);
+
+    const mailOptions = {
+        from: `"${fromName}" <${fromEmail}>`,
+        to: to.join(','),
+        cc: cc.join(','),
+        subject,
+        html: htmlBody,
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        return { success: true, message: '¡Notificación de actualización de OT enviada con éxito!' };
+    } catch (error: any) {
+        console.error("Error sending updated OT email:", error);
         return { success: false, message: `Error al enviar la notificación: ${error.message}` };
     }
 }

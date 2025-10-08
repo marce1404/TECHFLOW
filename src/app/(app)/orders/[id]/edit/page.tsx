@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon, ArrowRight, Trash2, PlusCircle, Send, Info, FileClock } from "lucide-react";
+import { Calendar as CalendarIcon, ArrowRight, Trash2, PlusCircle, Send, Info, FileClock, Mail } from "lucide-react";
 import { cn, normalizeString } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from 'date-fns/locale';
@@ -17,7 +17,7 @@ import Link from 'next/link';
 import { MultiSelect } from "@/components/ui/multi-select";
 import { useToast } from "@/hooks/use-toast";
 import { useParams, useRouter } from "next/navigation";
-import type { WorkOrder, Invoice } from "@/lib/types";
+import type { WorkOrder, Invoice, UpdateOrderNotification } from "@/lib/types";
 import { useWorkOrders } from "@/context/work-orders-context";
 import { Slider } from "@/components/ui/slider";
 import { useAuth } from "@/context/auth-context";
@@ -43,6 +43,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 
 
 export default function EditOrderPage() {
@@ -54,6 +55,8 @@ export default function EditOrderPage() {
   
   const orderId = params.id as string;
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = React.useState(false);
+  const [sendUpdateNotification, setSendUpdateNotification] = React.useState(false);
+  const [updateCcRecipients, setUpdateCcRecipients] = React.useState<string[]>([]);
   
   const initialOrder = React.useMemo(() => getOrder(orderId), [orderId, getOrder]);
 
@@ -119,6 +122,12 @@ export default function EditOrderPage() {
 
   const assignedGantt = ganttCharts.find(g => g.assignedOT === methods.watch('ot_number'));
   const isGanttAssigned = !!assignedGantt;
+  
+  const collaboratorEmailOptions = React.useMemo(() => {
+    return collaborators
+        .filter(c => c.email)
+        .map(c => ({ value: c.id, label: `${c.name} (${c.email})`}));
+  }, [collaborators]);
 
   if (contextLoading) {
       return <div>Cargando orden de trabajo...</div>
@@ -140,8 +149,12 @@ export default function EditOrderPage() {
     if (!canEdit || !initialOrder) return;
     
     const finalData = { ...initialOrder, ...data };
+    
+     const notificationData: UpdateOrderNotification | null = sendUpdateNotification
+        ? { send: true, cc: updateCcRecipients }
+        : null;
 
-    await updateOrder(finalData.id, finalData);
+    await updateOrder(finalData.id, finalData, notificationData);
 
     toast({
       title: "Orden de Trabajo Actualizada",
@@ -919,6 +932,41 @@ export default function EditOrderPage() {
                   </div>
           </CardContent>
       </Card>
+      
+      {canEdit && (
+         <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Mail className="h-5 w-5" />
+                    Notificación por Correo
+                </CardTitle>
+                <CardDescription>
+                    Activa para enviar un correo con los detalles de esta actualización a los involucrados.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="flex items-center space-x-2">
+                    <Switch
+                        id="email-notification-update"
+                        checked={sendUpdateNotification}
+                        onCheckedChange={setSendUpdateNotification}
+                    />
+                    <Label htmlFor="email-notification-update">Notificar cambios por Correo</Label>
+                </div>
+                {sendUpdateNotification && (
+                    <div>
+                        <Label>Añadir en Copia (CC)</Label>
+                        <MultiSelect
+                            options={collaboratorEmailOptions}
+                            selected={updateCcRecipients}
+                            onChange={setUpdateCcRecipients}
+                            placeholder="Seleccionar destinatarios..."
+                        />
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+      )}
 
 
       {canEdit && (
@@ -968,5 +1016,3 @@ export default function EditOrderPage() {
     </>
   );
 }
-
-    

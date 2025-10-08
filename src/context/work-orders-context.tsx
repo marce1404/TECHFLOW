@@ -5,7 +5,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, query, where, writeBatch, serverTimestamp, orderBy, getDoc, setDoc, onSnapshot, Unsubscribe, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { WorkOrder, OTCategory, Service, Collaborator, Vehicle, GanttChart, SuggestedTask, OTStatus, ReportTemplate, SubmittedReport, CompanyInfo, AppUser, SmtpConfig, NewOrderNotification } from '@/lib/types';
+import type { WorkOrder, OTCategory, Service, Collaborator, Vehicle, GanttChart, SuggestedTask, OTStatus, ReportTemplate, SubmittedReport, CompanyInfo, AppUser, SmtpConfig, NewOrderNotification, UpdateOrderNotification } from '@/lib/types';
 import { useAuth } from './auth-context';
 import { format } from 'date-fns';
 import { CloseWorkOrderDialog } from '@/components/orders/close-work-order-dialog';
@@ -15,7 +15,7 @@ import { normalizeString, processFirestoreTimestamp } from '@/lib/utils';
 import { collaborators as demoCollaborators } from '@/lib/placeholder-data';
 import { errorEmitter } from '@/lib/error-emitter';
 import { FirestorePermissionError } from '@/lib/errors';
-import { sendNewWorkOrderEmailAction } from '@/app/actions';
+import { sendNewWorkOrderEmailAction, sendUpdatedWorkOrderEmailAction } from '@/app/actions';
 
 
 interface WorkOrdersContextType {
@@ -35,7 +35,7 @@ interface WorkOrdersContextType {
   smtpConfig: SmtpConfig | null;
   loading: boolean;
   addOrder: (order: Omit<WorkOrder, 'id'>, notification?: NewOrderNotification | null) => Promise<WorkOrder>;
-  updateOrder: (id: string, updatedOrder: Partial<WorkOrder>) => Promise<void>;
+  updateOrder: (id: string, updatedOrder: Partial<WorkOrder>, notification?: UpdateOrderNotification | null) => Promise<void>;
   getOrder: (id: string) => WorkOrder | undefined;
   addCategory: (category: Omit<OTCategory, 'id' | 'status'> & { status: string }) => Promise<OTCategory>;
   updateCategory: (id: string, category: Partial<OTCategory>) => Promise<void>;
@@ -272,24 +272,54 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     });
   };
   
-  const updateOrder = useCallback(async (id: string, updatedData: Partial<WorkOrder>) => {
+  const updateOrder = useCallback(async (id: string, updatedData: Partial<WorkOrder>, notification?: UpdateOrderNotification | null) => {
       const orderRef = doc(db, 'work-orders', id);
       const order = workOrders.find(o => o.id === id);
-      updateDoc(orderRef, updatedData).then(() => {
-        if (order) {
-            addLogEntry(`Actualizó la OT: ${order.ot_number}`);
-        }
-      }).catch(async (serverError) => {
+      
+      await updateDoc(orderRef, updatedData).catch(async (serverError) => {
             const permissionError = new FirestorePermissionError({
                 path: orderRef.path,
                 operation: 'update',
                 requestResourceData: updatedData,
             });
             errorEmitter.emit('permission-error', permissionError);
-            // We also toast a generic error in case the dev overlay doesn't show
             toast({ variant: 'destructive', title: 'Error al actualizar', description: 'Permiso denegado o error de red.' });
+            throw serverError; // Rethrow to stop further execution
         });
-  }, [workOrders, toast]);
+
+      if (order) {
+          await addLogEntry(`Actualizó la OT: ${order.ot_number}`);
+      }
+
+      if (notification?.send && smtpConfig) {
+          const fullUpdatedOrder = { ...order, ...updatedData } as WorkOrder;
+          const getEmail = (name: string) => collaborators.find(c => c.name === name)?.email;
+          
+          const toEmails: string[] = [];
+          if (fullUpdatedOrder.comercial) {
+              const comercialEmail = getEmail(fullUpdatedOrder.comercial);
+              if (comercialEmail) toEmails.push(comercialEmail);
+          }
+          (fullUpdatedOrder.assigned || []).forEach(name => {
+              const email = getEmail(name);
+              if (email) toEmails.push(email);
+          });
+          if (userProfile?.email) toEmails.push(userProfile.email);
+
+          const ccEmails = (notification.cc || [])
+            .map(id => collaborators.find(c => c.id === id)?.email)
+            .filter((email): email is string => !!email);
+
+          if (toEmails.length > 0) {
+              await sendUpdatedWorkOrderEmailAction(
+                  Array.from(new Set(toEmails)),
+                  Array.from(new Set(ccEmails)),
+                  fullUpdatedOrder,
+                  smtpConfig
+              );
+          }
+      }
+  }, [workOrders, toast, smtpConfig, userProfile, collaborators]);
 
   const getNextOtNumber = useCallback((prefix: string): string => {
     if (!prefix) return '';
@@ -380,8 +410,10 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         const toEmails: string[] = [];
 
         // 1. Comercial
-        const comercialEmail = getEmail(createdOrder.comercial);
-        if (comercialEmail) toEmails.push(comercialEmail);
+        if (createdOrder.comercial) {
+            const comercialEmail = getEmail(createdOrder.comercial);
+            if (comercialEmail) toEmails.push(comercialEmail);
+        }
 
         // 2. Encargados
         createdOrder.assigned.forEach(name => {

@@ -220,6 +220,11 @@ export type NewOrderNotification = {
     cc: string[]; // array of collaborator IDs
 };
 
+export type UpdateOrderNotification = {
+    send: boolean;
+    cc: string[]; // array of collaborator IDs
+};
+
 
 // AI Resource Assignment Types
 export const SuggestOptimalResourceAssignmentInputSchema = z.object({
