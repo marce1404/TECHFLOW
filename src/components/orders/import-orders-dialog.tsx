@@ -51,7 +51,7 @@ const excelRowSchema = z.object({
   saleNumber: z.any().optional(),
   invoiceNumber: z.any().optional(),
   invoiceDate: z.any().optional(),
-  billingMonth: z.string().optional(),
+  billingMonth: z.union([z.string(), z.number()]).optional(),
 });
 
 
@@ -290,7 +290,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                             number: String(invoiceNumber),
                             date: finalInvoiceDate,
                             amount: finalNetPrice || 0,
-                            billingMonth: billingMonth || undefined,
+                            billingMonth: billingMonth ? String(billingMonth) : undefined,
                         });
                     }
                 }
@@ -339,7 +339,11 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         duplicateOrders.forEach(dupOrder => {
             const existingOrder = workOrders.find(wo => String(wo.ot_number).trim() === String(dupOrder.ot_number).trim());
             if (existingOrder) {
-                const mergedData = { ...existingOrder, ...dupOrder };
+                // Smart merge: keep existing invoices/progress, update the rest
+                const mergedData: Partial<WorkOrder> = {
+                  ...dupOrder,
+                  notes: [existingOrder.notes, dupOrder.notes].filter(Boolean).join('\n---\n'), // Append new notes
+                };
                 ordersToUpdate.push({ id: existingOrder.id, data: mergedData });
             }
         });
@@ -590,3 +594,4 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
+
