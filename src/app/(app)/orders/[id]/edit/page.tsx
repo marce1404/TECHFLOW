@@ -55,12 +55,21 @@ export default function EditOrderPage() {
   const { toast } = useToast();
   
   const orderId = params.id as string;
-  const [initialOrder, setInitialOrder] = React.useState<WorkOrder | null | undefined>(undefined);
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = React.useState(false);
-  const [isFormReady, setIsFormReady] = React.useState(false);
-
   
-  const methods = useForm<WorkOrder>();
+  // Get the order data directly and memoize it
+  const initialOrder = React.useMemo(() => getOrder(orderId), [orderId, getOrder]);
+
+  const methods = useForm<WorkOrder>({
+    // Set default values directly from initialOrder if it exists
+    defaultValues: initialOrder ? {
+        ...initialOrder,
+        service: initialOrder.service || '',
+        status: initialOrder.status || 'Por Iniciar',
+        priority: initialOrder.priority || 'Baja',
+        comercial: initialOrder.comercial || '',
+    } : {}
+  });
 
   const { fields: invoiceFields, append: appendInvoice, remove: removeInvoice } = useFieldArray({
       control: methods.control,
@@ -113,62 +122,33 @@ export default function EditOrderPage() {
 
   const assignedGantt = ganttCharts.find(g => g.assignedOT === methods.watch('ot_number'));
   const isGanttAssigned = !!assignedGantt;
-  
-  React.useEffect(() => {
-    if (!contextLoading) {
-      const foundOrder = getOrder(orderId);
-      setInitialOrder(foundOrder);
-    }
-  }, [orderId, contextLoading, getOrder]);
 
+  // Reset form when initialOrder is found or changes
   React.useEffect(() => {
-    if (initialOrder && services.length > 0 && otStatuses.length > 0 && collaborators.length > 0) {
-        
-        const findCaseInsensitive = (value: string | undefined, options: {value: string, label: string}[]) => {
-            if (!value) return '';
-            const normalizedValue = normalizeString(value);
-            const found = options.find(opt => normalizeString(opt.value) === normalizedValue);
-            return found ? found.value : '';
-        };
-        
-        const defaults = {
-            ...initialOrder,
-            description: initialOrder.description || '',
-            ot_number: initialOrder.ot_number || '',
-            createdAt: initialOrder.createdAt || initialOrder.date,
-            client: initialOrder.client || '',
-            rut: initialOrder.rut || '',
-            service: findCaseInsensitive(initialOrder.service, serviceOptions),
-            date: initialOrder.date || '',
-            endDate: initialOrder.endDate || '',
-            startTime: initialOrder.startTime || '09:00',
-            endTime: initialOrder.endTime || '18:00',
-            technicians: Array.isArray(initialOrder.technicians) ? initialOrder.technicians : [],
-            vehicles: Array.isArray(initialOrder.vehicles) ? initialOrder.vehicles : [],
-            rentedVehicle: initialOrder.rentedVehicle || '',
-            notes: initialOrder.notes || '',
-            status: findCaseInsensitive(initialOrder.status, statusOptions),
-            priority: findCaseInsensitive(initialOrder.priority, priorityOptions) as WorkOrder['priority'] || 'Baja',
-            netPrice: initialOrder.netPrice || 0,
-            ocNumber: initialOrder.ocNumber || '',
-            saleNumber: initialOrder.saleNumber || '',
-            hesEmMigo: initialOrder.hesEmMigo || '',
-            assigned: Array.isArray(initialOrder.assigned) ? initialOrder.assigned : [],
-            comercial: findCaseInsensitive(initialOrder.comercial, vendors),
-            manualProgress: initialOrder.manualProgress || 0,
-            invoices: initialOrder.invoices || [],
-            invoiceRequestDates: initialOrder.invoiceRequestDates || [],
-        };
-        methods.reset(defaults);
-        setIsFormReady(true);
-    }
-  }, [initialOrder, services, otStatuses, collaborators, methods]);
-  
-  if (contextLoading || !isFormReady || !initialOrder) {
+      if (initialOrder) {
+          const findCaseInsensitive = (value: string | undefined, options: {value: string, label: string}[]) => {
+              if (!value) return '';
+              const normalizedValue = normalizeString(value);
+              const found = options.find(opt => normalizeString(opt.value) === normalizedValue);
+              return found ? found.value : '';
+          };
+          
+          const defaults = {
+              ...initialOrder,
+              service: findCaseInsensitive(initialOrder.service, serviceOptions),
+              status: findCaseInsensitive(initialOrder.status, statusOptions),
+              priority: findCaseInsensitive(initialOrder.priority, priorityOptions) as WorkOrder['priority'] || 'Baja',
+              comercial: findCaseInsensitive(initialOrder.comercial, vendors),
+          };
+          methods.reset(defaults);
+      }
+  }, [initialOrder, serviceOptions.length, statusOptions.length, vendors.length, methods]);
+
+  if (contextLoading) {
       return <div>Cargando orden de trabajo...</div>
   }
 
-  if (initialOrder === null) {
+  if (!initialOrder) {
       return <div>Orden de trabajo no encontrada.</div>
   }
   
