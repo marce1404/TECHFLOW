@@ -309,6 +309,7 @@ const invoiceSchema = z.object({
   number: z.string().min(1, "El número de factura es requerido"),
   date: z.string().min(1, "La fecha es requerida"),
   amount: z.coerce.number().min(0, "El monto debe ser positivo"),
+  billingMonth: z.string().optional(),
 });
 
 export const CreateWorkOrderInputSchema = z.object({
@@ -341,3 +342,5 @@ export type CreateWorkOrderInput = z.infer<typeof CreateWorkOrderInputSchema>;
 export const CreateWorkOrderInputSchemaForExcel = CreateWorkOrderInputSchema.omit({ invoices: true }).extend({
     invoiceNumber: z.union([z.string(), z.number()]).optional().transform(val => val ? String(val) : undefined),
 });
+
+    

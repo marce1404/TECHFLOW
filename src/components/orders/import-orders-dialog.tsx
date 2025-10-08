@@ -98,7 +98,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
   }
   
   const robustDateParse = (dateInput: any): string | null => {
-      if (!dateInput && dateInput !== 0) return null;
+      if (dateInput === null || dateInput === undefined || dateInput === '') return null;
 
       if (dateInput instanceof Date && isValid(dateInput)) {
           return format(dateInput, 'yyyy-MM-dd');
@@ -230,17 +230,31 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 } = mappedRow;
                 
                 const finalEndDate = robustDateParse(rawEndDate) || '';
-                const factprocStatus = normalizeString(rawFactproc || '');
-                const isFacturado = factprocStatus === 'facturado';
 
+                const factprocStatus = normalizeString(rawFactproc || '');
                 let finalStatus: WorkOrder['status'];
-                if (factprocStatus === 'en proceso') {
-                    finalStatus = 'En Progreso';
-                } else if (factprocStatus === 'facturado' || factprocStatus === 'terminada') {
-                    finalStatus = 'Cerrada';
-                } else {
-                    finalStatus = 'Por Iniciar';
+
+                switch(factprocStatus) {
+                    case 'en proceso':
+                        finalStatus = 'En Progreso';
+                        break;
+                    case 'facturado':
+                    case 'terminada':
+                        finalStatus = 'Cerrada';
+                        break;
+                    case 'por iniciar':
+                        finalStatus = 'Por Iniciar';
+                        break;
+                    default:
+                        finalStatus = 'Por Iniciar'; // Safe default
                 }
+                
+                // If there's a billing month, it's invoiced and thus closed.
+                const isFacturado = !!billingMonth;
+                if (isFacturado) {
+                    finalStatus = 'Cerrada';
+                }
+
                 
                 const parseCollaborators = (names: any): string[] => {
                   if (!names) return [];
@@ -335,11 +349,15 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         duplicateOrders.forEach(dupOrder => {
             const existingOrder = workOrders.find(wo => String(wo.ot_number).trim() === String(dupOrder.ot_number).trim());
             if (existingOrder) {
-                const mergedData: Partial<WorkOrder> = {
-                  ...existingOrder,
+                 const mergedData: Partial<WorkOrder> = {
                   ...dupOrder,
-                  notes: [existingOrder.notes, dupOrder.notes].filter(Boolean).join('\n---\n'), // Append new notes
+                  notes: [existingOrder.notes, excelStatusNotes].filter(Boolean).join('\n---\n'),
                 };
+                
+                if (dupOrder.endDate === null) {
+                    mergedData.endDate = '';
+                }
+                
                 ordersToUpdate.push({ id: existingOrder.id, data: mergedData });
             }
         });
@@ -591,3 +609,5 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
+
+    
