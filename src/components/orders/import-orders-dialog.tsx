@@ -164,24 +164,24 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         };
         
         const keyMapping: { [key: string]: string | null } = {
-            ot_number: findHeader(['ot', 'n ot']),
+            ot_number: findHeader(['ot', 'n ot', 'numero ot']),
             date: findHeader(['fechaingreso', 'fecha ingreso']),
             description: findHeader(['nombredelproyecto', 'descripcion']),
             client: findHeader(['cliente']),
             rut: findHeader(['rut']),
             comercial: findHeader(['vendedor']),
-            assigned: findHeader(['superv', 'encargado']),
-            technicians: findHeader(['tecnico', 'técnico']),
+            assigned: findHeader(['superv', 'encargado', 'encargados']),
+            technicians: findHeader(['tecnico', 'técnico', 'tecnicos']),
             service: findHeader(['sistema', 'servicio']),
             netPrice: findHeader(['montoneto']),
             factproc: findHeader(['factproc']),
             hesEmMigo: findHeader(['em-hes-migo', 'em/hes/migo', 'hesemmigo']),
             ocNumber: findHeader(['oc', 'nº orden de compra']),
             saleNumber: findHeader(['nv', 'nº venta']),
-            invoiceNumber: findHeader(['factn', 'factura', 'nº factura']),
-            invoiceDate: findHeader(['fechafact', 'fecha factura']),
-            endDate: findHeader(['fechainiciocompromiso', 'fechatermino']),
+            invoiceNumber: findHeader(['factn', 'factura', 'fact n°', 'fact. n°']),
+            invoiceDate: findHeader(['fechafact', 'fecha factura', 'fecha fact.']),
             billingMonth: findHeader(['mesfac', 'mes fac']),
+            endDate: findHeader(['fechatermino', 'fecha termino']),
         };
 
         const validationErrors: string[] = [];
@@ -231,19 +231,22 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 const finalEndDate = robustDateParse(rawEndDate);
 
                 const normalizedFactproc = normalizeString(rawFactproc || '');
-                let finalStatus: WorkOrder['status'] = 'Por Iniciar';
+                let finalStatus: WorkOrder['status'] = 'Por Iniciar'; // Default safe status
                 
-                if (normalizedFactproc.includes('terminada') || normalizedFactproc.includes('facturado')) {
-                    finalStatus = 'Cerrada';
+                if (normalizedFactproc.includes('cerrada')) {
+                  finalStatus = 'Cerrada';
+                } else if (normalizedFactproc.includes('terminada')) {
+                  finalStatus = 'Terminada';
                 } else if (normalizedFactproc.includes('en proceso')) {
-                    finalStatus = 'En Progreso';
+                  finalStatus = 'En Progreso';
                 } else if (normalizedFactproc.includes('por iniciar')) {
-                    finalStatus = 'Por Iniciar';
+                  finalStatus = 'Por Iniciar';
                 } else {
-                    const directMatch = otStatuses.find(s => normalizeString(s.name) === normalizedFactproc);
-                    if(directMatch) {
-                        finalStatus = directMatch.name as WorkOrder['status'];
-                    }
+                  // Check if the status exists in the app's list of valid statuses
+                  const directMatch = otStatuses.find(s => normalizeString(s.name) === normalizedFactproc);
+                  if (directMatch) {
+                    finalStatus = directMatch.name as WorkOrder['status'];
+                  }
                 }
                 
                 const isFacturado = !!billingMonth || (!!invoiceDate && !!invoiceNumber);
@@ -264,7 +267,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 
                 const otNumberString = String(rest.ot_number).trim();
 
-                const orderData: CreateWorkOrderInput & { invoices?: any[] } = {
+                const orderData: CreateWorkOrderInput & { invoices?: any[], notes?: string } = {
                     ...rest,
                     ot_number: otNumberString,
                     endDate: finalEndDate,
@@ -361,6 +364,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     }
 
     setLoading(true);
+    setStep('showResult'); // Move to result/progress view immediately
     setImportResult(null);
     setImportProgress(0);
     
@@ -397,7 +401,6 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     onImportSuccess();
     setImportResult({ successCount, errorCount, errors: batchErrors });
     setLoading(false);
-    setStep('showResult');
   };
 
   const handleClose = () => {
@@ -493,21 +496,31 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
 
   const renderResult = () => (
      <div className="space-y-4">
-        <div className="text-center">
-            <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
-            <h3 className="text-xl font-semibold">Importación Completada</h3>
-        </div>
-        <p>Órdenes procesadas exitosamente: <span className="font-bold text-green-500">{importResult?.successCount}</span></p>
-        <p>Órdenes con errores: <span className="font-bold text-destructive">{importResult?.errorCount}</span></p>
-        {importResult && importResult.errors.length > 0 && (
-            <div className="space-y-2">
-                <h4 className="font-semibold">Detalles de errores:</h4>
-                <ScrollArea className="h-32 rounded-md border p-2">
-                    <ul className="text-xs text-destructive list-disc list-inside">
-                        {importResult.errors.map((err, i) => <li key={i}>{err}</li>)}
-                    </ul>
-                </ScrollArea>
+        {loading ? (
+            <div className="w-full flex flex-col items-center gap-2">
+                <h3 className="font-semibold text-lg">Procesando Importación...</h3>
+                <Progress value={importProgress} className="w-full" />
+                <p className="text-sm text-muted-foreground">Procesando {Math.round((importProgress/100) * (newOrders.length + duplicateOrders.length))} de {newOrders.length + duplicateOrders.length}...</p>
             </div>
+        ) : (
+            <>
+                <div className="text-center">
+                    <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
+                    <h3 className="text-xl font-semibold">Importación Completada</h3>
+                </div>
+                <p>Órdenes procesadas exitosamente: <span className="font-bold text-green-500">{importResult?.successCount}</span></p>
+                <p>Órdenes con errores: <span className="font-bold text-destructive">{importResult?.errorCount}</span></p>
+                {importResult && importResult.errors.length > 0 && (
+                    <div className="space-y-2">
+                        <h4 className="font-semibold">Detalles de errores:</h4>
+                        <ScrollArea className="h-32 rounded-md border p-2">
+                            <ul className="text-xs text-destructive list-disc list-inside">
+                                {importResult.errors.map((err, i) => <li key={i}>{err}</li>)}
+                            </ul>
+                        </ScrollArea>
+                    </div>
+                )}
+            </>
         )}
     </div>
   );
@@ -526,14 +539,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
   }
   
   const renderFooter = () => {
-    if (loading && step !== 'selectFile') {
-      const totalToProcess = newOrders.length + duplicateOrders.length;
-      return (
-        <div className="w-full flex flex-col items-center gap-2">
-            <Progress value={importProgress} className="w-full" />
-            <p className="text-sm text-muted-foreground">Procesando {Math.round((importProgress/100) * totalToProcess)} de {totalToProcess}...</p>
-        </div>
-      )
+    if (step === 'showResult' && loading) {
+        return null; // No footer buttons while final progress is shown
     }
 
     switch (step) {
