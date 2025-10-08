@@ -19,7 +19,8 @@ import type { CreateWorkOrderInput, WorkOrder } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';
 import { useWorkOrders } from '@/context/work-orders-context';
 import { normalizeString } from '@/lib/utils';
-import { format, parse, isValid } from 'date-fns';
+import { format, parse, isValid, getYear } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { Progress } from '../ui/progress';
 
 interface ImportOrdersDialogProps {
@@ -77,7 +78,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
   
   const findMatchingCollaborator = (name: string) => {
     if (!name?.trim()) return name;
-    
+
     const normalizedName = normalizeString(name);
 
     // 1. Exact match (case-insensitive, accent-insensitive)
@@ -123,16 +124,30 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         }
 
         if (typeof dateInput === 'string' && dateInput.trim() !== '') {
-            if (dateInput.trim() === '2011-2023') return null;
+            const trimmedDateInput = dateInput.trim();
+            if (trimmedDateInput.trim() === '2011-2023') return null;
+
+            // Handle month names like "JULIO"
+            const monthNames: { [key: string]: number } = {
+                enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5,
+                julio: 6, agosto: 7, septiembre: 8, octubre: 9, noviembre: 10, diciembre: 11
+            };
+            const normalizedMonth = normalizeString(trimmedDateInput);
+            if (monthNames[normalizedMonth] !== undefined) {
+                const currentYear = getYear(new Date());
+                return format(new Date(currentYear, monthNames[normalizedMonth], 1), 'yyyy-MM-dd');
+            }
+
+            // Handle standard date formats
             const formats = ['dd/MM/yyyy', 'd/M/yy', 'yyyy-MM-dd', 'd-M-yy', 'dd-MM-yyyy', 'MM/dd/yyyy'];
             for (const fmt of formats) {
                 try {
-                const parsedDate = parse(dateInput, fmt, new Date());
-                if (isValid(parsedDate)) {
-                    return format(parsedDate, 'yyyy-MM-dd');
-                }
+                    const parsedDate = parse(trimmedDateInput, fmt, new Date());
+                    if (isValid(parsedDate)) {
+                        return format(parsedDate, 'yyyy-MM-dd');
+                    }
                 } catch (e) {
-                // ignore parse errors and try next format
+                    // ignore parse errors and try next format
                 }
             }
         }
@@ -188,11 +203,11 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         }
         
         const headers: { original: string, normalized: string }[] = xlsx.utils.sheet_to_json<string[]>(worksheet, { header: 1 })[0]
-            .map(h => ({ original: String(h), normalized: normalizeString(String(h)).replace(/[\s\n\.\°\/\\]+/g, '') }));
-
+            .map(h => ({ original: String(h), normalized: normalizeString(String(h)).replace(/[\s\n\.\°\/\\-]+/g, '') }));
+        
         const findHeader = (variants: string[]) => {
             for (const variant of variants) {
-                const normalizedVariant = normalizeString(variant).replace(/[\s\n\.\°\/\\]+/g, '');
+                const normalizedVariant = normalizeString(variant).replace(/[\s\n\.\°\/\\-]+/g, '');
                 const header = headers.find(h => h.normalized === normalizedVariant);
                 if (header) return header.original;
             }
@@ -201,7 +216,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         
         const keyMapping: { [key in keyof z.infer<typeof excelRowSchema>]?: string | null } = {
             ot_number: findHeader(['ot', 'n ot', 'numero ot']),
-            date: findHeader(['fechaingreso', 'fecha ingreso']),
+            date: findHeader(['fechaingreso']),
             description: findHeader(['nombredelproyecto', 'descripcion']),
             client: findHeader(['cliente']),
             rut: findHeader(['rut']),
@@ -629,3 +644,5 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
+
+    
