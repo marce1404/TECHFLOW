@@ -59,8 +59,14 @@ export default function EditOrderPage() {
 
   const methods = useForm<WorkOrder>({
     defaultValues: initialOrder || {},
-    values: initialOrder || undefined
   });
+  
+  React.useEffect(() => {
+    if (initialOrder) {
+        methods.reset(initialOrder);
+    }
+  }, [initialOrder, methods]);
+
 
   const { fields: invoiceFields, append: appendInvoice, remove: removeInvoice } = useFieldArray({
       control: methods.control,
@@ -113,12 +119,6 @@ export default function EditOrderPage() {
 
   const assignedGantt = ganttCharts.find(g => g.assignedOT === methods.watch('ot_number'));
   const isGanttAssigned = !!assignedGantt;
-
-  React.useEffect(() => {
-      if (initialOrder) {
-          methods.reset(initialOrder);
-      }
-  }, [initialOrder, methods]);
 
   if (contextLoading) {
       return <div>Cargando orden de trabajo...</div>
