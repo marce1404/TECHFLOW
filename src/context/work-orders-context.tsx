@@ -942,8 +942,18 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     snapshot.docs.forEach((doc) => {
       batch.delete(doc.ref);
     });
-    await batch.commit();
-    await addLogEntry('Eliminó todas las órdenes de trabajo.');
+    
+    batch.commit().then(async () => {
+        await addLogEntry('Eliminó todas las órdenes de trabajo.');
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: collectionRef.path,
+            operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al eliminar', description: 'Permiso denegado o error de red.'});
+        throw serverError;
+    });
   };
 
   const deleteAllData = async () => {
@@ -962,11 +972,20 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
       snapshot.docs.forEach((doc) => {
         batch.delete(doc.ref);
       });
-      return batch.commit();
+      return batch.commit().catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: collectionRef.path,
+            operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al eliminar', description: `Error al eliminar la colección ${collectionName}. Permiso denegado o error de red.`});
+        throw serverError;
+      });
     });
   
-    await Promise.all(batchPromises);
-    await addLogEntry('Eliminó todos los datos (excepto colaboradores).');
+    Promise.all(batchPromises).then(async () => {
+        await addLogEntry('Eliminó todos los datos (excepto colaboradores).');
+    });
   };
 
   return (
@@ -1048,3 +1067,4 @@ export const useWorkOrders = () => {
   }
   return context;
 };
+
