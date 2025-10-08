@@ -152,11 +152,11 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         }
         
         const headers: { original: string, normalized: string }[] = xlsx.utils.sheet_to_json<string[]>(worksheet, { header: 1 })[0]
-            .map(h => ({ original: String(h), normalized: normalizeString(String(h)).replace(/[\s\n]+/g, '') }));
+            .map(h => ({ original: String(h), normalized: normalizeString(String(h)).replace(/[\s\n\.\°]+/g, '') }));
 
         const findHeader = (variants: string[]) => {
             for (const variant of variants) {
-                const normalizedVariant = normalizeString(variant).replace(/\s+/g, '');
+                const normalizedVariant = normalizeString(variant).replace(/[\s\n\.\°]+/g, '');
                 const header = headers.find(h => h.normalized === normalizedVariant);
                 if (header) return header.original;
             }
@@ -171,28 +171,25 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             rut: findHeader(['rut']),
             comercial: findHeader(['vendedor']),
             assigned: findHeader(['superv', 'encargado']),
-            technicians: findHeader(['tecnico']),
+            technicians: findHeader(['tecnico', 'técnico']),
             service: findHeader(['sistema', 'servicio']),
             netPrice: findHeader(['montoneto']),
-            notes: findHeader(['estado']),
             factproc: findHeader(['factproc']),
-            hesEmMigo: findHeader(['em-hes-migo', 'em/hes/migo']),
-            saleNumber: findHeader(['nv']),
-            invoiceNumber: findHeader(['fact.n', 'factura', 'nº factura']),
+            hesEmMigo: findHeader(['em-hes-migo', 'em/hes/migo', 'hesemmigo']),
+            ocNumber: findHeader(['ocnumber']),
+            saleNumber: findHeader(['nv', 'salenumber']),
+            invoiceNumber: findHeader(['factn', 'factura', 'nº factura']),
             invoiceDate: findHeader(['fechafact', 'fecha factura']),
             endDate: findHeader(['fechainiciocompromiso', 'fechatermino']),
             billingMonth: findHeader(['Mes Fac']),
         };
-
 
         const validationErrors: string[] = [];
         const tempNewOrders: CreateWorkOrderInput[] = [];
         const tempDuplicateOrders: CreateWorkOrderInput[] = [];
 
         const existingOtNumbers = new Set(workOrders.map(wo => String(wo.ot_number).trim()));
-        const validStatusNames = otStatuses.map(s => normalizeString(s.name));
-
-
+        
         jsonData.forEach((row, index) => {
             const mappedRow: { [key: string]: any } = {};
             for (const targetKey in keyMapping) {
@@ -223,7 +220,6 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     assigned: rawAssigned,
                     technicians: rawTechnicians,
                     service,
-                    notes: excelNotes,
                     invoiceNumber,
                     invoiceDate,
                     billingMonth,
@@ -242,18 +238,15 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 } else if (normalizedFactproc.includes('en proceso')) {
                     finalStatus = 'En Progreso';
                 } else {
-                    const matchedStatus = otStatuses.find(s => normalizeString(s.name) === normalizedFactproc);
-                    if (matchedStatus) {
-                        finalStatus = matchedStatus.name as WorkOrder['status'];
-                    } else if (rawFactproc && rawFactproc.trim()) {
-                        const directMatch = otStatuses.find(s => s.name === rawFactproc.trim());
-                        if (directMatch) {
-                           finalStatus = directMatch.name as WorkOrder['status'];
-                        }
+                    const directMatch = otStatuses.find(s => normalizeString(s.name) === normalizedFactproc);
+                    if(directMatch) {
+                        finalStatus = directMatch.name as WorkOrder['status'];
+                    } else if (rawFactproc && rawFactproc.trim() !== '') {
+                        finalStatus = rawFactproc as WorkOrder['status']; // Store as is if not a standard match
                     }
                 }
                 
-                const isFacturado = !!billingMonth;
+                const isFacturado = !!billingMonth || (rawFactproc && normalizeString(rawFactproc).includes('facturado'));
                 
                 const parseCollaborators = (names: any): string[] => {
                   if (!names) return [];
@@ -284,7 +277,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     service: findMatchingString(service || '', availableServices),
                     facturado: isFacturado,
                     invoices: [],
-                    notes: excelNotes || '',
+                    notes: rawFactproc || '', // Save the original FACTPROCES as a note
                     saleNumber: rawSaleNumber ? String(rawSaleNumber) : '',
                     ocNumber: rest.ocNumber ? String(rest.ocNumber) : '',
                     rut: rest.rut ? String(rest.rut) : '',
