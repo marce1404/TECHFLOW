@@ -46,7 +46,7 @@ const excelRowSchema = z.object({
   netPrice: z.any().optional(),
   facturado: z.any().optional(),
   notes: z.string().optional(),
-  ocNumber: z.string().optional(),
+  ocNumber: z.any().optional(),
   hesEmMigo: z.string().optional(),
   saleNumber: z.any().optional(),
   invoiceNumber: z.any().optional(),
@@ -77,14 +77,19 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
   
   const findMatchingCollaborator = (name: string) => {
     if (!name?.trim()) return name;
-    // Normalize by removing dots, accents, and converting to lowercase for a more robust match.
-    const normalizedName = normalizeString(name).replace(/\./g, '');
-    const found = collaborators.find(c => {
-        const collaboratorName = normalizeString(c.name).replace(/\./g, '');
-        // Check if the collaborator name includes the (potentially partial) name from the Excel
-        return collaboratorName.includes(normalizedName);
-    });
-    return found?.name || name;
+    
+    const normalizedName = normalizeString(name);
+
+    // 1. Exact match (case-insensitive, accent-insensitive)
+    const exactMatch = collaborators.find(c => normalizeString(c.name) === normalizedName);
+    if (exactMatch) return exactMatch.name;
+
+    // 2. Partial match (if no exact match is found)
+    const partialMatch = collaborators.find(c => normalizeString(c.name).includes(normalizedName));
+    if (partialMatch) return partialMatch.name;
+    
+    // 3. Fallback to original name if no match found
+    return name;
   };
 
   const findMatchingString = (input: string, validList: {name: string}[]) => {
@@ -205,7 +210,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             technicians: findHeader(['tecnico', 'técnico', 'tecnicos']),
             service: findHeader(['sistema', 'servicio']),
             netPrice: findHeader(['montoneto']),
-            factproc: findHeader(['factproc', 'fact proces']),
+            factproc: findHeader(['factproc', 'fact proces', 'factprocs']),
             hesEmMigo: findHeader(['em-hes-migo', 'emhesmigo']),
             ocNumber: findHeader(['oc', 'n orden de compra']),
             saleNumber: findHeader(['nv', 'n venta']),
@@ -297,8 +302,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     facturado: isFacturado,
                     invoices: [],
                     notes: rawFactproc || '', // Save the original FACTPROCES as a note
-                    saleNumber: rawSaleNumber ? String(rawSaleNumber) : '',
-                    ocNumber: rawOcNumber ? String(rawOcNumber) : '',
+                    saleNumber: String(rawSaleNumber || ''),
+                    ocNumber: String(rawOcNumber || ''),
                     rut: rest.rut ? String(rest.rut) : '',
                     hesEmMigo: rest.hesEmMigo ? String(rest.hesEmMigo) : '',
                 };
