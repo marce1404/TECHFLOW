@@ -48,7 +48,7 @@ import { Separator } from "@/components/ui/separator";
 export default function EditOrderPage() {
   const params = useParams();
   const router = useRouter();
-  const { getOrder, updateOrder, otCategories, services, collaborators, ganttCharts, otStatuses, vehicles, promptToCloseOrder, deleteOrder, loading: contextLoading } from useWorkOrders();
+  const { getOrder, updateOrder, otCategories, services, collaborators, ganttCharts, otStatuses, vehicles, promptToCloseOrder, deleteOrder, loading: contextLoading } = useWorkOrders();
   const { userProfile } = useAuth();
   const { toast } = useToast();
   
