@@ -165,9 +165,9 @@ export default function EditOrderPage() {
         
         const isClosed = normalizeString(finalData.status) === 'cerrada';
         if (isClosed) {
-        router.push(`/orders/history`);
+          router.push(`/orders/history`);
         } else {
-        router.push(`/orders`);
+          router.push(`/orders`);
         }
     } catch (error) {
         // Error toast is handled by the context
