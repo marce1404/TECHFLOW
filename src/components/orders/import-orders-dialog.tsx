@@ -176,12 +176,12 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
             netPrice: findHeader(['montoneto']),
             factproc: findHeader(['factproc']),
             hesEmMigo: findHeader(['em-hes-migo', 'em/hes/migo', 'hesemmigo']),
-            ocNumber: findHeader(['ocnumber']),
-            saleNumber: findHeader(['nv', 'salenumber']),
+            ocNumber: findHeader(['oc', 'nº orden de compra']),
+            saleNumber: findHeader(['nv', 'nº venta']),
             invoiceNumber: findHeader(['factn', 'factura', 'nº factura']),
             invoiceDate: findHeader(['fechafact', 'fecha factura']),
             endDate: findHeader(['fechainiciocompromiso', 'fechatermino']),
-            billingMonth: findHeader(['Mes Fac']),
+            billingMonth: findHeader(['mesfac', 'mes fac']),
         };
 
         const validationErrors: string[] = [];
@@ -237,16 +237,16 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     finalStatus = 'Cerrada';
                 } else if (normalizedFactproc.includes('en proceso')) {
                     finalStatus = 'En Progreso';
+                } else if (normalizedFactproc.includes('por iniciar')) {
+                    finalStatus = 'Por Iniciar';
                 } else {
                     const directMatch = otStatuses.find(s => normalizeString(s.name) === normalizedFactproc);
                     if(directMatch) {
                         finalStatus = directMatch.name as WorkOrder['status'];
-                    } else if (rawFactproc && rawFactproc.trim() !== '') {
-                        finalStatus = rawFactproc as WorkOrder['status']; // Store as is if not a standard match
                     }
                 }
                 
-                const isFacturado = !!billingMonth || (rawFactproc && normalizeString(rawFactproc).includes('facturado'));
+                const isFacturado = !!billingMonth || (!!invoiceDate && !!invoiceNumber);
                 
                 const parseCollaborators = (names: any): string[] => {
                   if (!names) return [];
