@@ -140,7 +140,6 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
   const headerItems: { key: keyof WorkOrder, label: string, className?: string }[] = [
       { key: 'ot_number', label: 'ID', className: 'w-[8%]' },
       { key: 'description', label: 'Descripción', className: 'w-[25%]' },
-      { key: 'client', label: 'Cliente', className: 'w-[12%]' },
       { key: 'service', label: 'Servicio', className: 'w-[10%]' },
       { key: 'assigned', label: 'Encargado', className: 'w-[10%]' },
       { key: 'comercial', label: 'Comercial', className: 'w-[10%]' },
@@ -217,7 +216,6 @@ export default function HistoricalOrdersTable({ orders }: HistoricalOrdersTableP
                              <div className="text-xs text-muted-foreground">{order.createdAt || order.date}</div>
                           </TableCell>
                           <TableCell>{order.description}</TableCell>
-                          <TableCell>{order.client}</TableCell>
                           <TableCell>{order.service}</TableCell>
                           <TableCell>{Array.isArray(order.assigned) ? order.assigned.join(', ') : order.assigned}</TableCell>
                           <TableCell>{order.comercial}</TableCell>
