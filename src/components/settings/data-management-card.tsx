@@ -1,4 +1,3 @@
-
 'use client';
 import * as React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/card';
@@ -19,6 +18,7 @@ import * as xlsx from 'xlsx';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
+import { repairImportedWorkOrdersAction } from '@/app/repair-actions';
 
 export default function DataManagementCard() {
     const { workOrders, otStatuses, collaborators, vehicles, ganttCharts, reportTemplates, services, submittedReports, otCategories, fetchData, deleteAllData, deleteWorkOrders } = useWorkOrders();
@@ -254,6 +254,30 @@ export default function DataManagementCard() {
             setDeleteOtConfirmationText('');
         }
     };
+    
+    const handleRepair = async () => {
+        setIsRepairing(true);
+        try {
+            const result = await repairImportedWorkOrdersAction();
+            if (result.success) {
+                toast({
+                    title: 'Reparación Completada',
+                    description: `${result.updatedCount} órdenes de trabajo fueron corregidas.`
+                });
+                fetchData();
+            } else {
+                throw new Error(result.message);
+            }
+        } catch (error: any) {
+             toast({
+                variant: 'destructive',
+                title: 'Error en la Reparación',
+                description: error.message || 'No se pudieron reparar las órdenes de trabajo.',
+            });
+        } finally {
+            setIsRepairing(false);
+        }
+    }
 
     return (
         <>
@@ -364,12 +388,44 @@ export default function DataManagementCard() {
                         <div>
                             <CardTitle className="text-destructive">Zona de Peligro</CardTitle>
                             <CardDescription>
-                                Las acciones en esta sección son irreversibles y pueden causar la pérdida permanente de datos.
+                                Las acciones en esta sección son irreversibles y pueden causar la pérdida de datos o un comportamiento inesperado.
                             </CardDescription>
                         </div>
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between rounded-lg border border-destructive/50 p-4">
+                        <div>
+                            <h4 className="font-semibold">Reparar Fechas de OTs Importadas</h4>
+                            <p className="text-sm text-muted-foreground">Corrige las OTs donde la "Fecha de Inicio" fue asignada erróneamente con la "Fecha de Creación".</p>
+                        </div>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="outline">
+                                    <Wrench className="mr-2 h-4 w-4" />
+                                    Reparar Datos
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Confirmar reparación?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Esta acción buscará y corregirá las OTs con fechas de inicio incorrectas por la importación. Es una operación segura, pero se recomienda hacer un respaldo primero.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        onClick={handleRepair}
+                                        disabled={isRepairing}
+                                    >
+                                        {isRepairing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        Sí, reparar ahora
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                     <div className="flex items-center justify-between rounded-lg border border-destructive/50 p-4">
                         <div>
                             <h4 className="font-semibold">Eliminar Solo Órdenes de Trabajo</h4>
@@ -463,5 +519,3 @@ export default function DataManagementCard() {
         </>
     );
 }
-
-    
