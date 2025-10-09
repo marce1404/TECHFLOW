@@ -754,9 +754,9 @@ export async function sendUpdatedWorkOrderEmailAction(
         return { success: false, message: `Error de conexión SMTP: ${error.message}` };
     }
 
-    const subject = `OT Actualizada: ${order.ot_number} - ${order.description}`;
+    const subject = `Actualización en OT: ${order.ot_number} - ${order.description}`;
     const introText = 'Se ha actualizado una Orden de Trabajo en el sistema. A continuación los detalles actualizados:';
-    const htmlBody = generateWorkOrderEmailHtml(order, 'Orden de Trabajo Actualizada', introText);
+    const htmlBody = generateWorkOrderEmailHtml(order, 'Actualización en Orden de Trabajo', introText);
 
     const mailOptions = {
         from: `"${fromName}" <${fromEmail}>`,
