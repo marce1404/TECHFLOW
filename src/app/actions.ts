@@ -678,6 +678,8 @@ const generateWorkOrderEmailHtml = (order: WorkOrder, title: string, introText: 
                     <div class="detail-item full-width"><strong>Técnicos:</strong> ${(order.technicians || []).join(', ') || 'N/A'}</div>
                     <div class="detail-item"><strong>Precio Neto:</strong> ${formatCurrency(order.netPrice)}</div>
                     <div class="detail-item"><strong>Nº OC:</strong> ${order.ocNumber || 'N/A'}</div>
+                    <div class="detail-item"><strong>Nº Venta:</strong> ${order.saleNumber || 'N/A'}</div>
+                    <div class="detail-item"><strong>HES/EM/MIGO:</strong> ${order.hesEmMigo || 'N/A'}</div>
                     <div class="detail-item full-width"><strong>Notas:</strong> ${order.notes || 'Sin notas.'}</div>
                 </div>
             </div>
@@ -772,3 +774,5 @@ export async function sendUpdatedWorkOrderEmailAction(
         return { success: false, message: `Error al enviar la notificación: ${error.message}` };
     }
 }
+
+    
