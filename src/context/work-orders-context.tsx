@@ -34,40 +34,40 @@ interface WorkOrdersContextType {
   companyInfo: CompanyInfo | null;
   smtpConfig: SmtpConfig | null;
   loading: boolean;
-  addOrder: (order: Omit<WorkOrder, 'id'>, notification?: NewOrderNotification | null) => Promise<WorkOrder>;
+  addOrder: (order: Omit<WorkOrder, 'id'>, notification?: NewOrderNotification | null) => Promise<WorkOrder | undefined>;
   updateOrder: (id: string, updatedOrder: Partial<WorkOrder>, notification?: UpdateOrderNotification | null) => Promise<void>;
   getOrder: (id: string) => WorkOrder | undefined;
-  addCategory: (category: Omit<OTCategory, 'id' | 'status'> & { status: string }) => Promise<OTCategory>;
+  addCategory: (category: Omit<OTCategory, 'id' | 'status'> & { status: string }) => Promise<OTCategory | undefined>;
   updateCategory: (id: string, category: Partial<OTCategory>) => Promise<void>;
-  addStatus: (status: Omit<OTStatus, 'id'>) => Promise<OTStatus>;
+  addStatus: (status: Omit<OTStatus, 'id'>) => Promise<OTStatus | undefined>;
   updateStatus: (id: string, status: Partial<OTStatus>) => Promise<void>;
   deleteStatus: (id: string) => Promise<void>;
-  addService: (service: Omit<Service, 'id' | 'status'> & { status: string }) => Promise<Service>;
+  addService: (service: Omit<Service, 'id' | 'status'> & { status: string }) => Promise<Service | undefined>;
   updateService: (id: string, service: Partial<Service>) => Promise<void>;
   deleteService: (id: string) => Promise<void>;
   deleteOrder: (id: string) => Promise<void>;
   getNextOtNumber: (prefix: string) => string;
   getLastOtNumber: (prefix: string) => string | null;
-  addCollaborator: (collaborator: Omit<Collaborator, 'id'>) => Promise<Collaborator>;
+  addCollaborator: (collaborator: Omit<Collaborator, 'id'>) => Promise<Collaborator | undefined>;
   getCollaborator: (id: string) => Collaborator | undefined;
   updateCollaborator: (id: string, collaborator: Partial<Omit<Collaborator, 'id'>>) => Promise<void>;
   deleteCollaborator: (id: string) => Promise<void>;
-  addVehicle: (vehicle: Omit<Vehicle, 'id'>) => Promise<Vehicle>;
+  addVehicle: (vehicle: Omit<Vehicle, 'id'>) => Promise<Vehicle | undefined>;
   updateVehicle: (id: string, vehicle: Partial<Omit<Vehicle, 'id'>>) => Promise<void>;
   deleteVehicle: (id: string) => Promise<void>;
-  addGanttChart: (ganttChart: Omit<GanttChart, 'id'>) => Promise<GanttChart>;
+  addGanttChart: (ganttChart: Omit<GanttChart, 'id'>) => Promise<GanttChart | undefined>;
   getGanttChart: (id: string) => GanttChart | undefined;
   updateGanttChart: (id: string, ganttChart: Partial<Omit<GanttChart, 'id'>>) => Promise<void>;
   deleteGanttChart: (id: string) => Promise<void>;
-  addSuggestedTask: (task: Omit<SuggestedTask, 'id'>) => Promise<SuggestedTask>;
+  addSuggestedTask: (task: Omit<SuggestedTask, 'id'>) => Promise<SuggestedTask | undefined>;
   updateSuggestedTask: (id: string, task: Partial<SuggestedTask>) => Promise<void>;
   deleteSuggestedTask: (id: string) => Promise<void>;
   updatePhaseName: (category: string, oldPhaseName: string, newPhaseName: string) => Promise<void>;
   deletePhase: (category: string, phaseName: string) => Promise<void>;
-  addReportTemplate: (template: Omit<ReportTemplate, 'id'>) => Promise<ReportTemplate>;
+  addReportTemplate: (template: Omit<ReportTemplate, 'id'>) => Promise<ReportTemplate | undefined>;
   updateReportTemplate: (id: string, template: Partial<ReportTemplate>) => Promise<void>;
   deleteReportTemplate: (id: string) => Promise<void>;
-  addSubmittedReport: (report: Omit<SubmittedReport, 'id' | 'submittedAt'>) => Promise<SubmittedReport>;
+  addSubmittedReport: (report: Omit<SubmittedReport, 'id' | 'submittedAt'>) => Promise<SubmittedReport | undefined>;
   updateSubmittedReport: (id: string, report: Partial<SubmittedReport>) => Promise<void>;
   deleteSubmittedReport: (id: string) => Promise<void>;
   updateCompanyInfo: (info: CompanyInfo) => Promise<void>;
@@ -259,7 +259,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const addLogEntry = async (action: string) => {
     if (!userProfile) return;
     const logRef = collection(db, 'audit-log');
-    await addDoc(logRef, {
+    addDoc(logRef, {
         user: userProfile.displayName,
         email: userProfile.email,
         action,
@@ -285,7 +285,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             requestResourceData: updatedData,
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al actualizar', description: 'Permiso denegado o error de red.' });
         throw serverError; // Rethrow to stop further execution
     });
 
@@ -321,7 +320,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             );
         }
     }
-  }, [workOrders, toast, smtpConfig, userProfile, collaborators]);
+  }, [workOrders, smtpConfig, userProfile, collaborators]);
 
   const getNextOtNumber = useCallback((prefix: string): string => {
     if (!prefix) return '';
@@ -388,67 +387,67 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     return lastOtNumber;
   }, [workOrders]);
 
-  const addOrder = async (order: Omit<WorkOrder, 'id'>, notification?: NewOrderNotification | null): Promise<WorkOrder> => {
+  const addOrder = async (order: Omit<WorkOrder, 'id'>, notification?: NewOrderNotification | null): Promise<WorkOrder | undefined> => {
     const collRef = collection(db, "work-orders");
-    const docRef = await addDoc(collRef, order).catch(async (serverError) => {
+    try {
+        const docRef = await addDoc(collRef, order);
+        
+        const createdOrder = { id: docRef.id, ...order } as WorkOrder;
+        await addLogEntry(`Creó la OT: ${order.ot_number} - ${order.description}`);
+        
+        // Send email if requested
+        if (notification?.send && smtpConfig) {
+            
+            const getEmail = (name: string) => collaborators.find(c => c.name === name)?.email;
+            
+            const toEmails: string[] = [];
+
+            // 1. Comercial
+            if (createdOrder.comercial) {
+                const comercialEmail = getEmail(createdOrder.comercial);
+                if (comercialEmail) toEmails.push(comercialEmail);
+            }
+
+            // 2. Encargados
+            createdOrder.assigned.forEach(name => {
+                const email = getEmail(name);
+                if (email) toEmails.push(email);
+            });
+
+            // 3. Creator
+            if (userProfile?.email) toEmails.push(userProfile.email);
+            
+            const ccEmails = (notification.cc || [])
+                .map(id => collaborators.find(c => c.id === id)?.email)
+                .filter((email): email is string => !!email);
+                
+            const uniqueToEmails = Array.from(new Set(toEmails));
+
+            if (uniqueToEmails.length > 0) {
+                await sendNewWorkOrderEmailAction(
+                    uniqueToEmails,
+                    Array.from(new Set(ccEmails)),
+                    createdOrder,
+                    smtpConfig
+                );
+            } else {
+                 toast({
+                    variant: 'destructive',
+                    title: 'Advertencia de Envío',
+                    description: 'OT creada, pero no se pudo enviar el correo. Ninguno de los destinatarios automáticos (comercial, encargado, creador) tiene un email configurado.'
+                });
+            }
+        }
+        return createdOrder;
+    } catch (serverError) {
         const permissionError = new FirestorePermissionError({
             path: collRef.path,
             operation: 'create',
             requestResourceData: order,
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al crear', description: 'Permiso denegado o error de red.'});
         throw serverError;
-    });
-    
-    const createdOrder = { id: docRef.id, ...order } as WorkOrder;
-    await addLogEntry(`Creó la OT: ${order.ot_number} - ${order.description}`);
-    
-    // Send email if requested
-    if (notification?.send && smtpConfig) {
-        
-        const getEmail = (name: string) => collaborators.find(c => c.name === name)?.email;
-        
-        const toEmails: string[] = [];
-
-        // 1. Comercial
-        if (createdOrder.comercial) {
-            const comercialEmail = getEmail(createdOrder.comercial);
-            if (comercialEmail) toEmails.push(comercialEmail);
-        }
-
-        // 2. Encargados
-        createdOrder.assigned.forEach(name => {
-            const email = getEmail(name);
-            if (email) toEmails.push(email);
-        });
-
-        // 3. Creator
-        if (userProfile?.email) toEmails.push(userProfile.email);
-        
-        const ccEmails = (notification.cc || [])
-            .map(id => collaborators.find(c => c.id === id)?.email)
-            .filter((email): email is string => !!email);
-            
-        const uniqueToEmails = Array.from(new Set(toEmails));
-
-        if (uniqueToEmails.length > 0) {
-            await sendNewWorkOrderEmailAction(
-                uniqueToEmails,
-                Array.from(new Set(ccEmails)),
-                createdOrder,
-                smtpConfig
-            );
-        } else {
-             toast({
-                variant: 'destructive',
-                title: 'Advertencia de Envío',
-                description: 'OT creada, pero no se pudo enviar el correo. Ninguno de los destinatarios automáticos (comercial, encargado, creador) tiene un email configurado.'
-            });
-        }
     }
-    
-    return createdOrder;
   };
   
   const getOrder = (id: string) => {
@@ -466,7 +465,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             operation: 'delete',
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al eliminar', description: 'Permiso denegado o error de red.'});
     });
   };
   
@@ -487,20 +485,21 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     });
   };
   
-  const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory> => {
+  const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory | undefined> => {
     const collRef = collection(db, "ot-categories");
-    const docRef = await addDoc(collRef, category).catch(async (serverError) => {
+    try {
+        const docRef = await addDoc(collRef, category);
+        await addLogEntry(`Creó la categoría de OT: ${category.name}`);
+        return { id: docRef.id, ...category } as OTCategory;
+    } catch(serverError) {
         const permissionError = new FirestorePermissionError({
             path: collRef.path,
             operation: 'create',
             requestResourceData: category,
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al crear', description: 'Permiso denegado o error de red.'});
         throw serverError;
-    });
-    await addLogEntry(`Creó la categoría de OT: ${category.name}`);
-    return { id: docRef.id, ...category } as OTCategory;
+    }
   };
 
   const updateCategory = async (id: string, updatedCategory: Partial<OTCategory>) => {
@@ -514,24 +513,24 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             requestResourceData: updatedCategory
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al actualizar', description: 'Permiso denegado o error de red.'});
     });
   };
 
-  const addStatus = async (status: Omit<OTStatus, 'id'>): Promise<OTStatus> => {
+  const addStatus = async (status: Omit<OTStatus, 'id'>): Promise<OTStatus | undefined> => {
     const collRef = collection(db, "ot-statuses");
-    const docRef = await addDoc(collRef, status).catch(async (serverError) => {
+    try {
+        const docRef = await addDoc(collRef, status);
+        await addLogEntry(`Creó el estado de OT: ${status.name}`);
+        return { id: docRef.id, ...status } as OTStatus;
+    } catch(serverError) {
         const permissionError = new FirestorePermissionError({
             path: collRef.path,
             operation: 'create',
             requestResourceData: status,
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al crear', description: 'Permiso denegado o error de red.'});
         throw serverError;
-    });
-    await addLogEntry(`Creó el estado de OT: ${status.name}`);
-    return { id: docRef.id, ...status } as OTStatus;
+    }
   };
 
   const updateStatus = async (id: string, updatedStatus: Partial<OTStatus>) => {
@@ -545,7 +544,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             requestResourceData: updatedStatus
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al actualizar', description: 'Permiso denegado o error de red.'});
     });
   };
 
@@ -560,24 +558,24 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             operation: 'delete',
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al eliminar', description: 'Permiso denegado o error de red.'});
     });
   };
 
-  const addService = async (service: Omit<Service, 'id'>): Promise<Service> => {
+  const addService = async (service: Omit<Service, 'id'>): Promise<Service | undefined> => {
     const collRef = collection(db, "services");
-    const docRef = await addDoc(collRef, service).catch(async (serverError) => {
+    try {
+        const docRef = await addDoc(collRef, service);
+        await addLogEntry(`Creó el servicio: ${service.name}`);
+        return { id: docRef.id, ...service } as Service;
+    } catch(serverError) {
         const permissionError = new FirestorePermissionError({
             path: collRef.path,
             operation: 'create',
             requestResourceData: service,
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al crear', description: 'Permiso denegado o error de red.'});
         throw serverError;
-    });
-    await addLogEntry(`Creó el servicio: ${service.name}`);
-    return { id: docRef.id, ...service } as Service;
+    }
   };
 
   const updateService = async (id: string, updatedService: Partial<Service>) => {
@@ -591,7 +589,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             requestResourceData: updatedService
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al actualizar', description: 'Permiso denegado o error de red.'});
     });
   };
   
@@ -606,24 +603,24 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             operation: 'delete',
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al eliminar', description: 'Permiso denegado o error de red.'});
     });
   };
   
-  const addCollaborator = async (collaborator: Omit<Collaborator, 'id'>): Promise<Collaborator> => {
+  const addCollaborator = async (collaborator: Omit<Collaborator, 'id'>): Promise<Collaborator | undefined> => {
     const collRef = collection(db, "collaborators");
-    const docRef = await addDoc(collRef, collaborator).catch(async (serverError) => {
+    try {
+        const docRef = await addDoc(collRef, collaborator);
+        await addLogEntry(`Creó al colaborador: ${collaborator.name}`);
+        return { ...collaborator, id: docRef.id } as Collaborator;
+    } catch(serverError) {
         const permissionError = new FirestorePermissionError({
             path: collRef.path,
             operation: 'create',
             requestResourceData: collaborator,
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al crear', description: 'Permiso denegado o error de red.'});
         throw serverError;
-    });
-    await addLogEntry(`Creó al colaborador: ${collaborator.name}`);
-    return { ...collaborator, id: docRef.id } as Collaborator;
+    }
   };
   
   const getCollaborator = (id: string) => {
@@ -641,7 +638,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             requestResourceData: updatedCollaborator
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al actualizar', description: 'Permiso denegado o error de red.'});
     });
   };
 
@@ -656,25 +652,25 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             operation: 'delete',
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al eliminar', description: 'Permiso denegado o error de red.'});
     });
   };
   
-  const addVehicle = async (vehicle: Omit<Vehicle, 'id'>): Promise<Vehicle> => {
+  const addVehicle = async (vehicle: Omit<Vehicle, 'id'>): Promise<Vehicle | undefined> => {
     const vehicleData = { ...vehicle, maintenanceLog: vehicle.maintenanceLog || [] };
     const collRef = collection(db, "vehicles");
-    const docRef = await addDoc(collRef, vehicleData).catch(async (serverError) => {
+    try {
+        const docRef = await addDoc(collRef, vehicleData);
+        await addLogEntry(`Añadió el vehículo: ${vehicle.model} (${vehicle.plate})`);
+        return { ...vehicleData, id: docRef.id } as Vehicle;
+    } catch(serverError) {
         const permissionError = new FirestorePermissionError({
             path: collRef.path,
             operation: 'create',
             requestResourceData: vehicleData,
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al crear', description: 'Permiso denegado o error de red.'});
         throw serverError;
-    });
-    await addLogEntry(`Añadió el vehículo: ${vehicle.model} (${vehicle.plate})`);
-    return { ...vehicleData, id: docRef.id } as Vehicle;
+    }
   };
 
   const updateVehicle = async (id: string, updatedVehicle: Partial<Omit<Vehicle, 'id'>>) => {
@@ -688,7 +684,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             requestResourceData: updatedVehicle
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al actualizar', description: 'Permiso denegado o error de red.'});
     });
   };
 
@@ -703,11 +698,10 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             operation: 'delete',
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al eliminar', description: 'Permiso denegado o error de red.'});
     });
   };
 
-  const addGanttChart = async (ganttChart: Omit<GanttChart, 'id'>): Promise<GanttChart> => {
+  const addGanttChart = async (ganttChart: Omit<GanttChart, 'id'>): Promise<GanttChart | undefined> => {
       const dataToSave = {
           ...ganttChart,
           assignedOT: ganttChart.assignedOT === 'none' ? '' : ganttChart.assignedOT || '',
@@ -717,18 +711,19 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
           }))
       };
       const collRef = collection(db, "gantt-charts");
-      const docRef = await addDoc(collRef, dataToSave).catch(async (serverError) => {
+      try {
+        const docRef = await addDoc(collRef, dataToSave);
+        await addLogEntry(`Creó la Carta Gantt: ${ganttChart.name}`);
+        return { ...ganttChart, id: docRef.id };
+      } catch(serverError) {
         const permissionError = new FirestorePermissionError({
             path: collRef.path,
             operation: 'create',
             requestResourceData: dataToSave,
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al crear', description: 'Permiso denegado o error de red.'});
         throw serverError;
-      });
-      await addLogEntry(`Creó la Carta Gantt: ${ganttChart.name}`);
-      return { ...ganttChart, id: docRef.id };
+      }
   };
   
   const getGanttChart = (id: string) => {
@@ -762,7 +757,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             requestResourceData: dataToSave
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al actualizar', description: 'Permiso denegado o error de red.'});
       });
   };
 
@@ -777,24 +771,24 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             operation: 'delete',
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al eliminar', description: 'Permiso denegado o error de red.'});
     });
   };
   
-  const addSuggestedTask = async (task: Omit<SuggestedTask, 'id'>): Promise<SuggestedTask> => {
+  const addSuggestedTask = async (task: Omit<SuggestedTask, 'id'>): Promise<SuggestedTask | undefined> => {
     const collRef = collection(db, "suggested-tasks");
-    const docRef = await addDoc(collRef, task).catch(async (serverError) => {
+    try {
+        const docRef = await addDoc(collRef, task);
+        await addLogEntry(`Añadió tarea sugerida: ${task.name}`);
+        return { id: docRef.id, ...task } as SuggestedTask;
+    } catch(serverError) {
         const permissionError = new FirestorePermissionError({
             path: collRef.path,
             operation: 'create',
             requestResourceData: task,
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al crear', description: 'Permiso denegado o error de red.'});
         throw serverError;
-    });
-    await addLogEntry(`Añadió tarea sugerida: ${task.name}`);
-    return { id: docRef.id, ...task } as SuggestedTask;
+    }
   };
 
   const updateSuggestedTask = async (id: string, updatedTask: Partial<SuggestedTask>) => {
@@ -808,7 +802,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             requestResourceData: updatedTask,
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al actualizar', description: 'Permiso denegado o error de red.'});
     });
   };
 
@@ -823,7 +816,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             operation: 'delete',
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al eliminar', description: 'Permiso denegado o error de red.'});
     });
   };
   
@@ -838,14 +830,12 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         await batch.commit();
         await addLogEntry(`Renombró la fase '${oldPhaseName}' a '${newPhaseName}' en la categoría '${category}'`);
     } catch(e: any) {
-        console.error("Error updating phase name:", e);
         const permissionError = new FirestorePermissionError({
             path: 'suggested-tasks', // This is an approximation
             operation: 'update',
             requestResourceData: { category, oldPhaseName, newPhaseName },
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al renombrar', description: `Permiso denegado o error de red.`});
         throw e;
     }
   };
@@ -861,32 +851,31 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         await batch.commit();
         await addLogEntry(`Eliminó la fase '${phaseName}' en la categoría '${category}'`);
     } catch(e: any) {
-        console.error("Error deleting phase:", e);
         const permissionError = new FirestorePermissionError({
             path: 'suggested-tasks',
             operation: 'delete',
             requestResourceData: { category, phase: phaseName },
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al eliminar', description: `Permiso denegado o error de red.`});
         throw e;
     }
   };
   
-  const addReportTemplate = async (template: Omit<ReportTemplate, 'id'>): Promise<ReportTemplate> => {
+  const addReportTemplate = async (template: Omit<ReportTemplate, 'id'>): Promise<ReportTemplate | undefined> => {
     const collRef = collection(db, "report-templates");
-    const docRef = await addDoc(collRef, template).catch(async (serverError) => {
+    try {
+        const docRef = await addDoc(collRef, template);
+        await addLogEntry(`Creó la plantilla de informe: ${template.name}`);
+        return { id: docRef.id, ...template } as ReportTemplate;
+    } catch(serverError) {
         const permissionError = new FirestorePermissionError({
             path: collRef.path,
             operation: 'create',
             requestResourceData: template,
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al crear', description: 'Permiso denegado o error de red.'});
         throw serverError;
-    });
-    await addLogEntry(`Creó la plantilla de informe: ${template.name}`);
-    return { id: docRef.id, ...template } as ReportTemplate;
+    }
   };
 
   const updateReportTemplate = async (id: string, updatedTemplate: Partial<ReportTemplate>) => {
@@ -900,7 +889,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             requestResourceData: updatedTemplate
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al actualizar', description: 'Permiso denegado o error de red.'});
     });
   };
 
@@ -916,28 +904,28 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             operation: 'delete',
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al eliminar', description: 'Permiso denegado o error de red.'});
     });
   };
 
-  const addSubmittedReport = async (report: Omit<SubmittedReport, 'id' | 'submittedAt'>): Promise<SubmittedReport> => {
+  const addSubmittedReport = async (report: Omit<SubmittedReport, 'id' | 'submittedAt'>): Promise<SubmittedReport | undefined> => {
     const reportData = {
         ...report,
         submittedAt: serverTimestamp(),
     };
     const collRef = collection(db, "submitted-reports");
-    const docRef = await addDoc(collRef, reportData).catch(async (serverError) => {
+    try {
+        const docRef = await addDoc(collRef, reportData);
+        await addLogEntry(`Envió el informe '${report.templateName}' para la OT ${report.otDetails.ot_number}`);
+        return { ...report, id: docRef.id, submittedAt: Timestamp.now() } as SubmittedReport; 
+    } catch(serverError) {
         const permissionError = new FirestorePermissionError({
             path: collRef.path,
             operation: 'create',
             requestResourceData: reportData,
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al enviar', description: 'Permiso denegado o error de red.'});
         throw serverError;
-    });
-    await addLogEntry(`Envió el informe '${report.templateName}' para la OT ${report.otDetails.ot_number}`);
-    return { ...report, id: docRef.id, submittedAt: Timestamp.now() } as SubmittedReport; 
+    }
   };
 
   const updateSubmittedReport = async (id: string, report: Partial<SubmittedReport>) => {
@@ -952,7 +940,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             requestResourceData: report
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al actualizar', description: 'Permiso denegado o error de red.'});
     });
   };
 
@@ -967,7 +954,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             operation: 'delete',
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al eliminar', description: 'Permiso denegado o error de red.'});
     });
   };
 
@@ -983,7 +969,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             requestResourceData: info
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al guardar', description: 'Permiso denegado o error de red.'});
     });
   };
 
@@ -998,7 +983,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             requestResourceData: config
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al guardar', description: 'Permiso denegado o error de red.'});
     });
   };
   
@@ -1028,23 +1012,23 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
   const deleteWorkOrders = async () => {
     const collectionRef = collection(db, 'work-orders');
-    const snapshot = await getDocs(collectionRef);
-    const batch = writeBatch(db);
-    snapshot.docs.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
-    
-    return batch.commit().then(async () => {
+    try {
+        const snapshot = await getDocs(collectionRef);
+        const batch = writeBatch(db);
+        snapshot.docs.forEach((doc) => {
+          batch.delete(doc.ref);
+        });
+        
+        await batch.commit();
         await addLogEntry('Eliminó todas las órdenes de trabajo.');
-    }).catch(async (serverError) => {
+    } catch(serverError) {
         const permissionError = new FirestorePermissionError({
             path: collectionRef.path,
             operation: 'delete',
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al eliminar', description: 'Permiso denegado o error de red.'});
         throw serverError;
-    });
+    }
   };
 
   const deleteAllData = async () => {
@@ -1058,20 +1042,21 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   
     const batchPromises = collectionsToDelete.map(async (collectionName) => {
       const collectionRef = collection(db, collectionName);
-      const snapshot = await getDocs(collectionRef);
-      const batch = writeBatch(db);
-      snapshot.docs.forEach((doc) => {
-        batch.delete(doc.ref);
-      });
-      return batch.commit().catch(async (serverError) => {
+      try {
+        const snapshot = await getDocs(collectionRef);
+        const batch = writeBatch(db);
+        snapshot.docs.forEach((doc) => {
+          batch.delete(doc.ref);
+        });
+        return batch.commit();
+      } catch(serverError) {
         const permissionError = new FirestorePermissionError({
             path: collectionName,
             operation: 'delete',
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al eliminar', description: `Error al eliminar la colección ${collectionName}. Permiso denegado o error de red.`});
         throw serverError;
-      });
+      }
     });
   
     return Promise.all(batchPromises).then(async () => {
