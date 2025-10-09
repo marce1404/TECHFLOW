@@ -1,7 +1,7 @@
 'use server';
 
 import { collection, getDocs, writeBatch } from 'firebase/firestore';
-import { db } from '@/lib/firebase-admin';
+import { db } from '@/lib/firebase';
 
 export const repairImportedWorkOrdersAction = async (): Promise<{ success: boolean; message: string, updatedCount: number }> => {
   try {
