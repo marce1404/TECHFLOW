@@ -104,7 +104,15 @@ export default function EditOrderPage() {
   })), [vehicles]);
   
   const serviceOptions = React.useMemo(() => services.map(s => ({value: s.name, label: s.name})), [services]);
-  const statusOptions = React.useMemo(() => otStatuses.map(s => ({value: s.name, label: s.name, id: s.id})), [otStatuses]);
+  const statusOptions = React.useMemo(() => {
+    const uniqueStatuses = new Map();
+    otStatuses.forEach(s => {
+        if (!uniqueStatuses.has(s.name)) {
+            uniqueStatuses.set(s.name, { value: s.name, label: s.name, id: s.id });
+        }
+    });
+    return Array.from(uniqueStatuses.values());
+}, [otStatuses]);
   const priorityOptions = [{value: 'Baja', label: 'Baja'}, {value: 'Media', label: 'Media'}, {value: 'Alta', label: 'Alta'}];
 
   const startDate = methods.watch('date') ? new Date(methods.watch('date').replace(/-/g, '/')) : undefined;
@@ -1021,3 +1029,5 @@ export default function EditOrderPage() {
     </>
   );
 }
+
+    
