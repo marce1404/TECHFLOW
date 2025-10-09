@@ -240,7 +240,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 description: String(row[keyMapping.description!] || ''),
                 client: String(row[keyMapping.client!] || ''),
                 createdAt: createdAtDate,
-                date: '', // Start date is intentionally left blank on import to be fixed.
+                date: existingOrder ? '' : (robustDateParse(row[keyMapping.createdAt]) || ''),
                 endDate: (keyMapping.endDate ? robustDateParse(row[keyMapping.endDate!]) : null) || '',
                 service: keyMapping.service ? findMatchingString(String(row[keyMapping.service] || ''), availableServices) : '',
                 status: keyMapping.status ? mapFactprocToStatus(String(row[keyMapping.status])) : 'Por Iniciar',
@@ -311,46 +311,60 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     reader.readAsArrayBuffer(fileToParse);
   };
   
-  const handleImport = async () => {
-    let ordersToProcess = [...processedOrders];
-    
-    if (ordersToProcess.length === 0) {
-      toast({ variant: "destructive", title: "No hay datos para importar", description: "No se encontraron órdenes para crear o actualizar." });
-      return;
-    }
-
-    setLoading(true);
-    setStep('showResult');
-    setImportResult(null);
-    setImportProgress(0);
-    
-    let successCount = 0;
-    let errorCount = 0;
-    const batchErrors: string[] = [];
-    const totalToProcess = ordersToProcess.length;
-    let processedCount = 0;
-
-    for (const orderData of ordersToProcess) {
-        try {
-            if (orderData.isUpdate && orderData.existingId) {
-                const { isUpdate, existingId, ...updateData } = orderData;
-                await updateOrder(existingId, updateData);
-            } else {
-                await addOrder(orderData);
-            }
-            successCount++;
-        } catch (error: any) {
-            errorCount++;
-            batchErrors.push(`Error en OT ${orderData.ot_number}: ${error.message}`);
+    const handleImport = async () => {
+        let ordersToProcess = [...processedOrders];
+        
+        if (ordersToProcess.length === 0) {
+        toast({ variant: "destructive", title: "No hay datos para importar", description: "No se encontraron órdenes para crear o actualizar." });
+        return;
         }
-        processedCount++;
-        setImportProgress((processedCount / totalToProcess) * 100);
-    }
-    
-    onImportSuccess();
-    setImportResult({ successCount, errorCount, errors: batchErrors });
-    setLoading(false);
-  };
+
+        setLoading(true);
+        setStep('showResult');
+        setImportResult(null);
+        setImportProgress(0);
+        
+        let successCount = 0;
+        let errorCount = 0;
+        const batchErrors: string[] = [];
+        const totalToProcess = ordersToProcess.length;
+        let processedCount = 0;
+
+        const BATCH_SIZE = 50; 
+
+        for (let i = 0; i < totalToProcess; i += BATCH_SIZE) {
+            const batch = ordersToProcess.slice(i, i + BATCH_SIZE);
+            const promises = batch.map(async (orderData) => {
+                try {
+                    if (orderData.isUpdate && orderData.existingId) {
+                        const { isUpdate, existingId, ...updateData } = orderData;
+                        await updateOrder(existingId, updateData);
+                    } else {
+                        await addOrder(orderData);
+                    }
+                    successCount++;
+                } catch (error: any) {
+                    errorCount++;
+                    batchErrors.push(`Error en OT ${orderData.ot_number}: ${error.message}`);
+                } finally {
+                    processedCount++;
+                }
+            });
+
+            await Promise.all(promises);
+            setImportProgress((processedCount / totalToProcess) * 100);
+            
+            // Optional: pause between batches if needed to avoid hitting rate limits
+            if (i + BATCH_SIZE < totalToProcess) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        }
+        
+        onImportSuccess();
+        setImportResult({ successCount, errorCount, errors: batchErrors });
+        setLoading(false);
+    };
+
 
   const handleClose = () => {
     setFile(null);
@@ -505,3 +519,4 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     </Dialog>
   );
 }
+
