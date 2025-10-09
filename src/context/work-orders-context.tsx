@@ -198,13 +198,15 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
 
  useEffect(() => {
-    if (!user || authLoading) {
-      setLoading(false);
+    if (authLoading || !user) {
+      setLoading(false); // Ensure loading is false if there's no user
       return;
     }
 
+    // This now only runs when the user's authentication state changes.
+    // It sets up all the real-time listeners.
     setLoading(true);
-    fetchData(); // Fetch non-realtime data first
+    fetchData(); // Fetch static data once on user login.
 
     const workOrdersQuery = query(collection(db, 'work-orders'), orderBy('date', 'desc'));
     const ganttQuery = query(collection(db, 'gantt-charts'));
@@ -241,13 +243,13 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         }, (error) => console.error("Error fetching audit-log:", error)));
     }
     
-    // setLoading(false) should be handled by fetchData now.
+    // setLoading is handled by fetchData now.
     
-    // Cleanup function
+    // Cleanup function runs when user logs out (user object changes)
     return () => {
         unsubscribes.forEach(unsub => unsub());
     };
-}, [user, userProfile, authLoading, fetchData]);
+}, [user, userProfile?.role, authLoading]); // Dependency array is now stable
 
 
   // Derived state for active/historical orders
