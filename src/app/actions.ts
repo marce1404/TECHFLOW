@@ -57,9 +57,9 @@ export const repairImportedWorkOrdersAction = async (): Promise<{ success: boole
     }
 }
 
-export async function getResourceSuggestions(
+export const getResourceSuggestions = async (
   input: SuggestOptimalResourceAssignmentInput
-): Promise<SuggestOptimalResourceAssignmentOutputWithError> {
+): Promise<SuggestOptimalResourceAssignmentOutputWithError> => {
   try {
     const result = await suggestOptimalResourceAssignment(input);
     return result;
@@ -69,9 +69,7 @@ export async function getResourceSuggestions(
   }
 }
 
-export async function uploadToCloudinaryAction(fileAsDataURL: string): Promise<{ success: boolean; url?: string; message: string }> {
-    'use server';
-
+export const uploadToCloudinaryAction = async (fileAsDataURL: string): Promise<{ success: boolean; url?: string; message: string }> => {
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
     const apiKey = process.env.CLOUDINARY_API_KEY;
     const apiSecret = process.env.CLOUDINARY_API_SECRET;
@@ -99,7 +97,7 @@ export async function uploadToCloudinaryAction(fileAsDataURL: string): Promise<{
 }
 
 
-export async function sendTestEmailAction(config: SmtpConfig, to: string): Promise<{ success: boolean; message: string }> {
+export const sendTestEmailAction = async (config: SmtpConfig, to: string): Promise<{ success: boolean; message: string }> => {
   const { host, port, secure, user, pass, fromName, fromEmail } = config;
 
   let transporter;
@@ -140,13 +138,13 @@ export async function sendTestEmailAction(config: SmtpConfig, to: string): Promi
   }
 }
 
-export async function sendReportEmailAction(
+export const sendReportEmailAction = async (
     to: string,
     cc: string[],
     subject: string,
     htmlBody: string,
     config: SmtpConfig,
-): Promise<{ success: boolean; message: string }> {
+): Promise<{ success: boolean; message: string }> => {
     const { host, port, secure, user, pass, fromName, fromEmail } = config;
 
     let transporter;
@@ -192,11 +190,11 @@ type SerializableWorkOrder = Omit<WorkOrder, 'id' | 'invoices'> & {
 };
 
 
-export async function sendInvoiceRequestEmailAction(
+export const sendInvoiceRequestEmailAction = async (
     data: InvoiceRequestEmailData,
     order: SerializableWorkOrder,
     config: SmtpConfig
-): Promise<{ success: boolean; message: string }> {
+): Promise<{ success: boolean; message: string }> => {
     const { host, port, secure, user, pass, fromName, fromEmail } = config;
 
     let transporter;
@@ -303,7 +301,7 @@ export async function sendInvoiceRequestEmailAction(
 }
 
 
-export async function exportOrdersToExcel(orders: WorkOrder[]): Promise<string> {
+export const exportOrdersToExcel = async (orders: WorkOrder[]): Promise<string> => {
     const dataToExport = orders.map(order => {
         const invoices = (order.invoices || []).map(inv => `${inv.number} ($${inv.amount})`).join('; ');
         return {
@@ -381,13 +379,13 @@ const getRoleDetails = (role: AppUser['role']) => {
     }
 };
 
-export async function sendInvitationEmailAction(
+export const sendInvitationEmailAction = async (
     user: AppUser,
     password_clear: string,
     loginUrl: string,
     config: SmtpConfig,
     isPasswordChange: boolean = false,
-): Promise<{ success: boolean; message: string }> {
+): Promise<{ success: boolean; message: string }> => {
     const { host, port, secure, user: smtpUser, pass, fromName, fromEmail } = config;
 
     let transporter;
@@ -476,7 +474,7 @@ type CreateUserInput = {
   role: 'Admin' | 'Supervisor' | 'Técnico' | 'Visor';
 };
 
-export async function createUserAction(userData: CreateUserInput): Promise<{ success: boolean; message: string; user?: AppUser }> {
+export const createUserAction = async (userData: CreateUserInput): Promise<{ success: boolean; message: string; user?: AppUser }> => {
   try {
     const userRecord: UserRecord = await (auth as adminAuth.Auth).createUser({
       email: userData.email,
@@ -504,7 +502,7 @@ export async function createUserAction(userData: CreateUserInput): Promise<{ suc
   }
 }
 
-export async function updateUserAction(uid: string, data: Partial<AppUser>): Promise<{ success: boolean; message: string }> {
+export const updateUserAction = async (uid: string, data: Partial<AppUser>): Promise<{ success: boolean; message: string }> => {
   try {
     const updatePayload: Partial<adminAuth.UpdateRequest> = {};
     if (data.displayName) {
@@ -527,7 +525,7 @@ export async function updateUserAction(uid: string, data: Partial<AppUser>): Pro
   }
 }
 
-export async function deleteUserAction(uid: string): Promise<{ success: boolean; message: string }> {
+export const deleteUserAction = async (uid: string): Promise<{ success: boolean; message: string }> => {
     try {
         await (auth as adminAuth.Auth).deleteUser(uid);
         await (db as admin.firestore.Firestore).collection('users').doc(uid).delete();
@@ -537,7 +535,7 @@ export async function deleteUserAction(uid: string): Promise<{ success: boolean;
     }
 }
 
-export async function toggleUserStatusAction(uid: string, currentStatus: 'Activo' | 'Inactivo'): Promise<{ success: boolean; message: string }> {
+export const toggleUserStatusAction = async (uid: string, currentStatus: 'Activo' | 'Inactivo'): Promise<{ success: boolean; message: string }> => {
     const newStatus = currentStatus === 'Activo' ? 'Inactivo' : 'Activo';
     const isDisabled = newStatus === 'Inactivo';
     try {
@@ -549,12 +547,12 @@ export async function toggleUserStatusAction(uid: string, currentStatus: 'Activo
     }
 }
 
-export async function changeUserPasswordAction(
+export const changeUserPasswordAction = async (
     user: AppUser, 
     newPassword: string,
     config: SmtpConfig | null,
     loginUrl: string,
-): Promise<{ success: boolean; message: string }> {
+): Promise<{ success: boolean; message: string }> => {
     try {
         await (auth as adminAuth.Auth).updateUser(user.uid, { password: newPassword });
         
@@ -579,11 +577,11 @@ type ActivityEmailData = {
     technicians: string;
 };
 
-export async function sendActivityEmailAction(
+export const sendActivityEmailAction = async (
     to: string[],
     data: ActivityEmailData,
     config: SmtpConfig,
-): Promise<{ success: boolean; message: string }> {
+): Promise<{ success: boolean; message: string }> => {
     const { host, port, secure, user, pass, fromName, fromEmail } = config;
 
     let transporter;
@@ -726,12 +724,12 @@ const generateWorkOrderEmailHtml = (order: WorkOrder, title: string, introText: 
     `;
 };
 
-export async function sendNewWorkOrderEmailAction(
+export const sendNewWorkOrderEmailAction = async (
     to: string[],
     cc: string[],
     order: WorkOrder,
     config: SmtpConfig,
-): Promise<{ success: boolean; message: string }> {
+): Promise<{ success: boolean; message: string }> => {
     const { host, port, secure, user, pass, fromName, fromEmail } = config;
 
     let transporter;
@@ -767,12 +765,12 @@ export async function sendNewWorkOrderEmailAction(
     }
 }
 
-export async function sendUpdatedWorkOrderEmailAction(
+export const sendUpdatedWorkOrderEmailAction = async (
     to: string[],
     cc: string[],
     order: WorkOrder,
     config: SmtpConfig,
-): Promise<{ success: boolean; message: string }> {
+): Promise<{ success: boolean; message: string }> => {
     const { host, port, secure, user, pass, fromName, fromEmail } = config;
 
     let transporter;
@@ -807,5 +805,3 @@ export async function sendUpdatedWorkOrderEmailAction(
         return { success: false, message: `Error al enviar la notificación: ${error.message}` };
     }
 }
-
-    
