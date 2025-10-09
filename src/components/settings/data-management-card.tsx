@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/card';
 import { Button } from '../ui/button';
-import { FileUp, FileDown, Loader2, Calendar as CalendarIcon, HardDriveDownload, Trash2, AlertTriangle } from 'lucide-react';
+import { FileUp, FileDown, Loader2, Calendar as CalendarIcon, HardDriveDownload, Trash2, AlertTriangle, Wrench } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
 import { es } from 'date-fns/locale';
 import { format } from 'date-fns';
@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { Calendar } from '../ui/calendar';
 import { MultiSelect } from '../ui/multi-select';
 import { useToast } from '@/hooks/use-toast';
-import { exportOrdersToExcel } from '@/app/actions';
+import { exportOrdersToExcel, repairImportedWorkOrdersAction } from '@/app/actions';
 import { ImportOrdersDialog } from '@/components/orders/import-orders-dialog';
 import { useWorkOrders } from '@/context/work-orders-context';
 import * as xlsx from 'xlsx';
@@ -29,6 +29,7 @@ export default function DataManagementCard() {
     const [isDeleting, setIsDeleting] = React.useState(false);
     const [deleteConfirmationText, setDeleteConfirmationText] = React.useState('');
     const [deleteOtConfirmationText, setDeleteOtConfirmationText] = React.useState('');
+    const [isRepairing, setIsRepairing] = React.useState(false);
     const { toast } = useToast();
 
     const statusOptions = otStatuses.map(s => ({ value: s.name, label: s.name }));
@@ -254,6 +255,30 @@ export default function DataManagementCard() {
         }
     };
     
+    const handleRepair = async () => {
+        setIsRepairing(true);
+        try {
+            const result = await repairImportedWorkOrdersAction();
+            if (result.success) {
+                toast({
+                    title: 'Reparación Completada',
+                    description: result.message,
+                });
+                fetchData(); // Refresh local data
+            } else {
+                throw new Error(result.message);
+            }
+        } catch (e: any) {
+             toast({
+                variant: 'destructive',
+                title: 'Error al Reparar',
+                description: `Ocurrió un error: ${e.message}`,
+            });
+        } finally {
+            setIsRepairing(false);
+        }
+    };
+    
 
     return (
         <>
@@ -370,6 +395,38 @@ export default function DataManagementCard() {
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                     <div className="flex items-center justify-between rounded-lg border border-destructive/50 p-4">
+                        <div>
+                            <h4 className="font-semibold">Reparar Datos Importados</h4>
+                            <p className="text-sm text-muted-foreground">Corrige las fechas de inicio de OTs que fueron importadas incorrectamente.</p>
+                        </div>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="secondary" className="border-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    <Wrench className="mr-2 h-4 w-4" />
+                                    Reparar Fechas
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Reparar fechas de OTs importadas?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Esta acción buscará OTs donde la fecha de inicio sea igual a la de creación y la restablecerá. Esta acción es segura.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        onClick={handleRepair}
+                                        disabled={isRepairing}
+                                    >
+                                        {isRepairing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        Sí, reparar
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                     <div className="flex items-center justify-between rounded-lg border border-destructive/50 p-4">
                         <div>
                             <h4 className="font-semibold">Eliminar Solo Órdenes de Trabajo</h4>
