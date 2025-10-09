@@ -182,7 +182,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         
         const keyMapping = {
             ot_number: findHeader(['OT']),
-            date: findHeader(['Fecha Ingreso']),
+            createdAt: findHeader(['Fecha Ingreso']),
             description: findHeader(['NOMBRE DEL PROYECTO']),
             client: findHeader(['client', 'cliente']),
             rut: findHeader(['rut']),
@@ -215,7 +215,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 return;
             }
             
-            const finalDate = keyMapping.date ? robustDateParse(row[keyMapping.date]) : format(new Date(), 'yyyy-MM-dd');
+            const createdAtDate = keyMapping.createdAt ? robustDateParse(row[keyMapping.createdAt]) : format(new Date(), 'yyyy-MM-dd');
             
             const rawNetPrice = row[keyMapping.netPrice!] || 0;
             let finalNetPrice = 0;
@@ -238,7 +238,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 ot_number: otNumber,
                 description: String(row[keyMapping.description!] || ''),
                 client: String(row[keyMapping.client!] || ''),
-                date: finalDate,
+                createdAt: createdAtDate,
+                date: '', // Start date is intentionally left blank on import
                 endDate: (keyMapping.endDate ? robustDateParse(row[keyMapping.endDate!]) : null) || '',
                 service: keyMapping.service ? findMatchingString(String(row[keyMapping.service] || ''), availableServices) : '',
                 status: keyMapping.status ? mapFactprocToStatus(String(row[keyMapping.status])) : 'Por Iniciar',
