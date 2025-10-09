@@ -19,7 +19,6 @@ import * as xlsx from 'xlsx';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { repairImportedWorkOrdersAction } from '@/app/repair-actions';
 
 export default function DataManagementCard() {
     const { workOrders, otStatuses, collaborators, vehicles, ganttCharts, reportTemplates, services, submittedReports, otCategories, fetchData, deleteAllData, deleteWorkOrders } = useWorkOrders();
@@ -255,31 +254,6 @@ export default function DataManagementCard() {
             setDeleteOtConfirmationText('');
         }
     };
-    
-    const handleRepair = async () => {
-        setIsRepairing(true);
-        try {
-            const result = await repairImportedWorkOrdersAction();
-            if (result.success) {
-                toast({
-                    title: 'Reparación Completada',
-                    description: result.message,
-                });
-                fetchData(); // Refresh local data
-            } else {
-                throw new Error(result.message);
-            }
-        } catch (e: any) {
-             toast({
-                variant: 'destructive',
-                title: 'Error al Reparar',
-                description: `Ocurrió un error: ${e.message}`,
-            });
-        } finally {
-            setIsRepairing(false);
-        }
-    };
-    
 
     return (
         <>
@@ -396,38 +370,6 @@ export default function DataManagementCard() {
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                     <div className="flex items-center justify-between rounded-lg border border-destructive/50 p-4">
-                        <div>
-                            <h4 className="font-semibold">Reparar Datos Importados</h4>
-                            <p className="text-sm text-muted-foreground">Corrige las fechas de inicio de OTs que fueron importadas incorrectamente.</p>
-                        </div>
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="secondary" className="border-destructive text-destructive-foreground hover:bg-destructive/90">
-                                    <Wrench className="mr-2 h-4 w-4" />
-                                    Reparar Fechas
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>¿Reparar fechas de OTs importadas?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Esta acción buscará OTs donde la fecha de inicio sea igual a la de creación y la restablecerá. Esta acción es segura.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction
-                                        onClick={handleRepair}
-                                        disabled={isRepairing}
-                                    >
-                                        {isRepairing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        Sí, reparar
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </div>
                     <div className="flex items-center justify-between rounded-lg border border-destructive/50 p-4">
                         <div>
                             <h4 className="font-semibold">Eliminar Solo Órdenes de Trabajo</h4>

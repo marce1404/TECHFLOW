@@ -33,7 +33,7 @@ type ImportStep = 'selectFile' | 'showResult';
 export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: ImportOrdersDialogProps) {
   const { collaborators, addOrder, services: availableServices, otStatuses, workOrders, updateOrder } = useWorkOrders();
   const [file, setFile] = React.useState<File | null>(null);
-  const [processedOrders, setProcessedOrders] = React.useState<CreateWorkOrderInput[]>([]);
+  const [processedOrders, setProcessedOrders] = React.useState<(CreateWorkOrderInput & { isUpdate?: boolean, existingId?: string })[]>([]);
   const [errors, setErrors] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [importResult, setImportResult] = React.useState<{ successCount: number; errorCount: number; errors: string[] } | null>(null);
@@ -204,7 +204,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         };
         
         const validationErrors: string[] = [];
-        const localProcessedOrders: CreateWorkOrderInput[] = [];
+        const localProcessedOrders: (CreateWorkOrderInput & { isUpdate?: boolean, existingId?: string })[] = [];
 
         jsonData.forEach((row, index) => {
             const otNumberValue = keyMapping.ot_number ? row[keyMapping.ot_number] : undefined;
@@ -215,7 +215,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 return;
             }
             
-            const createdAtDate = keyMapping.createdAt ? robustDateParse(row[keyMapping.createdAt]) : format(new Date(), 'yyyy-MM-dd');
+            const existingOrder = workOrders.find(wo => wo.ot_number === otNumber);
+            const createdAtDate = keyMapping.createdAt ? robustDateParse(row[keyMapping.createdAt]) : (existingOrder?.createdAt || format(new Date(), 'yyyy-MM-dd'));
             
             const rawNetPrice = row[keyMapping.netPrice!] || 0;
             let finalNetPrice = 0;
@@ -234,12 +235,12 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 return key === 'comercial' ? names[0] || '' : names;
             };
 
-            const orderData: CreateWorkOrderInput = {
+            const orderData: CreateWorkOrderInput & { isUpdate?: boolean, existingId?: string } = {
                 ot_number: otNumber,
                 description: String(row[keyMapping.description!] || ''),
                 client: String(row[keyMapping.client!] || ''),
                 createdAt: createdAtDate,
-                date: '', // Start date is intentionally left blank on import
+                date: '', // Start date is intentionally left blank on import to be fixed.
                 endDate: (keyMapping.endDate ? robustDateParse(row[keyMapping.endDate!]) : null) || '',
                 service: keyMapping.service ? findMatchingString(String(row[keyMapping.service] || ''), availableServices) : '',
                 status: keyMapping.status ? mapFactprocToStatus(String(row[keyMapping.status])) : 'Por Iniciar',
@@ -260,6 +261,8 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 startTime: '',
                 endTime: '',
                 vehicles: [],
+                isUpdate: !!existingOrder,
+                existingId: existingOrder?.id,
             };
             
             const invoiceNumber = keyMapping.invoiceNumber ? String(row[keyMapping.invoiceNumber] || '').trim() : '';
@@ -309,10 +312,10 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
   };
   
   const handleImport = async () => {
-    let ordersToCreate = [...processedOrders];
+    let ordersToProcess = [...processedOrders];
     
-    if (ordersToCreate.length === 0) {
-      toast({ variant: "destructive", title: "No hay datos para importar", description: "No se encontraron órdenes para crear." });
+    if (ordersToProcess.length === 0) {
+      toast({ variant: "destructive", title: "No hay datos para importar", description: "No se encontraron órdenes para crear o actualizar." });
       return;
     }
 
@@ -324,16 +327,21 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
     let successCount = 0;
     let errorCount = 0;
     const batchErrors: string[] = [];
-    const totalToProcess = ordersToCreate.length;
+    const totalToProcess = ordersToProcess.length;
     let processedCount = 0;
 
-    for (const orderData of ordersToCreate) {
+    for (const orderData of ordersToProcess) {
         try {
-            await addOrder(orderData);
+            if (orderData.isUpdate && orderData.existingId) {
+                const { isUpdate, existingId, ...updateData } = orderData;
+                await updateOrder(existingId, updateData);
+            } else {
+                await addOrder(orderData);
+            }
             successCount++;
         } catch (error: any) {
             errorCount++;
-            batchErrors.push(`Creación OT ${orderData.ot_number}: ${error.message}`);
+            batchErrors.push(`Error en OT ${orderData.ot_number}: ${error.message}`);
         }
         processedCount++;
         setImportProgress((processedCount / totalToProcess) * 100);
@@ -394,7 +402,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
           <div className="pt-4 text-center">
             <CheckCircle className="mx-auto h-8 w-8 text-green-500 mb-2"/>
             <h3 className="font-semibold">Archivo listo para importar</h3>
-            <p className="text-sm text-muted-foreground">{processedOrders.length} órdenes de trabajo encontradas.</p>
+            <p className="text-sm text-muted-foreground">{processedOrders.length} órdenes para crear/actualizar.</p>
           </div>
         )}
     </div>
@@ -414,7 +422,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                     <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
                     <h3 className="text-xl font-semibold">Importación Completada</h3>
                 </div>
-                <p>Órdenes procesadas exitosamente: <span className="font-bold text-green-500">{importResult?.successCount}</span></p>
+                <p>Órdenes creadas/actualizadas con éxito: <span className="font-bold text-green-500">{importResult?.successCount}</span></p>
                 <p>Órdenes con errores: <span className="font-bold text-destructive">{importResult?.errorCount}</span></p>
                 {importResult && importResult.errors.length > 0 && (
                     <div className="space-y-2">
@@ -471,7 +479,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         <DialogHeader>
           <DialogTitle>Importar Órdenes de Trabajo</DialogTitle>
           <DialogDescription>
-            {step === 'selectFile' && "Sube un archivo Excel para crear nuevas OTs masivamente."}
+            {step === 'selectFile' && "Sube un archivo Excel para crear nuevas OTs o actualizar existentes masivamente."}
             {step === 'showResult' && "Resultados de la importación."}
           </DialogDescription>
         </DialogHeader>
