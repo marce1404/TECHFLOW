@@ -104,7 +104,7 @@ export default function EditOrderPage() {
   })), [vehicles]);
   
   const serviceOptions = React.useMemo(() => services.map(s => ({value: s.name, label: s.name})), [services]);
-  const statusOptions = React.useMemo(() => {
+    const statusOptions = React.useMemo(() => {
     const uniqueStatuses = new Map();
     otStatuses.forEach(s => {
         if (!uniqueStatuses.has(s.name)) {
@@ -113,6 +113,7 @@ export default function EditOrderPage() {
     });
     return Array.from(uniqueStatuses.values());
 }, [otStatuses]);
+
   const priorityOptions = [{value: 'Baja', label: 'Baja'}, {value: 'Media', label: 'Media'}, {value: 'Alta', label: 'Alta'}];
 
   const startDate = methods.watch('date') ? new Date(methods.watch('date').replace(/-/g, '/')) : undefined;
@@ -158,6 +159,9 @@ export default function EditOrderPage() {
     
     try {
         const finalData = { ...initialOrder, ...data };
+        if (!finalData.createdAt) {
+            finalData.createdAt = new Date().toISOString().split('T')[0];
+        }
         
         const notificationData: UpdateOrderNotification | null = sendUpdateNotification
             ? { send: true, cc: updateCcRecipients }
@@ -1029,5 +1033,3 @@ export default function EditOrderPage() {
     </>
   );
 }
-
-    
