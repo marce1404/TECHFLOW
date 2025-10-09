@@ -3,28 +3,90 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isAllowed(role) {
-      return request.auth != null && request.auth.token.role == role;
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+    }
+
+    function isSupervisor() {
+      let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return userRole == 'Admin' || userRole == 'Supervisor';
+    }
+
+    function isSignedIn() {
+        return request.auth != null;
     }
 
     match /users/{userId} {
-      allow read;
-      allow write: if isAllowed('Admin');
-    }
-
-    match /settings/{docId} {
-      allow read: if request.auth != null;
-      allow write: if isAllowed('Admin');
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isAdmin();
     }
     
     match /audit-log/{logId} {
-      allow create: if request.auth != null;
       allow read, update, delete: if false;
+      allow write: if isSignedIn();
     }
 
     match /{document=**} {
-      allow read: if request.auth != null;
-      allow write: if isAllowed('Admin') || isAllowed('Supervisor');
+      allow read: if isSignedIn();
+    }
+    
+    match /ot-categories/{categoryId} {
+        allow read: if isSignedIn();
+        allow write: if isSupervisor();
+    }
+    
+    match /ot-statuses/{statusId} {
+        allow read: if isSignedIn();
+        allow write: if isSupervisor();
+    }
+    
+    match /services/{serviceId} {
+        allow read: if isSignedIn();
+        allow write: if isSupervisor();
+    }
+
+    match /work-orders/{orderId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSupervisor();
+    }
+    
+    match /collaborators/{collaboratorId} {
+      allow read: if isSignedIn();
+      allow write: if isSupervisor();
+    }
+    
+    match /vehicles/{vehicleId} {
+      allow read: if isSignedIn();
+      allow write: if isSupervisor();
+    }
+    
+    match /gantt-charts/{chartId} {
+      allow read: if isSignedIn();
+      allow write: if isSupervisor();
+    }
+    
+    match /suggested-tasks/{taskId} {
+      allow read: if isSignedIn();
+      allow write: if isSupervisor();
+    }
+    
+    match /report-templates/{templateId} {
+      allow read: if isSignedIn();
+      allow write: if isSupervisor();
+    }
+    
+    match /submitted-reports/{reportId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn(); 
+    }
+    
+    match /settings/{settingId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
   }
 }
