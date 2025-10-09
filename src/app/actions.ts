@@ -24,7 +24,7 @@ import { v2 as cloudinary } from 'cloudinary';
 
 // --- Server Actions ---
 
-export async function repairImportedWorkOrdersAction(): Promise<{ success: boolean; message: string; count: number }> {
+export const repairImportedWorkOrdersAction = async (): Promise<{ success: boolean; message: string; count: number }> => {
     try {
         const workOrdersRef = (db as admin.firestore.Firestore).collection('work-orders');
         const snapshot = await workOrdersRef.get();
