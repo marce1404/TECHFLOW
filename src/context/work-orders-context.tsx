@@ -103,55 +103,11 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [orderToClose, setOrderToClose] = useState<WorkOrder | null>(null);
   const { toast } = useToast();
 
-  const checkAndCreatePredefinedTemplates = useCallback(async () => {
-    try {
-        const templatesCollection = collection(db, 'report-templates');
-        const existingTemplatesSnapshot = await getDocs(templatesCollection);
-        if (existingTemplatesSnapshot.empty) {
-            const batch = writeBatch(db);
-            predefinedReportTemplates.forEach(template => {
-                const docRef = doc(collection(db, 'report-templates'));
-                batch.set(docRef, template);
-            });
-            await batch.commit();
-            console.log("Created predefined report templates.");
-        }
-    } catch(e) {
-        console.error("Permission error checking templates, skipping creation.", e)
-    }
-  }, []);
-
-  const checkAndRestoreCollaborators = useCallback(async () => {
-    try {
-      const collaboratorsCollection = collection(db, 'collaborators');
-      const snapshot = await getDocs(collaboratorsCollection);
-      if (snapshot.empty) {
-        console.log('Collaborators collection is empty. Restoring from placeholder data.');
-        const batch = writeBatch(db);
-        demoCollaborators.forEach((collaborator) => {
-          const docRef = doc(collection(db, 'collaborators'));
-          batch.set(docRef, collaborator);
-        });
-        await batch.commit();
-        toast({
-          title: "Colaboradores Restaurados",
-          description: "La lista de colaboradores ha sido restaurada con éxito.",
-        });
-      }
-    } catch (e) {
-      console.error("Error checking or restoring collaborators:", e);
-    }
-  }, [toast]);
-
-
   const fetchData = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     
     try {
-        await checkAndCreatePredefinedTemplates();
-        await checkAndRestoreCollaborators();
-
         const collectionsToFetch: { name: string; setter: React.Dispatch<React.SetStateAction<any[]>> }[] = [
             { name: 'ot-categories', setter: setOtCategories },
             { name: 'ot-statuses', setter: setOtStatuses },
@@ -194,19 +150,18 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     } finally {
         setLoading(false);
     }
-}, [user, toast, checkAndCreatePredefinedTemplates, checkAndRestoreCollaborators]);
+  }, [user, toast]);
 
 
  useEffect(() => {
     if (authLoading || !user) {
-      setLoading(false); // Ensure loading is false if there's no user
+      setLoading(false); 
       return;
     }
 
-    // This now only runs when the user's authentication state changes.
-    // It sets up all the real-time listeners.
     setLoading(true);
-    fetchData(); // Fetch static data once on user login.
+
+    fetchData();
 
     const workOrdersQuery = query(collection(db, 'work-orders'), orderBy('date', 'desc'));
     const ganttQuery = query(collection(db, 'gantt-charts'));
@@ -243,13 +198,10 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         }, (error) => console.error("Error fetching audit-log:", error)));
     }
     
-    // setLoading is handled by fetchData now.
-    
-    // Cleanup function runs when user logs out (user object changes)
     return () => {
         unsubscribes.forEach(unsub => unsub());
     };
-}, [user, userProfile?.role, authLoading]); // Dependency array is now stable
+}, [user, userProfile?.role, authLoading, fetchData]); 
 
 
   // Derived state for active/historical orders
@@ -411,7 +363,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             }
 
             // 2. Encargados
-            createdOrder.assigned.forEach(name => {
+            (createdOrder.assigned || []).forEach(name => {
                 const email = getEmail(name);
                 if (email) toEmails.push(email);
             });
@@ -1066,6 +1018,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+
   return (
     <WorkOrdersContext.Provider value={{ 
         workOrders, 
@@ -1146,3 +1099,7 @@ export const useWorkOrders = () => {
   return context;
 };
 
+
+    
+
+    

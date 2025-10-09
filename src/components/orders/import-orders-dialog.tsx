@@ -181,26 +181,27 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
         };
         
         const keyMapping = {
-            ot_number: findHeader(['OT']),
+            ot_number: findHeader(['OT', 'Numero OT']),
             createdAt: findHeader(['Fecha Ingreso']),
-            description: findHeader(['NOMBRE DEL PROYECTO']),
+            description: findHeader(['NOMBRE DEL PROYECTO', 'Descripción']),
             client: findHeader(['client', 'cliente']),
             rut: findHeader(['rut']),
-            comercial: findHeader(['vendedor']),
-            assigned: findHeader(['SUPERV']),
-            technicians: findHeader(['tecnico', 'técnico', 'tecnicos']),
-            service: findHeader(['SISTEMA']),
-            netPrice: findHeader(['MONTO NETO']),
-            status: findHeader(['FACTPROCES']),
-            hesEmMigo: findHeader(['hes/em/migo']),
-            ocNumber: findHeader(['OC']),
-            saleNumber: findHeader(['nventa']),
+            comercial: findHeader(['vendedor', 'Comercial']),
+            assigned: findHeader(['SUPERV', 'Encargados (nombres separados por coma)']),
+            technicians: findHeader(['tecnico', 'técnico', 'tecnicos', 'Técnicos (nombres separados por coma)']),
+            service: findHeader(['SISTEMA', 'Servicio']),
+            netPrice: findHeader(['MONTO NETO', 'Precio Neto']),
+            status: findHeader(['FACTPROCES', 'Estado']),
+            hesEmMigo: findHeader(['hes/em/migo', 'HES/EM/MIGO']),
+            ocNumber: findHeader(['OC', 'Nº Orden de Compra']),
+            saleNumber: findHeader(['nventa', 'Nº Venta']),
             invoiceNumber: findHeader(['Fact. N°']),
             invoiceDate: findHeader(['Fecha Fact.']),
             billingMonth: findHeader(['mesfac']),
-            endDate: findHeader(['fechatermino']),
-            rentedVehicle: findHeader(['vehiculoarrendado']),
+            endDate: findHeader(['fechatermino', 'Fecha Termino']),
+            rentedVehicle: findHeader(['vehiculoarrendado', 'Vehículo Arrendado']),
             notes: findHeader(['Notas']),
+            priority: findHeader(['Prioridad']),
         };
         
         const validationErrors: string[] = [];
@@ -244,7 +245,7 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
                 endDate: (keyMapping.endDate ? robustDateParse(row[keyMapping.endDate!]) : null) || '',
                 service: keyMapping.service ? findMatchingString(String(row[keyMapping.service] || ''), availableServices) : '',
                 status: keyMapping.status ? mapFactprocToStatus(String(row[keyMapping.status])) : 'Por Iniciar',
-                priority: 'Baja',
+                priority: (row[keyMapping.priority!] || 'Baja') as WorkOrder['priority'],
                 netPrice: finalNetPrice,
                 assigned: parseCollaborators('assigned') as string[],
                 technicians: parseCollaborators('technicians') as string[],
@@ -520,3 +521,4 @@ export function ImportOrdersDialog({ open, onOpenChange, onImportSuccess }: Impo
   );
 }
 
+    
