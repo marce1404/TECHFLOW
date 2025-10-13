@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
@@ -103,7 +104,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchData = useCallback(async () => {
     if (!user) return;
-    setLoading(true);
     
     try {
         const collectionsToFetch: { name: string; setter: React.Dispatch<React.SetStateAction<any[]>> }[] = [
@@ -145,8 +145,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
         console.error("Error fetching initial data: ", error);
         toast({ variant: "destructive", title: "Error de Carga", description: "No se pudieron cargar los datos iniciales." });
-    } finally {
-        setLoading(false);
     }
   }, [user, toast]);
 
@@ -196,6 +194,8 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         }, (error) => console.error("Error fetching audit-log:", error)));
     }
     
+    setLoading(false);
+
     return () => {
         unsubscribes.forEach(unsub => unsub());
     };
@@ -339,7 +339,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     return lastOtNumber;
   }, [workOrders]);
 
-  const addOrder = async (order: Omit<WorkOrder, 'id'>, notification?: NewOrderNotification | null): Promise<WorkOrder | undefined> => {
+  const addOrder = useCallback(async (order: Omit<WorkOrder, 'id'>, notification?: NewOrderNotification | null): Promise<WorkOrder | undefined> => {
     const collRef = collection(db, "work-orders");
     try {
         const docRef = await addDoc(collRef, order);
@@ -400,13 +400,13 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         errorEmitter.emit('permission-error', permissionError);
         throw serverError;
     }
-  };
+  }, [smtpConfig, userProfile, collaborators, toast]);
   
-  const getOrder = (id: string) => {
+  const getOrder = useCallback((id: string) => {
     return workOrders.find(order => order.id === id);
-  };
+  }, [workOrders]);
 
-  const deleteOrder = async (id: string) => {
+  const deleteOrder = useCallback(async (id: string) => {
     const order = getOrder(id);
     const docRef = doc(db, 'work-orders', id);
     deleteDoc(docRef).then(() => {
@@ -418,7 +418,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         errorEmitter.emit('permission-error', permissionError);
     });
-  };
+  }, [getOrder]);
   
   const promptToCloseOrder = (order: WorkOrder) => {
     setOrderToClose(order);
@@ -575,9 +575,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
-  const getCollaborator = (id: string) => {
+  const getCollaborator = useCallback((id: string) => {
     return collaborators.find(collaborator => collaborator.id === id);
-  };
+  }, [collaborators]);
 
   const updateCollaborator = async (id: string, updatedCollaborator: Partial<Omit<Collaborator, 'id'>>) => {
     const docRef = doc(db, "collaborators", id);
@@ -593,7 +593,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const deleteCollaborator = async (id: string) => {
+  const deleteCollaborator = useCallback(async (id: string) => {
     const collaborator = getCollaborator(id);
     const docRef = doc(db, "collaborators", id);
     deleteDoc(docRef).then(() => {
@@ -605,7 +605,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         errorEmitter.emit('permission-error', permissionError);
     });
-  };
+  }, [getCollaborator]);
   
   const addVehicle = async (vehicle: Omit<Vehicle, 'id'>): Promise<Vehicle | undefined> => {
     const vehicleData = { ...vehicle, maintenanceLog: vehicle.maintenanceLog || [] };
@@ -678,9 +678,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
       }
   };
   
-  const getGanttChart = (id: string) => {
+  const getGanttChart = useCallback((id: string) => {
     return ganttCharts.find(chart => chart.id === id);
-  };
+  }, [ganttCharts]);
 
   const updateGanttChart = async (id: string, ganttChartData: Partial<Omit<GanttChart, 'id'>>) => {
       const docRef = doc(db, "gantt-charts", id);
@@ -712,7 +712,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
       });
   };
 
-  const deleteGanttChart = async (id: string) => {
+  const deleteGanttChart = useCallback(async (id: string) => {
     const chart = getGanttChart(id);
     const docRef = doc(db, "gantt-charts", id);
     deleteDoc(docRef).then(() => {
@@ -724,7 +724,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         errorEmitter.emit('permission-error', permissionError);
     });
-  };
+  }, [getGanttChart]);
   
   const addSuggestedTask = async (task: Omit<SuggestedTask, 'id'>): Promise<SuggestedTask | undefined> => {
     const collRef = collection(db, "suggested-tasks");
