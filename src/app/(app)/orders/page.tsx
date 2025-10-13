@@ -114,10 +114,15 @@ export default function ActiveOrdersPage() {
         
         // Final filter: If no other filters are active, ensure we only show active orders on this page.
         if (!isFiltering) {
-             return ordersToFilter.filter(o => normalizeString(o.status) !== 'cerrada');
+             ordersToFilter = ordersToFilter.filter(o => normalizeString(o.status) !== 'cerrada');
         }
 
-        return ordersToFilter;
+        // Default sort by creation date (descending)
+        return ordersToFilter.sort((a, b) => {
+            const dateA = a.createdAt ? new Date(a.createdAt.replace(/-/g, '/')).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt.replace(/-/g, '/')).getTime() : 0;
+            return dateB - dateA;
+        });
 
     }, [workOrders, activeTab, search, dateRange, activeFilters, isFiltering]);
 
