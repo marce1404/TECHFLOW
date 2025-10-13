@@ -15,12 +15,23 @@ import { ExpirationAlertsCard } from '@/app/(app)/dashboard/expiration-alerts-ca
 import { differenceInDays, parseISO, addYears } from 'date-fns';
 import { useAuth } from '@/context/auth-context';
 import MotivationalTicker from '@/components/dashboard/motivational-ticker';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from "@/components/ui/carousel"
+import Autoplay from "embla-carousel-autoplay"
+
 
 export default function DashboardPage() {
   const { workOrders, loading, ganttCharts, collaborators } = useWorkOrders();
   const { user, loading: authLoading } = useAuth();
   const [isFullscreen, setIsFullscreen] = React.useState(false);
   const dashboardRef = React.useRef<HTMLDivElement>(null);
+  
+  const autoplay = React.useRef(
+    Autoplay({ delay: 10000, stopOnInteraction: true })
+  );
 
   const activeWorkOrders = React.useMemo(() => {
     return workOrders.filter(o => normalizeString(o.status) !== 'cerrada');
@@ -39,9 +50,9 @@ export default function DashboardPage() {
       if (statusIndexA !== statusIndexB) {
         return statusIndexA - statusIndexB;
       }
-
-      const dateA = new Date(a.date.replace(/-/g, '/')).getTime();
-      const dateB = new Date(b.date.replace(/-/g, '/')).getTime();
+      
+      const dateA = a.createdAt ? new Date(a.createdAt.replace(/-/g, '/')).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt.replace(/-/g, '/')).getTime() : 0;
 
       return dateB - dateA;
     });
@@ -156,22 +167,36 @@ export default function DashboardPage() {
     );
   }
   
-  const animationDuration = Math.max(30, sortedOrders.length * 1.5);
+  const allCards = [
+    <ClosedOrdersCard key="closed-orders" orders={closedOrdersThisMonth} />,
+    <ExpirationAlertsCard key="expiring-items" items={expiringItems} />,
+    ...sortedOrders.map(order => <OrderCard key={order.id} order={order} progress={getProgress(order)} />)
+  ];
+  
+  const getChunkSize = () => {
+      if (typeof window === 'undefined') return 12; // Default for SSR
+      if (window.innerWidth < 768) return 4;
+      if (window.innerWidth < 1024) return 6;
+      if (window.innerWidth < 1280) return 9;
+      return 12;
+  }
+  
+  const [chunkSize, setChunkSize] = React.useState(getChunkSize());
 
-  const OrderGrid = ({ orders }: { orders: WorkOrder[] }) => (
-    <div
-      className={cn(
-        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4",
-        isFullscreen ? "p-4" : "p-4 sm:p-6 lg:p-8"
-      )}
-    >
-      <div className="md:col-span-1"><ClosedOrdersCard orders={closedOrdersThisMonth} /></div>
-      <div className="md:col-span-1"><ExpirationAlertsCard items={expiringItems} /></div>
-      {orders.map(order => (
-        <OrderCard key={order.id} order={order} progress={getProgress(order)} />
-      ))}
-    </div>
-  );
+  React.useEffect(() => {
+      const handleResize = () => {
+          setChunkSize(getChunkSize());
+      };
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+
+  const cardChunks: React.ReactNode[][] = [];
+  for (let i = 0; i < allCards.length; i += chunkSize) {
+      cardChunks.push(allCards.slice(i, i + chunkSize));
+  }
+
 
   return (
      <div 
@@ -192,26 +217,39 @@ export default function DashboardPage() {
         </div>
 
         {/* Main Content */}
-        {isFullscreen ? (
-          <div className="flex-1 overflow-hidden h-full">
-            <div 
-              className="animate-scroll-vertical h-full" 
-              style={{ '--animation-duration': `${animationDuration}s` } as React.CSSProperties}
-            >
-              <OrderGrid orders={sortedOrders} />
-              <OrderGrid orders={sortedOrders} /> {/* Duplicate for seamless loop */}
-            </div>
-          </div>
-        ) : (
-          <div className="flex-1">
-             <OrderGrid orders={sortedOrders} />
-             {sortedOrders.length === 0 && (
-                <div className="col-span-full flex items-center justify-center h-64 border-2 border-dashed rounded-lg m-8">
-                    <p className="text-muted-foreground">No hay órdenes de trabajo activas.</p>
+        <div className={cn("flex-1", isFullscreen && "overflow-hidden")}>
+           {isFullscreen ? (
+                <Carousel
+                    plugins={[autoplay.current]}
+                    className="w-full h-full"
+                    onMouseEnter={autoplay.current.stop}
+                    onMouseLeave={autoplay.current.reset}
+                >
+                    <CarouselContent className="h-full">
+                        {cardChunks.map((chunk, index) => (
+                            <CarouselItem key={index} className="h-full p-4 md:p-6 lg:p-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 h-full">
+                                    {chunk}
+                                </div>
+                            </CarouselItem>
+                        ))}
+                    </CarouselContent>
+                </Carousel>
+           ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4 sm:p-6 lg:p-8">
+                    <ClosedOrdersCard orders={closedOrdersThisMonth} />
+                    <ExpirationAlertsCard items={expiringItems} />
+                    {sortedOrders.map(order => (
+                        <OrderCard key={order.id} order={order} progress={getProgress(order)} />
+                    ))}
+                    {sortedOrders.length === 0 && (
+                        <div className="col-span-full flex items-center justify-center h-64 border-2 border-dashed rounded-lg m-8">
+                            <p className="text-muted-foreground">No hay órdenes de trabajo activas.</p>
+                        </div>
+                    )}
                 </div>
-            )}
-          </div>
-        )}
+           )}
+        </div>
         
         {/* Footer */}
         {isFullscreen && (

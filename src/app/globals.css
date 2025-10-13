@@ -94,18 +94,6 @@
   }
 }
 
-@layer utilities {
-    @keyframes scroll-vertical {
-      from { transform: translateY(0); }
-      to { transform: translateY(-50%); }
-    }
-    
-    .animate-scroll-vertical {
-        animation: scroll-vertical var(--animation-duration) linear infinite;
-    }
-}
-
-
 @media print {
   body {
     background: white;
