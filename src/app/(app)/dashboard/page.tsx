@@ -33,6 +33,16 @@ export default function DashboardPage() {
     Autoplay({ delay: 10000, stopOnInteraction: true })
   );
 
+  const getChunkSize = () => {
+      if (typeof window === 'undefined') return 12; // Default for SSR
+      if (window.innerWidth < 768) return 4;
+      if (window.innerWidth < 1024) return 6;
+      if (window.innerWidth < 1280) return 9;
+      return 12;
+  }
+  
+  const [chunkSize, setChunkSize] = React.useState(getChunkSize());
+
   const activeWorkOrders = React.useMemo(() => {
     return workOrders.filter(o => normalizeString(o.status) !== 'cerrada');
   }, [workOrders]);
@@ -155,6 +165,14 @@ export default function DashboardPage() {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  React.useEffect(() => {
+      const handleResize = () => {
+          setChunkSize(getChunkSize());
+      };
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   if (loading || authLoading) {
     return (
       <div className="flex flex-col gap-8 p-4 sm:p-6 lg:p-8">
@@ -173,25 +191,6 @@ export default function DashboardPage() {
     ...sortedOrders.map(order => <OrderCard key={order.id} order={order} progress={getProgress(order)} />)
   ];
   
-  const getChunkSize = () => {
-      if (typeof window === 'undefined') return 12; // Default for SSR
-      if (window.innerWidth < 768) return 4;
-      if (window.innerWidth < 1024) return 6;
-      if (window.innerWidth < 1280) return 9;
-      return 12;
-  }
-  
-  const [chunkSize, setChunkSize] = React.useState(getChunkSize());
-
-  React.useEffect(() => {
-      const handleResize = () => {
-          setChunkSize(getChunkSize());
-      };
-      window.addEventListener('resize', handleResize);
-      return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-
   const cardChunks: React.ReactNode[][] = [];
   for (let i = 0; i < allCards.length; i += chunkSize) {
       cardChunks.push(allCards.slice(i, i + chunkSize));
