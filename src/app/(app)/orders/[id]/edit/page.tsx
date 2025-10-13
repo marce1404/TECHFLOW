@@ -299,11 +299,18 @@ export default function EditOrderPage() {
             </div>
              <div className="flex items-center gap-4">
                 <div className="w-48">
-                    <FormLabel>Número de OT *</FormLabel>
-                    <Input
-                        value={methods.watch('ot_number')}
-                        readOnly
-                        className="bg-muted"
+                    <FormField
+                        control={methods.control}
+                        name="ot_number"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Número de OT *</FormLabel>
+                                <FormControl>
+                                    <Input {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
                     />
                 </div>
             </div>
