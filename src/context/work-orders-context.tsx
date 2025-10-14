@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
@@ -345,13 +344,12 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     const collRef = collection(db, "work-orders");
     try {
         const docRef = await addDoc(collRef, order);
-        
-        const createdOrder = { id: docRef.id, ...order } as WorkOrder;
         await addLogEntry(`Creó la OT: ${order.ot_number} - ${order.description}`);
         
-        // Send email if requested
+        const createdOrder = { id: docRef.id, ...order } as WorkOrder;
+        
+        // Send email if requested, now using the confirmed createdOrder object
         if (notification?.send && smtpConfig) {
-            
             const getEmail = (name: string) => collaborators.find(c => c.name === name)?.email;
             
             const toEmails: string[] = [];
