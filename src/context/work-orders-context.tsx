@@ -102,6 +102,26 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
   const [orderToClose, setOrderToClose] = useState<WorkOrder | null>(null);
   const { toast } = useToast();
 
+  const addLogEntry = useCallback(async (action: string) => {
+    if (!userProfile) return;
+    const logRef = collection(db, 'audit-log');
+    try {
+      await addDoc(logRef, {
+          user: userProfile.displayName,
+          email: userProfile.email,
+          action,
+          timestamp: serverTimestamp()
+      });
+    } catch (serverError) {
+        const permissionError = new FirestorePermissionError({
+            path: logRef.path,
+            operation: 'create',
+            requestResourceData: { action },
+        });
+        errorEmitter.emit('permission-error', permissionError);
+    }
+  }, [userProfile]);
+
   const fetchData = useCallback(async () => {
     if (!user) return;
     
@@ -208,24 +228,6 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     setHistoricalWorkOrders(workOrders.filter(o => normalizeString(o.status) === 'cerrada'));
   }, [workOrders]);
 
-  const addLogEntry = async (action: string) => {
-    if (!userProfile) return;
-    const logRef = collection(db, 'audit-log');
-    addDoc(logRef, {
-        user: userProfile.displayName,
-        email: userProfile.email,
-        action,
-        timestamp: serverTimestamp()
-    }).catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
-            path: logRef.path,
-            operation: 'create',
-            requestResourceData: { action },
-        });
-        errorEmitter.emit('permission-error', permissionError);
-    });
-  };
-  
  const updateOrder = useCallback(async (id: string, updatedData: Partial<WorkOrder>, notification?: UpdateOrderNotification | null) => {
     const orderRef = doc(db, 'work-orders', id);
     const order = workOrders.find(o => o.id === id);
@@ -272,7 +274,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             );
         }
     }
-  }, [workOrders, smtpConfig, userProfile, collaborators]);
+  }, [workOrders, smtpConfig, userProfile, collaborators, addLogEntry]);
 
   const getNextOtNumber = useCallback((prefix: string): string => {
     if (!prefix) return '';
@@ -400,7 +402,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         errorEmitter.emit('permission-error', permissionError);
         throw serverError;
     }
-  }, [smtpConfig, userProfile, collaborators, toast]);
+  }, [smtpConfig, userProfile, collaborators, toast, addLogEntry]);
   
   const getOrder = useCallback((id: string) => {
     return workOrders.find(order => order.id === id);
@@ -418,13 +420,13 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         errorEmitter.emit('permission-error', permissionError);
     });
-  }, [getOrder]);
+  }, [getOrder, addLogEntry]);
   
-  const promptToCloseOrder = (order: WorkOrder) => {
+  const promptToCloseOrder = useCallback((order: WorkOrder) => {
     setOrderToClose(order);
-  };
+  }, []);
 
-  const handleConfirmClose = async (order: WorkOrder, closingDate: Date) => {
+  const handleConfirmClose = useCallback(async (order: WorkOrder, closingDate: Date) => {
     const dataToUpdate = {
         status: 'Cerrada' as WorkOrder['status'],
         endDate: format(closingDate, 'yyyy-MM-dd'),
@@ -435,9 +437,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     }).catch(() => {
         toast({ variant: 'destructive', title: 'Error', description: 'No se pudo cerrar la OT.' });
     });
-  };
+  }, [updateOrder, addLogEntry, toast]);
   
-  const addCategory = async (category: Omit<OTCategory, 'id'>): Promise<OTCategory | undefined> => {
+  const addCategory = useCallback(async (category: Omit<OTCategory, 'id'>): Promise<OTCategory | undefined> => {
     const collRef = collection(db, "ot-categories");
     try {
         const docRef = await addDoc(collRef, category);
@@ -452,9 +454,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         errorEmitter.emit('permission-error', permissionError);
         throw serverError;
     }
-  };
+  }, [addLogEntry]);
 
-  const updateCategory = async (id: string, updatedCategory: Partial<OTCategory>) => {
+  const updateCategory = useCallback(async (id: string, updatedCategory: Partial<OTCategory>) => {
     const docRef = doc(db, "ot-categories", id);
     updateDoc(docRef, updatedCategory).then(() => {
         addLogEntry(`Actualizó la categoría de OT: ${updatedCategory.name}`);
@@ -466,9 +468,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         errorEmitter.emit('permission-error', permissionError);
     });
-  };
+  }, [addLogEntry]);
 
-  const addStatus = async (status: Omit<OTStatus, 'id'>): Promise<OTStatus | undefined> => {
+  const addStatus = useCallback(async (status: Omit<OTStatus, 'id'>): Promise<OTStatus | undefined> => {
     const collRef = collection(db, "ot-statuses");
     try {
         const docRef = await addDoc(collRef, status);
@@ -483,9 +485,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         errorEmitter.emit('permission-error', permissionError);
         throw serverError;
     }
-  };
+  }, [addLogEntry]);
 
-  const updateStatus = async (id: string, updatedStatus: Partial<OTStatus>) => {
+  const updateStatus = useCallback(async (id: string, updatedStatus: Partial<OTStatus>) => {
     const docRef = doc(db, "ot-statuses", id);
     updateDoc(docRef, updatedStatus).then(() => {
         addLogEntry(`Actualizó el estado de OT: ${updatedStatus.name}`);
@@ -497,9 +499,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         errorEmitter.emit('permission-error', permissionError);
     });
-  };
+  }, [addLogEntry]);
 
-  const deleteStatus = async (id: string) => {
+  const deleteStatus = useCallback(async (id: string) => {
     const status = otStatuses.find(s => s.id === id);
     const docRef = doc(db, "ot-statuses", id);
     deleteDoc(docRef).then(() => {
@@ -511,9 +513,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         errorEmitter.emit('permission-error', permissionError);
     });
-  };
+  }, [addLogEntry, otStatuses]);
 
-  const addService = async (service: Omit<Service, 'id'>): Promise<Service | undefined> => {
+  const addService = useCallback(async (service: Omit<Service, 'id'>): Promise<Service | undefined> => {
     const collRef = collection(db, "services");
     try {
         const docRef = await addDoc(collRef, service);
@@ -528,9 +530,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         errorEmitter.emit('permission-error', permissionError);
         throw serverError;
     }
-  };
+  }, [addLogEntry]);
 
-  const updateService = async (id: string, updatedService: Partial<Service>) => {
+  const updateService = useCallback(async (id: string, updatedService: Partial<Service>) => {
     const docRef = doc(db, "services", id);
     updateDoc(docRef, updatedService).then(() => {
         addLogEntry(`Actualizó el servicio: ${updatedService.name}`);
@@ -542,9 +544,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         errorEmitter.emit('permission-error', permissionError);
     });
-  };
+  }, [addLogEntry]);
   
-  const deleteService = async (id: string) => {
+  const deleteService = useCallback(async (id: string) => {
     const service = services.find(s => s.id === id);
     const docRef = doc(db, "services", id);
     deleteDoc(docRef).then(() => {
@@ -556,9 +558,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         errorEmitter.emit('permission-error', permissionError);
     });
-  };
+  }, [addLogEntry, services]);
   
-  const addCollaborator = async (collaborator: Omit<Collaborator, 'id'>): Promise<Collaborator | undefined> => {
+  const addCollaborator = useCallback(async (collaborator: Omit<Collaborator, 'id'>): Promise<Collaborator | undefined> => {
     const collRef = collection(db, "collaborators");
     try {
         const docRef = await addDoc(collRef, collaborator);
@@ -573,13 +575,13 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         errorEmitter.emit('permission-error', permissionError);
         throw serverError;
     }
-  };
+  }, [addLogEntry]);
   
   const getCollaborator = useCallback((id: string) => {
     return collaborators.find(collaborator => collaborator.id === id);
   }, [collaborators]);
 
-  const updateCollaborator = async (id: string, updatedCollaborator: Partial<Omit<Collaborator, 'id'>>) => {
+  const updateCollaborator = useCallback(async (id: string, updatedCollaborator: Partial<Omit<Collaborator, 'id'>>) => {
     const docRef = doc(db, "collaborators", id);
     updateDoc(docRef, updatedCollaborator).then(() => {
         addLogEntry(`Actualizó al colaborador: ${updatedCollaborator.name}`);
@@ -591,7 +593,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         errorEmitter.emit('permission-error', permissionError);
     });
-  };
+  }, [addLogEntry]);
 
   const deleteCollaborator = useCallback(async (id: string) => {
     const collaborator = getCollaborator(id);
@@ -605,9 +607,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         errorEmitter.emit('permission-error', permissionError);
     });
-  }, [getCollaborator]);
+  }, [getCollaborator, addLogEntry]);
   
-  const addVehicle = async (vehicle: Omit<Vehicle, 'id'>): Promise<Vehicle | undefined> => {
+  const addVehicle = useCallback(async (vehicle: Omit<Vehicle, 'id'>): Promise<Vehicle | undefined> => {
     const vehicleData = { ...vehicle, maintenanceLog: vehicle.maintenanceLog || [] };
     const collRef = collection(db, "vehicles");
     try {
@@ -623,9 +625,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         errorEmitter.emit('permission-error', permissionError);
         throw serverError;
     }
-  };
+  }, [addLogEntry]);
 
-  const updateVehicle = async (id: string, updatedVehicle: Partial<Omit<Vehicle, 'id'>>) => {
+  const updateVehicle = useCallback(async (id: string, updatedVehicle: Partial<Omit<Vehicle, 'id'>>) => {
     const docRef = doc(db, "vehicles", id);
     updateDoc(docRef, updatedVehicle).then(() => {
         addLogEntry(`Actualizó el vehículo: ${updatedVehicle.model} (${updatedVehicle.plate})`);
@@ -637,9 +639,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         errorEmitter.emit('permission-error', permissionError);
     });
-  };
+  }, [addLogEntry]);
 
-  const deleteVehicle = async (id: string) => {
+  const deleteVehicle = useCallback(async (id: string) => {
     const vehicle = vehicles.find(v => v.id === id);
     const docRef = doc(db, "vehicles", id);
     deleteDoc(docRef).then(() => {
@@ -651,9 +653,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         errorEmitter.emit('permission-error', permissionError);
     });
-  };
+  }, [addLogEntry, vehicles]);
 
-  const addGanttChart = async (ganttChart: Omit<GanttChart, 'id'>): Promise<GanttChart | undefined> => {
+  const addGanttChart = useCallback(async (ganttChart: Omit<GanttChart, 'id'>): Promise<GanttChart | undefined> => {
       const dataToSave = {
           ...ganttChart,
           assignedOT: ganttChart.assignedOT === 'none' ? '' : ganttChart.assignedOT || '',
@@ -676,13 +678,13 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         errorEmitter.emit('permission-error', permissionError);
         throw serverError;
       }
-  };
+  }, [addLogEntry]);
   
   const getGanttChart = useCallback((id: string) => {
     return ganttCharts.find(chart => chart.id === id);
   }, [ganttCharts]);
 
-  const updateGanttChart = async (id: string, ganttChartData: Partial<Omit<GanttChart, 'id'>>) => {
+  const updateGanttChart = useCallback(async (id: string, ganttChartData: Partial<Omit<GanttChart, 'id'>>) => {
       const docRef = doc(db, "gantt-charts", id);
       
       const dataToSave: { [key: string]: any } = { ...ganttChartData };
@@ -710,7 +712,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         errorEmitter.emit('permission-error', permissionError);
       });
-  };
+  }, [addLogEntry]);
 
   const deleteGanttChart = useCallback(async (id: string) => {
     const chart = getGanttChart(id);
@@ -724,9 +726,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         errorEmitter.emit('permission-error', permissionError);
     });
-  }, [getGanttChart]);
+  }, [getGanttChart, addLogEntry]);
   
-  const addSuggestedTask = async (task: Omit<SuggestedTask, 'id'>): Promise<SuggestedTask | undefined> => {
+  const addSuggestedTask = useCallback(async (task: Omit<SuggestedTask, 'id'>): Promise<SuggestedTask | undefined> => {
     const collRef = collection(db, "suggested-tasks");
     try {
         const docRef = await addDoc(collRef, task);
@@ -741,9 +743,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         errorEmitter.emit('permission-error', permissionError);
         throw serverError;
     }
-  };
+  }, [addLogEntry]);
 
-  const updateSuggestedTask = async (id: string, updatedTask: Partial<SuggestedTask>) => {
+  const updateSuggestedTask = useCallback(async (id: string, updatedTask: Partial<SuggestedTask>) => {
     const docRef = doc(db, "suggested-tasks", id);
     updateDoc(docRef, updatedTask).then(() => {
         addLogEntry(`Actualizó tarea sugerida: ${updatedTask.name}`);
@@ -755,9 +757,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         errorEmitter.emit('permission-error', permissionError);
     });
-  };
+  }, [addLogEntry]);
 
-  const deleteSuggestedTask = async (id: string) => {
+  const deleteSuggestedTask = useCallback(async (id: string) => {
     const task = suggestedTasks.find(t => t.id === id);
     const docRef = doc(db, "suggested-tasks", id);
     deleteDoc(docRef).then(() => {
@@ -769,9 +771,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         errorEmitter.emit('permission-error', permissionError);
     });
-  };
+  }, [addLogEntry, suggestedTasks]);
   
-  const updatePhaseName = async (category: string, oldPhaseName: string, newPhaseName: string) => {
+  const updatePhaseName = useCallback(async (category: string, oldPhaseName: string, newPhaseName: string) => {
     const q = query(collection(db, 'suggested-tasks'), where('category', '==', category), where('phase', '==', oldPhaseName));
     try {
         const snapshot = await getDocs(q);
@@ -790,9 +792,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         errorEmitter.emit('permission-error', permissionError);
         throw e;
     }
-  };
+  }, [addLogEntry]);
 
-  const deletePhase = async (category: string, phaseName: string) => {
+  const deletePhase = useCallback(async (category: string, phaseName: string) => {
     const q = query(collection(db, 'suggested-tasks'), where('category', '==', category), where('phase', '==', phaseName));
     try {
         const snapshot = await getDocs(q);
@@ -811,9 +813,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         errorEmitter.emit('permission-error', permissionError);
         throw e;
     }
-  };
+  }, [addLogEntry]);
   
-  const addReportTemplate = async (template: Omit<ReportTemplate, 'id'>): Promise<ReportTemplate | undefined> => {
+  const addReportTemplate = useCallback(async (template: Omit<ReportTemplate, 'id'>): Promise<ReportTemplate | undefined> => {
     const collRef = collection(db, "report-templates");
     try {
         const docRef = await addDoc(collRef, template);
@@ -828,9 +830,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         errorEmitter.emit('permission-error', permissionError);
         throw serverError;
     }
-  };
+  }, [addLogEntry]);
 
-  const updateReportTemplate = async (id: string, updatedTemplate: Partial<ReportTemplate>) => {
+  const updateReportTemplate = useCallback(async (id: string, updatedTemplate: Partial<ReportTemplate>) => {
     const docRef = doc(db, "report-templates", id);
     updateDoc(docRef, updatedTemplate).then(() => {
         addLogEntry(`Actualizó la plantilla de informe: ${updatedTemplate.name}`);
@@ -842,10 +844,10 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         errorEmitter.emit('permission-error', permissionError);
     });
-  };
+  }, [addLogEntry]);
 
 
-  const deleteReportTemplate = async (id: string) => {
+  const deleteReportTemplate = useCallback(async (id: string) => {
     const template = reportTemplates.find(t => t.id === id);
     const docRef = doc(db, "report-templates", id);
     deleteDoc(docRef).then(() => {
@@ -857,9 +859,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         errorEmitter.emit('permission-error', permissionError);
     });
-  };
+  }, [addLogEntry, reportTemplates]);
 
-  const addSubmittedReport = async (report: Omit<SubmittedReport, 'id' | 'submittedAt'>): Promise<SubmittedReport | undefined> => {
+  const addSubmittedReport = useCallback(async (report: Omit<SubmittedReport, 'id' | 'submittedAt'>): Promise<SubmittedReport | undefined> => {
     const reportData = {
         ...report,
         submittedAt: serverTimestamp(),
@@ -878,9 +880,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         errorEmitter.emit('permission-error', permissionError);
         throw serverError;
     }
-  };
+  }, [addLogEntry]);
 
-  const updateSubmittedReport = async (id: string, report: Partial<SubmittedReport>) => {
+  const updateSubmittedReport = useCallback(async (id: string, report: Partial<SubmittedReport>) => {
     const originalReport = submittedReports.find(r => r.id === id);
     const docRef = doc(db, "submitted-reports", id);
     updateDoc(docRef, report).then(() => {
@@ -893,9 +895,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         errorEmitter.emit('permission-error', permissionError);
     });
-  };
+  }, [addLogEntry, submittedReports]);
 
-  const deleteSubmittedReport = async (id: string) => {
+  const deleteSubmittedReport = useCallback(async (id: string) => {
     const report = submittedReports.find(r => r.id === id);
     const docRef = doc(db, "submitted-reports", id);
     deleteDoc(docRef).then(() => {
@@ -907,9 +909,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         errorEmitter.emit('permission-error', permissionError);
     });
-  };
+  }, [addLogEntry, submittedReports]);
 
-  const updateCompanyInfo = async (info: CompanyInfo) => {
+  const updateCompanyInfo = useCallback(async (info: CompanyInfo) => {
     const docRef = doc(db, 'settings', 'companyInfo');
     setDoc(docRef, info, { merge: true }).then(() => {
         addLogEntry(`Actualizó la información de la empresa.`);
@@ -922,9 +924,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         errorEmitter.emit('permission-error', permissionError);
     });
-  };
+  }, [addLogEntry, fetchData]);
 
-  const updateSmtpConfig = async (config: SmtpConfig) => {
+  const updateSmtpConfig = useCallback(async (config: SmtpConfig) => {
     const docRef = doc(db, 'settings', 'smtpConfig');
     setDoc(docRef, config, { merge: true }).then(() => {
         addLogEntry(`Actualizó la configuración SMTP.`);
@@ -936,9 +938,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         });
         errorEmitter.emit('permission-error', permissionError);
     });
-  };
+  }, [addLogEntry]);
   
-  const convertActivityToWorkOrder = async (activityId: string, newPrefix: string) => {
+  const convertActivityToWorkOrder = useCallback(async (activityId: string, newPrefix: string) => {
     const activity = workOrders.find(o => o.id === activityId);
     if (!activity || !activity.isActivity) {
         toast({ variant: "destructive", title: "Error", description: "No se puede convertir este item." });
@@ -960,9 +962,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     } catch(e) {
         toast({ variant: 'destructive', title: 'Error', description: 'No se pudo convertir la actividad.' });
     }
-  };
+  }, [workOrders, getNextOtNumber, updateOrder, addLogEntry, toast]);
 
-  const deleteWorkOrders = async () => {
+  const deleteWorkOrders = useCallback(async () => {
     const collectionRef = collection(db, 'work-orders');
     try {
         const snapshot = await getDocs(collectionRef);
@@ -981,9 +983,9 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         errorEmitter.emit('permission-error', permissionError);
         throw serverError;
     }
-  };
+  }, [addLogEntry]);
 
-  const deleteAllData = async () => {
+  const deleteAllData = useCallback(async () => {
     const collectionsToDelete = [
       'work-orders',
       'vehicles',
@@ -1014,7 +1016,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
     return Promise.all(batchPromises).then(async () => {
         await addLogEntry('Eliminó todos los datos (excepto colaboradores).');
     });
-  };
+  }, [addLogEntry]);
 
 
   return (
