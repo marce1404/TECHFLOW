@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/layout/app-layout';
-import { WorkOrdersProvider } from '@/context/work-orders-context';
+import { WorkOrdersClientProvider } from '@/context/work-orders-client-provider';
 import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -53,10 +53,10 @@ export default function AppProtectedLayout({
 }) {
   
   return (
-      <WorkOrdersProvider>
+      <WorkOrdersClientProvider>
         <ProtectedRoutes>
             {children}
         </ProtectedRoutes>
-      </WorkOrdersProvider>
+      </WorkOrdersClientProvider>
   );
 }
