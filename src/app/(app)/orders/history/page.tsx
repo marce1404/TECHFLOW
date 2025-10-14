@@ -17,7 +17,7 @@ import { DateRange } from "react-day-picker";
 
 export default function HistoryPage() {
     const { workOrders, otCategories } = useWorkOrders();
-    const [activeTab, setActiveTab] = React.useState('todos');
+    const [activeTab, setActiveTab] = React.useState('ot');
     const [search, setSearch] = React.useState('');
     const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
     const [activeFilters, setActiveFilters] = React.useState<ActiveFilter[]>([]);
@@ -28,16 +28,17 @@ export default function HistoryPage() {
 
     const filteredOrders = React.useMemo(() => {
         let baseItems: WorkOrder[];
+        const closedOrders = workOrders.filter(o => normalizeString(o.status) === 'cerrada');
 
         if (isFiltering) {
-            baseItems = workOrders;
+            baseItems = closedOrders;
         } else {
             if (activeTab === 'actividades') {
-                baseItems = workOrders.filter(o => normalizeString(o.status) === 'cerrada' && o.isActivity);
+                baseItems = closedOrders.filter(o => o.isActivity);
             } else if (activeTab === 'todos') {
-                baseItems = workOrders.filter(o => normalizeString(o.status) === 'cerrada' && !o.isActivity);
+                baseItems = closedOrders.filter(o => !o.isActivity);
             } else {
-                baseItems = workOrders.filter(o => normalizeString(o.status) === 'cerrada' && !o.isActivity && o.ot_number.startsWith(activeTab));
+                baseItems = closedOrders.filter(o => !o.isActivity && o.ot_number.startsWith(activeTab.toUpperCase()));
             }
         }
 
@@ -55,14 +56,12 @@ export default function HistoryPage() {
         if (dateRange?.from) {
             const filterTo = dateRange.to || dateRange.from; // Use 'to' or same as 'from' if 'to' is not set
             ordersToFilter = ordersToFilter.filter(order => {
-                if (!order.date) return false;
-                const orderStart = new Date(order.date.replace(/-/g, '/'));
-                const orderEnd = order.endDate ? new Date(order.endDate.replace(/-/g, '/')) : orderStart;
+                const orderCloseDate = order.endDate ? new Date(order.endDate.replace(/-/g, '/')) : null;
+                if (!orderCloseDate) return false;
                 
                 const filterStart = dateRange.from!;
                 
-                // Check for interval overlap: (StartA <= EndB) and (StartB <= EndA)
-                return orderStart <= filterTo && filterStart <= orderEnd;
+                return orderCloseDate >= filterStart && orderCloseDate <= filterTo;
             });
         }
 
@@ -108,16 +107,11 @@ export default function HistoryPage() {
                     break;
             }
         });
-        
-        // Final filter: If no other filters are active, ensure we only show closed orders on this page.
-        if (!isFiltering) {
-             ordersToFilter = ordersToFilter.filter(o => normalizeString(o.status) === 'cerrada');
-        }
 
         // Default sort by creation date (descending)
         return ordersToFilter.sort((a, b) => {
-            const dateA = a.createdAt ? new Date(a.createdAt.replace(/-/g, '/')).getTime() : 0;
-            const dateB = b.createdAt ? new Date(b.createdAt.replace(/-/g, '/')).getTime() : 0;
+            const dateA = a.endDate ? new Date(a.endDate.replace(/-/g, '/')).getTime() : 0;
+            const dateB = b.endDate ? new Date(b.endDate.replace(/-/g, '/')).getTime() : 0;
             return dateB - dateA;
         });
 
@@ -125,14 +119,14 @@ export default function HistoryPage() {
 
 
     const categories = [
-        { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
         ...otCategories
             .map(cat => ({
                 id: cat.id,
-                value: cat.prefix,
+                value: cat.prefix.toLowerCase(),
                 label: `${cat.name} (${cat.prefix})`,
                 prefix: cat.prefix,
             })),
+        { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
         { id: "actividades", value: "actividades", label: "ACTIVIDADES", prefix: 'actividades' },
     ];
     
@@ -180,6 +174,9 @@ export default function HistoryPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Filtros Avanzados</CardTitle>
+                             <CardDescription>
+                                Los filtros de fecha aquí aplican sobre la fecha de cierre de la OT.
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
                            <AdvancedFilters 
@@ -200,7 +197,7 @@ export default function HistoryPage() {
                                 <ScrollArea className="w-full sm:w-auto">
                                     <TabsList className="w-max">
                                         {categories.map(cat => (
-                                            <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
+                                            <TabsTrigger key={cat.id} value={cat.value}>{cat.label}</TabsTrigger>
                                         ))}
                                     </TabsList>
                                     <ScrollBar orientation="horizontal" />

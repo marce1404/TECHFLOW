@@ -19,7 +19,7 @@ import { DateRange } from "react-day-picker";
 export default function ActiveOrdersPage() {
     const { workOrders, otCategories } = useWorkOrders();
     const { userProfile } = useAuth();
-    const [activeTab, setActiveTab] = React.useState('todos');
+    const [activeTab, setActiveTab] = React.useState('ot'); // Default to 'OT' prefix
     const [isFilterOpen, setIsFilterOpen] = React.useState(false);
     const [search, setSearch] = React.useState('');
     const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
@@ -34,7 +34,7 @@ export default function ActiveOrdersPage() {
 
         if (isFiltering) {
             // If any filter is active, search through all work orders
-            baseItems = workOrders;
+            baseItems = workOrders.filter(o => normalizeString(o.status) !== 'cerrada');
         } else {
             // Otherwise, show items based on the active tab (only active ones)
             if (activeTab === 'actividades') {
@@ -42,7 +42,7 @@ export default function ActiveOrdersPage() {
             } else if (activeTab === 'todos') {
                 baseItems = workOrders.filter(item => !item.isActivity && normalizeString(item.status) !== 'cerrada');
             } else {
-                baseItems = workOrders.filter(order => order.ot_number.startsWith(activeTab) && normalizeString(order.status) !== 'cerrada');
+                baseItems = workOrders.filter(order => order.ot_number.startsWith(activeTab.toUpperCase()) && normalizeString(order.status) !== 'cerrada');
             }
         }
         
@@ -60,6 +60,7 @@ export default function ActiveOrdersPage() {
         if (dateRange?.from) {
             const filterTo = dateRange.to || dateRange.from; // Use 'to' or same as 'from' if 'to' is not set
             ordersToFilter = ordersToFilter.filter(order => {
+                if (!order.date) return false;
                 const orderStart = new Date(order.date.replace(/-/g, '/'));
                 const orderEnd = order.endDate ? new Date(order.endDate.replace(/-/g, '/')) : orderStart;
                 
@@ -112,11 +113,6 @@ export default function ActiveOrdersPage() {
             }
         });
         
-        // Final filter: If no other filters are active, ensure we only show active orders on this page.
-        if (!isFiltering) {
-             ordersToFilter = ordersToFilter.filter(o => normalizeString(o.status) !== 'cerrada');
-        }
-
         // Default sort by creation date (descending)
         return ordersToFilter.sort((a, b) => {
             const dateA = a.createdAt ? new Date(a.createdAt.replace(/-/g, '/')).getTime() : 0;
@@ -127,15 +123,15 @@ export default function ActiveOrdersPage() {
     }, [workOrders, activeTab, search, dateRange, activeFilters, isFiltering]);
 
     const categories = [
-        { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
         ...otCategories
             .filter(cat => cat.status === 'Activa')
             .map(cat => ({
                 id: cat.id,
-                value: cat.prefix,
+                value: cat.prefix.toLowerCase(),
                 label: `${cat.name} (${cat.prefix})`,
                 prefix: cat.prefix,
             })),
+        { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
         { id: "actividades", value: "actividades", label: "ACTIVIDADES", prefix: 'actividades' },
     ];
     
@@ -209,7 +205,7 @@ export default function ActiveOrdersPage() {
                             <ScrollArea className="w-full sm:w-auto">
                                 <TabsList className="w-max">
                                     {categories.map(cat => (
-                                        <TabsTrigger key={cat.id} value={cat.prefix}>{cat.label}</TabsTrigger>
+                                        <TabsTrigger key={cat.id} value={cat.value}>{cat.label}</TabsTrigger>
                                     ))}
                                 </TabsList>
                                 <ScrollBar orientation="horizontal" />
