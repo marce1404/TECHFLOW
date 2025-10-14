@@ -1,3 +1,4 @@
+
 'use client';
 import { Button } from "@/components/ui/button";
 import { PlusCircle, ChevronsUpDown } from "lucide-react";
@@ -19,7 +20,7 @@ import { DateRange } from "react-day-picker";
 export default function ActiveOrdersPage() {
     const { workOrders, otCategories } = useWorkOrders();
     const { userProfile } = useAuth();
-    const [activeTab, setActiveTab] = React.useState('ot'); // Default to 'OT' prefix
+    const [activeTab, setActiveTab] = React.useState('todos'); // Default to 'todos'
     const [isFilterOpen, setIsFilterOpen] = React.useState(false);
     const [search, setSearch] = React.useState('');
     const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
@@ -123,6 +124,7 @@ export default function ActiveOrdersPage() {
     }, [workOrders, activeTab, search, dateRange, activeFilters, isFiltering]);
 
     const categories = [
+        { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
         ...otCategories
             .filter(cat => cat.status === 'Activa')
             .map(cat => ({
@@ -131,7 +133,6 @@ export default function ActiveOrdersPage() {
                 label: `${cat.name} (${cat.prefix})`,
                 prefix: cat.prefix,
             })),
-        { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
         { id: "actividades", value: "actividades", label: "ACTIVIDADES", prefix: 'actividades' },
     ];
     
