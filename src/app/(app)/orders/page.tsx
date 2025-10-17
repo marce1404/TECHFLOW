@@ -28,26 +28,20 @@ export default function ActiveOrdersPage() {
     
     const canCreate = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
     
-    const isFiltering = search || dateRange || activeFilters.length > 0;
+    const isAdvancedFiltering = dateRange || activeFilters.length > 0;
 
     const filteredOrders = React.useMemo(() => {
         let baseItems: WorkOrder[];
 
-        if (isFiltering) {
-            // If any filter is active, search through all work orders
-            baseItems = workOrders.filter(o => normalizeString(o.status) !== 'cerrada');
+        if (activeTab === 'actividades') {
+            baseItems = workOrders.filter(item => item.isActivity && normalizeString(item.status) !== 'cerrada');
+        } else if (activeTab === 'todos') {
+            baseItems = workOrders.filter(item => !item.isActivity && normalizeString(item.status) !== 'cerrada');
         } else {
-            // Otherwise, show items based on the active tab (only active ones)
-            if (activeTab === 'actividades') {
-                baseItems = workOrders.filter(item => item.isActivity && normalizeString(item.status) !== 'cerrada');
-            } else if (activeTab === 'todos') {
-                baseItems = workOrders.filter(item => !item.isActivity && normalizeString(item.status) !== 'cerrada');
-            } else {
-                baseItems = workOrders.filter(order => order.ot_number.startsWith(activeTab.toUpperCase()) && normalizeString(order.status) !== 'cerrada');
-            }
+            baseItems = workOrders.filter(order => order.ot_number.startsWith(activeTab.toUpperCase()) && normalizeString(order.status) !== 'cerrada');
         }
         
-        let ordersToFilter = baseItems;
+        let ordersToFilter = [...baseItems];
 
         if (search) {
              ordersToFilter = ordersToFilter.filter(order =>
@@ -57,9 +51,9 @@ export default function ActiveOrdersPage() {
             );
         }
 
-        // Apply date range filter for overlap
+        // Apply date range filter for overlap if it's set
         if (dateRange?.from) {
-            const filterTo = dateRange.to || dateRange.from; // Use 'to' or same as 'from' if 'to' is not set
+            const filterTo = dateRange.to || dateRange.from;
             ordersToFilter = ordersToFilter.filter(order => {
                 if (!order.date) return false;
                 const orderStart = new Date(order.date.replace(/-/g, '/'));
@@ -67,7 +61,6 @@ export default function ActiveOrdersPage() {
                 
                 const filterStart = dateRange.from!;
                 
-                // Check for interval overlap: (StartA <= EndB) and (StartB <= EndA)
                 return orderStart <= filterTo && filterStart <= orderEnd;
             });
         }
@@ -121,7 +114,7 @@ export default function ActiveOrdersPage() {
             return dateB - dateA;
         });
 
-    }, [workOrders, activeTab, search, dateRange, activeFilters, isFiltering]);
+    }, [workOrders, activeTab, search, dateRange, activeFilters]);
 
     const categories = [
         { id: "todos", value: "todos", label: "Todos", prefix: 'todos' },
@@ -170,7 +163,7 @@ export default function ActiveOrdersPage() {
                     <CollapsibleTrigger asChild>
                         <Button variant="ghost" size="sm">
                             <ChevronsUpDown className="mr-2 h-4 w-4" />
-                            {isFiltering ? `Filtros Avanzados (${activeFilters.length + (dateRange ? 1 : 0) + (search ? 1 : 0)})` : 'Filtros Avanzados'}
+                            {isAdvancedFiltering ? `Filtros Avanzados (${activeFilters.length + (dateRange ? 1 : 0)})` : 'Filtros Avanzados'}
                         </Button>
                     </CollapsibleTrigger>
                      {canCreate && (
@@ -220,7 +213,7 @@ export default function ActiveOrdersPage() {
                             </div>
                         </div>
                         <TabsContent value={activeTab} className="mt-4">
-                             <CardTitle className="text-lg mb-4">{isFiltering ? `Resultados de Búsqueda (${filteredOrders.length})` : `OTs Activas (${filteredOrders.length})`}</CardTitle>
+                             <CardTitle className="text-lg mb-4">{`Resultados (${filteredOrders.length})`}</CardTitle>
                             <OrdersTable orders={filteredOrders} isActivityTab={activeTab === 'actividades'} />
                         </TabsContent>
                     </Tabs>

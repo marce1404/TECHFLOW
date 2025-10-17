@@ -1,3 +1,4 @@
+
 'use client';
 import HistoricalOrdersTable from "@/components/orders/historical-orders-table";
 import { useWorkOrders } from "@/context/work-orders-context";
@@ -24,28 +25,25 @@ export default function HistoryPage() {
 
     const [isFilterOpen, setIsFilterOpen] = React.useState(false);
 
-    const isFiltering = search || dateRange || activeFilters.length > 0;
+    const isAdvancedFiltering = dateRange || activeFilters.length > 0;
 
     const filteredOrders = React.useMemo(() => {
         let baseItems: WorkOrder[];
         const closedOrders = workOrders.filter(o => normalizeString(o.status) === 'cerrada');
 
-        if (isFiltering) {
-            baseItems = closedOrders;
+        if (activeTab === 'actividades') {
+            baseItems = closedOrders.filter(o => o.isActivity);
+        } else if (activeTab === 'todos') {
+            baseItems = closedOrders.filter(o => !o.isActivity);
         } else {
-            if (activeTab === 'actividades') {
-                baseItems = closedOrders.filter(o => o.isActivity);
-            } else if (activeTab === 'todos') {
-                baseItems = closedOrders.filter(o => !o.isActivity);
-            } else {
-                baseItems = closedOrders.filter(o => !o.isActivity && o.ot_number.startsWith(activeTab.toUpperCase()));
-            }
+            baseItems = closedOrders.filter(o => !o.isActivity && o.ot_number.startsWith(activeTab.toUpperCase()));
         }
 
+        let ordersToFilter = [...baseItems];
+
         // Apply simple search
-        let ordersToFilter = baseItems;
         if (search) {
-             ordersToFilter = baseItems.filter(order =>
+             ordersToFilter = ordersToFilter.filter(order =>
                 order.ot_number.toLowerCase().includes(search.toLowerCase()) ||
                 (order.description && order.description.toLowerCase().includes(search.toLowerCase())) ||
                 (order.client && order.client.toLowerCase().includes(search.toLowerCase()))
@@ -115,7 +113,7 @@ export default function HistoryPage() {
             return dateB - dateA;
         });
 
-    }, [workOrders, activeTab, search, dateRange, activeFilters, isFiltering]);
+    }, [workOrders, activeTab, search, dateRange, activeFilters]);
 
 
     const categories = [
@@ -166,7 +164,7 @@ export default function HistoryPage() {
                     <CollapsibleTrigger asChild>
                         <Button variant="ghost" size="sm">
                             <ChevronsUpDown className="h-4 w-4 mr-2" />
-                             {isFiltering ? `Filtros Avanzados (${activeFilters.length + (dateRange ? 1 : 0) + (search ? 1 : 0)})` : 'Filtros Avanzados'}
+                             {isAdvancedFiltering ? `Filtros Avanzados (${activeFilters.length + (dateRange ? 1 : 0)})` : 'Filtros Avanzados'}
                         </Button>
                     </CollapsibleTrigger>
                 </div>
@@ -211,7 +209,7 @@ export default function HistoryPage() {
                                 </div>
                             </div>
                         <TabsContent value={activeTab} className="mt-4">
-                            <CardTitle className="text-lg mb-4">{isFiltering ? `Resultados de Búsqueda (${filteredOrders.length})` : `OTs Cerradas (${filteredOrders.length})`}</CardTitle>
+                            <CardTitle className="text-lg mb-4">{`Resultados de Búsqueda (${filteredOrders.length})`}</CardTitle>
                             <HistoricalOrdersTable orders={filteredOrders} />
                         </TabsContent>
                     </Tabs>
