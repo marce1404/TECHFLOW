@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon, PlusCircle, Trash2 } from "lucide-react";
+import { Calendar as CalendarIcon, PlusCircle, Trash2, Loader2 } from "lucide-react";
 import { cn, normalizeString } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from 'date-fns/locale';
@@ -32,6 +32,7 @@ export default function NewOrderPage() {
     const { userProfile } = useAuth();
     
     const canCreate = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
 
     const [description, setDescription] = React.useState('');
     const [categoryPrefix, setCategoryPrefix] = React.useState('');
@@ -123,6 +124,8 @@ export default function NewOrderPage() {
         return;
     }
 
+    setIsSubmitting(true);
+
     const newOrder: Omit<WorkOrder, 'id'> = {
         ot_number: otNumber,
         description,
@@ -154,17 +157,22 @@ export default function NewOrderPage() {
         ? { send: true, cc: ccRecipients }
         : null;
     
-    await addOrder(newOrder, notificationData);
+    try {
+        await addOrder(newOrder, notificationData);
 
-    toast({
-      title: "Orden de Trabajo Creada",
-      description: "La nueva orden de trabajo ha sido creada exitosamente.",
-      duration: 1000,
-    });
-    
-    setTimeout(() => {
-        router.push('/orders');
-    }, 1000);
+        toast({
+        title: "Orden de Trabajo Creada",
+        description: "La nueva orden de trabajo ha sido creada exitosamente.",
+        duration: 2000,
+        });
+        
+        setTimeout(() => {
+            router.push('/orders');
+        }, 2000);
+    } catch(error) {
+        console.error("Failed to create order:", error);
+        setIsSubmitting(false);
+    }
   };
 
   const formatCurrency = (num: number): string => {
@@ -695,7 +703,10 @@ export default function NewOrderPage() {
         
         <div className="flex justify-end gap-2 mt-8">
             <Button variant="outline" asChild><Link href="/orders">Cancelar</Link></Button>
-            <Button onClick={handleCreateOrder}>Crear OT</Button>
+            <Button onClick={handleCreateOrder} disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Crear OT
+            </Button>
         </div>
     </div>
   );

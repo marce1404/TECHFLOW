@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon, ArrowRight, Trash2, PlusCircle, Send, Info, FileClock, Mail } from "lucide-react";
+import { Calendar as CalendarIcon, ArrowRight, Trash2, PlusCircle, Send, Info, FileClock, Mail, Loader2 } from "lucide-react";
 import { cn, normalizeString } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from 'date-fns/locale';
@@ -54,6 +54,7 @@ export default function EditOrderPage() {
   const { toast } = useToast();
   
   const orderId = params.id as string;
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = React.useState(false);
   const [sendUpdateNotification, setSendUpdateNotification] = React.useState(false);
   const [updateCcRecipients, setUpdateCcRecipients] = React.useState<string[]>([]);
@@ -157,6 +158,7 @@ export default function EditOrderPage() {
   const handleUpdateOrder = async (data: WorkOrder) => {
     if (!canEdit || !initialOrder) return;
     
+    setIsSubmitting(true);
     try {
         const finalData = { ...initialOrder, ...data };
         if (!finalData.createdAt) {
@@ -184,6 +186,8 @@ export default function EditOrderPage() {
     } catch (error) {
         // Error toast is handled by the context
         console.error("Failed to update order:", error);
+    } finally {
+        setIsSubmitting(false);
     }
   };
   
@@ -1023,7 +1027,10 @@ export default function EditOrderPage() {
                     <Send className="mr-2 h-4 w-4" />
                     Enviar a Facturar
                   </Button>
-                  <Button type="submit">Guardar Cambios</Button>
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Guardar Cambios
+                  </Button>
               </div>
           </div>
       )}
