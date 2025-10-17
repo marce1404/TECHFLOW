@@ -50,6 +50,8 @@ interface SendToInvoiceDialogProps {
   order: WorkOrder | null;
 }
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
 export function SendToInvoiceDialog({ open, onOpenChange, order }: SendToInvoiceDialogProps) {
   const { toast } = useToast();
   const { smtpConfig, collaborators, updateOrder } = useWorkOrders();
@@ -80,9 +82,26 @@ export function SendToInvoiceDialog({ open, onOpenChange, order }: SendToInvoice
     if (open && order) {
         const debora = collaborators.find(c => c.name.toLowerCase().includes('debora'));
         
+        const comercialName = order.comercial;
+        const assignedNames = order.assigned || [];
+
+        const ccIds = new Set<string>();
+
+        if (userProfile?.uid) {
+            ccIds.add(userProfile.uid);
+        }
+
+        const comercial = collaborators.find(c => c.name === comercialName);
+        if(comercial?.id) ccIds.add(comercial.id);
+
+        assignedNames.forEach(name => {
+            const assignedPerson = collaborators.find(c => c.name === name);
+            if(assignedPerson?.id) ccIds.add(assignedPerson.id);
+        });
+
         form.reset({
             to: debora?.id || '',
-            cc: userProfile?.uid ? [userProfile.uid] : [],
+            cc: Array.from(ccIds),
             subject: `Solicitud de Facturación - ${order.ot_number} - ${order.description}`,
             observations: '',
         });
