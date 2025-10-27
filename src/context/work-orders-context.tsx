@@ -259,7 +259,7 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
             if (email) toEmails.push(email);
         });
         if (userProfile?.email) toEmails.push(userProfile.email);
-
+        
         const ccEmails = (notification.cc || [])
           .map(id => collaborators.find(c => c.id === id)?.email)
           .filter((email): email is string => !!email);
@@ -346,8 +346,10 @@ export const WorkOrdersProvider = ({ children }: { children: ReactNode }) => {
         const docRef = await addDoc(collRef, order);
         await addLogEntry(`Creó la OT: ${order.ot_number} - ${order.description}`);
         
-        const createdOrder = { id: docRef.id, ...order } as WorkOrder;
-        
+        // Fetch the just created document to get server-generated values (like timestamps)
+        const newDocSnap = await getDoc(docRef);
+        const createdOrder = processFirestoreTimestamp({ id: newDocSnap.id, ...newDocSnap.data() }) as WorkOrder;
+
         // Send email if requested, now using the confirmed createdOrder object
         if (notification?.send && smtpConfig) {
             const getEmail = (name: string) => collaborators.find(c => c.name === name)?.email;

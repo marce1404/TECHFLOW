@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon, PlusCircle, Trash2 } from "lucide-react";
+import { Calendar as CalendarIcon, PlusCircle, Trash2, Loader2 } from "lucide-react";
 import { cn, normalizeString } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from 'date-fns/locale';
@@ -17,11 +17,12 @@ import Link from 'next/link';
 import { MultiSelect } from "@/components/ui/multi-select";
 import { useToast } from "@/hooks/use-toast";
 import { useWorkOrders } from "@/context/work-orders-context";
-import type { WorkOrder, Invoice } from "@/lib/types";
+import type { WorkOrder, Invoice, NewOrderNotification } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { Slider } from "@/components/ui/slider";
 import { useAuth } from "@/context/auth-context";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
 
 
 export default function NewOrderPage() {
@@ -31,6 +32,7 @@ export default function NewOrderPage() {
     const { userProfile } = useAuth();
     
     const canCreate = userProfile?.role === 'Admin' || userProfile?.role === 'Supervisor';
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
 
     const [description, setDescription] = React.useState('');
     const [categoryPrefix, setCategoryPrefix] = React.useState('');
@@ -63,6 +65,10 @@ export default function NewOrderPage() {
     const [newInvoiceNumber, setNewInvoiceNumber] = React.useState('');
     const [newInvoiceDate, setNewInvoiceDate] = React.useState<Date | undefined>(new Date());
     const [newInvoiceAmount, setNewInvoiceAmount] = React.useState(0);
+    
+    // Notification State
+    const [sendEmailNotification, setSendEmailNotification] = React.useState(true);
+    const [ccRecipients, setCcRecipients] = React.useState<string[]>([]);
 
     const lastUsedOt = React.useMemo(() => getLastOtNumber(categoryPrefix), [categoryPrefix, getLastOtNumber, workOrders]);
     
@@ -88,13 +94,18 @@ export default function NewOrderPage() {
       .filter(c => c.role === 'Comercial' && c.status === 'Activo')
       .map(c => ({ value: c.name, label: c.name }));
 
+    const collaboratorEmailOptions = collaborators
+        .filter(c => c.email)
+        .map(c => ({ value: c.id, label: `${c.name} (${c.email})` }));
+
+
   const vehicleOptions = vehicles.map(v => ({
     value: v.plate,
     label: `${v.model} (${v.plate})`,
   }));
 
 
-  const handleCreateOrder = () => {
+  const handleCreateOrder = async () => {
     if (!description || !otNumber) {
         toast({
             variant: "destructive",
@@ -103,6 +114,17 @@ export default function NewOrderPage() {
         });
         return;
     }
+    
+     if (sendEmailNotification && !comercial) {
+        toast({
+            variant: "destructive",
+            title: "Comercial Requerido",
+            description: "Debes asignar un comercial para poder enviar la notificación por correo.",
+        });
+        return;
+    }
+
+    setIsSubmitting(true);
 
     const newOrder: Omit<WorkOrder, 'id'> = {
         ot_number: otNumber,
@@ -131,17 +153,24 @@ export default function NewOrderPage() {
         manualProgress,
     };
     
-    addOrder(newOrder);
-
-    toast({
-      title: "Orden de Trabajo Creada",
-      description: "La nueva orden de trabajo ha sido creada exitosamente.",
-      duration: 1000,
-    });
+    const notificationData: NewOrderNotification | null = sendEmailNotification
+        ? { send: true, cc: ccRecipients }
+        : null;
     
-    setTimeout(() => {
+    try {
+        await addOrder(newOrder, notificationData);
+
+        toast({
+        title: "Orden de Trabajo Creada",
+        description: "La nueva orden de trabajo ha sido creada exitosamente.",
+        duration: 2000,
+        });
+        
         router.push('/orders');
-    }, 1000);
+    } catch(error) {
+        console.error("Failed to create order:", error);
+        setIsSubmitting(false);
+    }
   };
 
   const formatCurrency = (num: number): string => {
@@ -553,6 +582,36 @@ export default function NewOrderPage() {
       
         <Card>
             <CardHeader>
+                <CardTitle>Notificación por Correo</CardTitle>
+                <CardDescription>
+                    Envía un correo al comercial asignado para notificar la creación de esta OT.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="flex items-center space-x-2">
+                    <Switch
+                        id="email-notification"
+                        checked={sendEmailNotification}
+                        onCheckedChange={setSendEmailNotification}
+                    />
+                    <Label htmlFor="email-notification">Notificar Creación por Correo</Label>
+                </div>
+                {sendEmailNotification && (
+                    <div>
+                        <Label>Añadir en Copia (CC)</Label>
+                        <MultiSelect
+                            options={collaboratorEmailOptions}
+                            selected={ccRecipients}
+                            onChange={setCcRecipients}
+                            placeholder="Seleccionar destinatarios..."
+                        />
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+        
+        <Card>
+            <CardHeader>
                 <CardTitle>Añadir Nueva Factura</CardTitle>
             </CardHeader>
              <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
@@ -642,7 +701,10 @@ export default function NewOrderPage() {
         
         <div className="flex justify-end gap-2 mt-8">
             <Button variant="outline" asChild><Link href="/orders">Cancelar</Link></Button>
-            <Button onClick={handleCreateOrder}>Crear OT</Button>
+            <Button onClick={handleCreateOrder} disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Crear OT
+            </Button>
         </div>
     </div>
   );

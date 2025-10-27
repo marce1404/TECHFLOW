@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 import type { ChartConfig } from "@/components/ui/chart"
 import { Timestamp } from 'firebase/firestore';
@@ -195,7 +194,7 @@ export type SubmittedReport = {
         comercial?: string;
     };
     templateName: string;
-    submittedAt: Timestamp;
+    submittedAt: Timestamp | Date;
 };
 
 export type CompanyInfo = {

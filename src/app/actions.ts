@@ -1,4 +1,3 @@
-
 'use server';
 
 import {
@@ -772,5 +771,3 @@ export const sendUpdatedWorkOrderEmailAction = async (
         return { success: false, message: `Error al enviar la notificación: ${error.message}` };
     }
 }
-
-    

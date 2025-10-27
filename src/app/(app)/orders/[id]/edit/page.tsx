@@ -43,7 +43,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
 
 
 export default function EditOrderPage() {
@@ -56,8 +55,7 @@ export default function EditOrderPage() {
   const orderId = params.id as string;
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = React.useState(false);
-  const [sendUpdateNotification, setSendUpdateNotification] = React.useState(false);
-  const [updateCcRecipients, setUpdateCcRecipients] = React.useState<string[]>([]);
+  const [isSaveConfirmOpen, setIsSaveConfirmOpen] = React.useState(false);
   
   const initialOrder = React.useMemo(() => getOrder(orderId), [orderId, getOrder]);
 
@@ -155,7 +153,8 @@ export default function EditOrderPage() {
     }
   };
 
-  const handleUpdateOrder = async (data: WorkOrder) => {
+  const handleUpdateOrder = async (sendNotification: boolean) => {
+    const data = methods.getValues();
     if (!canEdit || !initialOrder) return;
     
     setIsSubmitting(true);
@@ -165,8 +164,8 @@ export default function EditOrderPage() {
             finalData.createdAt = new Date().toISOString().split('T')[0];
         }
         
-        const notificationData: UpdateOrderNotification | null = sendUpdateNotification
-            ? { send: true, cc: updateCcRecipients }
+        const notificationData: UpdateOrderNotification | null = sendNotification
+            ? { send: true, cc: [] } // CC is handled by the server action now
             : null;
 
         await updateOrder(finalData.id, finalData, notificationData);
@@ -188,6 +187,20 @@ export default function EditOrderPage() {
         console.error("Failed to update order:", error);
     } finally {
         setIsSubmitting(false);
+        setIsSaveConfirmOpen(false);
+    }
+  };
+
+  const onSaveClick = async () => {
+    const isValid = await methods.trigger();
+    if (isValid) {
+        setIsSaveConfirmOpen(true);
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Faltan Campos",
+            description: "Por favor, revisa el formulario y completa los campos requeridos.",
+        });
     }
   };
   
@@ -228,7 +241,7 @@ export default function EditOrderPage() {
     <FormProvider {...methods}>
     <TooltipProvider>
     <Form {...methods}>
-    <form onSubmit={methods.handleSubmit(handleUpdateOrder)} className="space-y-6">
+    <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
     <div className="flex flex-col gap-8">
       <div className="flex justify-between items-center">
         <div className="flex items-end gap-4">
@@ -962,42 +975,6 @@ export default function EditOrderPage() {
       </Card>
       
       {canEdit && (
-         <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Mail className="h-5 w-5" />
-                    Notificación por Correo
-                </CardTitle>
-                <CardDescription>
-                    Activa para enviar un correo con los detalles de esta actualización a los involucrados.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="flex items-center space-x-2">
-                    <Switch
-                        id="email-notification-update"
-                        checked={sendUpdateNotification}
-                        onCheckedChange={setSendUpdateNotification}
-                    />
-                    <Label htmlFor="email-notification-update">Notificar cambios por Correo</Label>
-                </div>
-                {sendUpdateNotification && (
-                    <div>
-                        <Label>Añadir en Copia (CC)</Label>
-                        <MultiSelect
-                            options={collaboratorEmailOptions}
-                            selected={updateCcRecipients}
-                            onChange={setUpdateCcRecipients}
-                            placeholder="Seleccionar destinatarios..."
-                        />
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-      )}
-
-
-      {canEdit && (
           <div className="flex justify-between items-center mt-8">
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -1027,7 +1004,7 @@ export default function EditOrderPage() {
                     <Send className="mr-2 h-4 w-4" />
                     Enviar a Facturar
                   </Button>
-                  <Button type="submit" disabled={isSubmitting}>
+                  <Button type="button" onClick={onSaveClick} disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Guardar Cambios
                   </Button>
@@ -1044,6 +1021,27 @@ export default function EditOrderPage() {
         onOpenChange={setIsInvoiceDialogOpen}
         order={initialOrder}
       />
+      <AlertDialog open={isSaveConfirmOpen} onOpenChange={setIsSaveConfirmOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>¿Enviar notificación por correo?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    ¿Deseas notificar por correo electrónico al comercial y a los encargados sobre los cambios realizados en esta Orden de Trabajo?
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogAction onClick={() => handleUpdateOrder(true)} disabled={isSubmitting}>
+                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Sí, notificar y guardar
+                </AlertDialogAction>
+                <AlertDialogAction onClick={() => handleUpdateOrder(false)} disabled={isSubmitting}>
+                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    No, solo guardar
+                </AlertDialogAction>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
